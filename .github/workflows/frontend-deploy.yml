@@ -1,0 +1,42 @@
+name: Frontend Deploy
+on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: "Log level"
+        required: true
+        default: "warning"
+      tags:
+        description: "Test scenario tags"
+  release:
+    types: [published]
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@master
+      - name: Install Dependencies
+        working-directory: ./frontend
+        run: npm install
+      - name: Generate
+        working-directory: ./frontend
+        run: npm run generate
+        env:
+          API_URL: https://api.osrsrecords.com
+          IMAGE_SERVING_URL: https://cdn.osrsrecords.com
+          VER: ${{ github.ref }}
+          SITE_NAME: Giraffeql Boilerplate
+          SITE_DESCRIPTION: Giraffeql Boilerplate is a basic boilerplate site for showcasing the Giraffeql API querying language in a basic and extendable implementation.
+          SITE_IMAGE_URL: https://cdn.giraffeql.com/permanent/android-chrome-512x512.png
+          SITE_CONTACT_EMAIL: hello@giraffeql.com
+          SITE_DISCORD_LINK: https://discord.gg/CpSWfub9y6
+          SITE_GITHUB_REPOSITORY_URL: https://github.com/big213/giraffeql-boilerplate
+      - name: Deploy to Firebase
+        uses: w9jds/firebase-action@master
+        with:
+          args: deploy --only hosting
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          PROJECT_PATH: ./frontend

@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["https://boilerplate.giraffeql.com"],
+    "responseHeader": ["Content-Type"],
+    "method": ["GET"],
+    "maxAgeSeconds": 3600
+  }
+]

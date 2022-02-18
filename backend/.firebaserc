@@ -1,0 +1,17 @@
+{
+  "projects": {
+    "default": "giraffeql-boilerplate"
+  },
+  "targets": {
+    "giraffeql-boilerplate": {
+      "hosting": {
+        "giraffeql-boilerplate-api": [
+          "giraffeql-boilerplate-api"
+        ],
+        "giraffeql-boilerplate-cdn": [
+          "giraffeql-boilerplate-cdn"
+        ]
+      }
+    }
+  }
+}
