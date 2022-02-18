@@ -3,6 +3,11 @@ import { permissionsCheck } from "../../core/helpers/permissions";
 import { ServiceFunctionInputs, AccessControlMap } from "../../../types";
 import { nanoid } from "nanoid";
 import { createObjectType } from "../../core/helpers/resolver";
+import {
+  filterPassesTest,
+  isCurrentUser,
+  isUserLoggedIn,
+} from "../../helpers/permissions";
 
 export class ApiKeyService extends PaginatedService {
   defaultTypename = "apiKey";
@@ -28,27 +33,27 @@ export class ApiKeyService extends PaginatedService {
   groupByFieldsMap = {};
 
   accessControl: AccessControlMap = {
-    // user only allowed to get apiKey if they are the 'user'
+    /*
+    Allow if:
+    - user.id is currentUser
+    */
     get: async ({ req, args, fieldPath }) => {
-      // user must be logged in, else deny
-      if (!req.user) return false;
-
-      // "user" field on the link must be current user, else deny
       const record = await this.lookupRecord(["user.id"], args, fieldPath);
+      if (isCurrentUser(req, record["user.id"])) {
+        return true;
+      }
 
-      if (record["user.id"] !== req.user.id) return false;
-
-      return true;
+      return false;
     },
 
-    // user only allowed to list apiKeys if they are the 'user'
+    /*
+    Allow if:
+    - filtering by user.id is currentUser
+    */
     getMultiple: ({ req, args }) => {
-      // filterBy must have user.id === req.user.id
       if (
-        Array.isArray(args.filterBy) &&
-        args.filterBy.length > 0 &&
-        args.filterBy.every((filterObject) => {
-          return filterObject["user.id"]?.eq === req.user?.id;
+        filterPassesTest(args.filterBy, (filterObject) => {
+          return isCurrentUser(req, filterObject["user.id"]?.eq);
         })
       ) {
         return true;
@@ -57,41 +62,45 @@ export class ApiKeyService extends PaginatedService {
       return false;
     },
 
-    // user only allowed to update apiKeys if they are the 'user'
+    /*
+    Allow if:
+    - user.id is currentUser
+    */
     update: async ({ req, args, fieldPath }) => {
-      // user must be logged in, else deny
-      if (!req.user) return false;
-
-      // "user" field on the link must be current user, else deny
-      const record = await this.lookupRecord(["user.id"], args.item, fieldPath);
-
-      if (record["user.id"] !== req.user.id) return false;
-
-      return true;
-    },
-
-    // user only allowed to delete apiKeys if they are the 'user'
-    delete: async ({ req, args, fieldPath }) => {
-      // user must be logged in, else deny
-      if (!req.user) return false;
-
-      // "user" field on the link must be current user, else deny
       const record = await this.lookupRecord(["user.id"], args, fieldPath);
+      if (isCurrentUser(req, record["user.id"])) {
+        return true;
+      }
 
-      if (record["user.id"] !== req.user.id) return false;
-
-      return true;
+      return false;
     },
 
-    // user only allowed to add apiKey with self as the 'user' field
+    /*
+    Allow if:
+    - user.id is currentUser
+    */
+    delete: async ({ req, args, fieldPath }) => {
+      const record = await this.lookupRecord(["user.id"], args, fieldPath);
+      if (isCurrentUser(req, record["user.id"])) {
+        return true;
+      }
+
+      return false;
+    },
+
+    /*
+    Allow if:
+    - args.user is currentUser
+    */
     create: async ({ req, args, fieldPath }) => {
+      if (!isUserLoggedIn(req)) return false;
+
       // handle lookupArgs, convert lookups into ids
       await this.handleLookupArgs(args, fieldPath);
 
-      // userId must be logged in and current user, else deny
-      if (!req.user || args.user !== req.user.id) return false;
+      if (!isCurrentUser(req, args.user)) return false;
 
-      return true;
+      return false;
     },
   };
 

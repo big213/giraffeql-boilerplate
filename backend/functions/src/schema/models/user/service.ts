@@ -43,8 +43,8 @@ export class UserService extends PaginatedService {
   accessControl: AccessControlMap = {
     /*
     Allow if:
-    - item isPublic === true
-    - OR, item was created by currentUser
+    - item was created by currentUser
+    - item isPublic === true AND requested fields has fields id, name, avatar, email ONLY
     - OR, if requested fields are id, name, avatar ONLY
     */
     get: async ({ req, args, query, fieldPath }) => {
@@ -54,9 +54,21 @@ export class UserService extends PaginatedService {
         fieldPath
       );
 
-      if (record.isPublic) return true;
-
       if (isCurrentUser(req, record["createdBy.id"])) return true;
+
+      if (
+        isObject(query) &&
+        objectOnlyHasFields(query, [
+          "id",
+          "name",
+          "avatar",
+          "email",
+          "isPublic",
+        ]) &&
+        record.isPublic
+      ) {
+        return true;
+      }
 
       if (
         isObject(query) &&

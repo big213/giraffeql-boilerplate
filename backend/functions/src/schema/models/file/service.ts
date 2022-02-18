@@ -7,6 +7,7 @@ import {
   createObjectType,
   deleteObjectType,
 } from "../../core/helpers/resolver";
+import { filterPassesTest, isCurrentUser } from "../../helpers/permissions";
 
 export class FileService extends PaginatedService {
   defaultTypename = "file";
@@ -32,7 +33,36 @@ export class FileService extends PaginatedService {
 
   groupByFieldsMap = {};
 
-  accessControl: AccessControlMap = {};
+  accessControl: AccessControlMap = {
+    /*
+    Allow if:
+    - createdBy.id is currentUser
+    */
+    get: async ({ req, args, fieldPath }) => {
+      const record = await this.lookupRecord(["createdBy.id"], args, fieldPath);
+      if (isCurrentUser(req, record["createdBy.id"])) {
+        return true;
+      }
+
+      return false;
+    },
+
+    /*
+    Allow if:
+    - filtering by createdBy.id is currentUser
+    */
+    getMultiple: ({ req, args }) => {
+      if (
+        filterPassesTest(args.filterBy, (filterObject) => {
+          return isCurrentUser(req, filterObject["createdBy.id"]?.eq);
+        })
+      ) {
+        return true;
+      }
+
+      return false;
+    },
+  };
 
   async updateFileParentKeys(
     userId: string,
