@@ -25,8 +25,8 @@ export default {
   head: {
     titleTemplate: (titleChunk) => {
       return titleChunk
-        ? `${titleChunk} - ${process.env.SITE_NAME}`
-        : process.env.SITE_NAME
+        ? `${titleChunk} - ${process.env.siteName}`
+        : process.env.siteName
     },
     meta: [
       { charset: 'utf-8' },

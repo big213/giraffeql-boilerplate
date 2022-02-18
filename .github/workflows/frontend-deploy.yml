@@ -24,11 +24,11 @@ jobs:
         working-directory: ./frontend
         run: npm run generate
         env:
-          API_URL: https://api.osrsrecords.com
-          IMAGE_SERVING_URL: https://cdn.osrsrecords.com
+          API_URL: https://api.giraffeql.com
+          IMAGE_SERVING_URL: https://cdn.giraffeql.com
           VER: ${{ github.ref }}
-          SITE_NAME: Giraffeql Boilerplate
-          SITE_DESCRIPTION: Giraffeql Boilerplate is a basic boilerplate site for showcasing the Giraffeql API querying language in a basic and extendable implementation.
+          SITE_NAME: "Giraffeql Boilerplate"
+          SITE_DESCRIPTION: "Giraffeql Boilerplate is a basic boilerplate site for showcasing the Giraffeql API querying language in a basic and extendable implementation."
           SITE_IMAGE_URL: https://cdn.giraffeql.com/permanent/android-chrome-512x512.png
           SITE_CONTACT_EMAIL: hello@giraffeql.com
           SITE_DISCORD_LINK: https://discord.gg/CpSWfub9y6
