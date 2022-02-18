@@ -11,6 +11,7 @@ import CrudRecordPage from '~/components/page/crudRecordPage.vue'
 import { MyApps } from '~/models'
 
 export default {
+  middleware: ['router-auth'],
   components: {
     CrudRecordPage,
   },

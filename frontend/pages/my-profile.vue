@@ -14,6 +14,7 @@ import { MyProfile } from '~/models'
 import { handleUserRefreshed } from '~/services/auth'
 
 export default {
+  middleware: ['router-auth'],
   components: {
     ViewRecordPage,
   },
