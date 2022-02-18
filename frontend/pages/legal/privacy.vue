@@ -15,26 +15,10 @@
               <span class="subheader">Data</span>
               <ul>
                 <li>
-                  When you login, {{ siteName }} stores your name, email,
-                  profile picture, country of origin, and WCA ID, as recorded on
-                  your WCA account. You can manage your WCA account settings
-                  <a>here</a>.
-                </li>
-                <li>
-                  When you enter PBs (Personal Bests), {{ siteName }} stores
-                  your PB data under the current logged in user.
-                </li>
-                <li>
                   By default, your profile page, with your user information and
                   PBs will be made publicly visible for everyone to see.
                   However, you can adjust this behavior in the
                   <nuxt-link to="/settings">settings page</nuxt-link>.
-                </li>
-                <li>
-                  When you login, a temporary cookie is stored to identify you
-                  to the website, even after you close the browser session. When
-                  you logout, or too much time has passed, the cookie is
-                  automatically deleted.
                 </li>
               </ul>
             </div>

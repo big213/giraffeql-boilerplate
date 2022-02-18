@@ -24,9 +24,13 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="primary" nuxt to="/my-profile">
+          <v-btn v-if="user" color="primary" nuxt to="/my-profile">
             <v-icon left> mdi-account </v-icon>
             My Profile</v-btn
+          >
+          <v-btn v-else color="primary" nuxt to="/login">
+            <v-icon left> mdi-login </v-icon>
+            Login</v-btn
           >
         </v-card-actions>
       </v-card>
@@ -36,6 +40,7 @@
 </template>
 
 <script>
+import { mapGetters } from 'vuex'
 import ReleaseHistory from '~/components/common/releaseHistory.vue'
 import {
   siteName,
@@ -60,6 +65,11 @@ export default {
     return {
       title: 'Home',
     }
+  },
+  computed: {
+    ...mapGetters({
+      user: 'auth/user',
+    }),
   },
 }
 </script>
