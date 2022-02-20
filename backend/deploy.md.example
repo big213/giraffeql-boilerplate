@@ -1,0 +1,21 @@
+# get current environment config
+
+firebase functions:config:get
+
+# set github config
+
+firebase functions:config:set github.token="ghp_token" github.repository="giraffeql-boilerplate"
+
+# setting db config
+
+firebase functions:config:set pg.user="user" pg.password="password" pg.database="database" pg.host="host"
+
+# set base config
+
+firebase functions:config:set base.origins="https://example.com"
+
+# set serveImage config
+
+firebase functions:config:set serve_image.source_bucket="x.appspot.com/source" serve_image.cache_bucket="x.appspot.com/cache"
+
+# env.json file must be in utf-8 encoding

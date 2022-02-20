@@ -9,7 +9,7 @@
     "generate": "nuxt generate",
     "lint:js": "eslint --ext .js,.vue --ignore-path .gitignore .",
     "lint": "npm run lint:js",
-    "fetch:schema": "node scripts/fetchSchema.js"
+    "generate:model": "ts-node scripts/generateModel.ts"
   },
   "dependencies": {
     "axios": "^0.20.0",
@@ -32,6 +32,7 @@
     "@nuxtjs/eslint-config-typescript": "^3.0.0",
     "@nuxtjs/eslint-module": "^2.0.0",
     "@nuxtjs/vuetify": "^1.11.3",
+    "@types/yargs": "^17.0.8",
     "babel-eslint": "^10.1.0",
     "eslint": "^7.19.0",
     "eslint-config-prettier": "^6.12.0",
@@ -41,6 +42,7 @@
     "prettier": "^2.1.2",
     "ts-node": "^10.4.0",
     "typescript": "^4.5.4",
-    "vuetify": "^2.6.2"
+    "vuetify": "^2.6.2",
+    "yargs": "^17.3.1"
   }
 }

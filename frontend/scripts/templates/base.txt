@@ -6,8 +6,8 @@ import NameAvatarColumn from '~/components/table/nameAvatarColumn.vue'
 export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
   typename: '{{ typename }}',
   pluralTypename: '{{ typename }}s',
-  name: '{{ typename }}',
-  pluralName: '{{ typename }}s',
+  name: '{{ capitalizedTypename }}',
+  pluralName: '{{ capitalizedTypename }}s',
   icon: 'mdi-folder-information',
   routeName: 'a-view',
   renderItem: (item) => item.name,

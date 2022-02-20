@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import * as yargs from "yargs";
+import yargs from "yargs";
 
 const argv = yargs(process.argv.slice(2))
   .options({
@@ -14,10 +14,6 @@ const isLink = argv.link;
 
 const capitalizedTypename =
   typename.charAt(0).toUpperCase() + typename.slice(1);
-
-if (!typename) {
-  throw new Error("argument required");
-}
 
 // parses templateString and replaces with any params
 function processTemplate(
@@ -36,12 +32,35 @@ function processTemplate(
   return templateStringModified;
 }
 
+function insertStatementBefore(
+  str: string,
+  beforePhrase: string,
+  statement: string
+) {
+  let strModified = str;
+  const typepDefImportIndex = strModified.indexOf(beforePhrase);
+
+  if (typepDefImportIndex === -1)
+    throw new Error(`Phrase '${beforePhrase}' not found`);
+
+  strModified =
+    strModified.slice(0, typepDefImportIndex) +
+    statement +
+    "\n" +
+    strModified.slice(typepDefImportIndex);
+
+  return strModified;
+}
+
 // determine the prefix
 const directoryPrefix = `src/schema/${isLink ? "links" : "models"}/`;
 
 // create the directory
 if (!fs.existsSync(`${directoryPrefix}${typename}`)) {
   fs.mkdirSync(`${directoryPrefix}${typename}`);
+} else {
+  // if it already exists, throw error
+  throw new Error("Directory already exists");
 }
 
 const templateFiles = [
@@ -71,23 +90,6 @@ templateFiles.forEach((templateFileObject) => {
     })
   );
 });
-
-function insertStatementBefore(
-  str: string,
-  beforePhrase: string,
-  statement: string
-) {
-  let strModified = str;
-  const typepDefImportIndex = strModified.indexOf(beforePhrase);
-
-  strModified =
-    strModified.slice(0, typepDefImportIndex) +
-    statement +
-    "\n" +
-    strModified.slice(typepDefImportIndex);
-
-  return strModified;
-}
 
 const modifiersArray = [
   {

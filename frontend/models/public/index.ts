@@ -1,1 +1,1 @@
-// public index.ts
+export { PublicUser } from './user'

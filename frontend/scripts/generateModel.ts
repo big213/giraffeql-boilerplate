@@ -1,12 +1,15 @@
 import * as fs from 'fs'
+import yargs from 'yargs'
 
-const typename = process.argv[2]
+const argv = yargs(process.argv.slice(2))
+  .options({
+    name: { type: 'string', demandOption: true },
+  })
+  .parseSync()
+
+const typename = argv.name
 
 const capitalizedTypename = typename.charAt(0).toUpperCase() + typename.slice(1)
-
-if (!typename) {
-  throw new Error('argument required')
-}
 
 // parses templateString and replaces with any params
 function processTemplate(
@@ -30,6 +33,9 @@ function insertStatementBefore(
   let strModified = str
   const typepDefImportIndex = strModified.indexOf(beforePhrase)
 
+  if (typepDefImportIndex === -1)
+    throw new Error(`Phrase '${beforePhrase}' not found`)
+
   strModified =
     strModified.slice(0, typepDefImportIndex) +
     statement +
@@ -44,16 +50,21 @@ if (!fs.existsSync(`models/base`)) {
   fs.mkdirSync(`models/base`)
 }
 
-// write the base model
 const template = fs.readFileSync('scripts/templates/base.txt', 'utf8')
 
-fs.writeFileSync(
-  `models/base/${typename}.ts`,
-  processTemplate(template, {
-    typename,
-    capitalizedTypename,
-  })
-)
+// write the base model if it doesn't already exist
+if (!fs.existsSync(`models/base/${typename}.ts`)) {
+  fs.writeFileSync(
+    `models/base/${typename}.ts`,
+    processTemplate(template, {
+      typename,
+      capitalizedTypename,
+    })
+  )
+} else {
+  // if it already exists, throw error
+  throw new Error('File already exists')
+}
 
 // add the export statement to models/base/index.ts
 let fileContents = fs.readFileSync('models/base/index.ts', 'utf8')

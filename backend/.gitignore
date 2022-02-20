@@ -63,5 +63,5 @@ node_modules/
 .yarn-integrity
 
 # dotenv environment variables file
-.deploy_info.md
+deploy.md
 env.json

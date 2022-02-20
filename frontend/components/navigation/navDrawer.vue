@@ -19,26 +19,28 @@
       </v-list-item>
     </v-list>
     <v-divider></v-divider>
+    <v-list dense>
+      <v-subheader>Explore</v-subheader>
+      <v-list-item v-for="(item, i) in navItems" :key="i" :to="item.to" router>
+        <v-list-item-action>
+          <v-icon>{{ item.icon }}</v-icon>
+        </v-list-item-action>
+        <v-list-item-content>
+          <v-list-item-title v-text="item.title" />
+        </v-list-item-content>
+      </v-list-item>
+    </v-list>
+    <v-divider></v-divider>
     <v-list v-if="user" dense>
-      <v-list-group prepend-icon="mdi-account" no-action>
-        <template v-slot:activator>
-          <v-list-item-content>
-            <v-list-item-title>My Account</v-list-item-title>
-          </v-list-item-content>
-        </template>
-
-        <v-list-item
-          v-for="(item, i) in userItems"
-          :key="i"
-          :to="item.to"
-          router
-          exact
-        >
-          <v-list-item-content>
-            <v-list-item-title v-text="item.title" />
-          </v-list-item-content>
-        </v-list-item>
-      </v-list-group>
+      <v-subheader>My Account</v-subheader>
+      <v-list-item v-for="(item, i) in userItems" :key="i" :to="item.to" router>
+        <v-list-item-action>
+          <v-icon>{{ item.icon }}</v-icon>
+        </v-list-item-action>
+        <v-list-item-content>
+          <v-list-item-title v-text="item.title" />
+        </v-list-item-content>
+      </v-list-item>
     </v-list>
     <v-divider></v-divider>
     <AdminNavRoutes v-if="isAdmin"></AdminNavRoutes>
@@ -47,6 +49,7 @@
 
 <script>
 import { mapGetters } from 'vuex'
+import { generateCrudRecordInterfaceRoute } from '~/services/base'
 import AdminNavRoutes from '~/components/navigation/adminNavRoutes.vue'
 
 export default {
@@ -63,7 +66,50 @@ export default {
           to: '/',
         },
       ],
+      navItems: [
+        {
+          icon: 'mdi-pig-variant',
+          title: 'Giraffes',
+          to: generateCrudRecordInterfaceRoute('/giraffes', {
+            search: '',
+            filters: [],
+            sort: {
+              field: 'createdAt',
+              desc: true,
+            },
+          }),
+        },
+        {
+          icon: 'mdi-folder-information',
+          title: 'Giraffe Species',
+          to: generateCrudRecordInterfaceRoute('/giraffe-species', {
+            search: '',
+            filters: [],
+            sort: {
+              field: 'createdAt',
+              desc: true,
+            },
+          }),
+        },
+        {
+          icon: 'mdi-account',
+          title: 'Public Users',
+          to: generateCrudRecordInterfaceRoute('/public-users', {
+            search: '',
+            filters: [],
+            sort: {
+              field: 'createdAt',
+              desc: true,
+            },
+          }),
+        },
+      ],
       userItems: [
+        {
+          icon: 'mdi-pig-variant',
+          title: 'My Giraffes',
+          to: '/my-giraffes',
+        },
         {
           icon: 'mdi-account',
           title: 'My Profile',
