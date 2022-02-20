@@ -68,30 +68,6 @@ export default {
       ],
       navItems: [
         {
-          icon: 'mdi-pig-variant',
-          title: 'Giraffes',
-          to: generateCrudRecordInterfaceRoute('/giraffes', {
-            search: '',
-            filters: [],
-            sort: {
-              field: 'createdAt',
-              desc: true,
-            },
-          }),
-        },
-        {
-          icon: 'mdi-folder-information',
-          title: 'Giraffe Species',
-          to: generateCrudRecordInterfaceRoute('/giraffe-species', {
-            search: '',
-            filters: [],
-            sort: {
-              field: 'createdAt',
-              desc: true,
-            },
-          }),
-        },
-        {
           icon: 'mdi-account',
           title: 'Public Users',
           to: generateCrudRecordInterfaceRoute('/public-users', {
@@ -105,11 +81,6 @@ export default {
         },
       ],
       userItems: [
-        {
-          icon: 'mdi-pig-variant',
-          title: 'My Giraffes',
-          to: '/my-giraffes',
-        },
         {
           icon: 'mdi-account',
           title: 'My Profile',
