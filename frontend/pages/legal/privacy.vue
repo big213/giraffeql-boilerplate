@@ -15,9 +15,9 @@
               <span class="subheader">Data</span>
               <ul>
                 <li>
-                  By default, your profile page, with your user information and
-                  PBs will be made publicly visible for everyone to see.
-                  However, you can adjust this behavior in the
+                  By default, your profile page, with your user information will
+                  be made publicly visible for everyone to see. However, you can
+                  adjust this behavior in the
                   <nuxt-link to="/settings">settings page</nuxt-link>.
                 </li>
               </ul>
