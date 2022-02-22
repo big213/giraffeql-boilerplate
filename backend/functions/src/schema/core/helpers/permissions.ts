@@ -1,6 +1,6 @@
-import { BaseService, NormalService } from "../services";
-import * as errorHelper from "./error";
-import { ServiceFunctionInputs, AccessControlFunction } from "../../../types";
+import { BaseService } from "../services";
+import { ServiceFunctionInputs } from "../../../types";
+import { badPermissionsError } from "./error";
 
 export function permissionsCheck(methodKey: string) {
   return function (
@@ -8,9 +8,6 @@ export function permissionsCheck(methodKey: string) {
     propertyName: string,
     propertyDescriptor: PropertyDescriptor
   ): PropertyDescriptor {
-    // target === Employee.prototype
-    // propertyName === "greet"
-    // propertyDesciptor === Object.getOwnPropertyDescriptor(Employee.prototype, "greet")
     const method = propertyDescriptor.value;
 
     propertyDescriptor.value = async function ({
@@ -37,7 +34,7 @@ export function permissionsCheck(methodKey: string) {
         ]))
       ) {
         // if returns false, fallback to a generic bad permissions error
-        throw errorHelper.badPermissionsError(fieldPath);
+        throw badPermissionsError(fieldPath);
       }
 
       // invoke greet() and get its return value

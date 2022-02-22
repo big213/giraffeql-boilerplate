@@ -1,11 +1,13 @@
-// import { env } from "../config";
-// import * as jwt from "jsonwebtoken";
-import * as sqlHelper from "../schema/core/helpers/sql";
 import { ApiKey, User } from "../schema/services";
 import * as admin from "firebase-admin";
 import { userRoleKenum, userPermissionEnum } from "../schema/enums";
 import { userRoleToPermissionsMap } from "../schema/helpers/permissions";
 import type { ContextUser } from "../types";
+import {
+  fetchTableRows,
+  insertTableRow,
+  updateTableRow,
+} from "../schema/core/helpers/sql";
 
 export async function validateToken(auth: string): Promise<ContextUser> {
   if (auth.split(" ")[0] !== "Bearer") {
@@ -20,7 +22,7 @@ export async function validateToken(auth: string): Promise<ContextUser> {
 
     // check if firebase_uid exists
     // fetch role from database
-    const userResults = await sqlHelper.fetchTableRows({
+    const userResults = await fetchTableRows({
       select: ["id", "role", "permissions"],
       table: User.typename,
       where: {
@@ -39,7 +41,7 @@ export async function validateToken(auth: string): Promise<ContextUser> {
       // get the displayName, photoURL from firebase
       const firebaseUserRecord = await admin.auth().getUser(decodedToken.uid);
 
-      const addUserResults = await sqlHelper.insertTableRow({
+      const addUserResults = await insertTableRow({
         table: User.typename,
         fields: {
           id: await User.generateRecordId([]),
@@ -52,7 +54,7 @@ export async function validateToken(auth: string): Promise<ContextUser> {
       });
 
       // set createdBy to id
-      await sqlHelper.updateTableRow({
+      await updateTableRow({
         table: User.typename,
         fields: {
           createdBy: addUserResults[0].id,
@@ -63,7 +65,7 @@ export async function validateToken(auth: string): Promise<ContextUser> {
       });
 
       // fetch the user
-      const createdUserResults = await sqlHelper.fetchTableRows({
+      const createdUserResults = await fetchTableRows({
         select: ["id", "role", "permissions"],
         table: User.typename,
         where: {
@@ -116,7 +118,7 @@ export async function validateApiKey(auth: string): Promise<ContextUser> {
 
   try {
     // lookup user by API key
-    const apiKeyResults = await sqlHelper.fetchTableRows({
+    const apiKeyResults = await fetchTableRows({
       select: ["createdBy.id", "createdBy.role", "createdBy.permissions"],
       table: ApiKey.typename,
       where: {

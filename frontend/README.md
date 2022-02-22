@@ -1,4 +1,4 @@
-# cubicle-admin
+# giraffeql-boilerplate
 
 ## Build Setup
 
