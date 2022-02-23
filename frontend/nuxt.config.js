@@ -24,9 +24,8 @@ export default {
   // Global page headers (https://go.nuxtjs.dev/config-head)
   head: {
     titleTemplate: (titleChunk) => {
-      return titleChunk
-        ? `${titleChunk} - ${process.env.SITE_NAME}`
-        : process.env.SITE_NAME
+      const siteName = process.env.SITE_NAME || process.env.siteName
+      return titleChunk ? `${titleChunk} - ${siteName}` : siteName
     },
     meta: [
       { charset: 'utf-8' },
