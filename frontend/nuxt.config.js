@@ -37,6 +37,14 @@ export default {
         content: process.env.SITE_DESCRIPTION,
       },
       {
+        property: 'og:title',
+        content: process.env.SITE_NAME,
+      },
+      {
+        property: 'og:description',
+        content: process.env.SITE_DESCRIPTION,
+      },
+      {
         property: 'og:image',
         content: process.env.SITE_IMAGE_URL,
       },
