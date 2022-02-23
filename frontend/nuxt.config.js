@@ -28,6 +28,7 @@ export default {
         ? `${titleChunk} - ${process.env.siteName}`
         : process.env.siteName
     },
+    title: process.env.SITE_NAME,
     meta: [
       { charset: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
