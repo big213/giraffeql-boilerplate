@@ -110,11 +110,9 @@ export default {
   },
 
   head() {
-    return (
-      this.head ?? {
-        title: 'Manage ' + this.recordInfo.pluralName,
-      }
-    )
+    return {
+      title: this.title ?? 'Manage ' + this.recordInfo.pluralName,
+    }
   },
 }
 </script>
