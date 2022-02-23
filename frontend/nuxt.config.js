@@ -25,10 +25,9 @@ export default {
   head: {
     titleTemplate: (titleChunk) => {
       return titleChunk
-        ? `${titleChunk} - ${process.env.siteName}`
-        : process.env.siteName
+        ? `${titleChunk} - ${process.env.SITE_NAME}`
+        : process.env.SITE_NAME
     },
-    title: process.env.SITE_NAME,
     meta: [
       { charset: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
