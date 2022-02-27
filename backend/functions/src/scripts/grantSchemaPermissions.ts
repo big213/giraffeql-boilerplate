@@ -26,7 +26,7 @@ const pgUser = env.pg_dev.user;
   GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${pgUser};`);
 
   console.log(
-    `Done granting permissions for ${env.pg.database} to user: ${pgUser}`
+    `Done granting permissions for database: '${env.pg.database}' to user: '${pgUser}'`
   );
 
   // done, clean up by destroying the connection pool.
