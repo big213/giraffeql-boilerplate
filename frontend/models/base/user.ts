@@ -3,7 +3,9 @@ import type { RecordInfo } from '~/types'
 import TimeagoColumn from '~/components/table/timeagoColumn.vue'
 import NameAvatarColumn from '~/components/table/nameAvatarColumn.vue'
 import AvatarColumn from '~/components/table/avatarColumn.vue'
+import UserColumn from '~/components/table/userColumn.vue'
 import BooleanColumn from '~/components/table/booleanColumn.vue'
+import { generatePreviewableRecordField } from '~/services/recordInfo'
 
 export const User = <RecordInfo<'user'>>{
   typename: 'user',
@@ -24,6 +26,12 @@ export const User = <RecordInfo<'user'>>{
       text: 'Name',
       fields: ['name', 'avatar'],
       component: NameAvatarColumn,
+    },
+    record: {
+      ...generatePreviewableRecordField({
+        text: 'User',
+      }),
+      component: UserColumn,
     },
     email: {
       text: 'Email',

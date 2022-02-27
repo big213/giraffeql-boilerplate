@@ -7,7 +7,7 @@ export const PublicUser = {
     filterOptions: [],
     headerOptions: [
       {
-        field: 'nameWithAvatar',
+        field: 'record',
       },
       {
         field: 'createdAt',

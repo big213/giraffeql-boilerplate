@@ -8,6 +8,7 @@
     "generate:schema": "set DEV=1 && ts-node src/scripts/generateSchema.ts",
     "generate:migration": "set DEV=1 && ts-node src/scripts/generateMigration.ts",
     "generate:model": "set DEV=1 && ts-node src/scripts/generateModel.ts",
+    "grantDBPermissions": "set DEV=1 && ts-node src/scripts/grantSchemaPermissions.ts",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
