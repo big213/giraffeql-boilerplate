@@ -111,12 +111,10 @@ export class ApiKeyService extends PaginatedService {
     - args.user is currentUser
     */
     create: async ({ req, args, fieldPath }) => {
-      if (!isUserLoggedIn(req)) return false;
-
       // handle lookupArgs, convert lookups into ids
       await this.handleLookupArgs(args, fieldPath);
 
-      if (!isCurrentUser(req, args.user)) return false;
+      if (isCurrentUser(req, args.user)) return true;
 
       return false;
     },

@@ -44,7 +44,7 @@ export class UserService extends PaginatedService {
     Allow if:
     - item was created by currentUser
     - item isPublic === true AND requested fields has fields id, name, avatar, email, isPublic, currentUserFollowLink ONLY
-    - OR, if requested fields are id, name, avatar ONLY
+    - OR, if requested fields are id, name, avatar, isPublic, currentUserFollowLink  ONLY
     */
     get: async ({ req, args, query, fieldPath }) => {
       const record = await this.getFirstSqlRecord(
@@ -61,6 +61,7 @@ export class UserService extends PaginatedService {
         isObject(query) &&
         objectOnlyHasFields(query, [
           "id",
+          "__typename",
           "name",
           "avatar",
           "email",
@@ -76,8 +77,10 @@ export class UserService extends PaginatedService {
         isObject(query) &&
         objectOnlyHasFields(query, [
           "id",
+          "__typename",
           "name",
           "avatar",
+          "isPublic",
           "currentUserFollowLink",
         ])
       ) {
@@ -97,6 +100,7 @@ export class UserService extends PaginatedService {
         (isObject(query) &&
           objectOnlyHasFields(query, [
             "id",
+            "__typename",
             "name",
             "avatar",
             "isPublic",
