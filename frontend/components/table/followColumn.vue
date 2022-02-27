@@ -1,5 +1,5 @@
 <template>
-  <div v-if="user">
+  <div>
     <FollowButton
       color="primary"
       small
@@ -10,7 +10,6 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
 import columnMixin from '~/mixins/column'
 import FollowButton from '~/components/button/followButton.vue'
 
@@ -22,10 +21,6 @@ export default {
   mixins: [columnMixin],
 
   computed: {
-    ...mapGetters({
-      user: 'auth/user',
-    }),
-
     followLinkModel() {
       return this.options?.linkModel
     },
