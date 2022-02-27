@@ -5,6 +5,7 @@
       :close-on-content-click="false"
       :min-width="300"
       :max-width="300"
+      :follow-link-model="followLinkModel"
       offset-y
       top
       open-mode="openInDialog"
@@ -22,5 +23,11 @@ export default {
   },
 
   mixins: [columnMixin],
+
+  computed: {
+    followLinkModel() {
+      return this.options?.linkModel
+    },
+  },
 }
 </script>

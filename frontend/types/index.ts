@@ -34,6 +34,11 @@ export type RecordInfo<T extends keyof MainTypes> = {
       // special options pertaining to the specific inputType
       inputOptions?: InputOptions
 
+      // special options that will be passed to the column component
+      columnOptions?: {
+        [x: string]: any
+      }
+
       args?: {
         getArgs: (that) => any
         path: string

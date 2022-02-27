@@ -10,6 +10,10 @@ export default {
     fieldPath: {
       type: String,
     },
+    // special options that will be passed to the column component, if any
+    options: {
+      type: Object,
+    },
   },
 
   computed: {

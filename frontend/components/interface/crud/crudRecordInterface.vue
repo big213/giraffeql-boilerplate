@@ -206,6 +206,7 @@
                         v-if="headerItem.fieldInfo.component"
                         :item="item"
                         :field-path="headerItem.path"
+                        :options="headerItem.fieldInfo.columnOptions"
                         @submit="reset({ resetExpanded: false })"
                         @item-updated="reset({ resetExpanded: false })"
                       ></component>
@@ -317,6 +318,7 @@
                   v-if="headerItem.fieldInfo.component"
                   :item="props.item"
                   :field-path="headerItem.path"
+                  :options="headerItem.fieldInfo.columnOptions"
                   @submit="reset({ resetExpanded: false })"
                   @item-updated="reset({ resetExpanded: false })"
                 ></component>
@@ -366,6 +368,7 @@
                 v-if="headerItem.fieldInfo.component"
                 :item="props.item"
                 :field-path="headerItem.path"
+                :options="headerItem.fieldInfo.columnOptions"
                 @submit="reset({ resetExpanded: false })"
                 @item-updated="reset({ resetExpanded: false })"
               ></component>

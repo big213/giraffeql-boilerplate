@@ -24,6 +24,7 @@
                     v-if="item.fieldInfo.component"
                     :item="currentItem"
                     :field-path="getFieldPath(item)"
+                    :options="item.fieldInfo.columnOptions"
                     @submit="$emit('handleSubmit')"
                     @item-updated="handleItemUpdated()"
                   ></component>

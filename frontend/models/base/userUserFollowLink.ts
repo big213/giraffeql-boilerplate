@@ -24,26 +24,20 @@ export const UserUserFollowLink = <RecordInfo<'userUserFollowLink'>>{
       typename: 'user',
       hasAvatar: true,
     }),
-    userRecord: {
-      ...generatePreviewableRecordField({
-        fieldname: 'user',
-        text: 'User',
-      }),
-      component: UserColumn,
-    },
+    userRecord: generatePreviewableRecordField({
+      fieldname: 'user',
+      text: 'User',
+    }),
     target: generateJoinableField({
       text: 'Target',
       fieldname: 'target',
       typename: 'user',
       hasAvatar: true,
     }),
-    targetRecord: {
-      ...generatePreviewableRecordField({
-        fieldname: 'target',
-        text: 'Target',
-      }),
-      component: UserColumn,
-    },
+    targetRecord: generatePreviewableRecordField({
+      fieldname: 'target',
+      text: 'Target',
+    }),
     createdAt: {
       text: 'Created At',
       component: TimeagoColumn,
