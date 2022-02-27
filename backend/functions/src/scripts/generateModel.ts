@@ -15,6 +15,11 @@ const isLink = argv.link;
 const capitalizedTypename =
   typename.charAt(0).toUpperCase() + typename.slice(1);
 
+// typename must start with lowercase and only include letters and numbers
+if (!typename.match(/^[a-z][a-zA-Z0-9]+/)) {
+  throw new Error(`Invalid typename`);
+}
+
 // parses templateString and replaces with any params
 function processTemplate(
   templateString: string,
@@ -65,22 +70,27 @@ if (!fs.existsSync(`${directoryPrefix}${typename}`)) {
 
 const templateFiles = [
   {
-    templateFilePath: "src/scripts/templates/rootResolver.txt",
+    templateFilename: "rootResolver.txt",
     destFilename: "rootResolver.ts",
   },
   {
-    templateFilePath: "src/scripts/templates/service.txt",
+    templateFilename: "service.txt",
     destFilename: "service.ts",
   },
   {
-    templateFilePath: "src/scripts/templates/typeDef.txt",
+    templateFilename: "typeDef.txt",
     destFilename: "typeDef.ts",
   },
 ];
 
 // write the necessary files
 templateFiles.forEach((templateFileObject) => {
-  const template = fs.readFileSync(templateFileObject.templateFilePath, "utf8");
+  const template = fs.readFileSync(
+    `src/scripts/templates/${isLink ? "link" : "normal"}/${
+      templateFileObject.templateFilename
+    }`,
+    "utf8"
+  );
 
   fs.writeFileSync(
     `${directoryPrefix}${typename}/${templateFileObject.destFilename}`,

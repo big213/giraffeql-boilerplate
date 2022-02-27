@@ -1,0 +1,20 @@
+import { {{ capitalizedTypename }}, User } from "../../services";
+import { GiraffeqlObjectType } from "giraffeql";
+import { generateLinkTypeDef } from "../../core/generators";
+
+export default new GiraffeqlObjectType(
+  generateLinkTypeDef(
+    {
+      linkField1: {
+        service: User,
+        allowNull: false,
+      },
+      linkField2: {
+        service: User,
+        allowNull: false,
+      },
+    },
+    {{ capitalizedTypename }},
+    {}
+  )
+);

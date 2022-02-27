@@ -2,7 +2,6 @@ import { PaginatedService } from "../../core/services";
 import { permissionsCheck } from "../../core/helpers/permissions";
 import { ServiceFunctionInputs, AccessControlMap } from "../../../types";
 import * as admin from "firebase-admin";
-import { updateTableRow } from "../../core/helpers/sql";
 import {
   createObjectType,
   deleteObjectType,
@@ -39,7 +38,13 @@ export class FileService extends PaginatedService {
     - createdBy.id is currentUser
     */
     get: async ({ req, args, fieldPath }) => {
-      const record = await this.lookupRecord(["createdBy.id"], args, fieldPath);
+      const record = await this.getFirstSqlRecord(
+        {
+          select: ["createdBy.id"],
+          where: args,
+        },
+        fieldPath
+      );
       if (isCurrentUser(req, record["createdBy.id"])) {
         return true;
       }
@@ -80,12 +85,11 @@ export class FileService extends PaginatedService {
     // must associate them with the parent item
     if (fileIdsArray.size) {
       // ensure all the files belong to the currentUser
-      await updateTableRow(
+      await this.updateSqlRecord(
         {
           fields: {
             parentKey: `${typename}_${itemId}`,
           },
-          table: this.typename,
           where: [
             {
               field: "createdBy",
@@ -161,9 +165,11 @@ export class FileService extends PaginatedService {
     // args should be validated already
     const validatedArgs = <any>args;
     // confirm existence of item and get ID
-    const item = await this.lookupRecord(
-      ["id", "location"],
-      validatedArgs,
+    const item = await this.getFirstSqlRecord(
+      {
+        select: ["id", "location"],
+        where: args,
+      },
       fieldPath
     );
 

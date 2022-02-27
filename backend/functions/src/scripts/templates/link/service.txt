@@ -1,0 +1,22 @@
+import { LinkService } from "../../core/services";
+import { AccessControlMap } from "../../../types";
+
+export class {{ capitalizedTypename }}Service extends LinkService {
+  defaultTypename = "{{ typename }}";
+
+  filterFieldsMap = {};
+
+  uniqueKeyMap = {
+    primary: ["id"],
+  };
+
+  sortFieldsMap = {
+    createdAt: {},
+  };
+
+  searchFieldsMap = {};
+
+  groupByFieldsMap = {};
+
+  accessControl: AccessControlMap = {};
+}

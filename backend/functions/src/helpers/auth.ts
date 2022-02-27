@@ -3,11 +3,6 @@ import * as admin from "firebase-admin";
 import { userRoleKenum, userPermissionEnum } from "../schema/enums";
 import { userRoleToPermissionsMap } from "../schema/helpers/permissions";
 import type { ContextUser } from "../types";
-import {
-  fetchTableRows,
-  insertTableRow,
-  updateTableRow,
-} from "../schema/core/helpers/sql";
 
 export async function validateToken(auth: string): Promise<ContextUser> {
   if (auth.split(" ")[0] !== "Bearer") {
@@ -22,15 +17,16 @@ export async function validateToken(auth: string): Promise<ContextUser> {
 
     // check if firebase_uid exists
     // fetch role from database
-    const userResults = await fetchTableRows({
-      select: ["id", "role", "permissions"],
-      table: User.typename,
-      where: {
-        firebaseUid: decodedToken.uid,
+    let userRecord = await User.getFirstSqlRecord(
+      {
+        select: ["id", "role", "permissions"],
+        where: {
+          firebaseUid: decodedToken.uid,
+        },
       },
-    });
-
-    let userRecord = userResults[0];
+      undefined,
+      false
+    );
 
     const permissions: userPermissionEnum[] = [];
 
@@ -41,10 +37,8 @@ export async function validateToken(auth: string): Promise<ContextUser> {
       // get the displayName, photoURL from firebase
       const firebaseUserRecord = await admin.auth().getUser(decodedToken.uid);
 
-      const addUserResults = await insertTableRow({
-        table: User.typename,
+      const addUserResults = await User.createSqlRecord({
         fields: {
-          id: await User.generateRecordId([]),
           name: firebaseUserRecord.displayName,
           avatar: firebaseUserRecord.photoURL,
           email: decodedToken.email,
@@ -54,8 +48,7 @@ export async function validateToken(auth: string): Promise<ContextUser> {
       });
 
       // set createdBy to id
-      await updateTableRow({
-        table: User.typename,
+      await User.updateSqlRecord({
         fields: {
           createdBy: addUserResults[0].id,
         },
@@ -65,16 +58,12 @@ export async function validateToken(auth: string): Promise<ContextUser> {
       });
 
       // fetch the user
-      const createdUserResults = await fetchTableRows({
+      userRecord = await User.getFirstSqlRecord({
         select: ["id", "role", "permissions"],
-        table: User.typename,
         where: {
           id: addUserResults[0].id,
         },
       });
-
-      // should exist, as we have just created it
-      userRecord = createdUserResults[0];
     }
 
     const id = userRecord.id;
@@ -118,29 +107,24 @@ export async function validateApiKey(auth: string): Promise<ContextUser> {
 
   try {
     // lookup user by API key
-    const apiKeyResults = await fetchTableRows({
+    const apiKey = await ApiKey.getFirstSqlRecord({
       select: ["createdBy.id", "createdBy.role", "createdBy.permissions"],
-      table: ApiKey.typename,
       where: {
         code: auth,
       },
     });
 
-    if (apiKeyResults.length < 1) {
-      throw new Error("Invalid Api Key");
-    }
-
-    let parsedPermissions = apiKeyResults[0]["createdBy.permissions"] ?? [];
+    let parsedPermissions = apiKey["createdBy.permissions"] ?? [];
 
     // convert permissions to enums
     parsedPermissions = parsedPermissions.map((ele) =>
       userPermissionEnum.fromName(ele)
     );
 
-    const role = userRoleKenum.fromUnknown(apiKeyResults[0]["createdBy.role"]);
+    const role = userRoleKenum.fromUnknown(apiKey["createdBy.role"]);
 
     return {
-      id: apiKeyResults[0]["createdBy.id"],
+      id: apiKey["createdBy.id"],
       role,
       permissions: (userRoleToPermissionsMap[role.name] ?? []).concat(
         parsedPermissions

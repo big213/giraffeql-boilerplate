@@ -48,7 +48,8 @@ export type SqlType =
   | "float"
   | "decimal"
   | "boolean"
-  | "json";
+  | "json"
+  | "jsonb";
 
 export type ExternalQuery = {
   [x: string]: any;

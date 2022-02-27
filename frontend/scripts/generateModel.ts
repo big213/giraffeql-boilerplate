@@ -11,6 +11,11 @@ const typename = argv.name
 
 const capitalizedTypename = typename.charAt(0).toUpperCase() + typename.slice(1)
 
+// typename must start with lowercase and only include letters and numbers
+if (!typename.match(/^[a-z][a-zA-Z0-9]+/)) {
+  throw new Error(`Invalid typename`)
+}
+
 // parses templateString and replaces with any params
 function processTemplate(
   templateString: string,

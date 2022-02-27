@@ -230,10 +230,28 @@ function processFields(relevantFields: Set<string>, table: string) {
         const linkJoinTypeDef = linkService.typeDef;
 
         // determine how to join this table, based on the definition
-        const joinField =
-          linkService.joinFieldMap[currentTypeDef.definition.name];
+        const joinField = currentTypeDef.definition.name;
 
-        if (!joinField)
+        // find the field on the typeDef
+        const typeDefField = linkJoinTypeDef.definition.fields[joinField];
+
+        if (!typeDefField)
+          throw new Error(
+            `Field '${joinField}' does not exist on type '${typeDef.definition.name}'`
+          );
+
+        if (!typeDefField.sqlOptions)
+          throw new Error(
+            `Field '${joinField}' on type '${typeDef.definition.name}' is not a SQL field`
+          );
+
+        // determine actual join field
+        const actualJoinField =
+          typeDefField.sqlOptions.specialJoin?.field ??
+          typeDefField.sqlOptions.field ??
+          actualFieldPart;
+
+        if (!actualJoinField)
           throw new Error(
             `Joining type '${linkJoinType}' from type '${currentTypeDef.definition.name}' is not configured`
           );
@@ -255,7 +273,7 @@ function processFields(relevantFields: Set<string>, table: string) {
               table: linkJoinType,
               alias: linkTableAlias,
               field: "id",
-              joinField,
+              joinField: actualJoinField,
             },
             nested: {},
           };

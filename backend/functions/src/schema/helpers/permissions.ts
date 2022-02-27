@@ -14,14 +14,16 @@ export function generateItemCreatedByUserGuard(
 ): AccessControlFunction {
   return async function ({ req, args, fieldPath }) {
     // args should be validated already
-    const validatedArgs = <StringKeyObject>args;
+    const validatedArgs = <any>args;
     //check if logged in
     if (!req.user) return false;
 
     try {
-      const itemRecord = await service.lookupRecord(
-        ["createdBy"],
-        validatedArgs.item ?? validatedArgs,
+      const itemRecord = await service.getFirstSqlRecord(
+        {
+          select: ["createdBy"],
+          where: validatedArgs.item ?? validatedArgs,
+        },
         fieldPath
       );
 

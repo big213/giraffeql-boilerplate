@@ -45,6 +45,13 @@ function generateMigration(initSubscriptions = true, force = false) {
         // set actual field name
         const sqlFieldName = typeDefField.sqlOptions.field ?? fieldName;
 
+        // confirm that the field name has no uppercase, as this won't work with pg
+        if (sqlFieldName.match(/[A-Z]/)) {
+          throw new Error(
+            `SQL fields must not contain uppercase: '${typeDef.definition.name}.${sqlFieldName}'`
+          );
+        }
+
         // if ID field and it is an integer, set auto-increment and return
         if (
           sqlFieldName === "id" &&

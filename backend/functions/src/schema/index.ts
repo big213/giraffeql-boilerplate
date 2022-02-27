@@ -1,6 +1,7 @@
 import * as allServices from "./services";
 import "./scalars"; // initialize scalars
 export * as Scalars from "./scalars";
+import { BaseService } from "./core/services";
 
 import user from "./models/user/typeDef";
 import apiKey from "./models/apiKey/typeDef";
@@ -34,3 +35,10 @@ allServices.Admin.setRootResolvers(Admin);
 /** END RootResolver Set */
 
 /** END LINK RootResolver Set */
+
+// build and export services map
+export const servicesMap: Map<string, BaseService> = new Map();
+
+for (const prop in allServices) {
+  servicesMap.set(allServices[prop].typename, allServices[prop]);
+}

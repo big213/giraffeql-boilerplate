@@ -1,13 +1,19 @@
 import { BaseService } from ".";
 import {
   countTableRows,
+  deleteTableRow,
   fetchTableRows,
+  insertTableRow,
+  SqlCountQuery,
+  SqlDeleteQuery,
+  SqlInsertQuery,
   SqlOrderByObject,
   SqlSelectQuery,
   SqlSelectQueryObject,
+  SqlUpdateQuery,
   SqlWhereFieldOperator,
-  SqlWhereInput,
   SqlWhereObject,
+  updateTableRow,
 } from "../helpers/sql";
 import { permissionsCheck } from "../helpers/permissions";
 
@@ -619,19 +625,14 @@ export class NormalService extends BaseService {
   sqlParamsModifier(sqlParams: Omit<SqlSelectQuery, "table" | "select">) {}
 
   // looks up a record using its keys
-  async lookupRecord(
-    selectFields: string[],
-    args: any,
-    fieldPath: string[],
+  async getFirstSqlRecord(
+    sqlQuery: Omit<SqlSelectQuery, "table">,
+    fieldPath?: string[],
     throwError = true
   ): Promise<any> {
     const results = await fetchTableRows({
-      select:
-        selectFields.length > 0
-          ? selectFields.map((field) => ({ field }))
-          : [{ field: "id" }],
+      ...sqlQuery,
       table: this.typename,
-      where: args,
     });
 
     if (results.length < 1 && throwError) {
@@ -645,31 +646,63 @@ export class NormalService extends BaseService {
   }
 
   // look up multiple records
-  async lookupMultipleRecord(
-    selectFields: string[],
-    whereInput: SqlWhereInput,
-    fieldPath: string[]
+  async getAllSqlRecord(
+    sqlQuery: Omit<SqlSelectQuery, "table">,
+    fieldPath?: string[]
   ): Promise<any> {
     const results = await fetchTableRows({
-      select: selectFields.length > 0 ? selectFields : ["id"],
+      ...sqlQuery,
       table: this.typename,
-      where: whereInput,
     });
 
     return results;
   }
 
   // count the records matching the criteria
-  async getRecordCount(
-    whereInput: SqlWhereInput,
-    fieldPath: string[]
+  async getSqlRecordCount(
+    sqlQuery: Omit<SqlCountQuery, "table">,
+    fieldPath?: string[]
   ): Promise<any> {
     const recordsCount = await countTableRows({
+      ...sqlQuery,
       table: this.typename,
-      where: whereInput,
     });
 
     return recordsCount;
+  }
+
+  async createSqlRecord(
+    sqlQuery: Omit<SqlInsertQuery, "table">,
+    fieldPath?: string[]
+  ) {
+    return insertTableRow({
+      ...sqlQuery,
+      fields: {
+        id: await this.generateRecordId(fieldPath),
+        ...sqlQuery.fields,
+      },
+      table: this.typename,
+    });
+  }
+
+  async updateSqlRecord(
+    sqlQuery: Omit<SqlUpdateQuery, "table">,
+    fieldPath?: string[]
+  ) {
+    return updateTableRow({
+      ...sqlQuery,
+      table: this.typename,
+    });
+  }
+
+  async deleteSqlRecord(
+    sqlQuery: Omit<SqlDeleteQuery, "table">,
+    fieldPath?: string[]
+  ) {
+    return deleteTableRow({
+      ...sqlQuery,
+      table: this.typename,
+    });
   }
 
   isEmptyQuery(query: unknown) {
@@ -678,7 +711,7 @@ export class NormalService extends BaseService {
 
   // generates a valid unique ID for this record
   // will try 3 times before calling it quits
-  async generateRecordId(fieldPath: string[], attempt = 0) {
+  async generateRecordId(fieldPath?: string[], attempt = 0) {
     // if 3 or more tries, throw err
     if (attempt > 2) {
       throw new Error(
@@ -688,9 +721,11 @@ export class NormalService extends BaseService {
 
     const id = await generateId(this.primaryKeyLength);
     // check if the id already is in use
-    const recordsCount = await this.getRecordCount(
+    const recordsCount = await this.getSqlRecordCount(
       {
-        id,
+        where: {
+          id,
+        },
       },
       fieldPath
     );
@@ -765,7 +800,13 @@ export class NormalService extends BaseService {
     // args should be validated already
     const validatedArgs = <any>args;
 
-    const item = await this.lookupRecord(["id"], validatedArgs.item, fieldPath);
+    const item = await this.getFirstSqlRecord(
+      {
+        select: ["id"],
+        where: validatedArgs.item,
+      },
+      fieldPath
+    );
 
     // convert any lookup/joined fields into IDs
     await this.handleLookupArgs(validatedArgs.fields, fieldPath);
@@ -820,7 +861,13 @@ export class NormalService extends BaseService {
     // args should be validated already
     const validatedArgs = <any>args;
     // confirm existence of item and get ID
-    const item = await this.lookupRecord(["id"], validatedArgs, fieldPath);
+    const item = await this.getFirstSqlRecord(
+      {
+        select: ["id"],
+        where: validatedArgs,
+      },
+      fieldPath
+    );
 
     // first, fetch the requested query, if any
     const requestedResults = this.isEmptyQuery(query)

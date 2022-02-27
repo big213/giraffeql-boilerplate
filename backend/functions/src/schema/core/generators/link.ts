@@ -10,11 +10,11 @@ import {
 } from "../helpers/typeDef";
 import { ObjectTypeDefinition, ObjectTypeDefinitionField } from "giraffeql";
 
-type ServicesObjectMap = {
+export type ServicesObjectMap = {
   [x: string]: {
-    allowNull?: boolean;
     service: NormalService;
-    field?: string; // sql alias for the field, e.g. if it has CAPS
+    allowNull?: boolean;
+    sqlField?: string; // sql alias for the field, e.g. if it has CAPS
   };
 };
 
@@ -31,8 +31,8 @@ export function generateLinkTypeDef(
       allowNull: servicesObjectMap[field].allowNull ?? false,
       sqlOptions: {
         unique: "compositeIndex",
-        ...(servicesObjectMap[field].field && {
-          field: servicesObjectMap[field].field,
+        ...(servicesObjectMap[field].sqlField && {
+          field: servicesObjectMap[field].sqlField,
         }),
       },
     });

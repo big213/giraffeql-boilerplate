@@ -38,7 +38,13 @@ export class ApiKeyService extends PaginatedService {
     - user.id is currentUser
     */
     get: async ({ req, args, fieldPath }) => {
-      const record = await this.lookupRecord(["user.id"], args, fieldPath);
+      const record = await this.getFirstSqlRecord(
+        {
+          select: ["user.id"],
+          where: args,
+        },
+        fieldPath
+      );
       if (isCurrentUser(req, record["user.id"])) {
         return true;
       }
@@ -67,7 +73,13 @@ export class ApiKeyService extends PaginatedService {
     - user.id is currentUser
     */
     update: async ({ req, args, fieldPath }) => {
-      const record = await this.lookupRecord(["user.id"], args, fieldPath);
+      const record = await this.getFirstSqlRecord(
+        {
+          select: ["user.id"],
+          where: args,
+        },
+        fieldPath
+      );
       if (isCurrentUser(req, record["user.id"])) {
         return true;
       }
@@ -80,7 +92,13 @@ export class ApiKeyService extends PaginatedService {
     - user.id is currentUser
     */
     delete: async ({ req, args, fieldPath }) => {
-      const record = await this.lookupRecord(["user.id"], args, fieldPath);
+      const record = await this.getFirstSqlRecord(
+        {
+          select: ["user.id"],
+          where: args,
+        },
+        fieldPath
+      );
       if (isCurrentUser(req, record["user.id"])) {
         return true;
       }

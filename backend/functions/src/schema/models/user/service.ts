@@ -12,7 +12,6 @@ import {
   isUserLoggedIn,
 } from "../../helpers/permissions";
 import { objectOnlyHasFields } from "../../core/helpers/shared";
-import { fetchTableRows } from "../../core/helpers/sql";
 import {
   createObjectType,
   deleteObjectType,
@@ -48,9 +47,11 @@ export class UserService extends PaginatedService {
     - OR, if requested fields are id, name, avatar ONLY
     */
     get: async ({ req, args, query, fieldPath }) => {
-      const record = await this.lookupRecord(
-        ["createdBy.id", "isPublic"],
-        args,
+      const record = await this.getFirstSqlRecord(
+        {
+          select: ["createdBy.id", "isPublic"],
+          where: args,
+        },
         fieldPath
       );
 
@@ -183,19 +184,12 @@ export class UserService extends PaginatedService {
     // args should be validated already
     const validatedArgs = <any>args;
     //check if record exists
-    const results = await fetchTableRows({
+    const item = await this.getFirstSqlRecord({
       select: ["id", "role", "firebaseUid"],
-      table: User.typename,
       where: {
         id: data!.id,
       },
     });
-
-    if (results.length < 1) {
-      throw itemNotFoundError(fieldPath);
-    }
-
-    const item = results[0];
 
     // make sure email field, if provided, matches the firebase user email
     if ("email" in validatedArgs) {
@@ -234,26 +228,16 @@ export class UserService extends PaginatedService {
     // args should be validated already
     const validatedArgs = <any>args;
     // check if record exists, get ID
-    const records = await fetchTableRows({
+    const item = await this.getFirstSqlRecord({
       select: ["id", "role", "firebaseUid"],
-      table: this.typename,
       where: validatedArgs.item,
     });
-
-    if (records.length < 1) {
-      throw itemNotFoundError(fieldPath);
-    }
-
-    const item = records[0];
 
     // convert any lookup/joined fields into IDs
     await this.handleLookupArgs(validatedArgs.fields, fieldPath);
 
     //check if target user is more senior admin
-    if (
-      userRoleKenum[records[0].role] === "ADMIN" &&
-      records[0].id < req.user!.id
-    ) {
+    if (userRoleKenum[item.role] === "ADMIN" && item.id < req.user!.id) {
       throw generateError(
         "Cannot update more senior admin user",
         fieldPath,
@@ -317,17 +301,10 @@ export class UserService extends PaginatedService {
     const validatedArgs = <any>args;
 
     // confirm existence of item and get ID
-    const results = await fetchTableRows({
+    const item = await this.getFirstSqlRecord({
       select: ["id", "firebaseUid"],
-      table: this.typename,
       where: validatedArgs,
     });
-
-    if (results.length < 1) {
-      throw new Error(`${this.typename} not found`);
-    }
-
-    const item = results[0];
 
     // first, fetch the requested query, if any
     const requestedResults = this.isEmptyQuery(query)

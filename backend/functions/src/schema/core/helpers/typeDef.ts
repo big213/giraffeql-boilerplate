@@ -372,7 +372,7 @@ export function generateArrayField(
     allowNull,
     hidden,
     nestHidden,
-    sqlType: "json",
+    sqlType: "jsonb",
     type,
     ...(!allowNull && { defaultValue: [] }),
     sqlOptions: {
@@ -401,7 +401,7 @@ export function generateJSONField(params: GenerateFieldParams) {
     allowNull,
     hidden,
     nestHidden,
-    sqlType: "json",
+    sqlType: "jsonb",
     type: Scalars.jsonString,
     sqlOptions: {
       // necessary for inserting JSON into DB properly -- already stringified
@@ -455,13 +455,12 @@ export function generateKeyValueArray(
   params: {
     valueType?: GiraffeqlScalarType;
     allowNullValue?: boolean;
-    allowNull?: boolean;
-  } = {}
+  } & GenerateFieldParams
 ) {
   const {
     valueType = Scalars.string,
     allowNullValue = false,
-    allowNull = true,
+    ...remainingParams
   } = params;
   // generate the input type if not exists
   if (!inputTypeDefs.has("keyValueObject")) {
@@ -500,9 +499,9 @@ export function generateKeyValueArray(
   }
 
   return generateArrayField({
-    allowNull,
     allowNullElement: false,
     type: new GiraffeqlObjectTypeLookup("keyValueObject"),
+    ...remainingParams,
   });
 }
 
