@@ -1,5 +1,5 @@
 import { ObjectTypeDefinition, GiraffeqlObjectType } from "giraffeql";
-import { User } from "../../services";
+import { User, UserUserFollowLink } from "../../services";
 import {
   generateIdField,
   generateCreatedAtField,
@@ -15,6 +15,7 @@ import {
 import * as Scalars from "../../scalars";
 import { userRoleKenum } from "../../enums";
 import { userRoleToPermissionsMap } from "../../helpers/permissions";
+import { knex } from "../../../utils/knex";
 
 export default new GiraffeqlObjectType(<ObjectTypeDefinition>{
   name: User.typename,
@@ -94,6 +95,41 @@ export default new GiraffeqlObjectType(<ObjectTypeDefinition>{
       defaultValue: true,
       sqlOptions: { field: "is_public" },
     }),
+    // foreign sql field
+    currentUserFollowLink: {
+      type: UserUserFollowLink.typeDefLookup,
+      allowNull: true,
+      sqlOptions: {
+        joinType: "userUserFollowLink",
+        specialJoin: {
+          field: "id",
+          foreignTable: "userUserFollowLink",
+          joinFunction: (
+            knexObject,
+            parentTableAlias,
+            joinTableAlias,
+            specialParams
+          ) => {
+            knexObject.leftJoin(
+              {
+                [joinTableAlias]: "userUserFollowLink",
+              },
+              (builder) => {
+                builder
+                  .on(parentTableAlias + ".id", "=", joinTableAlias + ".target")
+                  .andOn(
+                    specialParams.currentUserId
+                      ? knex.raw(`"${joinTableAlias}".user = ?`, [
+                          specialParams.currentUserId,
+                        ])
+                      : knex.raw("false")
+                  );
+              }
+            );
+          },
+        },
+      },
+    },
     ...generateCreatedAtField(),
     ...generateUpdatedAtField(),
     ...generateCreatedByField(User),

@@ -124,6 +124,12 @@ export class UserService extends PaginatedService {
     "*": () => false,
   };
 
+  async getSpecialParams({ req }: ServiceFunctionInputs) {
+    return {
+      currentUserId: req.user?.id ?? null,
+    };
+  }
+
   @permissionsCheck("create")
   async createRecord({
     req,

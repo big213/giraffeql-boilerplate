@@ -36,6 +36,16 @@
       </v-list>
       <v-divider></v-divider>
       <v-card-actions>
+        <template v-if="itemData && followOptions">
+          <v-btn
+            color="primary"
+            :loading="loading.toggleFollow"
+            @click="toggleFollow(itemData.currentUserFollowLink)"
+            >{{
+              itemData.currentUserFollowLink ? 'Following' : 'Follow'
+            }}</v-btn
+          >
+        </template>
         <v-spacer></v-spacer>
         <v-btn color="primary" @click="openPage()">
           <v-icon v-if="openMode === 'openInNew'" left>mdi-open-in-new</v-icon>
@@ -69,6 +79,13 @@ export default {
         return ['emit', 'openInNew', 'openInDialog'].includes(value)
       },
     },
+
+    /*
+     ** linkModel - the modelName of the follow model
+     */
+    followOptions: {
+      type: Object,
+    },
   },
 
   data() {
@@ -77,6 +94,7 @@ export default {
       itemData: null,
       loading: {
         loadData: false,
+        toggleFollow: false,
       },
     }
   },
@@ -124,6 +142,11 @@ export default {
             __typename: true,
             name: true,
             avatar: true,
+            ...(this.followOptions && {
+              currentUserFollowLink: {
+                id: true,
+              },
+            }),
             __args: {
               id: this.item.id,
             },
@@ -133,6 +156,52 @@ export default {
         handleError(this, err)
       }
       this.loading.loadData = false
+    },
+
+    async toggleFollow() {
+      this.loading.toggleFollow = true
+      try {
+        // login is required
+        if (!this.$store.getters['auth/user']) throw new Error('Login required')
+
+        const capitalizedLinkModel = capitalizeString(
+          this.followOptions.linkModel
+        )
+        if (!this.itemData.currentUserFollowLink) {
+          const data = await executeGiraffeql(this, {
+            [`create${capitalizedLinkModel}`]: {
+              id: true,
+              __args: {
+                user: {
+                  id: this.$store.getters['auth/user']?.id,
+                },
+                target: {
+                  id: this.itemData.id,
+                },
+              },
+            },
+          })
+          this.itemData.currentUserFollowLink = data
+        } else {
+          await executeGiraffeql(this, {
+            [`delete${capitalizedLinkModel}`]: {
+              __args: {
+                id: this.itemData.currentUserFollowLink.id,
+              },
+            },
+          })
+          this.itemData.currentUserFollowLink = null
+        }
+        this.$notifier.showSnackbar({
+          message: `${this.capitalizedType} ${
+            this.itemData.currentUserFollowLink ? '' : 'Un-'
+          }Followed`,
+          variant: 'success',
+        })
+      } catch (err) {
+        handleError(this, err)
+      }
+      this.loading.toggleFollow = false
     },
 
     reset() {
