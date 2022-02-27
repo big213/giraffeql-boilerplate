@@ -1,6 +1,5 @@
 import type { RecordInfo } from '~/types'
 import TimeagoColumn from '~/components/table/timeagoColumn.vue'
-import UserColumn from '~/components/table/userColumn.vue'
 import {
   generateJoinableField,
   generatePreviewableRecordField,
@@ -24,26 +23,22 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
       typename: 'user',
       hasAvatar: true,
     }),
-    userRecord: {
-      ...generatePreviewableRecordField({
-        fieldname: 'user',
-        text: 'User',
-      }),
-      component: UserColumn,
-    },
+    userRecord: generatePreviewableRecordField({
+      fieldname: 'user',
+      text: 'User',
+      followLinkModel: 'userUserFollowLink',
+    }),
     target: generateJoinableField({
       text: 'Target',
       fieldname: 'target',
       typename: 'user',
       hasAvatar: true,
     }),
-    targetRecord: {
-      ...generatePreviewableRecordField({
-        fieldname: 'target',
-        text: 'Target',
-      }),
-      component: UserColumn,
-    },
+    targetRecord: generatePreviewableRecordField({
+      fieldname: 'target',
+      text: 'Target',
+      followLinkModel: 'userUserFollowLink',
+    }),
     createdAt: {
       text: 'Created At',
       component: TimeagoColumn,

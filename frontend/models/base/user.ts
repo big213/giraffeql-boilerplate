@@ -27,14 +27,10 @@ export const User = <RecordInfo<'user'>>{
       fields: ['name', 'avatar'],
       component: NameAvatarColumn,
     },
-    record: {
-      ...generatePreviewableRecordField({
-        text: 'User',
-      }),
-      columnOptions: {
-        linkModel: 'userUserFollowLink',
-      },
-    },
+    record: generatePreviewableRecordField({
+      text: 'User',
+      followLinkModel: 'userUserFollowLink',
+    }),
     email: {
       text: 'Email',
     },

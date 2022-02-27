@@ -4,9 +4,11 @@ import { InputType } from '~/types'
 export function generatePreviewableRecordField({
   fieldname,
   text,
+  followLinkModel,
 }: {
   fieldname?: string
   text: string
+  followLinkModel?: string
 }) {
   const fieldnamePrefix = fieldname ? fieldname + '.' : ''
   return {
@@ -19,6 +21,11 @@ export function generatePreviewableRecordField({
     ],
     pathPrefix: fieldname,
     component: RecordColumn,
+    ...(followLinkModel && {
+      columnOptions: {
+        linkModel: followLinkModel,
+      },
+    }),
   }
 }
 

@@ -1,6 +1,5 @@
 import type { RecordInfo } from '~/types'
 import TimeagoColumn from '~/components/table/timeagoColumn.vue'
-import UserColumn from '~/components/table/userColumn.vue'
 import {
   generateJoinableField,
   generatePreviewableRecordField,
@@ -27,6 +26,7 @@ export const UserUserFollowLink = <RecordInfo<'userUserFollowLink'>>{
     userRecord: generatePreviewableRecordField({
       fieldname: 'user',
       text: 'User',
+      followLinkModel: 'userUserFollowLink',
     }),
     target: generateJoinableField({
       text: 'Target',
@@ -37,6 +37,7 @@ export const UserUserFollowLink = <RecordInfo<'userUserFollowLink'>>{
     targetRecord: generatePreviewableRecordField({
       fieldname: 'target',
       text: 'Target',
+      followLinkModel: 'userUserFollowLink',
     }),
     createdAt: {
       text: 'Created At',
