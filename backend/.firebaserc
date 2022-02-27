@@ -5,10 +5,10 @@
   "targets": {
     "giraffeql-boilerplate": {
       "hosting": {
-        "giraffeql-boilerplate-api": [
+        "api": [
           "giraffeql-boilerplate-api"
         ],
-        "giraffeql-boilerplate-cdn": [
+        "cdn": [
           "giraffeql-boilerplate-cdn"
         ]
       }

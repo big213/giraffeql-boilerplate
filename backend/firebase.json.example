@@ -8,7 +8,7 @@
   },
   "hosting": [
     {
-      "target": "giraffeql-boilerplate-api",
+      "target": "api",
       "public": "public",
       "ignore": [
         "firebase.json",
@@ -24,7 +24,7 @@
       ]
     },
     {
-      "target": "giraffeql-boilerplate-cdn",
+      "target": "cdn",
       "public": "public",
       "ignore": [
         "firebase.json",
