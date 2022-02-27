@@ -43,7 +43,7 @@ export class UserService extends PaginatedService {
     /*
     Allow if:
     - item was created by currentUser
-    - item isPublic === true AND requested fields has fields id, name, avatar, email ONLY
+    - item isPublic === true AND requested fields has fields id, name, avatar, email, isPublic, currentUserFollowLink ONLY
     - OR, if requested fields are id, name, avatar ONLY
     */
     get: async ({ req, args, query, fieldPath }) => {
@@ -65,6 +65,7 @@ export class UserService extends PaginatedService {
           "avatar",
           "email",
           "isPublic",
+          "currentUserFollowLink",
         ]) &&
         record.isPublic
       ) {
@@ -73,7 +74,12 @@ export class UserService extends PaginatedService {
 
       if (
         isObject(query) &&
-        objectOnlyHasFields(query, ["id", "name", "avatar"])
+        objectOnlyHasFields(query, [
+          "id",
+          "name",
+          "avatar",
+          "currentUserFollowLink",
+        ])
       ) {
         return true;
       }
@@ -84,12 +90,18 @@ export class UserService extends PaginatedService {
     /*
     Allow if:
     - filtering by isPublic === true
-    - if requested fields are id, name, avatar ONLY, or NO query
+    - if requested fields are id, name, avatar, isPublic, currentUserFollowLink ONLY, or NO query
     */
     getMultiple: async ({ req, args, query, fieldPath }) => {
       if (
         (isObject(query) &&
-          objectOnlyHasFields(query, ["id", "name", "avatar"])) ||
+          objectOnlyHasFields(query, [
+            "id",
+            "name",
+            "avatar",
+            "isPublic",
+            "currentUserFollowLink",
+          ])) ||
         !query
       ) {
         return true;
