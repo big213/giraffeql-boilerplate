@@ -1,16 +1,7 @@
 import * as knexBuilder from "knex";
-import { env } from "../config";
+import { env, getPgOptions } from "../config";
 
-const productionPgOptions = {
-  client: "pg",
-  connection: {
-    host: env.pg.host,
-    user: env.pg.user,
-    password: env.pg.password,
-    database: env.pg.database,
-    ...(env.pg.port && { port: env.pg.port }),
-  },
-};
+const productionPgOptions = getPgOptions(false);
 
 export const knex = knexBuilder({
   ...productionPgOptions,

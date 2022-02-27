@@ -10,16 +10,19 @@ export const giraffeqlOptions = {
   processEntireTree: false,
 };
 
-const pgEnv = isDev ? env.pg_dev : env.pg;
+export function getPgOptions(dev: boolean) {
+  const pgEnv = dev ? env.pg_dev : env.pg;
+  return {
+    client: "pg",
+    connection: {
+      host: pgEnv.host,
+      user: pgEnv.user,
+      password: pgEnv.password,
+      database: pgEnv.database,
+      ...(pgEnv.port && { port: pgEnv.port }),
+    },
+    pool: { min: 0, max: 1 },
+  };
+}
 
-export const pgOptions = {
-  client: "pg",
-  connection: {
-    host: pgEnv.host,
-    user: pgEnv.user,
-    password: pgEnv.password,
-    database: pgEnv.database,
-    ...(pgEnv.port && { port: pgEnv.port }),
-  },
-  pool: { min: 0, max: 1 },
-};
+export const pgOptions = getPgOptions(!!isDev);
