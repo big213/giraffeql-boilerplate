@@ -17,7 +17,12 @@ import {
 } from "giraffeql";
 import { knex } from "../../../utils/knex";
 import { isObject } from "./shared";
-import { BaseService, NormalService, PaginatedService } from "../services";
+import {
+  BaseService,
+  LinkService,
+  NormalService,
+  PaginatedService,
+} from "../services";
 import * as Scalars from "../../scalars";
 import type { ObjectTypeDefSqlOptions, SqlType } from "../../../types";
 import { getObjectType } from "./resolver";
@@ -1127,5 +1132,43 @@ export function generatePaginatorPivotResolverObject(params: {
           resolver: resolverFunction,
           requiredSqlFields: ["id"],
         }),
+  };
+}
+
+// special field for generating the currentUserFollowLink foreign sql field for a model
+export function generateCurrentUserFollowLinkField(followLink: LinkService) {
+  return {
+    type: followLink.typeDefLookup,
+    allowNull: true,
+    sqlOptions: {
+      joinType: followLink.typename,
+      specialJoin: {
+        field: "id",
+        foreignTable: followLink.typename,
+        joinFunction: (
+          knexObject,
+          parentTableAlias,
+          joinTableAlias,
+          specialParams
+        ) => {
+          knexObject.leftJoin(
+            {
+              [joinTableAlias]: followLink.typename,
+            },
+            (builder) => {
+              builder
+                .on(parentTableAlias + ".id", "=", joinTableAlias + ".target")
+                .andOn(
+                  specialParams.currentUserId
+                    ? knex.raw(`"${joinTableAlias}".user = ?`, [
+                        specialParams.currentUserId,
+                      ])
+                    : knex.raw("false")
+                );
+            }
+          );
+        },
+      },
+    },
   };
 }
