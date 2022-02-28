@@ -100,10 +100,10 @@ export default new GiraffeqlObjectType(<ObjectTypeDefinition>{
       type: UserUserFollowLink.typeDefLookup,
       allowNull: true,
       sqlOptions: {
-        joinType: "userUserFollowLink",
+        joinType: UserUserFollowLink.typename,
         specialJoin: {
           field: "id",
-          foreignTable: "userUserFollowLink",
+          foreignTable: UserUserFollowLink.typename,
           joinFunction: (
             knexObject,
             parentTableAlias,
@@ -112,7 +112,7 @@ export default new GiraffeqlObjectType(<ObjectTypeDefinition>{
           ) => {
             knexObject.leftJoin(
               {
-                [joinTableAlias]: "userUserFollowLink",
+                [joinTableAlias]: UserUserFollowLink.typename,
               },
               (builder) => {
                 builder

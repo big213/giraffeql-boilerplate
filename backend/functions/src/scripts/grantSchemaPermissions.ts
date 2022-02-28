@@ -12,7 +12,7 @@ const pgUser = env.pg_dev.user;
 
 // grant the permissions to that user
 (async () => {
-  await knex.raw(`GRANT USAGE ON SCHEMA public TO ${pgUser};
+  await knex.raw(`GRANT ALL ON SCHEMA public TO ${pgUser};
   GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${pgUser};
   GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${pgUser};`);
 

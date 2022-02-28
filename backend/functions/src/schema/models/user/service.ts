@@ -1,5 +1,4 @@
 import { PaginatedService } from "../../core/services";
-import { User } from "../../services";
 import * as admin from "firebase-admin";
 import { AccessControlMap, ServiceFunctionInputs } from "../../../types";
 
@@ -17,7 +16,7 @@ import {
   deleteObjectType,
   updateObjectType,
 } from "../../core/helpers/resolver";
-import { generateError, itemNotFoundError } from "../../core/helpers/error";
+import { generateError } from "../../core/helpers/error";
 
 export class UserService extends PaginatedService {
   defaultTypename = "user";

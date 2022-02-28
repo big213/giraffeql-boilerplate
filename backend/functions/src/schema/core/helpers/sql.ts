@@ -245,22 +245,22 @@ function processFields(relevantFields: Set<string>, table: string) {
             `Field '${joinField}' on type '${typeDef.definition.name}' is not a SQL field`
           );
 
+        // set the actualFieldPart to the 2nd part
+        actualFieldPart = subParts[1];
+
         // determine actual join field
         const actualJoinField =
           typeDefField.sqlOptions.specialJoin?.field ??
           typeDefField.sqlOptions.field ??
-          actualFieldPart;
+          joinField;
 
         if (!actualJoinField)
           throw new Error(
-            `Joining type '${linkJoinType}' from type '${currentTypeDef.definition.name}' is not configured`
+            `Joining type '${linkJoinType}' from type '${joinField}' is not configured`
           );
 
         // advance the currentTypeDef to the link Join Type Def
         currentTypeDef = linkJoinTypeDef;
-
-        // set the actualFieldPart to the 2nd part
-        actualFieldPart = subParts[1];
 
         // only proceed IF the ${linkJoinType}/* is not already in the joinObject
         const linkJoinTypeStr = linkJoinType + "/*";

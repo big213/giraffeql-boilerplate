@@ -26,7 +26,7 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
     userRecord: generatePreviewableRecordField({
       fieldname: 'user',
       text: 'User',
-      followLinkModel: 'userUserFollowLink',
+      followLinkModel: '{{ typename }}',
     }),
     target: generateJoinableField({
       text: 'Target',
@@ -37,7 +37,7 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
     targetRecord: generatePreviewableRecordField({
       fieldname: 'target',
       text: 'Target',
-      followLinkModel: 'userUserFollowLink',
+      followLinkModel: '{{ typename }}',
     }),
     createdAt: {
       text: 'Created At',
