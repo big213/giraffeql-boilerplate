@@ -16,7 +16,7 @@
               <a :href="siteDiscordLink" target="_blank">Discord server</a>.
             </span>
             <span v-if="siteContactEmail"
-              >If you would prefer to email, our email is
+              >To get in touch with us, please send us an email at
               <a>{{ siteContactEmail }}</a
               >.</span
             >

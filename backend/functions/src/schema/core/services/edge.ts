@@ -6,10 +6,5 @@ export class EdgeService extends SimpleService {
   constructor(service: NormalService) {
     super(service.typename + "Edge");
     this.typeDef = new GiraffeqlObjectType(generateEdgeTypeDef(service, this));
-    this.presets = {
-      default: {
-        "*": lookupSymbol,
-      },
-    };
   }
 }

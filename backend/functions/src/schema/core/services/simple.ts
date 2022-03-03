@@ -20,16 +20,14 @@ export class SimpleService extends BaseService {
     data = {},
     isAdmin = false,
   }: ServiceFunctionInputs) {
-    const selectQuery = query ?? Object.assign({}, this.presets.default);
-
     // if no fields requested, can skip the permissions check
-    if (Object.keys(selectQuery).length < 1) return { typename: this.typename };
+    if (Object.keys(query).length < 1) return { typename: this.typename };
 
     const results = await getObjectType({
       typename: this.typename,
       req,
       fieldPath,
-      externalQuery: selectQuery,
+      externalQuery: query,
       data,
     });
 

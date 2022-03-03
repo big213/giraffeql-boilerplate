@@ -1,8 +1,16 @@
-import { AccessControlMap } from "../../../types";
+import { lookupSymbol } from "giraffeql";
+import { AccessControlMap, ExternalQuery } from "../../../types";
 import { PaginatedService } from "../../core/services";
 
 export class {{ capitalizedTypename }}Service extends PaginatedService {
   defaultTypename = "{{ typename }}";
+
+  defaultQuery: ExternalQuery = {
+    id: lookupSymbol,
+    name: lookupSymbol,
+    avatar: lookupSymbol,
+    description: lookupSymbol,
+  };
 
   filterFieldsMap = {
     id: {},

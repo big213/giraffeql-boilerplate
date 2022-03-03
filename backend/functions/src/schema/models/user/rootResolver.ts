@@ -10,11 +10,13 @@ import { Scalars } from "../..";
 export default {
   getCurrentUser: new GiraffeqlRootResolverType({
     name: "getCurrentUser",
-    restOptions: {
-      method: "get",
-      route: "/currentUser",
-      query: User.presets.default,
-    },
+    ...(User.defaultQuery && {
+      restOptions: {
+        method: "get",
+        route: "/currentUser",
+        query: User.defaultQuery,
+      },
+    }),
     allowNull: false,
     type: User.typeDefLookup,
     resolver: ({ req, fieldPath, args, query }) => {
@@ -33,11 +35,13 @@ export default {
   // syncs the user's email with their firebase email
   syncCurrentUser: new GiraffeqlRootResolverType({
     name: "syncCurrentUser",
-    restOptions: {
-      method: "post",
-      route: "/syncCurrentUser",
-      query: User.presets.default,
-    },
+    ...(User.defaultQuery && {
+      restOptions: {
+        method: "post",
+        route: "/syncCurrentUser",
+        query: User.defaultQuery,
+      },
+    }),
     allowNull: false,
     type: User.typeDefLookup,
     args: new GiraffeqlInputFieldType({
@@ -63,11 +67,9 @@ export default {
       }),
   }),
 
-  ...generateBaseRootResolvers(User, [
-    "get",
-    "getMultiple",
-    "delete",
-    "create",
-    "update",
-  ]),
+  ...generateBaseRootResolvers({
+    service: User,
+    methods: ["get", "getMultiple", "delete", "create", "update"],
+    restMethods: ["get", "getMultiple"],
+  }),
 };

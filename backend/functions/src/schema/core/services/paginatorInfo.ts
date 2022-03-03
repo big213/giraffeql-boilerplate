@@ -12,11 +12,6 @@ export class PaginatorInfoService extends SimpleService {
       generatePaginatorInfoTypeDef(service, this),
       true
     );
-    this.presets = {
-      default: {
-        "*": lookupSymbol,
-      },
-    };
 
     this.getRecord = async ({
       req,
@@ -26,13 +21,11 @@ export class PaginatorInfoService extends SimpleService {
       data = {},
       isAdmin = false,
     }: ServiceFunctionInputs) => {
-      const selectQuery = query || Object.assign({}, this.presets.default);
-
       const results = await getObjectType({
         typename: this.typename,
         req,
         fieldPath,
-        externalQuery: selectQuery,
+        externalQuery: query,
         data,
         externalTypeDef: this.typeDef, // must pass the specific typeDef for this Paginator
       });

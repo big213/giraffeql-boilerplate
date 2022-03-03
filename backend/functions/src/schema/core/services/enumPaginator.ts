@@ -5,10 +5,8 @@ import { GiraffeqlObjectType } from "giraffeql";
 export class EnumPaginatorService extends SimpleService {
   constructor(service: EnumService) {
     super(service.typename + "EnumPaginator");
-    this.presets = {
-      default: {
-        values: true,
-      },
+    this.defaultQuery = {
+      values: true,
     };
 
     this.setTypeDef(

@@ -3,11 +3,7 @@ import { permissionsCheck } from "../../core/helpers/permissions";
 import { ServiceFunctionInputs, AccessControlMap } from "../../../types";
 import { nanoid } from "nanoid";
 import { createObjectType } from "../../core/helpers/resolver";
-import {
-  filterPassesTest,
-  isCurrentUser,
-  isUserLoggedIn,
-} from "../../helpers/permissions";
+import { filterPassesTest, isCurrentUser } from "../../helpers/permissions";
 
 export class ApiKeyService extends PaginatedService {
   defaultTypename = "apiKey";

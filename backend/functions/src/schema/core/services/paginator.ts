@@ -13,15 +13,14 @@ export class PaginatorService extends SimpleService {
     this.typeDef = new GiraffeqlObjectType(
       generatePaginatorTypeDef(service, this)
     );
-    this.presets = {
-      default: {
-        paginatorInfo: {
-          total: lookupSymbol,
-          count: lookupSymbol,
-        },
-        edges: {
-          node: service.presets?.default,
-        },
+
+    this.defaultQuery = {
+      paginatorInfo: {
+        total: lookupSymbol,
+        count: lookupSymbol,
+      },
+      edges: {
+        node: service.defaultQuery,
       },
     };
 
@@ -35,17 +34,15 @@ export class PaginatorService extends SimpleService {
       data,
       isAdmin = false,
     }: ServiceFunctionInputs) => {
-      const selectQuery = query || Object.assign({}, this.presets.default);
-
       // check if properly formed query and store the results in data
       const paginatorData: PaginatorData = {
         rootArgs: <StringKeyObject>args,
-        records: !selectQuery.edges?.node
+        records: !query.edges?.node
           ? <Array<StringKeyObject>>[]
           : <Array<StringKeyObject>>await service.getRecords({
               req,
               args,
-              query: selectQuery.edges.node,
+              query: query.edges.node,
               fieldPath: fieldPath.concat(["edges", "node"]), // need to add these since the query field is from edges.node
               isAdmin,
               data,
@@ -56,7 +53,7 @@ export class PaginatorService extends SimpleService {
         typename: this.typename,
         req,
         fieldPath,
-        externalQuery: selectQuery,
+        externalQuery: query,
         data: paginatorData,
       });
 

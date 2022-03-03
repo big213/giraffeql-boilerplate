@@ -391,9 +391,14 @@ export function generateArrayField(
   });
 }
 
-// generic JSON field, stored as JSON, but input/output as stringified JSON
-export function generateJSONField(params: GenerateFieldParams) {
+// generic JSON field, stored as JSON, but input/output as stringified JSON by default
+export function generateJSONField(
+  params: {
+    jsonString?: boolean;
+  } & GenerateFieldParams
+) {
   const {
+    jsonString = true,
     description,
     allowNull = true,
     hidden,
@@ -407,10 +412,12 @@ export function generateJSONField(params: GenerateFieldParams) {
     hidden,
     nestHidden,
     sqlType: "jsonb",
-    type: Scalars.jsonString,
+    type: jsonString ? Scalars.jsonString : Scalars.json,
     sqlOptions: {
-      // necessary for inserting JSON into DB properly -- already stringified
-      // parseValue: (val) => JSON.stringify(val),
+      // if not a JSON string, need to stringify it to insert into DB properly
+      ...(!jsonString && {
+        parseValue: (val) => JSON.stringify(val),
+      }),
       ...sqlOptions,
     },
     typeDefOptions: {

@@ -29,9 +29,10 @@ import {
   GiraffeqlInitializationError,
   GiraffeqlScalarType,
   GiraffeqlBaseError,
+  lookupSymbol,
 } from "giraffeql";
 
-import { ServiceFunctionInputs } from "../../../types";
+import { ExternalQuery, ServiceFunctionInputs } from "../../../types";
 
 import { btoa, escapeRegExp, generateId, isObject } from "../helpers/shared";
 import {
@@ -51,16 +52,16 @@ export type FieldMap = {
   [x: string]: FieldObject;
 };
 
-export type ExternalQuery = {
-  [x: string]: any;
-};
-
 export type KeyMap = {
   [x: string]: string[];
 };
 
 export class NormalService extends BaseService {
   typeDef!: GiraffeqlObjectType;
+
+  defaultQuery: ExternalQuery = {
+    id: lookupSymbol,
+  };
 
   typeDefLookup: GiraffeqlObjectTypeLookup;
 
@@ -180,14 +181,13 @@ export class NormalService extends BaseService {
   ) {
     // args should be validated already
     const validatedArgs = <any>args;
-    const selectQuery = query || Object.assign({}, this.presets.default);
 
     //check if the record and query is fetchable
     const results = await getObjectType({
       typename: this.typename,
       req,
       fieldPath,
-      externalQuery: selectQuery,
+      externalQuery: query,
       sqlParams: {
         where: {
           id: validatedArgs.id,
@@ -209,7 +209,7 @@ export class NormalService extends BaseService {
       req,
       operationName,
       subscriptionFilterableArgs,
-      query || Object.assign({}, this.presets.default)
+      query ??{ ... this.defaultQuery }
     );
 
     return {
@@ -234,12 +234,10 @@ export class NormalService extends BaseService {
     // args should be validated already
     const validatedArgs = <any>args;
 
-    const selectQuery = query || Object.assign({}, this.presets.default);
-
     //check if the query is valid (no need to actually run it)
     /*     if (this.typeDef)
       generateGiraffeqlResolverTreeFromTypeDefinition(
-        selectQuery,
+        query,
         this.typeDef,
         this.typename,
         fieldPath,
@@ -256,7 +254,7 @@ export class NormalService extends BaseService {
       req,
       operationName,
       subscriptionFilterableArgs,
-      selectQuery
+      query
     );
 
     return {
@@ -278,8 +276,6 @@ export class NormalService extends BaseService {
     const validatedArgs = <any>args;
     await this.handleLookupArgs(args, fieldPath);
 
-    const selectQuery = query ?? Object.assign({}, this.presets.default);
-
     const whereObject: SqlWhereObject = {
       connective: "AND",
       fields: [],
@@ -298,7 +294,7 @@ export class NormalService extends BaseService {
       typename: this.typename,
       req,
       fieldPath,
-      externalQuery: selectQuery,
+      externalQuery: query,
       sqlParams: {
         where: [whereObject],
         limit: 1,
@@ -406,7 +402,6 @@ export class NormalService extends BaseService {
   }: ServiceFunctionInputs) {
     // args should be validated already
     const validatedArgs = <any>args;
-    const selectQuery = query || Object.assign({}, this.presets.default);
 
     const whereObject: SqlWhereObject = {
       connective: "AND",
@@ -575,7 +570,7 @@ export class NormalService extends BaseService {
       typename: this.typename,
       req,
       fieldPath,
-      externalQuery: selectQuery,
+      externalQuery: query,
       rawSelect,
       sqlParams,
       data,
@@ -624,6 +619,27 @@ export class NormalService extends BaseService {
 
   sqlParamsModifier(sqlParams: Omit<SqlSelectQuery, "table" | "select">) {}
 
+  // confirms the existence of a record, or throws an error
+  async existsSqlRecord(
+    sqlQuery: Omit<SqlCountQuery, "table">,
+    fieldPath?: string[],
+    throwError = true
+  ): Promise<boolean> {
+    const recordsCount = await countTableRows({
+      ...sqlQuery,
+      table: this.typename,
+    });
+
+    if (recordsCount === 0 && throwError) {
+      throw new GiraffeqlBaseError({
+        message: `${this.typename} not found`,
+        fieldPath,
+      });
+    }
+
+    return recordsCount > 0;
+  }
+
   // looks up a record using its keys
   async getFirstSqlRecord(
     sqlQuery: Omit<SqlSelectQuery, "table">,
@@ -659,7 +675,7 @@ export class NormalService extends BaseService {
   }
 
   // count the records matching the criteria
-  async getSqlRecordCount(
+  async countSqlRecord(
     sqlQuery: Omit<SqlCountQuery, "table">,
     fieldPath?: string[]
   ): Promise<any> {
@@ -721,7 +737,7 @@ export class NormalService extends BaseService {
 
     const id = await generateId(this.primaryKeyLength);
     // check if the id already is in use
-    const recordsCount = await this.getSqlRecordCount(
+    const recordsCount = await this.countSqlRecord(
       {
         where: {
           id,

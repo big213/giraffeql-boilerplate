@@ -4,7 +4,7 @@ import {
   ExternalQuery,
 } from "../../../types";
 import { userPermissionEnum } from "../../enums";
-import { lookupSymbol, GiraffeqlRootResolverType } from "giraffeql";
+import { GiraffeqlRootResolverType } from "giraffeql";
 import { badPermissionsError, PermissionsError } from "../helpers/error";
 
 export abstract class BaseService {
@@ -14,11 +14,7 @@ export abstract class BaseService {
 
   rootResolvers?: { [x: string]: GiraffeqlRootResolverType };
 
-  presets: ExternalQuery = {
-    default: {
-      "*": lookupSymbol,
-    },
-  };
+  defaultQuery?: ExternalQuery;
 
   setRootResolvers(rootResolvers: {
     [x: string]: GiraffeqlRootResolverType;

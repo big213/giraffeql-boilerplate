@@ -1,6 +1,10 @@
 import { PaginatedService } from "../../core/services";
 import * as admin from "firebase-admin";
-import { AccessControlMap, ServiceFunctionInputs } from "../../../types";
+import {
+  AccessControlMap,
+  ExternalQuery,
+  ServiceFunctionInputs,
+} from "../../../types";
 
 import { permissionsCheck } from "../../core/helpers/permissions";
 import { userRoleKenum } from "../../enums";
@@ -17,9 +21,16 @@ import {
   updateObjectType,
 } from "../../core/helpers/resolver";
 import { generateError } from "../../core/helpers/error";
+import { lookupSymbol } from "giraffeql";
 
 export class UserService extends PaginatedService {
   defaultTypename = "user";
+
+  defaultQuery: ExternalQuery = {
+    id: lookupSymbol,
+    name: lookupSymbol,
+    avatar: lookupSymbol,
+  };
 
   filterFieldsMap = {
     id: {},
