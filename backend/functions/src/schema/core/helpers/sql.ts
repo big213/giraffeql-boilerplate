@@ -69,13 +69,11 @@ export type SqlWhereFieldOperator =
   | "regex"
   | "like"
   | "gt"
-  | "gtornull"
   | "gte"
-  | "gteornull"
   | "lt"
-  | "ltornull"
   | "lte"
-  | "lteornull";
+  | "contains"
+  | "containsAll";
 
 export type SqlSelectQuery = {
   select: (SqlSelectQueryObject | string)[];
@@ -548,7 +546,28 @@ function applyWhere(
             throw new Error("Invalid Regex value");
           }
           break;
+        case "contains":
+          whereSubstatement += ` @> ?::jsonb`;
+          bindings.push(JSON.stringify(whereSubObject.value));
+          break;
+        case "containsAll":
+          if (Array.isArray(whereSubObject.value)) {
+            // if array is empty, is equivalent of TRUE
+            if (whereSubObject.value.length < 1) {
+              whereSubstatement = "FALSE";
+              throw new Error(
+                "Must provide non-empty array for contain operator"
+              );
+            } else {
+              whereSubstatement += ` @> ?::jsonb`;
+              bindings.push(JSON.stringify(whereSubObject.value));
+            }
+          } else {
+            throw new Error("Must provide array for contain operator");
+          }
+          break;
         case "like":
+          // not currently supported in the boilerplate. use regex instead.
           if (whereSubObject.value === null) {
             throw new Error("Can't use this operator with null");
           } else {
@@ -837,7 +856,8 @@ export async function insertTableRow(
     // handle set fields and convert to actual sql fields, if aliased
     const sqlFields = {};
     for (const fieldname in sqlQuery.fields) {
-      const sqlOptions = currentTypeDef.definition.fields[fieldname].sqlOptions;
+      const sqlOptions =
+        currentTypeDef.definition.fields[fieldname]?.sqlOptions;
       if (!sqlOptions) throw new Error(`'${fieldname}' is not a sql field`);
 
       sqlFields[sqlOptions.field ?? fieldname] = sqlOptions.parseValue

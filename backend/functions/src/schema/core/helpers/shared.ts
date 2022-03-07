@@ -1,5 +1,7 @@
 import { StringKeyObject } from "../../../types";
 import { customAlphabet } from "nanoid/async";
+import { Request } from "express";
+import { functionTimeoutSeconds } from "../../../config";
 // An alphabet for generating short IDs.
 const alphabet = "0123456789abcdefghijklmnopqrstuvwxyz";
 
@@ -153,4 +155,9 @@ export function extractLastValueColumns(
   }
 
   return lastValues;
+}
+
+// returns a boolean saying if the request is about to be timed out (5 sec before timeout)
+export function isTimeoutImminent(req: Request) {
+  return Date.now() - req.startTime > functionTimeoutSeconds * 1000 - 5000;
 }

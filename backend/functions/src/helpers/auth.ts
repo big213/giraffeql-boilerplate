@@ -3,15 +3,16 @@ import * as admin from "firebase-admin";
 import { userRoleKenum, userPermissionEnum } from "../schema/enums";
 import { userRoleToPermissionsMap } from "../schema/helpers/permissions";
 import type { ContextUser } from "../types";
+import { AuthenticationError } from "../schema/core/helpers/error";
 
-export async function validateToken(auth: string): Promise<ContextUser> {
-  if (auth.split(" ")[0] !== "Bearer") {
-    throw new Error("Invalid token");
-  }
-
-  const token = auth.split(" ")[1];
-
+export async function validateToken(bearerToken: string): Promise<ContextUser> {
   try {
+    if (bearerToken.split(" ")[0] !== "Bearer") {
+      throw new Error("Invalid bearer token");
+    }
+
+    const token = bearerToken.split(" ")[1];
+
     // const decoded: string = await jwt.verify(token, env.general.jwt_secret);
     const decodedToken = await admin.auth().verifyIdToken(token);
 
@@ -92,25 +93,19 @@ export async function validateToken(auth: string): Promise<ContextUser> {
 
     return contextUser;
   } catch (err) {
-    if (!(err instanceof Error))
-      throw new Error("An unspecified error has occurred");
-
-    const message = "Token error: " + (err.message || err.name);
-    throw new Error(message);
+    throw new AuthenticationError({
+      message: err instanceof Error ? err.message : undefined,
+    });
   }
 }
 
-export async function validateApiKey(auth: string): Promise<ContextUser> {
-  if (!auth) {
-    throw new Error("Invalid Api Key");
-  }
-
+export async function validateApiKey(code: string): Promise<ContextUser> {
   try {
     // lookup user by API key
     const apiKey = await ApiKey.getFirstSqlRecord({
       select: ["createdBy.id", "createdBy.role", "createdBy.permissions"],
       where: {
-        code: auth,
+        code,
       },
     });
 
@@ -131,10 +126,8 @@ export async function validateApiKey(auth: string): Promise<ContextUser> {
       ),
     };
   } catch (err: unknown) {
-    if (!(err instanceof Error))
-      throw new Error("An unspecified error has occurred");
-
-    const message = "Token error: " + (err.message || err.name);
-    throw new Error(message);
+    throw new AuthenticationError({
+      message: err instanceof Error ? err.message : undefined,
+    });
   }
 }

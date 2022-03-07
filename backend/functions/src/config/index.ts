@@ -4,6 +4,11 @@ export const isDev = process.env.FUNCTIONS_EMULATOR ?? process.env.DEV;
 
 export const env = isDev ? require("../../../env.json") : functions.config();
 
+// defaults to 60 seconds
+export const functionTimeoutSeconds = env.base.timeout_seconds
+  ? Number(env.base.timeout_seconds)
+  : 60;
+
 export const giraffeqlOptions = {
   debug: !!isDev,
   lookupValue: true,

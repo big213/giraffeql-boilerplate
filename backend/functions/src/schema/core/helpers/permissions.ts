@@ -1,6 +1,6 @@
 import { BaseService } from "../services";
 import { ServiceFunctionInputs } from "../../../types";
-import { badPermissionsError } from "./error";
+import { PermissionsError } from "./error";
 
 export function permissionsCheck(methodKey: string) {
   return function (
@@ -34,7 +34,9 @@ export function permissionsCheck(methodKey: string) {
         ]))
       ) {
         // if returns false, fallback to a generic bad permissions error
-        throw badPermissionsError(fieldPath);
+        throw new PermissionsError({
+          fieldPath,
+        });
       }
 
       // invoke greet() and get its return value

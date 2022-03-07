@@ -706,6 +706,13 @@ function validateFieldPath(
     currentObjectTypeField = currentTypeDef.definition.fields[actualKeyPart];
     currentType = currentObjectTypeField.type;
 
+    // currentObjectTypeField must be a sql field
+    if (!currentObjectTypeField.sqlOptions) {
+      throw new GiraffeqlInitializationError({
+        message: `At least one non-sql field in fieldPath '${fieldPath}' on '${initialTypeDef.definition.name}'`,
+      });
+    }
+
     // if one in the chain has allowNull === true, then allowNull
     if (currentObjectTypeField.allowNull) allowNull = true;
 
@@ -738,6 +745,7 @@ function validateFieldPath(
   return {
     currentType,
     allowNull,
+    currentObjectTypeField,
   };
 }
 
@@ -838,10 +846,11 @@ export function generatePaginatorPivotResolverObject(params: {
   process.nextTick(() => {
     Object.entries(pivotService.filterFieldsMap).reduce(
       (total, [filterKey, filterValue]) => {
-        const { currentType, allowNull } = validateFieldPath(
-          pivotService.getTypeDef(),
-          filterValue.field ?? filterKey
-        );
+        const { currentType, allowNull, currentObjectTypeField } =
+          validateFieldPath(
+            pivotService.getTypeDef(),
+            filterValue.field ?? filterKey
+          );
 
         total[filterKey] = new GiraffeqlInputFieldType({
           type: new GiraffeqlInputType(
@@ -863,17 +872,7 @@ export function generatePaginatorPivotResolverObject(params: {
                   required: false,
                   allowNull: false,
                 }),
-                gtornull: new GiraffeqlInputFieldType({
-                  type: currentType,
-                  required: false,
-                  allowNull: false,
-                }),
                 lt: new GiraffeqlInputFieldType({
-                  type: currentType,
-                  required: false,
-                  allowNull: false,
-                }),
-                ltornull: new GiraffeqlInputFieldType({
                   type: currentType,
                   required: false,
                   allowNull: false,
@@ -883,38 +882,38 @@ export function generatePaginatorPivotResolverObject(params: {
                   required: false,
                   allowNull: false,
                 }),
-                gteornull: new GiraffeqlInputFieldType({
-                  type: currentType,
-                  required: false,
-                  allowNull: false,
-                }),
                 lte: new GiraffeqlInputFieldType({
-                  type: currentType,
-                  required: false,
-                  allowNull: false,
-                }),
-                lteornull: new GiraffeqlInputFieldType({
                   type: currentType,
                   required: false,
                   allowNull: false,
                 }),
                 in: new GiraffeqlInputFieldType({
                   type: currentType,
-                  arrayOptions: {
-                    allowNullElement: allowNull,
-                  },
+                  arrayOptions: currentObjectTypeField.arrayOptions,
                   required: false,
                 }),
                 nin: new GiraffeqlInputFieldType({
                   type: currentType,
-                  arrayOptions: {
-                    allowNullElement: allowNull,
-                  },
+                  arrayOptions: currentObjectTypeField.arrayOptions,
                   required: false,
                 }),
                 regex: new GiraffeqlInputFieldType({
                   type: Scalars.regex,
                   required: false,
+                }),
+                // only allowed to use contains if it is a jsonb sql type
+                ...(currentObjectTypeField.sqlOptions.type === "jsonb" && {
+                  contains: new GiraffeqlInputFieldType({
+                    type: currentType,
+                    allowNull:
+                      currentObjectTypeField.arrayOptions?.allowNullElement,
+                    required: false,
+                  }),
+                  containsAll: new GiraffeqlInputFieldType({
+                    type: currentType,
+                    arrayOptions: currentObjectTypeField.arrayOptions,
+                    required: false,
+                  }),
                 }),
               },
             },

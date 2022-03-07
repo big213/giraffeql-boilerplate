@@ -3,9 +3,9 @@ import * as express from "express";
 import * as admin from "firebase-admin";
 admin.initializeApp();
 
-import { initializeGiraffeql } from "giraffeql";
+import { initializeGiraffeql, sendErrorResponse } from "giraffeql";
 import "./schema";
-import { env, giraffeqlOptions } from "./config";
+import { env, functionTimeoutSeconds, giraffeqlOptions } from "./config";
 
 import { validateToken, validateApiKey } from "./helpers/auth";
 import { CustomSchemaGenerator } from "./helpers/schema";
@@ -27,17 +27,8 @@ if (env.base?.origins) {
 
 // extract the user ID from all requests.
 app.use(async function (req, res, next) {
-  try {
-    // if api key provided, attempt to validate using that
-    const apiKey = req.get("x-api-key");
-    if (apiKey) {
-      req.user = await validateApiKey(apiKey);
-    } else if (req.headers.authorization) {
-      req.user = await validateToken(req.headers.authorization);
-    }
-  } catch (err) {
-    console.log(err);
-  }
+  // set the start time
+  req.startTime = Date.now();
 
   // handle origins -- only accepting string type origins.
   // if allowedOrigins is empty, allow all origins "*"
@@ -60,7 +51,24 @@ app.use(async function (req, res, next) {
 
   res.header("Access-Control-Allow-Methods", "PUT, POST, GET, DELETE, OPTIONS");
 
-  next();
+  const apiKey = req.get("x-api-key");
+  try {
+    if (apiKey) {
+      // if api key provided, attempt to validate using that
+      req.user = await validateApiKey(apiKey);
+    } else if (req.headers.authorization) {
+      req.user = await validateToken(req.headers.authorization);
+    }
+  } catch (err: unknown) {
+    return sendErrorResponse(
+      err instanceof Error
+        ? err
+        : new Error("An unspecified error has occurred"),
+      res
+    );
+  }
+
+  return next();
 });
 
 app.options("*", function (req, res, next) {
@@ -78,7 +86,13 @@ app.get("/schema.ts", function (req, res, next) {
   res.send(tsSchemaGenerator.outputSchema());
 });
 
-export const api = functions.https.onRequest(app);
+// runWith does not work properly with timeoutSeconds > 60 as of Firebase Cloud Functions V1
+export const api = functions
+  .runWith({
+    timeoutSeconds: functionTimeoutSeconds,
+    memory: "256MB",
+  })
+  .https.onRequest(app);
 
 export { serveImage } from "./misc/serveImage";
 

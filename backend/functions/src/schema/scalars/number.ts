@@ -1,6 +1,8 @@
 import { GiraffeqlScalarType } from "giraffeql";
 
 function validate(value: unknown) {
+  if (typeof value !== "string" && typeof value !== "number") throw true;
+
   const parsedValue = Number(value);
   if (Number.isNaN(Number(value))) throw true;
 
