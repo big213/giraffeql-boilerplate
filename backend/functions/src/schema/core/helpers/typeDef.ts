@@ -889,12 +889,16 @@ export function generatePaginatorPivotResolverObject(params: {
                 }),
                 in: new GiraffeqlInputFieldType({
                   type: currentType,
-                  arrayOptions: currentObjectTypeField.arrayOptions,
+                  arrayOptions: {
+                    allowNullElement: allowNull,
+                  },
                   required: false,
                 }),
                 nin: new GiraffeqlInputFieldType({
                   type: currentType,
-                  arrayOptions: currentObjectTypeField.arrayOptions,
+                  arrayOptions: {
+                    allowNullElement: allowNull,
+                  },
                   required: false,
                 }),
                 regex: new GiraffeqlInputFieldType({
