@@ -10,9 +10,11 @@ import {
   SqlOrderByObject,
   SqlSelectQuery,
   SqlSelectQueryObject,
+  SqlSumQuery,
   SqlUpdateQuery,
   SqlWhereFieldOperator,
   SqlWhereObject,
+  sumTableRows,
   updateTableRow,
 } from "../helpers/sql";
 import { permissionsCheck } from "../helpers/permissions";
@@ -685,6 +687,19 @@ export class NormalService extends BaseService {
     });
 
     return recordsCount;
+  }
+
+  // sum a field for the records matching the criteria
+  async sumSqlRecord(
+    sqlQuery: Omit<SqlSumQuery, "table">,
+    fieldPath?: string[]
+  ): Promise<any> {
+    const sum = await sumTableRows({
+      ...sqlQuery,
+      table: this.typename,
+    });
+
+    return sum;
   }
 
   async createSqlRecord(

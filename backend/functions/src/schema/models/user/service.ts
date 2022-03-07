@@ -216,12 +216,15 @@ export class UserService extends PaginatedService {
     // args should be validated already
     const validatedArgs = <any>args;
     //check if record exists
-    const item = await this.getFirstSqlRecord({
-      select: ["id", "role", "firebaseUid"],
-      where: {
-        id: data!.id,
+    const item = await this.getFirstSqlRecord(
+      {
+        select: ["id", "role", "firebaseUid"],
+        where: {
+          id: data!.id,
+        },
       },
-    });
+      fieldPath
+    );
 
     // make sure email field, if provided, matches the firebase user email
     if ("email" in validatedArgs) {
@@ -260,10 +263,13 @@ export class UserService extends PaginatedService {
     // args should be validated already
     const validatedArgs = <any>args;
     // check if record exists, get ID
-    const item = await this.getFirstSqlRecord({
-      select: ["id", "role", "firebaseUid"],
-      where: validatedArgs.item,
-    });
+    const item = await this.getFirstSqlRecord(
+      {
+        select: ["id", "role", "firebaseUid"],
+        where: validatedArgs.item,
+      },
+      fieldPath
+    );
 
     // convert any lookup/joined fields into IDs
     await this.handleLookupArgs(validatedArgs.fields, fieldPath);
@@ -333,10 +339,13 @@ export class UserService extends PaginatedService {
     const validatedArgs = <any>args;
 
     // confirm existence of item and get ID
-    const item = await this.getFirstSqlRecord({
-      select: ["id", "firebaseUid"],
-      where: validatedArgs,
-    });
+    const item = await this.getFirstSqlRecord(
+      {
+        select: ["id", "firebaseUid"],
+        where: validatedArgs,
+      },
+      fieldPath
+    );
 
     // first, fetch the requested query, if any
     const requestedResults = this.isEmptyQuery(query)
