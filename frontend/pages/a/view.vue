@@ -16,7 +16,7 @@
 
 <script>
 import ViewRecordPage from '~/components/page/viewRecordPage.vue'
-import * as models from '~/models'
+import * as baseModels from '~/models/base'
 import { capitalizeString } from '~/services/base'
 
 export default {
@@ -27,7 +27,7 @@ export default {
 
   computed: {
     currentModel() {
-      return models[capitalizeString(this.$route.query.type)]
+      return baseModels[capitalizeString(this.$route.query.type)]
     },
   },
 }

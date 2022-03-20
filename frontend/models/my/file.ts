@@ -1,14 +1,17 @@
 import { File } from '../base'
 
-export const MyFiles = {
+export const MyFile = {
   ...File,
+  title: `My ${File.pluralName}`,
   paginationOptions: {
     ...File.paginationOptions,
     downloadOptions: undefined,
   },
   viewOptions: undefined,
   shareOptions: undefined,
-  enterOptions: undefined,
+  enterOptions: {
+    routeName: 'my-view',
+  },
   editOptions: undefined,
   addOptions: undefined,
 }

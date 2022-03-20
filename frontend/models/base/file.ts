@@ -10,7 +10,6 @@ export const File = <RecordInfo<'file'>>{
   name: 'File',
   pluralName: 'Files',
   icon: 'mdi-file',
-  routeName: 'a-view',
   renderItem: (item) => item.name,
   fields: {
     id: {
@@ -95,7 +94,9 @@ export const File = <RecordInfo<'file'>>{
   viewOptions: {
     fields: ['name', 'size', 'contentType', 'location'],
   },
-  enterOptions: {},
+  enterOptions: {
+    routeName: 'a-view',
+  },
   deleteOptions: {},
   shareOptions: {},
   expandTypes: [],

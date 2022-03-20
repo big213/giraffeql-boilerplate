@@ -111,7 +111,10 @@ export default {
 
   head() {
     return {
-      title: this.title ?? 'Manage ' + this.recordInfo.pluralName,
+      title:
+        this.title ??
+        this.recordInfo.title ??
+        'Manage ' + this.recordInfo.pluralName,
     }
   },
 }

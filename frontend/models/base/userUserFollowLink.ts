@@ -11,7 +11,6 @@ export const UserUserFollowLink = <RecordInfo<'userUserFollowLink'>>{
   name: 'UserUserFollowLink',
   pluralName: 'UserUserFollowLinks',
   icon: 'mdi-folder-information',
-  routeName: 'a-view',
   renderItem: (item) => item.name,
   fields: {
     id: {
@@ -87,7 +86,9 @@ export const UserUserFollowLink = <RecordInfo<'userUserFollowLink'>>{
   viewOptions: {
     fields: ['userRecord', 'targetRecord'],
   },
-  enterOptions: {},
+  enterOptions: {
+    routeName: 'a-view',
+  },
   deleteOptions: {},
   shareOptions: {},
   expandTypes: [],

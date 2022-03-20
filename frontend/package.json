@@ -12,7 +12,7 @@
     "generate:model": "ts-node scripts/generateModel.ts"
   },
   "dependencies": {
-    "axios": "^0.20.0",
+    "axios": "^0.21.4",
     "convert-array-to-csv": "^2.0.0",
     "core-js": "^3.6.5",
     "firebase": "^8.0.0",

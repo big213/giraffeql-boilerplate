@@ -465,19 +465,42 @@ export function generateEnumField(
 
 export function generateKeyValueArray(
   params: {
+    name?: string;
     valueType?: GiraffeqlScalarType;
     allowNullValue?: boolean;
   } & GenerateFieldParams
 ) {
   const {
+    name,
     valueType = Scalars.string,
     allowNullValue = false,
     ...remainingParams
   } = params;
+
+  let finalObjectName: string;
+
+  // if name is defined, check if it is not already defined
+  if (name) {
+    finalObjectName = name;
+    if (inputTypeDefs.has(name)) {
+      throw new GiraffeqlInitializationError({
+        message: `Input type with name: '${name}' already exists`,
+      });
+    }
+  } else {
+    finalObjectName = "keyValueObject";
+    let iteration = 0;
+    // if no name, generate an appropriate name by adding an incrementing number
+    while (inputTypeDefs.has(finalObjectName)) {
+      finalObjectName += String(iteration);
+      iteration++;
+    }
+  }
+
   // generate the input type if not exists
-  if (!inputTypeDefs.has("keyValueObject")) {
+  if (!inputTypeDefs.has(finalObjectName)) {
     new GiraffeqlInputType({
-      name: "keyValueObject",
+      name: finalObjectName,
       description: "Object Input with key and value properties",
       fields: {
         key: new GiraffeqlInputFieldType({
@@ -486,16 +509,17 @@ export function generateKeyValueArray(
         }),
         value: new GiraffeqlInputFieldType({
           type: valueType,
-          required: !allowNullValue,
+          required: true,
+          allowNull: allowNullValue,
         }),
       },
     });
   }
 
   // generate the object type if not exists
-  if (!objectTypeDefs.has("keyValueObject")) {
+  if (!objectTypeDefs.has(finalObjectName)) {
     new GiraffeqlObjectType({
-      name: "keyValueObject",
+      name: finalObjectName,
       description: "Object with key and value properties",
       fields: {
         key: {
@@ -512,7 +536,7 @@ export function generateKeyValueArray(
 
   return generateArrayField({
     allowNullElement: false,
-    type: new GiraffeqlObjectTypeLookup("keyValueObject"),
+    type: new GiraffeqlObjectTypeLookup(finalObjectName),
     ...remainingParams,
   });
 }

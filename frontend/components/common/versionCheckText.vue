@@ -2,14 +2,14 @@
   <div>
     <a @click="copyIdTokenToClipboard()">{{ getBuildInfo() }}</a>
     <v-icon
-      v-if="hasNewerVersion"
+      v-if="hasNewerVersion && showNewerVersionIcon"
       title="A newer version of this site is available. Click to reload."
       color="pink"
       @click="reloadPage()"
       >mdi-sync-alert</v-icon
     >
     <v-snackbar
-      v-model="open"
+      v-model="snackbarStatus"
       multi-line
       bottom
       right
@@ -27,7 +27,7 @@
         >
           Refresh
         </v-btn>
-        <v-btn color="pink" text v-bind="attrs" @click="open = false">
+        <v-btn color="pink" text v-bind="attrs" @click="snackbarStatus = false">
           Close
         </v-btn>
       </template>
@@ -44,10 +44,11 @@ import 'firebase/auth'
 export default {
   data() {
     return {
-      open: false,
+      snackbarStatus: false,
       currentVersion: null,
       latestVersion: null,
-      hasNewerVersion: false,
+
+      showNewerVersionIcon: false,
     }
   },
 
@@ -56,15 +57,26 @@ export default {
     executeGiraffeql(this, {
       getRepositoryLatestVersion: true,
     }).then((res) => {
-      this.latestVersion = res
-      if (this.latestVersion && this.currentVersion !== this.latestVersion) {
+      this.latestVersion = res.tagName
+      if (this.hasNewerVersion) {
         // only open the snackbar if not DEV
         if (this.currentVersion !== 'DEV') {
-          this.open = true
+          // only show the snackbar if it has been at least 3 minutes since the release. if it has been more than 3 mins, show immediately
+          setTimeout(() => {
+            this.snackbarStatus = true
+            this.showNewerVersionIcon = true
+          }, Math.min(3 * 60 * 1000, Math.max(0, 3 * 60 * 1000 - (new Date() - new Date(res.createdAt)))))
+        } else {
+          this.showNewerVersionIcon = true
         }
-        this.hasNewerVersion = true
       }
     })
+  },
+
+  computed: {
+    hasNewerVersion() {
+      return this.latestVersion && this.currentVersion !== this.latestVersion
+    },
   },
 
   methods: {

@@ -10,11 +10,7 @@
     <v-app-bar :clipped-left="clipped" fixed app>
       <v-app-bar-nav-icon @click.stop="drawer = !drawer" />
       <nuxt-link to="/" class="hidden-sm-and-down">
-        <img
-          :src="require('~/static/logo-horizontal.png')"
-          style="height: 48px"
-          class="mt-2"
-        />
+        <img :src="logoImageSrc" style="height: 48px" class="mt-2" />
       </nuxt-link>
       <v-spacer />
       <v-chip v-if="isAttemptingLogin" pill>
@@ -144,6 +140,7 @@ import 'firebase/auth'
 import EditRecordDialog from '~/components/dialog/editRecordDialog.vue'
 import CrudRecordDialog from '~/components/dialog/crudRecordDialog.vue'
 import * as allModels from '~/models'
+import { logoHasLightVariant } from '~/services/config'
 
 export default {
   components: {
@@ -194,6 +191,14 @@ export default {
           : this.dialogs.crudRecord.recordInfo
         : null
     },
+
+    logoImageSrc() {
+      return logoHasLightVariant
+        ? require(`~/static/logo-horizontal${
+            this.$vuetify.theme.dark ? '' : '-light'
+          }.png`)
+        : require('~/static/logo-horizontal.png')
+    },
   },
 
   mounted() {
@@ -203,14 +208,28 @@ export default {
      ** Expecting recordInfo, selectedItem, mode, customFields?, specialMode?
      */
     this.$root.$on('openEditRecordDialog', (params) => {
-      this.dialogs.editRecord = params
+      // confirm the recordInfo exists
+      if (
+        typeof params.recordInfo === 'string'
+          ? allModels[params.recordInfo]
+          : params.recordInfo
+      ) {
+        this.dialogs.editRecord = params
+      }
     })
 
     /*
      ** Expecting recordInfo, lockedFilters, title, icon, hiddenHeaders, hiddenFilters, pageOptions
      */
     this.$root.$on('openCrudRecordDialog', (params) => {
-      this.dialogs.crudRecord = params
+      // confirm the recordInfo exists
+      if (
+        typeof params.recordInfo === 'string'
+          ? allModels[params.recordInfo]
+          : params.recordInfo
+      ) {
+        this.dialogs.crudRecord = params
+      }
     })
   },
 

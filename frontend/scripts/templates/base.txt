@@ -9,7 +9,6 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
   name: '{{ capitalizedTypename }}',
   pluralName: '{{ capitalizedTypename }}s',
   icon: 'mdi-folder-information',
-  routeName: 'a-view',
   renderItem: (item) => item.name,
   fields: {
     id: {
@@ -77,7 +76,9 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
   viewOptions: {
     fields: ['avatar', 'name', 'description'],
   },
-  enterOptions: {},
+  enterOptions: {
+    routeName: 'a-view'
+  },
   deleteOptions: {},
   shareOptions: {},
   expandTypes: [],

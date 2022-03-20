@@ -1,11 +1,7 @@
 <template>
   <v-navigation-drawer v-bind="$attrs">
     <nuxt-link to="/" class="hidden-md-and-up">
-      <v-img
-        :src="require('~/static/logo-horizontal.png')"
-        class="ma-3"
-        contain
-      />
+      <v-img :src="logoImageSrc" class="ma-3" contain />
     </nuxt-link>
     <v-divider></v-divider>
     <v-list dense>
@@ -33,7 +29,13 @@
     <v-divider></v-divider>
     <v-list v-if="user" dense>
       <v-subheader>My Account</v-subheader>
-      <v-list-item v-for="(item, i) in userItems" :key="i" :to="item.to" router>
+      <v-list-item
+        v-for="(item, i) in userItems"
+        :key="i"
+        :to="item.to"
+        exact
+        router
+      >
         <v-list-item-action>
           <v-icon>{{ item.icon }}</v-icon>
         </v-list-item-action>
@@ -49,8 +51,53 @@
 
 <script>
 import { mapGetters } from 'vuex'
-import { generateCrudRecordInterfaceRoute } from '~/services/base'
+import { generateCrudRecordRoute } from '~/services/base'
 import AdminNavRoutes from '~/components/navigation/adminNavRoutes.vue'
+import { logoHasLightVariant } from '~/services/config'
+import * as myModels from '~/models/my'
+import * as publicModels from '~/models/public'
+
+function generateUserRouteObject(that, recordInfo) {
+  return {
+    icon: recordInfo.icon,
+    title: recordInfo.title ?? recordInfo.pluralName,
+    to: generateCrudRecordRoute(that, {
+      path: '/my/crud',
+      queryParams: {
+        type: recordInfo.typename,
+      },
+      pageOptions: {
+        search: '',
+        filters: [],
+        sort: {
+          field: 'createdAt',
+          desc: true,
+        },
+      },
+    }),
+  }
+}
+
+function generatePublicRouteObject(that, recordInfo) {
+  return {
+    icon: recordInfo.icon,
+    title: recordInfo.title ?? recordInfo.pluralName,
+    to: generateCrudRecordRoute(that, {
+      path: '/i/crud',
+      queryParams: {
+        type: recordInfo.typename,
+      },
+      pageOptions: {
+        search: '',
+        filters: [],
+        sort: {
+          field: 'createdAt',
+          desc: true,
+        },
+      },
+    }),
+  }
+}
 
 export default {
   components: {
@@ -66,35 +113,14 @@ export default {
           to: '/',
         },
       ],
-      navItems: [
-        {
-          icon: 'mdi-account',
-          title: 'Public Users',
-          to: generateCrudRecordInterfaceRoute('/public-users', {
-            search: '',
-            filters: [],
-            sort: {
-              field: 'createdAt',
-              desc: true,
-            },
-          }),
-        },
-      ],
+      navItems: [generatePublicRouteObject(this, publicModels.PublicUser)],
       userItems: [
+        generateUserRouteObject(this, myModels.MyApiKey),
+        generateUserRouteObject(this, myModels.MyFile),
         {
           icon: 'mdi-account',
           title: 'My Profile',
-          to: '/my-profile?expand=0',
-        },
-        {
-          icon: 'mdi-view-grid-plus',
-          title: 'My Apps',
-          to: '/my-apps',
-        },
-        {
-          icon: 'mdi-file',
-          title: 'My Files',
-          to: '/my-files',
+          to: '/my-profile',
         },
       ],
     }
@@ -106,6 +132,14 @@ export default {
 
     isAdmin() {
       return this.$store.getters['auth/user']?.role === 'ADMIN'
+    },
+
+    logoImageSrc() {
+      return logoHasLightVariant
+        ? require(`~/static/logo-horizontal${
+            this.$vuetify.theme.dark ? '' : '-light'
+          }.png`)
+        : require('~/static/logo-horizontal.png')
     },
   },
 }

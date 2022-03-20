@@ -208,7 +208,7 @@ export default {
         if (
           (inputObject.inputType === 'combobox' ||
             inputObject.inputType === 'server-combobox') &&
-          inputObject.inputOptions.typename
+          inputObject.inputOptions?.typename
         ) {
           if (typeof inputObject.value === 'string') {
             // expecting either string or obj
@@ -431,12 +431,7 @@ export default {
               value: null,
               getOptions: fieldInfo.getOptions,
               options: [],
-              readonly:
-                this.mode === 'view'
-                  ? true
-                  : this.mode === 'copy'
-                  ? fields.includes(fieldKey)
-                  : false,
+              readonly: this.mode === 'view',
               loading: false,
               focused: false,
               cols: fieldInfo.inputOptions?.cols,

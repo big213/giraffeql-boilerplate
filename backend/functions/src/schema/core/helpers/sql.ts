@@ -904,7 +904,8 @@ export async function updateTableRow(
     // handle set fields and convert to actual sql fields, if aliased
     const sqlFields = {};
     for (const fieldname in sqlQuery.fields) {
-      const sqlOptions = currentTypeDef.definition.fields[fieldname].sqlOptions;
+      const sqlOptions =
+        currentTypeDef.definition.fields[fieldname]?.sqlOptions;
       if (!sqlOptions) throw new Error(`'${fieldname}' is not a sql field`);
 
       sqlFields[sqlOptions.field ?? fieldname] = sqlOptions.parseValue

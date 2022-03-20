@@ -192,15 +192,14 @@ export default {
           pageOptions: {
             search: null,
             filters: expandTypeObject.initialFilters ?? [],
-            sortBy: expandTypeObject.initialSortOptions?.sortBy ?? [],
-            sortDesc: expandTypeObject.initialSortOptions?.sortDesc ?? [],
+            sort: expandTypeObject.initialSortOptions ?? undefined,
           },
         })
       else
         goToPage(
           this,
           this.recordInfo.typename,
-          this.recordInfo.routeName,
+          this.recordInfo.enterOptions.routeName,
           this.item.id,
           true,
           index
@@ -234,7 +233,7 @@ export default {
       goToPage(
         this,
         this.recordInfo.typename,
-        this.recordInfo.routeName,
+        this.recordInfo.enterOptions.routeName,
         this.item.id,
         ...arguments
       )

@@ -364,16 +364,29 @@ export function handleError(that, err) {
   }
 }
 
-export function generateCrudRecordInterfaceRoute(
-  route: string,
-  pageOptions?: any
+export function generateCrudRecordRoute(
+  that,
+  {
+    path,
+    queryParams,
+    pageOptions,
+  }: {
+    path: string
+    queryParams?: any
+    pageOptions?: any
+  }
 ) {
-  return (
-    route +
-    (pageOptions
-      ? '?pageOptions=' + encodeURIComponent(btoa(JSON.stringify(pageOptions)))
-      : '')
-  )
+  if (!path) return null
+
+  return that.$router.resolve({
+    path,
+    query: {
+      ...queryParams,
+      ...(pageOptions && {
+        pageOptions: encodeURIComponent(btoa(JSON.stringify(pageOptions))),
+      }),
+    },
+  }).href
 }
 
 // generates a record route based on the recordInfo
@@ -623,7 +636,7 @@ export function addNestedInputObject(
           label: nestedFieldInfo.text ?? nestedFieldInfo.key,
           inputType: nestedFieldInfo.inputType,
           inputOptions: nestedFieldInfo.inputOptions,
-          value: inputValue ? inputValue[nestedFieldInfo.key] : null,
+          value: (inputValue ? inputValue[nestedFieldInfo.key] : null) ?? null,
           getOptions: nestedFieldInfo.getOptions,
           options: [],
           cols: nestedFieldInfo.inputOptions?.cols,

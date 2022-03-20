@@ -1,8 +1,8 @@
 <template>
-  <CrudRecordPage
+  <ViewRecordPage
     v-if="currentModel"
     :record-info="currentModel"
-  ></CrudRecordPage>
+  ></ViewRecordPage>
   <v-container v-else fill-height>
     <v-layout align-center justify-center>
       <div>
@@ -15,19 +15,18 @@
 </template>
 
 <script>
-import CrudRecordPage from '~/components/page/crudRecordPage.vue'
-import * as baseModels from '~/models/base'
+import ViewRecordPage from '~/components/page/viewRecordPage.vue'
+import * as myModels from '~/models/my'
 import { capitalizeString } from '~/services/base'
 
 export default {
-  middleware: ['router-auth'],
   components: {
-    CrudRecordPage,
+    ViewRecordPage,
   },
 
   computed: {
     currentModel() {
-      return baseModels[capitalizeString(this.$route.query.type)]
+      return myModels[`My${capitalizeString(this.$route.query.type)}`]
     },
   },
 }

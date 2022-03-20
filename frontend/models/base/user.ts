@@ -13,7 +13,6 @@ export const User = <RecordInfo<'user'>>{
   name: 'User',
   pluralName: 'Users',
   icon: 'mdi-account',
-  routeName: 'a-view',
   renderItem: (item) => item.email,
   fields: {
     id: {
@@ -131,7 +130,9 @@ export const User = <RecordInfo<'user'>>{
       'currentUserFollowing',
     ],
   },
-  enterOptions: {},
+  enterOptions: {
+    routeName: 'a-view',
+  },
   deleteOptions: {},
   shareOptions: {},
   expandTypes: [],

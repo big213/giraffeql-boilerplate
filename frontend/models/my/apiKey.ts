@@ -1,10 +1,13 @@
 import { ApiKey } from '../base'
 
-export const MyApps = {
+export const MyApiKey = {
   ...ApiKey,
-  routeName: 'i-view',
+  title: `My ${ApiKey.pluralName}`,
   paginationOptions: {
     ...ApiKey.paginationOptions,
     downloadOptions: undefined,
+  },
+  enterOptions: {
+    routeName: 'my-view',
   },
 }

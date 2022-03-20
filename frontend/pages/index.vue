@@ -2,24 +2,24 @@
   <v-layout column justify-center align-center>
     <v-container xs12 style="max-width: 600px">
       <div class="text-center">
-        <img src="~/static/logo-vertical.png" alt="" style="width: 60%" />
+        <img :src="logoImageSrc" alt="" style="width: 60%" />
       </div>
       <v-card>
         <v-card-title class="headline">
           Welcome to {{ siteName }}
         </v-card-title>
         <v-card-text>
-          <p>
-            <span>{{ siteDescription }}</span>
-            <span v-if="siteDiscordLink"
-              >Check out our official
-              <a :href="siteDiscordLink" target="_blank">Discord server</a>.
-            </span>
-            <span v-if="siteContactEmail"
-              >To get in touch with us, please send us an email at
-              <a>{{ siteContactEmail }}</a
-              >.</span
-            >
+          <p v-if="siteDescription">
+            <span>{{ siteDescription }}.</span>
+          </p>
+          <p v-if="siteDiscordLink">
+            Check out our official
+            <a :href="siteDiscordLink" target="_blank">Discord server</a>.
+          </p>
+          <p v-if="siteContactEmail">
+            To get in touch with us, please send us an email at
+            <a>{{ siteContactEmail }}</a
+            >.
           </p>
         </v-card-text>
         <v-card-actions>
@@ -47,6 +47,7 @@ import {
   siteDescription,
   siteContactEmail,
   siteDiscordLink,
+  logoHasLightVariant,
 } from '~/services/config'
 
 export default {
@@ -70,6 +71,14 @@ export default {
     ...mapGetters({
       user: 'auth/user',
     }),
+
+    logoImageSrc() {
+      return logoHasLightVariant
+        ? require(`~/static/logo-vertical${
+            this.$vuetify.theme.dark ? '' : '-light'
+          }.png`)
+        : require('~/static/logo-vertical.png')
+    },
   },
 }
 </script>

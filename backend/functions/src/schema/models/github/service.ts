@@ -129,6 +129,7 @@ query {
       repository(name: "${env.github.repository}") {
         latestRelease {
           tagName
+          createdAt
         }
       }
     }
@@ -136,7 +137,7 @@ query {
 }
     `);
 
-        return response.viewer.organization.repository.latestRelease?.tagName;
+        return response.viewer.organization.repository.latestRelease;
       } else {
         // if no organization specified, lookup repository directly
         const response = await sendGraphqlRequest(`
@@ -145,13 +146,14 @@ query {
     repository(name: "${env.github.repository}") {
       latestRelease {
         tagName
+        createdAt
       }
     }
   }
 }
     `);
 
-        return response.viewer.repository.latestRelease?.tagName;
+        return response.viewer.repository.latestRelease;
       }
     } catch (err) {
       throw new GiraffeqlBaseError({

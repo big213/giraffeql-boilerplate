@@ -49,7 +49,7 @@ export default {
     shareUrl() {
       const routeObject = generateRecordRouteObject(
         this.recordInfo.typename,
-        this.recordInfo.routeName,
+        'i-view', // defaulting to public route
         this.selectedItem.id
       )
 

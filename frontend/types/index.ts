@@ -2,13 +2,13 @@ import { InputTypes, MainTypes, FilterByField } from '../../schema'
 import { CrudRawFilterObject, CrudRawSortObject } from './misc'
 
 export type RecordInfo<T extends keyof MainTypes> = {
+  // optional title for this recordInfo
+  title?: string
   // name of the type
   typename: T
   pluralTypename: string
   name: string
   pluralName: string
-  // route that shareUrl and enterItem should be based off
-  routeName?: string
   icon?: string
   // how to render the item as a string
   renderItem?: (item) => string
@@ -173,7 +173,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
     component?: any
   }
 
-  enterOptions?: {}
+  enterOptions?: {
+    routeName: string
+  }
 
   expandTypes: {
     // recordInfo is required unless it is a custom component

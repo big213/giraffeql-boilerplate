@@ -2,7 +2,7 @@ import { User } from '../base'
 
 export const MyProfile = {
   ...User,
-  routeName: 'i-view',
+  title: 'My Profile',
   paginationOptions: {
     ...(!!User.paginationOptions && User.paginationOptions),
     filterOptions: [],

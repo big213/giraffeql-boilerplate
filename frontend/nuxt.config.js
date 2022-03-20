@@ -16,6 +16,7 @@ export default {
     siteContactEmail: process.env.SITE_CONTACT_EMAIL,
     siteDiscordLink: process.env.SITE_DISCORD_LINK,
     siteGithubRepositoryUrl: process.env.SITE_GITHUB_REPOSITORY_URL,
+    logoHasLightVariant: !!process.env.LOGO_HAS_LIGHT_VARIANT,
   },
 
   // Target (https://go.nuxtjs.dev/config-target)

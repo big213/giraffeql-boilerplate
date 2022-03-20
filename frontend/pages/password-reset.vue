@@ -1,35 +1,33 @@
 <template>
-  <v-container fluid fill-height>
-    <v-layout align-center justify-center>
-      <v-flex xs12 sm8 md4>
-        <v-card class="elevation-12">
-          <v-toolbar color="accent" flat>
-            <v-toolbar-title>Reset Password</v-toolbar-title>
-            <v-spacer></v-spacer>
-            <v-btn text nuxt to="/login">Login</v-btn>
-          </v-toolbar>
-          <v-card-text>
-            <v-text-field
-              v-model="inputs.email"
-              label="Email"
-              name="email"
-              prepend-icon="mdi-account"
-              type="text"
-            ></v-text-field>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer></v-spacer>
-            <v-btn
-              color="primary"
-              :disabled="loading.submitting"
-              @click="handleSubmit()"
-              >Reset Password</v-btn
-            >
-          </v-card-actions>
-        </v-card>
-      </v-flex>
-    </v-layout>
-  </v-container>
+  <v-layout column justify-center align-center>
+    <v-container xs12 style="max-width: 600px">
+      <v-card class="elevation-12">
+        <v-toolbar color="accent" flat>
+          <v-toolbar-title>Reset Password</v-toolbar-title>
+          <v-spacer></v-spacer>
+          <v-btn text nuxt to="/login">Login</v-btn>
+        </v-toolbar>
+        <v-card-text>
+          <v-text-field
+            v-model="inputs.email"
+            label="Email"
+            name="email"
+            prepend-icon="mdi-account"
+            type="text"
+          ></v-text-field>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            color="primary"
+            :disabled="loading.submitting"
+            @click="handleSubmit()"
+            >Reset Password</v-btn
+          >
+        </v-card-actions>
+      </v-card>
+    </v-container>
+  </v-layout>
 </template>
 
 <script>

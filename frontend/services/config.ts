@@ -4,6 +4,7 @@ export const siteImageUrl = process.env.siteImageUrl
 export const siteContactEmail = process.env.siteContactEmail
 export const siteDiscordLink = process.env.siteDiscordLink
 export const siteGithubRepositoryUrl = process.env.siteGithubRepositoryUrl
+export const logoHasLightVariant = process.env.logoHasLightVariant
 
 export const firebaseConfig = {
   apiKey: 'AIzaSyDMuwUROWZQyG93I21ofU7Cx52q42_XZ0Q',

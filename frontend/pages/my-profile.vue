@@ -2,7 +2,6 @@
   <ViewRecordPage
     v-if="lookupParams"
     :record-info="recordInfo"
-    :head="head"
     :lookup-params="lookupParams"
     @handle-submit="handleSubmit"
   ></ViewRecordPage>
@@ -10,7 +9,7 @@
 
 <script>
 import ViewRecordPage from '~/components/page/viewRecordPage.vue'
-import { MyProfile } from '~/models'
+import { MyProfile } from '~/models/special'
 import { handleUserRefreshed } from '~/services/auth'
 
 export default {
@@ -21,9 +20,6 @@ export default {
   data() {
     return {
       recordInfo: MyProfile,
-      head: {
-        title: 'My Profile',
-      },
     }
   },
   computed: {

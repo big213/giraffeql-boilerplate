@@ -2,6 +2,7 @@
   <CrudRecordPage
     v-if="currentModel"
     :record-info="currentModel"
+    :locked-filters="lockedFilters"
   ></CrudRecordPage>
   <v-container v-else fill-height>
     <v-layout align-center justify-center>
@@ -16,18 +17,27 @@
 
 <script>
 import CrudRecordPage from '~/components/page/crudRecordPage.vue'
-import * as baseModels from '~/models/base'
+import * as publicModels from '~/models/public'
 import { capitalizeString } from '~/services/base'
 
 export default {
-  middleware: ['router-auth'],
   components: {
     CrudRecordPage,
   },
 
   computed: {
     currentModel() {
-      return baseModels[capitalizeString(this.$route.query.type)]
+      return publicModels[`Public${capitalizeString(this.$route.query.type)}`]
+    },
+
+    lockedFilters() {
+      return [
+        {
+          field: 'isPublic',
+          operator: 'eq',
+          value: true,
+        },
+      ]
     },
   },
 }

@@ -32,7 +32,7 @@
                 <v-toolbar flat color="accent" dense>
                   <v-icon left>{{ recordInfo.icon || 'mdi-domain' }}</v-icon>
                   <v-toolbar-title>
-                    {{ recordInfo.name }}
+                    {{ recordInfo.title || recordInfo.name }}
                   </v-toolbar-title>
                   <v-spacer></v-spacer>
                   <v-btn icon @click="reset()">
@@ -305,8 +305,9 @@ export default {
                 }
               )
             ),
-            __args: this.lookupParams ?? {
-              id: this.$route.query.id,
+            __args: {
+              ...this.lookupParams,
+              ...(this.$route.query.id && { id: this.$route.query.id }),
             },
           },
         })
@@ -344,7 +345,7 @@ export default {
   head() {
     return (
       this.head ?? {
-        title: 'View ' + this.recordInfo.name,
+        title: this.recordInfo.title ?? 'View ' + this.recordInfo.name,
       }
     )
   },

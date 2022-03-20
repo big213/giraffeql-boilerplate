@@ -20,11 +20,12 @@ export default {
     allowNull: false,
     type: User.typeDefLookup,
     resolver: ({ req, fieldPath, args, query }) => {
-      if (!req.user?.id) throw new Error("Login required");
+      if (!req.user) throw new Error("Login required");
+
       return User.getRecord({
         req,
         fieldPath,
-        args: { id: req.user?.id },
+        args: { id: req.user!.id },
         query,
         isAdmin: true,
       });

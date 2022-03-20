@@ -3,7 +3,7 @@
     <v-toolbar flat color="accent" dense>
       <v-icon left>{{ icon || recordInfo.icon || 'mdi-domain' }}</v-icon>
       <v-toolbar-title>{{
-        title || `${recordInfo.pluralName}`
+        title || recordInfo.title || recordInfo.pluralName
       }}</v-toolbar-title>
       <v-divider
         v-if="recordInfo.addOptions"

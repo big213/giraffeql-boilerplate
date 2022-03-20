@@ -1,17 +1,15 @@
 <template>
-  <v-container fill-height>
-    <v-layout align-center justify-center>
-      <v-flex xs12 sm8 md4>
-        <v-toolbar color="accent" flat>
-          <v-toolbar-title>Login</v-toolbar-title>
-          <v-spacer></v-spacer>
-          <v-btn text nuxt to="/register">Register</v-btn>
-        </v-toolbar>
-        <SocialLoginInterface></SocialLoginInterface>
-        <LoginInterface></LoginInterface>
-      </v-flex>
-    </v-layout>
-  </v-container>
+  <v-layout column justify-center align-center>
+    <v-container xs12 style="max-width: 600px">
+      <v-toolbar color="accent" flat>
+        <v-toolbar-title>Login</v-toolbar-title>
+        <v-spacer></v-spacer>
+        <v-btn text nuxt to="/register">Register</v-btn>
+      </v-toolbar>
+      <SocialLoginInterface></SocialLoginInterface>
+      <LoginInterface></LoginInterface>
+    </v-container>
+  </v-layout>
 </template>
 
 <script>
