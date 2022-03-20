@@ -95,7 +95,7 @@ export const File = <RecordInfo<'file'>>{
     fields: ['name', 'size', 'contentType', 'location'],
   },
   enterOptions: {
-    routeName: 'a-view',
+    routeType: 'a',
   },
   deleteOptions: {},
   shareOptions: {},

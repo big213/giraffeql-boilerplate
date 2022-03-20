@@ -15,7 +15,7 @@
           </v-list-item-content>
         </template>
         <template v-for="child in item.items">
-          <v-list-item :key="child.title" :to="child.to" exact>
+          <v-list-item :key="child.title" :to="child.to" nuxt exact-path>
             <v-list-item-content>
               <v-list-item-title v-text="child.title"></v-list-item-title>
             </v-list-item-content>
@@ -27,8 +27,19 @@
 </template>
 
 <script>
-import { capitalizeString } from '~/services/base'
+import { generateCrudRecordRoute } from '~/services/base'
 import * as baseModels from '~/models/base'
+
+function generateAdminRouteObject(that, recordInfo) {
+  return {
+    icon: recordInfo.icon,
+    title: recordInfo.title ?? recordInfo.typename,
+    to: generateCrudRecordRoute(that, {
+      typename: recordInfo.typename,
+      routeType: 'a',
+    }),
+  }
+}
 
 export default {
   computed: {
@@ -38,22 +49,11 @@ export default {
           action: 'mdi-star',
           active: false,
           title: 'Administration',
-          permissions: [],
-          items: Object.values(baseModels).map((recordInfo) => ({
-            title: capitalizeString(recordInfo.pluralTypename),
-            to: '/a/crud?type=' + recordInfo.typename,
-          })),
+          items: Object.values(baseModels).map((recordInfo) =>
+            generateAdminRouteObject(this, recordInfo)
+          ),
         },
       ]
-    },
-  },
-  methods: {
-    close() {
-      this.$emit('close')
-    },
-    handleSubmit(data) {
-      this.close()
-      this.$emit('handleSubmit', data)
     },
   },
 }

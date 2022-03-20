@@ -8,6 +8,6 @@ export const MyApiKey = {
     downloadOptions: undefined,
   },
   enterOptions: {
-    routeName: 'my-view',
+    routeType: 'my',
   },
 }

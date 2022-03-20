@@ -78,6 +78,7 @@ export const User = <RecordInfo<'user'>>{
   },
   paginationOptions: {
     hasSearch: true,
+    publicFilterField: 'isPublic',
     filterOptions: [
       {
         field: 'role',
@@ -131,7 +132,7 @@ export const User = <RecordInfo<'user'>>{
     ],
   },
   enterOptions: {
-    routeName: 'a-view',
+    routeType: 'a',
   },
   deleteOptions: {},
   shareOptions: {},

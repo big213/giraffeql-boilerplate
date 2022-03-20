@@ -52,10 +52,6 @@ export const ApiKey = <RecordInfo<'apiKey'>>{
         field: 'createdAt',
         desc: true,
       },
-      {
-        field: 'updatedAt',
-        desc: true,
-      },
     ],
     headerOptions: [
       {
@@ -86,7 +82,7 @@ export const ApiKey = <RecordInfo<'apiKey'>>{
     fields: ['name', 'permissions', 'code', 'user'],
   },
   enterOptions: {
-    routeName: 'a-view',
+    routeType: 'a',
   },
   deleteOptions: {},
   shareOptions: undefined,

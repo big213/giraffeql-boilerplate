@@ -55,9 +55,10 @@
 <script>
 import {
   handleError,
-  goToPage,
   capitalizeString,
   getIcon,
+  enterRoute,
+  generateViewRecordRoute,
 } from '~/services/base'
 import { executeGiraffeql } from '~/services/giraffeql'
 import FollowButton from '~/components/button/followButton.vue'
@@ -117,7 +118,15 @@ export default {
   methods: {
     openPage() {
       if (this.openMode === 'openInNew') {
-        goToPage(this, this.item.__typename, 'i-view', this.item.id, true)
+        enterRoute(
+          this,
+          generateViewRecordRoute(this, {
+            typename: this.item.__typename,
+            routeType: 'i',
+            id: this.item.id,
+          }),
+          openInNew
+        )
       } else if (this.openMode === 'openInDialog') {
         this.$root.$emit('openEditRecordDialog', {
           recordInfo: 'Public' + this.capitalizedType,

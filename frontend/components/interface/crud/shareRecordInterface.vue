@@ -31,13 +31,12 @@
 </template>
 
 <script>
-import { copyToClipboard, generateRecordRouteObject } from '~/services/base'
+import { copyToClipboard, generateViewRecordRoute } from '~/services/base'
 
 export default {
   props: {
     selectedItem: {
       type: Object,
-      default: () => ({}),
     },
     recordInfo: {
       type: Object,
@@ -47,18 +46,17 @@ export default {
 
   computed: {
     shareUrl() {
-      const routeObject = generateRecordRouteObject(
-        this.recordInfo.typename,
-        'i-view', // defaulting to public route
-        this.selectedItem.id
-      )
-
-      return this.selectedItem && this.recordInfo.shareOptions && routeObject
-        ? window.location.origin + this.$router.resolve(routeObject).href
+      return this.selectedItem
+        ? window.location.origin +
+            generateViewRecordRoute(this, {
+              typename: this.recordInfo.typename,
+              routeType: 'i',
+              id: this.selectedItem.id,
+            })
         : ''
     },
     itemIdentifier() {
-      return this.recordInfo.renderItem
+      return this.recordInfo.renderItem && this.selectedItem
         ? this.recordInfo.renderItem(this.selectedItem)
         : null
     },

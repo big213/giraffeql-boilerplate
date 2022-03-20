@@ -367,19 +367,19 @@ export function handleError(that, err) {
 export function generateCrudRecordRoute(
   that,
   {
-    path,
+    typename,
+    routeType,
     queryParams,
     pageOptions,
   }: {
-    path: string
+    typename: string
+    routeType: 'i' | 'a' | 'my' | 's'
     queryParams?: any
     pageOptions?: any
   }
 ) {
-  if (!path) return null
-
   return that.$router.resolve({
-    path,
+    path: `/${routeType}/${camelToKebabCase(typename)}`,
     query: {
       ...queryParams,
       ...(pageOptions && {
@@ -389,46 +389,39 @@ export function generateCrudRecordRoute(
   }).href
 }
 
-// generates a record route based on the recordInfo
-export function generateRecordRouteObject(
-  typename,
-  routeName,
-  itemId,
-  expandIndex = 0
-) {
-  if (!routeName) return null
-
-  return {
-    name: routeName,
-    query: {
-      id: itemId,
-      expand: expandIndex,
-      type: typename,
-    },
+export function generateViewRecordRoute(
+  that,
+  {
+    typename,
+    routeType,
+    queryParams,
+    id,
+    expand = 0,
+  }: {
+    typename: string
+    routeType: 'i' | 'a' | 'my' | 's'
+    queryParams?: any
+    id: string
+    expand?: number
   }
+) {
+  return that.$router.resolve({
+    path: `/${routeType}/view/${camelToKebabCase(typename)}`,
+    query: {
+      id,
+      expand,
+      ...queryParams,
+    },
+  }).href
 }
 
-export function goToPage(
-  that,
-  typename,
-  routeName,
-  itemId,
-  openInNew = false,
-  expandIndex = 0
-) {
-  const routeObject = generateRecordRouteObject(
-    typename,
-    routeName,
-    itemId,
-    expandIndex
-  )
-
-  if (!routeObject) return
+export function enterRoute(that, route: string, openInNew = false) {
+  if (!route) return
 
   if (openInNew) {
-    window.open(that.$router.resolve(routeObject).href, '_blank')
+    window.open(route, '_blank')
   } else {
-    that.$router.push(routeObject)
+    that.$router.push(route)
   }
 }
 
@@ -709,4 +702,20 @@ export function processQuery(
       ),
     },
   }
+}
+
+// apiKey -> api-key
+export function camelToKebabCase(str: string) {
+  return str
+    .split('')
+    .map((letter, idx) => {
+      return letter.toUpperCase() === letter
+        ? `${idx !== 0 ? '-' : ''}${letter.toLowerCase()}`
+        : letter
+    })
+    .join('')
+}
+
+export function kebabToCamelCase(str: string) {
+  return str.replace(/-./g, (x) => x[1].toUpperCase())
 }

@@ -5,7 +5,14 @@
     </nuxt-link>
     <v-divider></v-divider>
     <v-list dense>
-      <v-list-item v-for="(item, i) in mainItems" :key="i" :to="item.to" router>
+      <v-list-item
+        v-for="(item, i) in mainItems"
+        :key="i"
+        :to="item.to"
+        nuxt
+        router
+        exact-path
+      >
         <v-list-item-action>
           <v-icon>{{ item.icon }}</v-icon>
         </v-list-item-action>
@@ -17,7 +24,14 @@
     <v-divider></v-divider>
     <v-list dense>
       <v-subheader>Explore</v-subheader>
-      <v-list-item v-for="(item, i) in navItems" :key="i" :to="item.to" router>
+      <v-list-item
+        v-for="(item, i) in navItems"
+        :key="i"
+        :to="item.to"
+        nuxt
+        router
+        exact-path
+      >
         <v-list-item-action>
           <v-icon>{{ item.icon }}</v-icon>
         </v-list-item-action>
@@ -33,8 +47,9 @@
         v-for="(item, i) in userItems"
         :key="i"
         :to="item.to"
-        exact
+        nuxt
         router
+        exact-path
       >
         <v-list-item-action>
           <v-icon>{{ item.icon }}</v-icon>
@@ -62,10 +77,8 @@ function generateUserRouteObject(that, recordInfo) {
     icon: recordInfo.icon,
     title: recordInfo.title ?? recordInfo.pluralName,
     to: generateCrudRecordRoute(that, {
-      path: '/my/crud',
-      queryParams: {
-        type: recordInfo.typename,
-      },
+      typename: recordInfo.typename,
+      routeType: 'my',
       pageOptions: {
         search: '',
         filters: [],
@@ -83,10 +96,8 @@ function generatePublicRouteObject(that, recordInfo) {
     icon: recordInfo.icon,
     title: recordInfo.title ?? recordInfo.pluralName,
     to: generateCrudRecordRoute(that, {
-      path: '/i/crud',
-      queryParams: {
-        type: recordInfo.typename,
-      },
+      typename: recordInfo.typename,
+      routeType: 'i',
       pageOptions: {
         search: '',
         filters: [],

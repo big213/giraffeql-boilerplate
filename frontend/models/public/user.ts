@@ -25,6 +25,6 @@ export const PublicUser = {
   deleteOptions: undefined,
   importOptions: undefined,
   enterOptions: {
-    routeName: 'i-view',
+    routeType: 'i',
   },
 }

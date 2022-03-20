@@ -75,6 +75,10 @@ export type RecordInfo<T extends keyof MainTypes> = {
         ? boolean
         : false
       : false
+
+    // the field to filter by on i-crud path, if any
+    publicFilterField?: string
+
     // all of the possible usable filters
     filterOptions: `${T}FilterByObject` extends keyof InputTypes
       ? FilterObject[]
@@ -174,7 +178,7 @@ export type RecordInfo<T extends keyof MainTypes> = {
   }
 
   enterOptions?: {
-    routeName: string
+    routeType: 'i' | 'a' | 'my' | 's'
   }
 
   expandTypes: {

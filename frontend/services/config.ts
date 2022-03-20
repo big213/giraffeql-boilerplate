@@ -14,3 +14,10 @@ export const firebaseConfig = {
   messagingSenderId: '229325360702',
   appId: '1:229325360702:web:30786fc003bc2972970b6f',
 }
+
+export const routesMap = {
+  a: ['apiKey', 'file', 'user', 'userUserFollowLink'],
+  i: ['user'],
+  my: ['apiKey', 'file'],
+  s: [],
+}
