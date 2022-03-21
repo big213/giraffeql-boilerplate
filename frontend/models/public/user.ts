@@ -2,7 +2,7 @@ import { User } from '../base'
 
 export const PublicUser = {
   ...User,
-  title: 'Public Users',
+  title: `Public ${User.pluralName}`,
   paginationOptions: {
     ...(!!User.paginationOptions && User.paginationOptions),
     filterOptions: [],
