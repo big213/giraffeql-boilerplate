@@ -364,14 +364,17 @@ export function handleError(that, err) {
   }
 }
 
+// either path or typename/routeType required
 export function generateCrudRecordRoute(
   that,
   {
+    path,
     typename,
     routeType,
     queryParams,
     pageOptions,
   }: {
+    path?: string
     typename: string
     routeType: 'i' | 'a' | 'my' | 's'
     queryParams?: any
@@ -379,7 +382,7 @@ export function generateCrudRecordRoute(
   }
 ) {
   return that.$router.resolve({
-    path: `/${routeType}/${camelToKebabCase(typename)}`,
+    path: path ?? `/${routeType}/${camelToKebabCase(typename)}`,
     query: {
       ...queryParams,
       ...(pageOptions && {
@@ -389,15 +392,18 @@ export function generateCrudRecordRoute(
   }).href
 }
 
+// either path or typename/routeType required
 export function generateViewRecordRoute(
   that,
   {
+    path,
     typename,
     routeType,
     queryParams,
     id,
     expand = 0,
   }: {
+    path?: string
     typename: string
     routeType: 'i' | 'a' | 'my' | 's'
     queryParams?: any
@@ -406,7 +412,7 @@ export function generateViewRecordRoute(
   }
 ) {
   return that.$router.resolve({
-    path: `/${routeType}/view/${camelToKebabCase(typename)}`,
+    path: path ?? `/${routeType}/view/${camelToKebabCase(typename)}`,
     query: {
       id,
       expand,
@@ -683,16 +689,18 @@ export function processQuery(
 
                 // if field has args, process them
                 if (currentFieldInfo.args) {
-                  total[currentFieldInfo.args.path + '.__args'] =
-                    currentFieldInfo.args.getArgs(that)
+                  total[
+                    currentFieldInfo.args.path + '.__args'
+                  ] = currentFieldInfo.args.getArgs(that)
                 }
               }
             })
 
             // if main fieldInfo has args, process them
             if (fieldInfo.args) {
-              total[fieldInfo.args.path + '.__args'] =
-                fieldInfo.args.getArgs(that)
+              total[fieldInfo.args.path + '.__args'] = fieldInfo.args.getArgs(
+                that
+              )
             }
 
             return total

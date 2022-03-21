@@ -72,41 +72,45 @@ import { logoHasLightVariant } from '~/services/config'
 import * as myModels from '~/models/my'
 import * as publicModels from '~/models/public'
 
-function generateUserRouteObject(that, recordInfo) {
+function generateUserRouteObject(that, recordInfo, customPath) {
   return {
     icon: recordInfo.icon,
     title: recordInfo.title ?? recordInfo.pluralName,
-    to: generateCrudRecordRoute(that, {
-      typename: recordInfo.typename,
-      routeType: 'my',
-      pageOptions: {
-        search: '',
-        filters: [],
-        sort: {
-          field: 'createdAt',
-          desc: true,
+    to:
+      customPath ??
+      generateCrudRecordRoute(that, {
+        typename: recordInfo.typename,
+        routeType: 'my',
+        pageOptions: {
+          search: '',
+          filters: [],
+          sort: {
+            field: 'createdAt',
+            desc: true,
+          },
         },
-      },
-    }),
+      }),
   }
 }
 
-function generatePublicRouteObject(that, recordInfo) {
+function generatePublicRouteObject(that, recordInfo, customPath) {
   return {
     icon: recordInfo.icon,
     title: recordInfo.title ?? recordInfo.pluralName,
-    to: generateCrudRecordRoute(that, {
-      typename: recordInfo.typename,
-      routeType: 'i',
-      pageOptions: {
-        search: '',
-        filters: [],
-        sort: {
-          field: 'createdAt',
-          desc: true,
+    to:
+      customPath ??
+      generateCrudRecordRoute(that, {
+        typename: recordInfo.typename,
+        routeType: 'i',
+        pageOptions: {
+          search: '',
+          filters: [],
+          sort: {
+            field: 'createdAt',
+            desc: true,
+          },
         },
-      },
-    }),
+      }),
   }
 }
 
