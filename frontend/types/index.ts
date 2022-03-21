@@ -79,6 +79,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
     // the field to filter by on i-crud path, if any
     publicFilterField?: string
 
+    // the function to generate the lockedFilters for routeType "my"
+    myFilterField?: (that: any) => CrudRawFilterObject[]
+
     // all of the possible usable filters
     filterOptions: `${T}FilterByObject` extends keyof InputTypes
       ? FilterObject[]

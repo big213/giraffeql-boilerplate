@@ -46,6 +46,15 @@ export const ApiKey = <RecordInfo<'apiKey'>>{
   },
   paginationOptions: {
     hasSearch: false,
+    myFilterField: (that) => {
+      return [
+        {
+          field: 'user',
+          operator: 'eq',
+          value: that.$store.getters['auth/user'].id,
+        },
+      ]
+    },
     filterOptions: [],
     sortOptions: [
       {

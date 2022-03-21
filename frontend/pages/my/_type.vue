@@ -2,6 +2,7 @@
   <CrudRecordPage
     v-if="currentModel"
     :record-info="currentModel"
+    :locked-filters="lockedFilters"
   ></CrudRecordPage>
   <v-container v-else fill-height>
     <v-layout align-center justify-center>
@@ -35,15 +36,19 @@ export default {
     },
 
     lockedFilters() {
-      return this.$store.getters['auth/user']
-        ? [
+      const myFilterFieldFn =
+        this.currentModel?.paginationOptions?.myFilterField
+
+      // defaults to "createdBy" is current user
+      return myFilterFieldFn
+        ? myFilterFieldFn(this)
+        : [
             {
               field: 'createdBy',
               operator: 'eq',
               value: this.$store.getters['auth/user'].id,
             },
           ]
-        : []
     },
   },
 }
