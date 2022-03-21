@@ -382,8 +382,6 @@ export default {
       this.isGrid = localStorage.getItem('viewMode') === 'grid'
     }
 
-    if (this.isDialog) this.options.itemsPerPage = 10
-
     this.reset({
       initFilters: true,
     })
@@ -606,8 +604,8 @@ export default {
       this.loading.exportData = true
       try {
         // use custom download fields if provided
-        const customFields =
-          this.recordInfo.paginationOptions.downloadOptions.fields
+        const customFields = this.recordInfo.paginationOptions.downloadOptions
+          .fields
         const fields =
           customFields ??
           this.recordInfo.paginationOptions.headerOptions
