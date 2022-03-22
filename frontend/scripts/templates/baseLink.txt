@@ -38,6 +38,17 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
       text: 'Target',
       followLinkModel: '{{ typename }}',
     }),
+    createdBy: generateJoinableField({
+      text: 'Created By',
+      fieldname: 'createdBy',
+      typename: 'user',
+      hasAvatar: true,
+    }),
+    createdByRecord: generatePreviewableRecordField({
+      fieldname: 'createdBy',
+      text: 'Created By',
+      followLinkModel: 'userUserFollowLink',
+    }),
     createdAt: {
       text: 'Created At',
       component: TimeagoColumn,

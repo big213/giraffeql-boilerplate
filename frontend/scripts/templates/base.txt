@@ -2,6 +2,10 @@ import type { RecordInfo } from '~/types'
 import TimeagoColumn from '~/components/table/timeagoColumn.vue'
 import AvatarColumn from '~/components/table/avatarColumn.vue'
 import NameAvatarColumn from '~/components/table/nameAvatarColumn.vue'
+import {
+  generateJoinableField,
+  generatePreviewableRecordField,
+} from '~/services/recordInfo'
 
 export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
   typename: '{{ typename }}',
@@ -31,6 +35,17 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
       fields: ['name', 'avatar'],
       component: NameAvatarColumn,
     },
+    createdBy: generateJoinableField({
+      text: 'Created By',
+      fieldname: 'createdBy',
+      typename: 'user',
+      hasAvatar: true,
+    }),
+    createdByRecord: generatePreviewableRecordField({
+      fieldname: 'createdBy',
+      text: 'Created By',
+      followLinkModel: 'userUserFollowLink',
+    }),
     createdAt: {
       text: 'Created At',
       component: TimeagoColumn,
