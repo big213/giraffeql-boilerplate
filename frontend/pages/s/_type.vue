@@ -15,11 +15,8 @@
 
 <script>
 import CrudRecordPage from '~/components/page/crudRecordPage.vue'
-import * as specialModels from '~/models/special'
+import * as specialModelsMap from '~/models/special'
 import { kebabToCamelCase } from '~/services/base'
-
-// type -> specialModel
-const modelsTypeMap = {}
 
 export default {
   async asyncData({ params }) {
@@ -33,7 +30,7 @@ export default {
 
   computed: {
     currentModel() {
-      return modelsTypeMap[type]
+      return specialModelsMap[this.type]
     },
   },
 }
