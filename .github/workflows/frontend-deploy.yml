@@ -28,7 +28,7 @@ jobs:
           IMAGE_SERVING_URL: https://cdn.boilerplate.giraffeql.com
           VER: ${{ github.ref }}
           SITE_NAME: "Giraffeql Boilerplate"
-          SITE_DESCRIPTION: "Giraffeql Boilerplate is a basic boilerplate site for showcasing the Giraffeql API querying language in a basic and extendable implementation."
+          SITE_DESCRIPTION: "Giraffeql Boilerplate is a basic boilerplate site for showcasing the Giraffeql API querying language in a basic and extendable implementation"
           SITE_IMAGE_URL: https://cdn.boilerplate.giraffeql.com/permanent/android-chrome-512x512.png
           SITE_CONTACT_EMAIL: hello@giraffeql.com
           SITE_DISCORD_LINK: https://discord.gg/CpSWfub9y6

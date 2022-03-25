@@ -92,7 +92,7 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
     fields: ['avatar', 'name', 'description'],
   },
   enterOptions: {
-    routeName: 'a-view'
+    routeType: 'a'
   },
   deleteOptions: {},
   shareOptions: {},
