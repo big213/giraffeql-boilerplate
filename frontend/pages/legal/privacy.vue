@@ -8,17 +8,16 @@
             <p>
               <i>Last Updated: 10 April 2021</i>
             </p>
-            <p>
-              {{ siteDescription }}
-            </p>
+            <p>{{ siteDescription }}.</p>
             <div class="pb-2">
               <span class="subheader">Data</span>
               <ul>
                 <li>
-                  By default, your profile page, with your user information will
-                  be made publicly visible for everyone to see. However, you can
-                  adjust this behavior in the
-                  <nuxt-link to="/settings">settings page</nuxt-link>.
+                  By default, your profile page will be visible for others to
+                  see. However, you can adjust this behavior in the
+                  <nuxt-link to="/my-profile">My Profile page</nuxt-link> (click
+                  <v-icon small>mdi-pencil</v-icon> Edit on the top-right of
+                  that page).
                 </li>
               </ul>
             </div>
