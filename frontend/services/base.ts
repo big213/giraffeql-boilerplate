@@ -364,7 +364,6 @@ export function handleError(that, err) {
   }
 }
 
-// either path or typename/routeType required
 export function generateCrudRecordRoute(
   that,
   {
@@ -375,14 +374,19 @@ export function generateCrudRecordRoute(
     pageOptions,
   }: {
     path?: string
-    typename: string
-    routeType: 'i' | 'a' | 'my' | 's'
+    typename?: string
+    routeType?: 'i' | 'a' | 'my' | 's'
     queryParams?: any
     pageOptions?: any
   }
 ) {
+  // either path or typename/routeType required
+  if (!path && !(typename && routeType)) {
+    throw new Error('One of path or typename/routeType required')
+  }
+
   return that.$router.resolve({
-    path: path ?? `/${routeType}/${camelToKebabCase(typename)}`,
+    path: path ?? `/${routeType!}/${camelToKebabCase(typename!)}`,
     query: {
       ...queryParams,
       ...(pageOptions && {
@@ -404,15 +408,20 @@ export function generateViewRecordRoute(
     expand = 0,
   }: {
     path?: string
-    typename: string
-    routeType: 'i' | 'a' | 'my' | 's'
+    typename?: string
+    routeType?: 'i' | 'a' | 'my' | 's'
     queryParams?: any
     id: string
     expand?: number
   }
 ) {
+  // either path or typename/routeType required
+  if (!path && !(typename && routeType)) {
+    throw new Error('One of path or typename/routeType required')
+  }
+
   return that.$router.resolve({
-    path: path ?? `/${routeType}/view/${camelToKebabCase(typename)}`,
+    path: path ?? `/${routeType!}/view/${camelToKebabCase(typename!)}`,
     query: {
       id,
       expand,
@@ -689,18 +698,16 @@ export function processQuery(
 
                 // if field has args, process them
                 if (currentFieldInfo.args) {
-                  total[
-                    currentFieldInfo.args.path + '.__args'
-                  ] = currentFieldInfo.args.getArgs(that)
+                  total[currentFieldInfo.args.path + '.__args'] =
+                    currentFieldInfo.args.getArgs(that)
                 }
               }
             })
 
             // if main fieldInfo has args, process them
             if (fieldInfo.args) {
-              total[fieldInfo.args.path + '.__args'] = fieldInfo.args.getArgs(
-                that
-              )
+              total[fieldInfo.args.path + '.__args'] =
+                fieldInfo.args.getArgs(that)
             }
 
             return total
