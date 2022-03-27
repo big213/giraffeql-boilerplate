@@ -3,7 +3,7 @@ import firebase from '~/services/fireinit'
 import 'firebase/auth'
 
 export default (context) => {
-  const { store, redirect } = context
+  const { store } = context
 
   return new Promise((resolve) => {
     // listen for auth state changes
@@ -13,9 +13,6 @@ export default (context) => {
       } else {
         await handleLogin(store, firebaseAuthPayload)
       }
-
-      // always redirect to home page on auth state change
-      redirect('/')
 
       // wait for the above actions to be finished before allowing main application to load
       resolve()

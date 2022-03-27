@@ -59,6 +59,9 @@ export default {
         await firebase
           .auth()
           .signInWithEmailAndPassword(this.inputs.email, this.inputs.password)
+
+        // only redirect when the auth state has finished changing
+        firebase.auth().onAuthStateChanged(() => this.$router.push('/'))
       } catch (err) {
         handleError(this, err)
       }
