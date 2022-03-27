@@ -47,13 +47,17 @@ export default {
     async loadData() {
       this.loading.loadData = true
       try {
-        this.releases = await executeGiraffeql(this, {
-          getRepositoryReleases: {
-            __args: {
-              first: 5,
+        this.releases = await executeGiraffeql(
+          this,
+          {
+            getRepositoryReleases: {
+              __args: {
+                first: 5,
+              },
             },
           },
-        })
+          true
+        )
       } catch (err) {
         // do nothing
       }

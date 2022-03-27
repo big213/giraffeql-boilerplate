@@ -10,12 +10,12 @@ const prodResource = axios.create({
 export async function executeGiraffeql<Key extends keyof Root>(
   _that,
   query: GetQuery<Key>,
-  useIdToken = true
+  omitIdToken = false
 ): Promise<GetResponse<Key>> {
   // fetches the idToken
   const currentUser = firebase.auth().currentUser
   const idToken =
-    currentUser && useIdToken ? await currentUser.getIdToken() : null
+    currentUser && !omitIdToken ? await currentUser.getIdToken() : null
 
   // if logged in and no idToken, logout user
   /*
