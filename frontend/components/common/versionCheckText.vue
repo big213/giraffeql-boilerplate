@@ -54,9 +54,13 @@ export default {
 
   mounted() {
     this.currentVersion = getBuildVersion()
-    executeGiraffeql(this, {
-      getRepositoryLatestVersion: true,
-    }).then((res) => {
+    executeGiraffeql(
+      this,
+      {
+        getRepositoryLatestVersion: true,
+      },
+      true
+    ).then((res) => {
       this.latestVersion = res.tagName
       if (this.hasNewerVersion) {
         // only open the snackbar if not DEV

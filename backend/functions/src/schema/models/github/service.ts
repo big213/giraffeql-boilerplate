@@ -57,7 +57,7 @@ query {
               name
               descriptionHTML
               isLatest
-              createdAt
+              publishedAt
             }
           }
         }
@@ -87,7 +87,7 @@ query {
             name
             descriptionHTML
             isLatest
-            createdAt
+            publishedAt
           }
         }
       }
