@@ -88,8 +88,6 @@ export default {
 
         // refresh the store entry
         handleUserRefreshed(this, userCredential.user)
-
-        this.$router.push('/')
       } catch (err) {
         handleError(this, err)
       }

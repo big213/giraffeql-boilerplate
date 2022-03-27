@@ -238,8 +238,6 @@ export default {
 
     logout() {
       try {
-        this.$router.push('/')
-
         firebase.auth().signOut()
       } catch (err) {
         handleError(this, err)
