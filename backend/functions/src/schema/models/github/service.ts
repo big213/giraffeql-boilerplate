@@ -129,7 +129,7 @@ query {
       repository(name: "${env.github.repository}") {
         latestRelease {
           tagName
-          createdAt
+          publishedAt
         }
       }
     }
@@ -146,7 +146,7 @@ query {
     repository(name: "${env.github.repository}") {
       latestRelease {
         tagName
-        createdAt
+        publishedAt
       }
     }
   }

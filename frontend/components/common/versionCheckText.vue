@@ -65,7 +65,7 @@ export default {
           setTimeout(() => {
             this.snackbarStatus = true
             this.showNewerVersionIcon = true
-          }, Math.min(3 * 60 * 1000, Math.max(0, 3 * 60 * 1000 - (new Date() - new Date(res.createdAt)))))
+          }, Math.min(3 * 60 * 1000, Math.max(0, 3 * 60 * 1000 - (new Date() - new Date(res.publishedAt)))))
         } else {
           this.showNewerVersionIcon = true
         }
