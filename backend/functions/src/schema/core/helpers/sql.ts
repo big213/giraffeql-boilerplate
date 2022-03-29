@@ -473,6 +473,7 @@ function applyWhere(
           }
           break;
         case "in":
+        case "nin":
           if (Array.isArray(whereSubObject.value)) {
             // if array is empty, is equivalent of FALSE
             if (whereSubObject.value.length < 1) {
@@ -481,43 +482,20 @@ function applyWhere(
                 "Must provide non-empty array for (n)in operators"
               );
             } else {
-              // if trying to do IN (null), adjust accordingly
-              if (whereSubObject.value.some((ele) => ele === null)) {
-                whereSubstatement = `(${whereSubstatement} IN (${whereSubObject.value
-                  .filter((ele) => ele !== null)
-                  .map(() => "?")}) OR ${whereSubstatement} IS NULL)`;
-              } else {
-                whereSubstatement += ` IN (${whereSubObject.value.map(
-                  () => "?"
-                )})`;
-              }
+              const operatorPrefix = operator === "nin" ? "NOT " : "";
 
-              whereSubObject.value
-                .filter((ele) => ele !== null)
-                .forEach((ele) => {
-                  bindings.push(ele);
-                });
-            }
-          } else {
-            throw new Error("Must provide array for in/nin operators");
-          }
-          break;
-        case "nin":
-          if (Array.isArray(whereSubObject.value)) {
-            // if array is empty, is equivalent of TRUE
-            if (whereSubObject.value.length < 1) {
-              // whereSubstatement = " TRUE";
-              throw new Error(
-                "Must provide non-empty array for (n)in operators"
-              );
-            } else {
-              // if trying to do IN (null), adjust accordingly
-              if (whereSubObject.value.some((ele) => ele === null)) {
-                whereSubstatement = `(${whereSubstatement} NOT IN (${whereSubObject.value
+              if (whereSubObject.value.every((ele) => ele === null)) {
+                // if every element is null, handle specially
+                whereSubstatement += ` IS ${operatorPrefix}NULL`;
+              } else if (whereSubObject.value.some((ele) => ele === null)) {
+                // if trying to do IN (null, otherValue), adjust accordingly
+                whereSubstatement = `(${whereSubstatement} ${operatorPrefix}IN (${whereSubObject.value
                   .filter((ele) => ele !== null)
-                  .map(() => "?")}) OR ${whereSubstatement} IS NULL)`;
+                  .map(() => "?")}) ${
+                  operator === "nin" ? "AND" : "OR"
+                } ${whereSubstatement} IS ${operatorPrefix}NULL)`;
               } else {
-                whereSubstatement += ` NOT IN (${whereSubObject.value.map(
+                whereSubstatement += ` ${operatorPrefix}IN (${whereSubObject.value.map(
                   () => "?"
                 )})`;
               }
