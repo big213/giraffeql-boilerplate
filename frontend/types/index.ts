@@ -82,6 +82,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
     // the function to generate the lockedFilters for routeType "my"
     myFilterField?: (that: any) => CrudRawFilterObject[]
 
+    // should a $root event listener for refreshing be added
+    eventListener?: boolean
+
     // all of the possible usable filters
     filterOptions: `${T}FilterByObject` extends keyof InputTypes
       ? FilterObject[]
@@ -116,6 +119,8 @@ export type RecordInfo<T extends keyof MainTypes> = {
     component?: any
     // if not createX, the custom create operation name
     operationName?: string
+    // function that runs when recorded is successfully added
+    onSuccess?: (that) => void
   }
 
   importOptions?: {
@@ -138,6 +143,8 @@ export type RecordInfo<T extends keyof MainTypes> = {
     icon?: string
     // replacement text
     text?: string
+    // function that runs when recorded is successfully edited
+    onSuccess?: (that) => void
   }
 
   deleteOptions?: {
@@ -146,6 +153,8 @@ export type RecordInfo<T extends keyof MainTypes> = {
     component?: any
     // if not createX, the custom create operation name
     operationName?: string
+    // function that runs when recorded is successfully deleted
+    onSuccess?: (that) => void
   }
 
   viewOptions?: {

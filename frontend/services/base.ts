@@ -35,9 +35,17 @@ export function generateDateLocaleString(unixTimestamp: number | null) {
 export function generateParseDateTimeStringFn(
   defaultTo: 'currentTime' | 'startOfDay' | 'endOfDay' = 'startOfDay'
 ) {
-  return function parseDateTimeString(val: string): number | null {
+  return function parseDateTimeString(
+    val: string | number | null
+  ): number | null {
     // if falsey, default to null
     if (!val) return null
+
+    // if val is a number, it should be a unix timestamp seconds
+    // number input should only be possible from a special parsed value, like __now()
+    if (typeof val === 'number') {
+      return val
+    }
 
     // if the string resembles timeLanguage, parse it as such
     if (val.match(/^(now|time)/)) return parseTimeLanguage(val)
@@ -585,9 +593,9 @@ export function populateInputObject(
 
           // if autocomplete, attempt to translate the inputObject.value based on the options
           if (inputObject.inputType === 'autocomplete') {
-            inputObject.value = inputObject.options.find(
-              (ele) => ele.id === inputObject.value
-            )
+            inputObject.value =
+              inputObject.options.find((ele) => ele.id === inputObject.value) ??
+              null
           }
         })
       )
@@ -698,7 +706,7 @@ export function processQuery(
 
                 // if field has args, process them
                 if (currentFieldInfo.args) {
-                  total[currentFieldInfo.args.path + '.__args'] =
+                  total[`${currentFieldInfo.args.path}.__args`] =
                     currentFieldInfo.args.getArgs(that)
                 }
               }
@@ -706,7 +714,7 @@ export function processQuery(
 
             // if main fieldInfo has args, process them
             if (fieldInfo.args) {
-              total[fieldInfo.args.path + '.__args'] =
+              total[`${fieldInfo.args.path}.__args`] =
                 fieldInfo.args.getArgs(that)
             }
 

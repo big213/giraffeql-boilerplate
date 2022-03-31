@@ -391,6 +391,11 @@ export default {
       this.handleVisibilityChange,
       false
     )
+
+    // listen for root refresh events
+    if (this.recordInfo.paginationOptions.eventListener) {
+      this.$root.$on(`refresh-${this.recordInfo.typename}`, this.refreshCb)
+    }
   },
 
   destroyed() {
@@ -399,11 +404,21 @@ export default {
       'visibilitychange',
       this.handleVisibilityChange
     )
+
+    if (this.recordInfo.paginationOptions.eventListener) {
+      this.$root.$off(`refresh-${this.recordInfo.typename}`, this.refreshCb)
+    }
   },
 
   methods: {
     generateTimeAgoString,
     getIcon,
+
+    refreshCb() {
+      this.reset({
+        resetExpanded: false,
+      })
+    },
 
     toggleGridMode() {
       this.isGrid = !this.isGrid
@@ -573,12 +588,12 @@ export default {
         if (rawFilterObject.value === '__undefined') return total
 
         // parse '__null' to null first
-        // also parse '__now()' to current date string
+        // also parse '__now()' to current unix timestamp (seconds)
         const value =
           rawFilterObject.value === '__null'
             ? null
             : rawFilterObject.value === '__now()'
-            ? generateDateLocaleString(new Date().getTime() / 1000)
+            ? new Date().getTime() / 1000
             : rawFilterObject.value
 
         // apply parseValue function, if any
@@ -604,8 +619,8 @@ export default {
       this.loading.exportData = true
       try {
         // use custom download fields if provided
-        const customFields = this.recordInfo.paginationOptions.downloadOptions
-          .fields
+        const customFields =
+          this.recordInfo.paginationOptions.downloadOptions.fields
         const fields =
           customFields ??
           this.recordInfo.paginationOptions.headerOptions

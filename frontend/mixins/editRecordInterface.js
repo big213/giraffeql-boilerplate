@@ -308,6 +308,11 @@ export default {
           variant: 'success',
         })
 
+        if (this.mode === 'add' || this.mode === 'edit') {
+          const onSuccess = this.recordInfo[`${this.mode}Options`].onSuccess
+          onSuccess && onSuccess(this)
+        }
+
         this.handleSubmitSuccess(data)
 
         // reset inputs

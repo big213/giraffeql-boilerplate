@@ -74,6 +74,9 @@ export default {
           variant: 'success',
         })
 
+        this.recordInfo.deleteOptions.onSuccess &&
+          this.recordInfo.deleteOptions.onSuccess(this)
+
         this.$emit('handleSubmit', data)
         this.$emit('close')
       } catch (err) {
