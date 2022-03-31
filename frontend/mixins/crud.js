@@ -124,6 +124,9 @@ export default {
       // has the recordInfo been changed?
       cancelPageOptionsReset: false,
 
+      // has reset been called on this tick already?
+      resetCalledOnTick: false,
+
       records: [],
       totalRecords: 0,
       endCursor: null,
@@ -619,8 +622,8 @@ export default {
       this.loading.exportData = true
       try {
         // use custom download fields if provided
-        const customFields =
-          this.recordInfo.paginationOptions.downloadOptions.fields
+        const customFields = this.recordInfo.paginationOptions.downloadOptions
+          .fields
         const fields =
           customFields ??
           this.recordInfo.paginationOptions.headerOptions
@@ -906,6 +909,17 @@ export default {
       showLoader = true,
       clearRecords = true,
     } = {}) {
+      // if reset was already called on this tick, stop execution
+      if (this.resetCalledOnTick) return
+
+      // indicate that reset was called on this tick
+      this.resetCalledOnTick = true
+
+      // reset the indicator on the next tick
+      this.$nextTick(() => {
+        this.resetCalledOnTick = false
+      })
+
       if (clearRecords) {
         this.records = []
         this.totalRecords = null
