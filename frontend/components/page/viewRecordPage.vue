@@ -32,7 +32,7 @@
                 <v-toolbar flat color="accent" dense>
                   <v-icon left>{{ recordInfo.icon || 'mdi-domain' }}</v-icon>
                   <v-toolbar-title>
-                    {{ recordInfo.title || recordInfo.name }}
+                    {{ recordInfo.name }}
                   </v-toolbar-title>
                   <v-spacer></v-spacer>
                   <v-btn icon @click="reset()">
