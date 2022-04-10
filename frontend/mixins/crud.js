@@ -178,7 +178,7 @@ export default {
 
     // type: recordInfo.paginationOptions.headers to CrudHeaderObject[]
     headerOptions() {
-      return this.recordInfo.paginationOptions.headerOptions
+      const headerOptions = this.recordInfo.paginationOptions.headerOptions
         .filter((headerInfo) => !this.hiddenHeaders.includes(headerInfo.field))
         .filter((headerInfo) => {
           // if there is a hideIf function, check it
@@ -213,8 +213,7 @@ export default {
             align: headerInfo.align ?? 'left',
             value: primaryField,
             sortable: false,
-            // first header should never be restricted in width
-            width: index === 0 ? null : headerInfo.width ?? null,
+            width: headerInfo.width ?? null,
             fieldInfo,
             // equal to pathPrefix if provided
             // else equal to the field if single-field
@@ -237,6 +236,13 @@ export default {
                 ...this.recordInfo.paginationOptions.headerActionOptions,
               }
         )
+
+      // if no headerOption has null width, set the first one to null width
+      if (!headerOptions.some((headerInfo) => !headerInfo.width)) {
+        headerOptions[0].width = null
+      }
+
+      return headerOptions
     },
 
     // type: CrudRawFilterObject[]
