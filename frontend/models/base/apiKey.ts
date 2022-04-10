@@ -65,6 +65,7 @@ export const ApiKey = <RecordInfo<'apiKey'>>{
     headerOptions: [
       {
         field: 'name',
+        hideIfGrid: true,
       },
       {
         field: 'code',

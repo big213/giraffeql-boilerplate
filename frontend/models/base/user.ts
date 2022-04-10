@@ -94,6 +94,7 @@ export const User = <RecordInfo<'user'>>{
     headerOptions: [
       {
         field: 'nameWithAvatar',
+        hideIfGrid: true,
       },
       {
         field: 'email',

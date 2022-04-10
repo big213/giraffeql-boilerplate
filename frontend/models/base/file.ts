@@ -19,7 +19,7 @@ export const File = <RecordInfo<'file'>>{
       text: 'Name',
     },
     nameWithId: {
-      text: 'Name',
+      text: 'File',
       fields: ['name', 'id'],
       component: FileColumn,
     },
