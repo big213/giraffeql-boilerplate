@@ -3,6 +3,8 @@ import { StringKeyObject } from "giraffeql";
 import { Request } from "express";
 import { NormalService } from "../core/services";
 import { AccessControlFunction } from "../../types";
+import { isObject } from "giraffeql/lib/helpers/base";
+import { objectOnlyHasFields } from "../core/helpers/shared";
 
 export const userRoleToPermissionsMap = {
   [userRoleKenum.ADMIN.name]: [userPermissionEnum.A_A],
@@ -79,4 +81,22 @@ export function filterPassesTest(filterByArray, filterFn) {
     filterByArray.length > 0 &&
     filterByArray.every(filterFn)
   );
+}
+
+// does the first filterObject have the fieldPath attribute, and if so, do other filterObjects also have the same exact value?
+// only "eq" currently supported
+export function allFiltersSynced(filterByArray: any, fieldPath: string) {
+  const firstValue = filterByArray[0]?.[fieldPath]?.eq;
+
+  return filterPassesTest(filterByArray, (filterObject) => {
+    return filterObject[fieldPath]?.eq === firstValue;
+  });
+}
+
+export function validateQueryFields(query: any, allowedFields: string[]) {
+  if (isObject(query) && objectOnlyHasFields(query, allowedFields)) {
+    return true;
+  }
+
+  return false;
 }

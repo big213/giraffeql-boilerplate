@@ -15,6 +15,7 @@ export type ServicesObjectMap = {
     service: NormalService;
     allowNull?: boolean;
     sqlField?: string; // sql alias for the field, e.g. if it has CAPS
+    updateable?: boolean; // can this field be updated?
   };
 };
 
@@ -29,6 +30,10 @@ export function generateLinkTypeDef(
     typeDefFields[field] = generateJoinableField({
       service: servicesObjectMap[field].service,
       allowNull: servicesObjectMap[field].allowNull ?? false,
+      typeDefOptions: {
+        addable: true,
+        updateable: servicesObjectMap[field].updateable ?? true,
+      },
       sqlOptions: {
         unique: "compositeIndex",
         ...(servicesObjectMap[field].sqlField && {
