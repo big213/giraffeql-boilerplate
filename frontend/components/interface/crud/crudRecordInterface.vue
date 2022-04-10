@@ -155,7 +155,7 @@
     <v-card class="text-center">
       <span v-if="isDataLoading">...</span>
       <span v-else-if="!totalRecords">---</span>
-      <span v-else>
+      <span v-else class="noselect">
         (Showing {{ records.length }} of {{ totalRecords }}
         {{ recordInfo.pluralName }})
       </span>
@@ -185,13 +185,38 @@
               md="4"
               lg="3"
             >
-              <v-card @click="handleRowClick(item)">
-                <!--
-                <v-card-title class="subheading font-weight-bold">
-                {{ item.name }}
-              </v-card-title>
-              <v-divider></v-divider>
-              -->
+              <v-card class="noselect" @click="handleGridElementClick(item)">
+                <v-img
+                  :src="
+                    getNestedProperty(
+                      item,
+                      recordInfo.paginationOptions.previewImagePath || 'avatar'
+                    )
+                  "
+                  class="white--text align-end"
+                  gradient="to bottom, rgba(0,0,0,.1), rgba(0,0,0,.5)"
+                  height="200px"
+                >
+                  <template v-slot:placeholder>
+                    <v-row
+                      class="fill-height ma-0"
+                      align="center"
+                      justify="center"
+                    >
+                      <v-icon size="200" color="grey darken-3">{{
+                        recordInfo.icon
+                      }}</v-icon>
+                    </v-row>
+                  </template>
+
+                  <v-card-title class="subheading font-weight-bold">{{
+                    getNestedProperty(
+                      item,
+                      recordInfo.paginationOptions.previewNamePath || 'name'
+                    )
+                  }}</v-card-title>
+                </v-img>
+                <v-divider></v-divider>
                 <v-list dense>
                   <v-list-item
                     v-for="(headerItem, j) in headerOptions"
@@ -200,15 +225,13 @@
                     <v-list-item-content
                       >{{ headerItem.text }}:</v-list-item-content
                     >
-                    <v-list-item-content class="text-right truncate-mobile-row">
+                    <v-list-item-content class="text-right">
                       <component
                         :is="headerItem.fieldInfo.component"
                         v-if="headerItem.fieldInfo.component"
                         :item="item"
                         :field-path="headerItem.path"
                         :options="headerItem.fieldInfo.columnOptions"
-                        @submit="reset({ resetExpanded: false })"
-                        @item-updated="reset({ resetExpanded: false })"
                       ></component>
                       <span v-else>
                         {{ getTableRowData(headerItem, item) }}
@@ -227,7 +250,6 @@
                     @handle-action-click="openEditDialog"
                     @handle-expand-click="openExpandDialog(item, ...$event)"
                     @handle-custom-action-click="handleCustomActionClick"
-                    @reload-parent="reset({ resetExpanded: false })"
                   >
                     <template v-slot:activator="{ on, attrs }">
                       <v-btn block text v-bind="attrs" v-on="on">
@@ -251,7 +273,7 @@
                 >
                 <span v-if="isDataLoading">...</span>
                 <span v-else-if="!totalRecords">---</span>
-                <span v-else>
+                <span v-else class="noselect">
                   (Showing {{ records.length }} of {{ totalRecords }}
                   {{ recordInfo.pluralName }})
                 </span>
@@ -260,6 +282,9 @@
           </v-row>
         </v-container>
       </template>
+      <template v-slot:no-data
+        ><div class="text-center">No records</div></template
+      >
     </v-data-iterator>
     <v-data-table
       v-else
@@ -279,7 +304,7 @@
           v-if="props.isMobile"
           :key="props.item.id"
           class="v-data-table__mobile-table-row"
-          @click="handleRowClick(props.item)"
+          @click="handleRowClick(props)"
         >
           <td
             v-for="(headerItem, i) in headerOptions"
@@ -299,9 +324,8 @@
                 bottom
                 offset-y
                 @handle-action-click="openEditDialog"
-                @handle-expand-click="openExpandDialog(props.item, ...$event)"
+                @handle-expand-click="toggleItemExpanded(props, ...$event)"
                 @handle-custom-action-click="handleCustomActionClick"
-                @reload-parent="reset({ resetExpanded: false })"
               >
                 <template v-slot:activator="{ on, attrs }">
                   <v-btn block text v-bind="attrs" v-on="on"> Actions </v-btn>
@@ -319,8 +343,6 @@
                   :item="props.item"
                   :field-path="headerItem.path"
                   :options="headerItem.fieldInfo.columnOptions"
-                  @submit="reset({ resetExpanded: false })"
-                  @item-updated="reset({ resetExpanded: false })"
                 ></component>
                 <span v-else>
                   {{ getTableRowData(headerItem, props.item) }}
@@ -335,7 +357,7 @@
           :class="{
             'expanded-row-bg': props.isExpanded,
           }"
-          @click="handleRowClick(props.item)"
+          @click="handleRowClick(props)"
         >
           <td
             v-for="(headerItem, i) in headerOptions"
@@ -353,7 +375,6 @@
                 @handle-action-click="openEditDialog"
                 @handle-expand-click="toggleItemExpanded(props, ...$event)"
                 @handle-custom-action-click="handleCustomActionClick"
-                @reload-parent="reset({ resetExpanded: false })"
               >
                 <template v-slot:activator="{ on, attrs }">
                   <v-icon small v-bind="attrs" v-on="on"
@@ -369,8 +390,6 @@
                 :item="props.item"
                 :field-path="headerItem.path"
                 :options="headerItem.fieldInfo.columnOptions"
-                @submit="reset({ resetExpanded: false })"
-                @item-updated="reset({ resetExpanded: false })"
               ></component>
               <span v-else>
                 {{ getTableRowData(headerItem, props.item) }}
@@ -392,7 +411,7 @@
           >
           <span v-if="isDataLoading">...</span>
           <span v-else-if="!totalRecords">---</span>
-          <span v-else>
+          <span v-else class="noselect">
             (Showing {{ records.length }} of {{ totalRecords }}
             {{ recordInfo.pluralName }})
           </span>
@@ -414,7 +433,6 @@
             is-child-component
             :dense="dense"
             @pageOptions-updated="handleSubPageOptionsUpdated"
-            @record-changed="reset({ resetExpanded: false })"
           >
             <template v-slot:header-action>
               <v-btn icon @click="closeExpandedItems()">
@@ -432,8 +450,6 @@
       :selected-item="dialogs.selectedItem"
       :mode="dialogs.editMode"
       @close="dialogs.editRecord = false"
-      @handleSubmit="handleListChange()"
-      @item-updated="handleListChange()"
     ></EditRecordDialog>
     <v-dialog v-model="dialogs.expandRecord">
       <v-card flat>
@@ -450,7 +466,6 @@
           is-child-component
           :dense="dense"
           @pageOptions-updated="handleSubPageOptionsUpdated"
-          @record-changed="reset({ resetExpanded: false })"
         >
           <template v-slot:header-action>
             <v-btn icon @click="dialogs.expandRecord = false">

@@ -84,6 +84,8 @@ export default {
         initInputs: false,
         loadDropdowns: false,
       },
+
+      resetCalledOnTick: false,
     }
   },
 
@@ -92,12 +94,16 @@ export default {
       return Object.values(this.loading).some((state) => state)
     },
 
+    fields() {
+      return this.customFields ?? this.recordInfo[`${this.mode}Options`].fields
+    },
+
     capitalizedType() {
       return capitalizeString(this.recordInfo.typename)
     },
     title() {
       return (
-        ((this.mode === 'add') | (this.mode === 'copy')
+        (this.mode === 'add' || this.mode === 'copy'
           ? 'New'
           : this.mode === 'edit'
           ? 'Edit'
@@ -121,13 +127,6 @@ export default {
           )
         : this.inputsArray
     },
-
-    /*     currentItem() {
-      return {
-        type: this.recordInfo.typename,
-        id: this.selectedItem.id,
-      }
-    }, */
   },
 
   watch: {
@@ -144,9 +143,24 @@ export default {
 
   created() {
     this.reset()
+
+    this.$root.$on('refresh-interface', this.refreshCb)
+  },
+
+  destroyed() {
+    this.$root.$off('refresh-interface', this.refreshCb)
   },
 
   methods: {
+    refreshCb(typename) {
+      if (
+        this.recordInfo.typename === typename &&
+        this.recordInfo[`${this.mode}Options`]?.eventListener
+      ) {
+        this.reset()
+      }
+    },
+
     setInputValue(key, value) {
       return setInputValue(this.inputsArray, key, value)
     },
@@ -308,11 +322,6 @@ export default {
           variant: 'success',
         })
 
-        if (this.mode === 'add' || this.mode === 'edit') {
-          const onSuccess = this.recordInfo[`${this.mode}Options`].onSuccess
-          onSuccess && onSuccess(this)
-        }
-
         this.handleSubmitSuccess(data)
 
         // reset inputs
@@ -324,7 +333,18 @@ export default {
     },
 
     handleSubmitSuccess(data) {
-      this.$emit('handleSubmit', data)
+      // run any custom onSuccess functions
+      if (this.mode === 'add' || this.mode === 'edit') {
+        const onSuccess = this.recordInfo[`${this.mode}Options`].onSuccess
+
+        if (onSuccess) {
+          onSuccess(this)
+        } else {
+          // else emit the generic refresh-interface event
+          this.$root.$emit('refresh-interface', this.recordInfo.typename)
+        }
+      }
+
       this.$emit('close')
     },
 
@@ -334,18 +354,11 @@ export default {
         // create a map field -> serializeFn for fast serialization
         const serializeMap = new Map()
 
-        const fields =
-          this.customFields ??
-          (this.mode === 'copy'
-            ? this.recordInfo.copyOptions.fields
-            : this.mode === 'edit'
-            ? this.recordInfo.editOptions.fields
-            : this.recordInfo.viewOptions.fields)
         const data = await executeGiraffeql(this, {
           ['get' + this.capitalizedType]: {
             __typename: true,
             ...collapseObject(
-              fields.reduce(
+              this.fields.reduce(
                 (total, fieldKey) => {
                   const fieldInfo = lookupFieldInfo(this.recordInfo, fieldKey)
 
@@ -406,7 +419,7 @@ export default {
 
         // if copy mode, load all add fields
         const inputFields =
-          this.mode === 'copy' ? this.recordInfo.addOptions.fields : fields
+          this.mode === 'copy' ? this.recordInfo.addOptions.fields : this.fields
 
         // keep track of promises relating to dropdowns/options
         const dropdownPromises = []
@@ -446,7 +459,7 @@ export default {
             }
 
             // if copy mode and fieldKey not in original fields, use default
-            if (this.mode === 'copy' && !fields.includes(fieldKey)) {
+            if (this.mode === 'copy' && !this.fields.includes(fieldKey)) {
               inputObject.value = fieldInfo.default
                 ? await fieldInfo.default(this)
                 : null
@@ -567,6 +580,17 @@ export default {
     },
 
     reset() {
+      // if reset was already called on this tick, stop execution
+      if (this.resetCalledOnTick) return
+
+      // indicate that reset was called on this tick
+      this.resetCalledOnTick = true
+
+      // reset the indicator on the next tick
+      this.$nextTick(() => {
+        this.resetCalledOnTick = false
+      })
+
       // duplicate misc inputs, if any
       this.miscInputs = JSON.parse(JSON.stringify(this.originalMiscInputs))
 

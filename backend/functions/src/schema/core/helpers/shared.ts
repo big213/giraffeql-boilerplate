@@ -75,6 +75,9 @@ export function expandObject(obj: StringKeyObject): StringKeyObject {
 export const snakeToCamel = (str: string): string =>
   str.replace(/([-_]\w)/g, (g) => g[1].toUpperCase());
 
+export function camelToSnake(str: string) {
+  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+}
 export function deepAssign(
   target: StringKeyObject,
   source: StringKeyObject

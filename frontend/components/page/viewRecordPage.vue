@@ -190,7 +190,7 @@ export default {
   },
 
   watch: {
-    '$route.query.expand'(val) {
+    '$route.query.e'(val) {
       this.setExpandTypeObject(val)
     },
 
@@ -236,9 +236,9 @@ export default {
       }
 
       if (index !== null) {
-        query.expand = index
+        query.e = index
       } else {
-        delete query.expand
+        delete query.e
       }
 
       // push to route
@@ -335,8 +335,8 @@ export default {
       // must independently verify existence of item
       this.loadRecord().then(() => {
         // if expand query param set, set the initial expandTypeObject
-        if (this.$route.query.expand !== undefined) {
-          this.setExpandTypeObject(this.$route.query.expand)
+        if (this.$route.query.e !== undefined) {
+          this.setExpandTypeObject(this.$route.query.e)
         }
       })
     },

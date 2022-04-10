@@ -72,45 +72,61 @@ import { logoHasLightVariant } from '~/services/config'
 import * as myModels from '~/models/my'
 import * as publicModels from '~/models/public'
 
-function generateUserRouteObject(that, recordInfo, customPath) {
+function generateUserRouteObject(
+  that,
+  recordInfo,
+  customPath,
+  customPageOptions
+) {
   return {
     icon: recordInfo.icon,
     title: recordInfo.title ?? recordInfo.pluralName,
-    to:
-      customPath ??
-      generateCrudRecordRoute(that, {
-        typename: recordInfo.typename,
-        routeType: 'my',
-        pageOptions: {
-          search: '',
-          filters: [],
-          sort: {
-            field: 'createdAt',
-            desc: true,
-          },
-        },
-      }),
+    to: generateCrudRecordRoute(that, {
+      path: customPath,
+      typename: recordInfo.typename,
+      routeType: 'my',
+      pageOptions:
+        customPageOptions === null
+          ? null
+          : {
+              search: '',
+              filters: [],
+              sort: {
+                field: 'createdAt',
+                desc: true,
+              },
+              ...customPageOptions,
+            },
+    }),
   }
 }
 
-function generatePublicRouteObject(that, recordInfo, customPath) {
+function generatePublicRouteObject(
+  that,
+  recordInfo,
+  customPath,
+  customPageOptions
+) {
   return {
     icon: recordInfo.icon,
     title: recordInfo.title ?? recordInfo.pluralName,
-    to:
-      customPath ??
-      generateCrudRecordRoute(that, {
-        typename: recordInfo.typename,
-        routeType: 'i',
-        pageOptions: {
-          search: '',
-          filters: [],
-          sort: {
-            field: 'createdAt',
-            desc: true,
-          },
-        },
-      }),
+    to: generateCrudRecordRoute(that, {
+      path: customPath,
+      typename: recordInfo.typename,
+      routeType: 'i',
+      pageOptions:
+        customPageOptions === null
+          ? null
+          : {
+              search: '',
+              filters: [],
+              sort: {
+                field: 'createdAt',
+                desc: true,
+              },
+              ...customPageOptions,
+            },
+    }),
   }
 }
 

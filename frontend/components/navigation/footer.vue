@@ -3,7 +3,9 @@
     <VersionCheckText />
     <span>&nbsp;&copy; {{ new Date().getFullYear() }}</span>
     <v-spacer></v-spacer>
-    <nuxt-link to="/legal/privacy" class="mr-2"> Privacy & Terms </nuxt-link>
+    <nuxt-link to="/legal/privacy" class="mr-2 hidden-xs-only">
+      Privacy & Terms
+    </nuxt-link>
     <v-icon
       v-if="siteDiscordLink"
       small

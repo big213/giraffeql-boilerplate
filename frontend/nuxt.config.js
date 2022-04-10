@@ -18,6 +18,7 @@ export default {
     siteDiscordLink: process.env.SITE_DISCORD_LINK,
     siteGithubRepositoryUrl: process.env.SITE_GITHUB_REPOSITORY_URL,
     logoHasLightVariant: !!process.env.LOGO_HAS_LIGHT_VARIANT,
+    defaultGridView: !!process.env.DEFAULT_GRID_VIEW,
   },
 
   // Target (https://go.nuxtjs.dev/config-target)

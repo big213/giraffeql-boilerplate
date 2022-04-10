@@ -72,7 +72,7 @@ export class ApiKeyService extends PaginatedService {
       const record = await this.getFirstSqlRecord(
         {
           select: ["user.id"],
-          where: args,
+          where: args.item,
         },
         fieldPath
       );

@@ -24,7 +24,11 @@ import {
   PaginatedService,
 } from "../services";
 import * as Scalars from "../../scalars";
-import type { ObjectTypeDefSqlOptions, SqlType } from "../../../types";
+import type {
+  ObjectTypeDefSqlOptions,
+  SqlType,
+  StringKeyObject,
+} from "../../../types";
 import { getObjectType } from "./resolver";
 import { SqlSelectQuery } from "./sql";
 
@@ -777,10 +781,12 @@ function validateFieldPath(
 export function generatePivotResolverObject({
   pivotService,
   filterByField,
+  additionalFilterFields,
   sqlParams,
 }: {
   pivotService: PaginatedService;
   filterByField: string;
+  additionalFilterFields?: StringKeyObject;
   sqlParams?: Omit<SqlSelectQuery, "table" | "select" | "where">;
 }) {
   return {
@@ -799,6 +805,7 @@ export function generatePivotResolverObject({
         sqlParams: {
           where: {
             [filterByField]: parentValue.id,
+            ...additionalFilterFields,
           },
           ...sqlParams,
         },
@@ -897,6 +904,11 @@ export function generatePaginatorPivotResolverObject(params: {
                   allowNull: false,
                 }),
                 lt: new GiraffeqlInputFieldType({
+                  type: currentType,
+                  required: false,
+                  allowNull: false,
+                }),
+                gtornull: new GiraffeqlInputFieldType({
                   type: currentType,
                   required: false,
                   allowNull: false,

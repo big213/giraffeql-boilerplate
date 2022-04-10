@@ -1,7 +1,7 @@
 <template>
   <div v-if="currentValueComputed">
     <div v-for="(url, index) in currentValueComputed" :key="index">
-      <a @click.stop="openLink(url)">
+      <a :title="url" @click.stop="openLink(url)">
         <v-icon small>mdi-open-in-new</v-icon>
         {{ url }}</a
       >

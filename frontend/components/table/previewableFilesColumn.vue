@@ -23,7 +23,7 @@
             :file="file"
             downloadable
             openable
-            class="xs3"
+            class="md3 sm6 xs12"
           ></MediaChip>
         </v-layout>
       </v-container>

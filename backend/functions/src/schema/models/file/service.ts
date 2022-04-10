@@ -6,7 +6,11 @@ import {
   createObjectType,
   deleteObjectType,
 } from "../../core/helpers/resolver";
-import { filterPassesTest, isCurrentUser } from "../../helpers/permissions";
+import {
+  filterPassesTest,
+  isCurrentUser,
+  isUserLoggedIn,
+} from "../../helpers/permissions";
 
 export class FileService extends PaginatedService {
   defaultTypename = "file";
@@ -54,7 +58,8 @@ export class FileService extends PaginatedService {
 
     /*
     Allow if:
-    - filtering by createdBy.id is currentUser
+    - filtering by createdBy.id is currentUser,
+    - OR, temporarily allowing all (would normally need to check the parentKey)
     */
     getMultiple: ({ req, args }) => {
       if (
@@ -64,6 +69,57 @@ export class FileService extends PaginatedService {
       ) {
         return true;
       }
+
+      return true;
+      // return false;
+    },
+
+    /*
+    Allow if:
+    - is logged in
+    */
+    create: async ({ req, args, fieldPath }) => {
+      if (!isUserLoggedIn(req)) return false;
+
+      return true;
+    },
+
+    /*
+    Allow if:
+    - user created the item
+    */
+    update: async ({ req, args, fieldPath }) => {
+      if (!isUserLoggedIn(req)) return false;
+
+      const record = await this.getFirstSqlRecord(
+        {
+          select: ["createdBy.id"],
+          where: args.item,
+        },
+        fieldPath
+      );
+
+      if (isCurrentUser(req, record["createdBy.id"])) return true;
+
+      return false;
+    },
+
+    /*
+    Allow if:
+    - user created the item
+    */
+    delete: async ({ req, args, fieldPath }) => {
+      if (!isUserLoggedIn(req)) return false;
+
+      const record = await this.getFirstSqlRecord(
+        {
+          select: ["createdBy.id"],
+          where: args,
+        },
+        fieldPath
+      );
+
+      if (isCurrentUser(req, record["createdBy.id"])) return true;
 
       return false;
     },

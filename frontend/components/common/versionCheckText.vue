@@ -1,6 +1,8 @@
 <template>
   <div>
-    <a @click="copyIdTokenToClipboard()">{{ getBuildInfo() }}</a>
+    <a @click="copyIdTokenToClipboard()"
+      ><span class="hidden-xs-only">Build </span>{{ buildVersion }}</a
+    >
     <v-icon
       v-if="hasNewerVersion && showNewerVersionIcon"
       title="A newer version of this site is available. Click to reload."
@@ -81,6 +83,10 @@ export default {
     hasNewerVersion() {
       return this.latestVersion && this.currentVersion !== this.latestVersion
     },
+
+    buildVersion() {
+      return this.currentVersion ?? process.env.buildDate
+    },
   },
 
   methods: {
@@ -91,9 +97,6 @@ export default {
       if (firebase.auth().currentUser) {
         copyToClipboard(this, await firebase.auth().currentUser.getIdToken())
       }
-    },
-    getBuildInfo() {
-      return 'Build ' + (this.currentVersion ?? process.env.buildDate)
     },
   },
 }

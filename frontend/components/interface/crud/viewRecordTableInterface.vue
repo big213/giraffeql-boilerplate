@@ -18,7 +18,7 @@
             <tbody>
               <tr v-for="(item, i) in inputsArray" :key="i">
                 <td>{{ item.fieldInfo.text }}</td>
-                <td>
+                <td class="truncate">
                   <component
                     :is="item.fieldInfo.component"
                     v-if="item.fieldInfo.component"
@@ -76,6 +76,7 @@ export default {
       },
 
       commentsGeneration: 0,
+      resetCalledOnTick: false,
 
       inputsArray: [],
     }
@@ -137,10 +138,22 @@ export default {
 
   mounted() {
     this.reset()
+
+    this.$root.$on('refresh-interface', this.refreshCb)
+  },
+
+  destroyed() {
+    this.$root.$off('refresh-interface', this.refreshCb)
   },
 
   methods: {
     getNestedProperty,
+
+    refreshCb(typename) {
+      if (this.recordInfo.typename === typename) {
+        this.reset()
+      }
+    },
 
     getFieldPath(inputObject) {
       const primaryField = inputObject.fieldInfo.fields
@@ -221,6 +234,17 @@ export default {
     },
 
     reset() {
+      // if reset was already called on this tick, stop execution
+      if (this.resetCalledOnTick) return
+
+      // indicate that reset was called on this tick
+      this.resetCalledOnTick = true
+
+      // reset the indicator on the next tick
+      this.$nextTick(() => {
+        this.resetCalledOnTick = false
+      })
+
       this.loadRecord()
     },
   },

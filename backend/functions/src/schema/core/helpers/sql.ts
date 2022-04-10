@@ -69,6 +69,7 @@ export type SqlWhereFieldOperator =
   | "regex"
   | "like"
   | "gt"
+  | "gtornull"
   | "gte"
   | "lt"
   | "lte"
@@ -429,7 +430,7 @@ function applyWhere(
           if (whereSubObject.value === null) {
             whereSubstatement += " IS NOT NULL";
           } else {
-            whereSubstatement += " != ?";
+            whereSubstatement += " IS DISTINCT FROM ?";
             bindings.push(whereSubObject.value);
           }
           break;
@@ -441,6 +442,15 @@ function applyWhere(
             // being gt a non-null value is generally understood to not include nulls. however, since > does not include nulls in pg anyway, we don't need to include it
             // whereSubstatement = `(${whereSubstatement} > ? AND ${whereSubstatement} IS NOT NULL)`;
             whereSubstatement += " > ?";
+            bindings.push(whereSubObject.value);
+          }
+          break;
+        case "gtornull":
+          if (whereSubObject.value === null) {
+            // gt or null of null is generally understood to always be true
+            whereSubstatement = "TRUE";
+          } else {
+            whereSubstatement = `(${whereSubstatement} > ? OR ${whereSubstatement} IS NULL)`;
             bindings.push(whereSubObject.value);
           }
           break;
@@ -790,6 +800,9 @@ export async function sumTableRows(
       relevantFields.add(field)
     );
 
+    // add the field to be summed
+    relevantFields.add(sqlQuery.field);
+
     const { fieldInfoMap, requiredJoins, tableIndexMap } = processFields(
       relevantFields,
       sqlQuery.table
@@ -810,8 +823,13 @@ export async function sumTableRows(
       knexObject.limit(sqlQuery.limit);
     }
 
+    // this shoud always exist
+    const sumFieldInfo = fieldInfoMap.get(sqlQuery.field)!;
+
     // apply distinct
-    knexObject[sqlQuery.distinct ? "sumDistinct" : "sum"](sqlQuery.field);
+    knexObject[sqlQuery.distinct ? "sumDistinct" : "sum"](
+      knex.raw(`"${sumFieldInfo.tableAlias}"."${sumFieldInfo.finalField}"`)
+    );
 
     const results = await knexObject;
     return Number(results[0].sum);

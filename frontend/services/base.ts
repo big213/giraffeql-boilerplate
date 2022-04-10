@@ -17,17 +17,25 @@ export function generateTimeAgoString(unixTimestamp: number | null) {
 }
 
 // unix timestamp (seconds) to YYYY-MM-DD HH:MM:SS
-export function generateDateLocaleString(unixTimestamp: number | null) {
+export function generateDateLocaleString(
+  unixTimestamp: number | null,
+  truncuateSeconds = false
+) {
   if (!unixTimestamp) return null
 
   const dateObject = new Date(unixTimestamp * 1000)
 
+  const hours = dateObject.getHours()
+
   return `${dateObject.getFullYear()}-${String(
     dateObject.getMonth() + 1
-  ).padStart(2, '0')}-${String(dateObject.getDate()).padStart(
-    2,
-    '0'
-  )} ${dateObject.toLocaleTimeString()}`
+  ).padStart(2, '0')}-${String(dateObject.getDate()).padStart(2, '0')} ${
+    truncuateSeconds
+      ? `${String(hours > 12 ? hours - 12 : hours === 0 ? 12 : hours)}:${String(
+          dateObject.getMinutes()
+        ).padStart(2, '0')} ${hours > 11 ? 'PM' : 'AM'}`
+      : dateObject.toLocaleTimeString()
+  }`
 }
 
 // YYYY-MM-DD HH:MM(:SS). If only YYYY-MM-DD is provided, will automatically append the current HH:MM:SS.
@@ -53,7 +61,6 @@ export function generateParseDateTimeStringFn(
     let dateString = val
 
     let year, month, day, hours, minutes, seconds
-
     if (
       !dateString.match(
         /^\d{4}-\d{2}-\d{2}(\s\d{1,2}:\d{2}(:\d{2})?(\s(AM|PM))?)?$/
@@ -80,7 +87,7 @@ export function generateParseDateTimeStringFn(
 
     // if AM, set hours to 0 if hours is 12
     // i.e. 12:00AM -> hours 0
-    if (dateParts[dateParts.length - 1] === 'AM') hours = 0
+    if (dateParts[dateParts.length - 1] === 'AM' && hours === 12) hours = 0
 
     if (hours > 23) throw new Error('Hours cannot be more than 23')
 
@@ -432,7 +439,7 @@ export function generateViewRecordRoute(
     path: path ?? `/${routeType!}/view/${camelToKebabCase(typename!)}`,
     query: {
       id,
-      expand,
+      e: expand,
       ...queryParams,
     },
   }).href
@@ -511,8 +518,9 @@ export function getInputValue(inputObjectsArray, key) {
 
 export function getInputObject(inputObjectsArray, key) {
   const inputObject = inputObjectsArray.find((ele) => ele.fieldKey === key)
-  if (!inputObject) throw new Error(`Input key not found: '${key}'`)
-  return inputObject
+  // if (!inputObject) throw new Error(`Input key not found: '${key}'`)
+
+  return inputObject ?? null
 }
 
 export function convertCSVToJSON(text: string) {

@@ -343,6 +343,27 @@
         @change="applyDatePickerInput"
       ></v-date-picker>
     </v-menu>
+    <v-text-field
+      v-else-if="item.inputType === 'datetimepicker'"
+      v-model="tempInput"
+      :label="item.label + (item.optional ? ' (optional)' : '')"
+      :readonly="isReadonly"
+      :rules="item.inputRules"
+      :hint="item.hint"
+      :loading="item.loading"
+      :append-icon="appendIcon"
+      :append-outer-icon="item.closeable ? 'mdi-close' : null"
+      persistent-hint
+      filled
+      dense
+      type="datetime-local"
+      class="py-0"
+      v-on="$listeners"
+      @click:append="handleClear()"
+      @keyup.enter="triggerSubmit()"
+      @click:append-outer="handleClose()"
+      @input="handleDateTimeInputChange($event) || triggerInput()"
+    ></v-text-field>
     <v-combobox
       v-else-if="item.inputType === 'combobox'"
       ref="combobox"
@@ -719,6 +740,14 @@ export default {
       tempInput: null,
       filesData: [],
       filesProcessingQueue: null,
+
+      dateTime: {
+        dateInput: null,
+        dateMenu: false,
+
+        timeInput: null,
+        timeMenu: null,
+      },
     }
   },
 
@@ -759,6 +788,7 @@ export default {
     generateFileServingUrl,
     handleClear() {
       this.item.value = null
+      this.tempInput = null
       this.$emit('change', this.item.value)
     },
     handleClose() {
@@ -775,6 +805,47 @@ export default {
 
     applyDatePickerInput(val) {
       this.item.value = val + ' 12:00:00 AM'
+    },
+
+    // parse from date and time inputs to unixTimestamp
+    handleDateTimeInputChange(val) {
+      if (!val) {
+        this.item.value = null
+        return
+      }
+
+      const dateTimeMatch = this.tempInput.match(
+        /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/
+      )
+
+      const years = Number(dateTimeMatch[1])
+      const month = Number(dateTimeMatch[2])
+      const day = Number(dateTimeMatch[3])
+
+      const hours = Number(dateTimeMatch[4])
+      const minutes = Number(dateTimeMatch[5])
+
+      this.item.value =
+        new Date(years, month - 1, day, hours, minutes, 0).getTime() / 1000
+    },
+
+    // val is expected to be unixTimestamp (s) or null
+    syncDateTimePickerInput(val) {
+      if (!val) {
+        this.tempInput = null
+        return
+      }
+
+      const dateObject = new Date(val * 1000)
+
+      this.tempInput = `${dateObject.getFullYear()}-${String(
+        dateObject.getMonth() + 1
+      ).padStart(2, '0')}-${String(dateObject.getDate()).padStart(
+        2,
+        '0'
+      )}T${String(dateObject.getHours()).padStart(2, '0')}:${String(
+        dateObject.getMinutes()
+      ).padStart(2, '0')}`
     },
 
     syncDatePickerInput(val) {
@@ -1044,6 +1115,10 @@ export default {
             this.item.value = generateDateLocaleString(this.item.value)
           }
           this.syncDatePickerInput(this.item.inputValue)
+          break
+        case 'datetimepicker':
+          // this.item.value is expected to be a unixTimestamp or null
+          this.syncDateTimePickerInput(this.item.value)
           break
       }
     },

@@ -82,9 +82,6 @@ export type RecordInfo<T extends keyof MainTypes> = {
     // the function to generate the lockedFilters for routeType "my"
     myFilterField?: (that: any) => CrudRawFilterObject[]
 
-    // should a $root event listener for refreshing be added
-    eventListener?: boolean
-
     // all of the possible usable filters
     filterOptions: `${T}FilterByObject` extends keyof InputTypes
       ? FilterObject[]
@@ -92,7 +89,12 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     sortOptions: SortObject[]
 
+    // what is the path to the preview image, relative to the record? defaults to 'avatar'
+    previewImagePath?: string
+    // what is the path to the preview name, relative to the record? defaults to 'name'
+    previewNamePath?: string
     // extra sort params that are to be appended to the user-selected sort params
+
     additionalSortParams?: CrudRawSortObject[]
 
     // the headers of the table
@@ -102,7 +104,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
       text?: string
       width?: string
     }
-    handleRowClick?: (that, item) => void
+    handleRowClick?: (that, props) => void
+    handleGridElementClick?: (that, item) => void
+
     // custom component
     interfaceComponent?: any
     // can the results be downloaded?
@@ -267,6 +271,8 @@ type HeaderObject = {
   align?: string
   hideUnder?: 'sm' | 'md' | 'lg' | 'xl' // hide this column if viewport is smaller than this
   hideIfDialog?: boolean // hide this column if shown in a dialog element
+  hideIfGrid?: boolean // hide this column if in grid mode
+  hideIfList?: boolean // hide this column if in list mode
   hideIf?: (that) => boolean
 }
 
@@ -279,6 +285,7 @@ export type InputType =
   | 'value-array'
   | 'avatar'
   | 'datepicker'
+  | 'datetimepicker'
   | 'switch'
   | 'textarea'
   | 'combobox' // combobox allows the user to add new inputs on the fly (will change to autocomplete in filter interfaces)

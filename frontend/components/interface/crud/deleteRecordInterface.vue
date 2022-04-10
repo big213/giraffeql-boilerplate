@@ -74,8 +74,15 @@ export default {
           variant: 'success',
         })
 
-        this.recordInfo.deleteOptions.onSuccess &&
-          this.recordInfo.deleteOptions.onSuccess(this)
+        // run any custom onSuccess functions
+        const onSuccess = this.recordInfo.deleteOptions.onSuccess
+
+        if (onSuccess) {
+          onSuccess(this)
+        } else {
+          // else emit the generic refresh-interface event
+          this.$root.$emit('refresh-interface', this.recordInfo.typename)
+        }
 
         this.$emit('handleSubmit', data)
         this.$emit('close')

@@ -21,7 +21,7 @@ export const MyProfile = {
     fields: ['avatar', 'name', 'isPublic'],
   },
   viewOptions: {
-    fields: ['avatar', 'name', 'isPublic'],
+    fields: ['avatar', 'name', 'isPublic', 'currentUserFollowing'],
   },
   deleteOptions: undefined,
   expandTypes: [],
