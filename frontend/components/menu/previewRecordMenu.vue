@@ -125,7 +125,7 @@ export default {
             routeType: 'i',
             id: this.item.id,
           }),
-          openInNew
+          true
         )
       } else if (this.openMode === 'openInDialog') {
         this.$root.$emit('openEditRecordDialog', {
