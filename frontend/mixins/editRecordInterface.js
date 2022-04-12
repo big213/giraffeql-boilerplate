@@ -209,9 +209,8 @@ export default {
         for (const nestedInputArray of inputObject.nestedInputsArray) {
           const obj = {}
           for (const nestedInputObject of nestedInputArray) {
-            obj[
-              nestedInputObject.nestedFieldInfo.key
-            ] = await this.processInputObject(nestedInputObject.inputObject)
+            obj[nestedInputObject.nestedFieldInfo.key] =
+              await this.processInputObject(nestedInputObject.inputObject)
           }
           value.push(obj)
         }
@@ -226,14 +225,14 @@ export default {
             // expecting either string or obj
             // create the item, get its id.
             const results = await executeGiraffeql(this, {
-              ['create' +
-              capitalizeString(inputObject.inputOptions.typename)]: {
-                id: true,
-                name: true,
-                __args: {
-                  name: inputObject.value,
+              ['create' + capitalizeString(inputObject.inputOptions.typename)]:
+                {
+                  id: true,
+                  name: true,
+                  __args: {
+                    name: inputObject.value,
+                  },
                 },
-              },
             })
 
             // force reload of memoized options, if any
@@ -332,7 +331,7 @@ export default {
 
     handleSubmitSuccess(data) {
       // run any custom onSuccess functions
-      if (this.mode === 'add' || this.mode === 'edit') {
+      if (this.mode === 'add' || this.mode === 'edit' || this.mode === 'copy') {
         const onSuccess = this.recordInfo[`${this.mode}Options`].onSuccess
 
         if (onSuccess) {
@@ -386,9 +385,8 @@ export default {
 
                       // if field has args, process them
                       if (currentFieldInfo.args) {
-                        total[
-                          currentFieldInfo.args.path + '.__args'
-                        ] = currentFieldInfo.args.getArgs(this)
+                        total[currentFieldInfo.args.path + '.__args'] =
+                          currentFieldInfo.args.getArgs(this)
                       }
                     }
                   })
