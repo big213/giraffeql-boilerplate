@@ -134,12 +134,12 @@ export class UserService extends PaginatedService {
 
     /*
     Allow if:
-    - user is currentUser AND update fields ONLY avatar, name, isPublic
+    - item.id is currentUser AND update fields ONLY avatar, name, isPublic
     */
     update: async ({ req, args }) => {
       if (
         isUserLoggedIn(req) &&
-        isCurrentUser(req, req.user!.id) &&
+        isCurrentUser(req, args.item.id) &&
         objectOnlyHasFields(args.fields, ["avatar", "name", "isPublic"])
       ) {
         return true;
