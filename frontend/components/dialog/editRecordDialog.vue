@@ -9,7 +9,7 @@
       :mode="computedMode"
       dialog-mode
       :generation="generation"
-      @handleSubmit="handleSubmit"
+      @handle-submit="handleSubmit"
       @close="close()"
       @item-updated="$emit('item-updated')"
     >
@@ -202,7 +202,7 @@ export default {
     },
 
     handleSubmit(data) {
-      this.$emit('handleSubmit', data)
+      this.$emit('handle-submit', data)
     },
 
     reset() {

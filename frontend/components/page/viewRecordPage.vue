@@ -85,7 +85,7 @@
       :selected-item="selectedItem"
       :mode="dialogs.editMode"
       @close="dialogs.editRecord = false"
-      @handleSubmit="handleSubmit"
+      @handle-submit="handleSubmit"
     ></EditRecordDialog>
   </v-container>
 </template>

@@ -29,6 +29,9 @@
                 <v-list-item-subtitle
                   >Type: {{ itemData.__typename }}</v-list-item-subtitle
                 >
+                <v-list-item-subtitle v-if="showDescription"
+                  >Description: {{ itemData.description }}</v-list-item-subtitle
+                >
               </template>
             </template>
           </v-list-item-content>
@@ -86,6 +89,11 @@ export default {
      */
     followLinkModel: {
       type: String,
+    },
+
+    // should the description field be shown?
+    showDescription: {
+      type: Boolean,
     },
   },
 
@@ -150,6 +158,9 @@ export default {
             __typename: true,
             name: true,
             avatar: true,
+            ...(this.showDescription && {
+              description: true,
+            }),
             ...(this.followLinkModel && {
               currentUserFollowLink: {
                 id: true,

@@ -166,9 +166,6 @@ export type RecordInfo<T extends keyof MainTypes> = {
     fields: string[]
     // custom component
     component?: any
-    // if not createX, the custom create operation name
-    // currently must use getX
-    // operationName?: string
   }
 
   commentOptions?: {

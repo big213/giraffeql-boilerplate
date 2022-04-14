@@ -87,7 +87,7 @@ export default {
         })
 
         // refresh the store entry
-        handleUserRefreshed(this, userCredential.user)
+        handleUserRefreshed(this)
 
         this.$router.push('/')
       } catch (err) {

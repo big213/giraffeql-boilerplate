@@ -169,7 +169,7 @@ export default {
           })
 
           // refresh the store entry
-          handleUserRefreshed(this.$store, this.currentUser)
+          handleUserRefreshed(this)
         }
 
         // update password if different and provided

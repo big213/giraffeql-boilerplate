@@ -5,10 +5,12 @@ export function generatePreviewableRecordField({
   fieldname,
   text,
   followLinkModel,
+  showDescription = false,
 }: {
   fieldname?: string
   text: string
   followLinkModel?: string
+  showDescription?: boolean
 }) {
   const fieldnamePrefix = fieldname ? fieldname + '.' : ''
   return {
@@ -24,6 +26,7 @@ export function generatePreviewableRecordField({
     ...(followLinkModel && {
       columnOptions: {
         linkModel: followLinkModel,
+        showDescription,
       },
     }),
   }
