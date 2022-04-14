@@ -147,7 +147,6 @@ export class UserService extends PaginatedService {
 
       return false;
     },
-    "*": () => false,
   };
 
   async getSpecialParams({ req }: ServiceFunctionInputs) {
@@ -273,15 +272,6 @@ export class UserService extends PaginatedService {
 
     // convert any lookup/joined fields into IDs
     await this.handleLookupArgs(validatedArgs.fields, fieldPath);
-
-    //check if target user is more senior admin
-    if (userRoleKenum[item.role] === "ADMIN" && item.id < req.user!.id) {
-      throw generateError(
-        "Cannot update more senior admin user",
-        fieldPath,
-        401
-      );
-    }
 
     await updateObjectType({
       typename: this.typename,
