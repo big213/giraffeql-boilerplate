@@ -30,6 +30,7 @@ export default new GiraffeqlObjectType(<ObjectTypeDefinition>{
         unique: true,
         field: "firebase_uid",
       },
+      typeDefOptions: { addable: false, updateable: false },
       hidden: true,
     }),
     email: generateStringField({

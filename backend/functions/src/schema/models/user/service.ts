@@ -134,24 +134,20 @@ export class UserService extends PaginatedService {
 
     /*
     Allow if:
-    - user is currentUser AND update fields ONLY avatar, name, description, isPublic
+    - user is currentUser AND update fields ONLY avatar, name, isPublic
     */
     update: async ({ req, args }) => {
       if (
         isUserLoggedIn(req) &&
-        isCurrentUser(req, args.item.id) &&
-        objectOnlyHasFields(args.fields, [
-          "avatar",
-          "name",
-          "isPublic",
-          "description",
-        ])
+        isCurrentUser(req, req.user!.id) &&
+        objectOnlyHasFields(args.fields, ["avatar", "name", "isPublic"])
       ) {
         return true;
       }
 
       return false;
     },
+    "*": () => false,
   };
 
   async getSpecialParams({ req }: ServiceFunctionInputs) {
@@ -277,6 +273,15 @@ export class UserService extends PaginatedService {
 
     // convert any lookup/joined fields into IDs
     await this.handleLookupArgs(validatedArgs.fields, fieldPath);
+
+    //check if target user is more senior admin
+    if (userRoleKenum[item.role] === "ADMIN" && item.id < req.user!.id) {
+      throw generateError(
+        "Cannot update more senior admin user",
+        fieldPath,
+        401
+      );
+    }
 
     await updateObjectType({
       typename: this.typename,
