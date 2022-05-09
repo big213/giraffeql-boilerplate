@@ -1,8 +1,7 @@
 import type { RecordInfo } from '~/types'
-import TimeagoColumn from '~/components/table/timeagoColumn.vue'
 import FilesizeColumn from '~/components/table/filesizeColumn.vue'
 import FileColumn from '~/components/table/fileColumn.vue'
-import { generateJoinableField } from '~/services/recordInfo'
+import { generateBaseFields } from '~/services/recordInfo'
 
 export const File = <RecordInfo<'file'>>{
   typename: 'file',
@@ -12,12 +11,9 @@ export const File = <RecordInfo<'file'>>{
   icon: 'mdi-file',
   renderItem: (item) => item.name,
   fields: {
-    id: {
-      text: 'ID',
-    },
-    name: {
-      text: 'Name',
-    },
+    ...generateBaseFields({
+      hasName: true,
+    }),
     nameWithId: {
       text: 'File',
       fields: ['name', 'id'],
@@ -33,24 +29,16 @@ export const File = <RecordInfo<'file'>>{
     contentType: {
       text: 'Content Type',
     },
-    createdBy: generateJoinableField({
-      text: 'Created By',
-      fieldname: 'createdBy',
-      typename: 'user',
-      hasAvatar: true,
-    }),
-    createdAt: {
-      text: 'Created At',
-      component: TimeagoColumn,
-    },
-    updatedAt: {
-      text: 'Updated At',
-      component: TimeagoColumn,
-    },
   },
   paginationOptions: {
     hasSearch: false,
     filterOptions: [],
+    handleRowClick: (that, props) => {
+      that.openEditDialog('view', props.item)
+    },
+    handleGridElementClick: (that, item) => {
+      that.openEditDialog('view', item)
+    },
     sortOptions: [
       {
         field: 'createdAt',

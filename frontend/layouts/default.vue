@@ -201,7 +201,7 @@ export default {
     },
   },
 
-  mounted() {
+  created() {
     this.drawer = this.$vuetify.breakpoint.name !== 'xs'
 
     /*
@@ -234,8 +234,6 @@ export default {
   },
 
   methods: {
-    handleItemAdded() {},
-
     logout() {
       try {
         firebase.auth().signOut()

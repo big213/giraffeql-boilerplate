@@ -1,0 +1,162 @@
+<template>
+  <div>
+    <v-toolbar dense flat color="accent" class="mb-3">
+      <v-icon left>{{ recordInfo.icon }}</v-icon>
+      <v-toolbar-title>
+        <span
+          >{{ recordInfo.pluralName }} ({{
+            loading.loadMore ? '--' : totalRecords
+          }})</span
+        >
+      </v-toolbar-title>
+      <v-spacer></v-spacer>
+      <v-btn icon :loading="loading.loadMore" @click="reset()">
+        <v-icon>mdi-refresh</v-icon>
+      </v-btn>
+    </v-toolbar>
+    <v-container class="text-left">
+      <v-row>
+        <v-col v-if="recordInfo.addOptions" cols="12">
+          <EditRecordInterface
+            class="highlighted-bg"
+            :record-info="recordInfo"
+            mode="add"
+            :selected-item="selectedItem"
+            hide-locked-fields
+            @handle-submit="handlePostSubmit()"
+          ></EditRecordInterface>
+        </v-col>
+        <v-col v-for="props in records" :key="props.item.id" cols="12">
+          <v-card class="elevation-5" color="grey darken-3">
+            <v-list-item>
+              <v-list-item-avatar>
+                <v-img
+                  v-if="props.item.createdBy.avatar"
+                  class="elevation-6"
+                  :alt="props.item.createdBy.name"
+                  :src="props.item.createdBy.avatar"
+                ></v-img>
+                <v-icon v-else>mdi-account</v-icon>
+              </v-list-item-avatar>
+              <v-list-item-content>
+                <PreviewRecordMenu
+                  :item="props.item.createdBy"
+                  :close-on-content-click="false"
+                  :min-width="300"
+                  :max-width="300"
+                  offset-y
+                  top
+                >
+                  <template v-slot:activator="{ on, attrs }">
+                    <v-list-item-title v-bind="attrs" v-on="on">{{
+                      props.item.createdBy.name
+                    }}</v-list-item-title>
+                  </template>
+                </PreviewRecordMenu>
+                <v-list-item-subtitle>{{
+                  generateTimeAgoString(props.item.createdAt)
+                }}</v-list-item-subtitle>
+              </v-list-item-content>
+              <v-row
+                v-if="recordInfo.editOptions || recordInfo.deleteOptions"
+                align="center"
+                justify="end"
+              >
+                <v-menu bottom left>
+                  <template v-slot:activator="{ on }">
+                    <v-btn icon v-on="on">
+                      <v-icon>mdi-dots-vertical</v-icon>
+                    </v-btn>
+                  </template>
+                  <v-list dense>
+                    <v-list-item
+                      v-if="recordInfo.editOptions"
+                      key="edit"
+                      @click="props.isEditing = true"
+                    >
+                      <v-list-item-icon>
+                        <v-icon>mdi-pencil</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-title>Edit</v-list-item-title>
+                    </v-list-item>
+                    <v-list-item
+                      v-if="recordInfo.deleteOptions"
+                      key="delete"
+                      @click="deletePost(props)"
+                    >
+                      <v-list-item-icon>
+                        <v-icon>mdi-delete</v-icon>
+                      </v-list-item-icon>
+                      <v-list-item-title>Delete</v-list-item-title>
+                    </v-list-item>
+                  </v-list>
+                </v-menu>
+              </v-row>
+            </v-list-item>
+            <v-card-text class="body-1 pt-0">
+              <template v-if="!props.isEditing">
+                <div class="headline">Some title</div>
+                <v-divider />
+                <span class="break-space">{{ props.item.content }}</span>
+                <PreviewableFilesColumn
+                  v-if="props.item.files.length"
+                  :item="props.item"
+                  field-path="files"
+                ></PreviewableFilesColumn>
+              </template>
+              <EditRecordInterface
+                v-else
+                :record-info="recordInfo"
+                mode="edit"
+                :selected-item="props.item"
+                :return-fields="returnFields"
+                @handle-submit="handlePostUpdate(props, $event)"
+              >
+                <v-btn
+                  text
+                  slot="footer-action"
+                  @click="props.isEditing = false"
+                  >Cancel</v-btn
+                >
+              </EditRecordInterface>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+      <v-row v-if="loading.loadMore">
+        <CircularLoader style="min-height: 250px"></CircularLoader>
+      </v-row>
+      <v-row v-else>
+        <v-col cols="12" class="text-center">
+          <v-btn v-if="records.length < totalRecords" @click="loadMorePosts()"
+            >Load More</v-btn
+          >
+          <span v-if="loading.loadMore">...</span>
+          <span v-else-if="!totalRecords">---</span>
+          <span v-else>
+            (Showing {{ records.length }} of {{ totalRecords }}
+            {{ recordInfo.pluralName }})
+          </span>
+        </v-col>
+
+        <v-col v-if="records.length < 1" cols="12" class="text-center"
+          >No {{ recordInfo.pluralName }}</v-col
+        >
+      </v-row>
+    </v-container>
+  </div>
+</template>
+
+<script>
+import crudPostInterfaceMixin from '~/mixins/crudPostInterface'
+
+export default {
+  mixins: [crudPostInterfaceMixin],
+}
+</script>
+
+<style scoped>
+.highlighted-bg {
+  border: 1px solid rgb(122, 122, 122);
+}
+</style>

@@ -1,6 +1,6 @@
 import { LinkService } from "../../core/services";
 import { AccessControlMap } from "../../../types";
-import { isCurrentUser, isUserLoggedIn } from "../../helpers/permissions";
+import { isCurrentUser } from "../../helpers/permissions";
 
 export class UserUserFollowLinkService extends LinkService {
   defaultTypename = "userUserFollowLink";

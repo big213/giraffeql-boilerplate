@@ -1,6 +1,7 @@
 <template>
   <v-layout column justify-center align-center>
-    <v-container xs12 style="max-width: 600px">
+    <CircularLoader v-if="redirectPath"></CircularLoader>
+    <v-container v-else xs12 style="max-width: 600px">
       <div class="text-center">
         <img :src="logoImageSrc" alt="" style="width: 60%" />
       </div>
@@ -41,6 +42,7 @@
 
 <script>
 import { mapGetters } from 'vuex'
+import CircularLoader from '~/components/common/circularLoader.vue'
 import ReleaseHistory from '~/components/common/releaseHistory.vue'
 import {
   siteName,
@@ -53,6 +55,7 @@ import {
 export default {
   components: {
     ReleaseHistory,
+    CircularLoader,
   },
   data() {
     return {
@@ -60,6 +63,7 @@ export default {
       siteDescription,
       siteContactEmail,
       siteDiscordLink,
+      redirectPath: null,
     }
   },
   head() {
@@ -67,6 +71,16 @@ export default {
       title: 'Home',
     }
   },
+
+  created() {
+    // if there is a redirectUrl, go there
+    this.redirectPath = localStorage.getItem('redirectPath')
+
+    if (this.redirectPath) {
+      this.$router.push(this.redirectPath)
+    }
+  },
+
   computed: {
     ...mapGetters({
       user: 'auth/user',

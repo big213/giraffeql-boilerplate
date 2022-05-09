@@ -54,7 +54,7 @@ export default {
     }
   },
 
-  mounted() {
+  created() {
     this.currentVersion = getBuildVersion()
     executeGiraffeql(
       this,

@@ -137,6 +137,15 @@ export function objectOnlyHasFields(
     : objKeys.every((key) => fields.includes(key));
 }
 
+export function objectDoesNotHaveFields(
+  obj: StringKeyObject,
+  fields: string[]
+) {
+  const objKeys = Object.keys(obj);
+
+  return objKeys.every((key) => !fields.includes(key));
+}
+
 export function generateId(size = 8) {
   const generateIdFn = customAlphabet(alphabet, size);
 

@@ -37,7 +37,7 @@ export default {
 
     lockedFilters() {
       const myFilterFieldFn =
-        this.currentModel?.paginationOptions?.myFilterField
+        this.currentModel?.paginationOptions?.defaultLockedFilters
 
       // defaults to "createdBy" is current user
       return myFilterFieldFn

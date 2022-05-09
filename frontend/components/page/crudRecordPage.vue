@@ -4,7 +4,7 @@
       <v-row>
         <v-col cols="12">
           <component
-            :is="interfaceComponent"
+            :is="paginationComponent"
             :record-info="recordInfo"
             :page-options="pageOptions"
             :locked-filters="lockedFilters"
@@ -25,7 +25,8 @@
 
 <script>
 import CrudRecordInterface from '~/components/interface/crud/crudRecordInterface.vue'
-import { capitalizeString } from '~/services/base'
+import { capitalizeString, generateCrudRecordRoute } from '~/services/base'
+import { mapGetters } from 'vuex'
 
 export default {
   props: {
@@ -63,11 +64,12 @@ export default {
     },
   },
   computed: {
-    interfaceComponent() {
-      return (
-        this.recordInfo.paginationOptions.interfaceComponent ||
-        CrudRecordInterface
-      )
+    ...mapGetters({
+      newUnreadNotifications: 'user/newUnreadNotifications',
+    }),
+
+    paginationComponent() {
+      return this.recordInfo.paginationOptions.component || CrudRecordInterface
     },
     capitalizedTypename() {
       return capitalizeString(this.recordInfo.typename)
@@ -80,7 +82,38 @@ export default {
     },
   },
 
+  created() {
+    // if no pageOptions, automatically redirect to defaultPageOptions, if any
+    if (
+      !this.$route.query.pageOptions &&
+      this.recordInfo.paginationOptions.defaultPageOptions
+    ) {
+      this.navigateToDefaultRoute()
+    }
+  },
+
+  watch: {
+    '$route.query.pageOptions'(val) {
+      // if no pageOptions, automatically redirect if there is a defaultPageOptions
+      if (!val && this.recordInfo.paginationOptions.defaultPageOptions) {
+        this.navigateToDefaultRoute()
+      }
+    },
+  },
+
   methods: {
+    navigateToDefaultRoute() {
+      if (!this.recordInfo.paginationOptions.defaultPageOptions) return
+
+      this.$router.push(
+        generateCrudRecordRoute(this, {
+          path: this.$route.path,
+          pageOptions:
+            this.recordInfo.paginationOptions.defaultPageOptions(this),
+        })
+      )
+    },
+
     handlePageOptionsUpdated(pageOptions) {
       const query = {
         ...this.$route.query,

@@ -25,6 +25,9 @@ export async function handleLogin(store, authPayload) {
 
     // put the response in the vuex store
     store.commit('auth/setUser', currentUser)
+
+    // unset the redirectPath whenever user logs in or out
+    localStorage.removeItem('redirectPath')
   } catch (e) {
     console.log(e)
     firebase.auth().signOut()

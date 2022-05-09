@@ -10,6 +10,7 @@ export const MyProfile = {
     headerOptions: [
       {
         field: 'nameWithAvatar',
+        hideIfGrid: true,
       },
       {
         field: 'createdAt',
@@ -26,8 +27,8 @@ export const MyProfile = {
     },
   },
   viewOptions: {
-    fields: ['avatar', 'name', 'isPublic', 'currentUserFollowing'],
+    ...User.viewOptions,
+    fields: ['isPublic', 'currentUserFollowing'],
   },
   deleteOptions: undefined,
-  expandTypes: [],
 }

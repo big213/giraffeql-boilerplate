@@ -5,9 +5,7 @@ import {
   ExternalQuery,
   ServiceFunctionInputs,
 } from "../../../types";
-
 import { permissionsCheck } from "../../core/helpers/permissions";
-import { userRoleKenum } from "../../enums";
 import { isObject } from "giraffeql/lib/helpers/base";
 import {
   filterPassesTest,
@@ -20,7 +18,6 @@ import {
   deleteObjectType,
   updateObjectType,
 } from "../../core/helpers/resolver";
-import { generateError } from "../../core/helpers/error";
 import { lookupSymbol } from "giraffeql";
 
 export class UserService extends PaginatedService {

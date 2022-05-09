@@ -26,6 +26,7 @@
               :is="currentInterface"
               :selected-item="selectedItem"
               :record-info="recordInfo"
+              :generation="generation"
               mode="view"
             >
               <template v-slot:toolbar>
@@ -58,7 +59,7 @@
         <v-col v-if="isExpanded" cols="12" md="8">
           <v-card class="elevation-12">
             <component
-              :is="interfaceComponent"
+              :is="paginationComponent"
               :record-info="expandTypeObject.recordInfo"
               :title="expandTypeObject.name"
               :icon="expandTypeObject.icon"
@@ -103,6 +104,7 @@ import {
   lookupFieldInfo,
 } from '~/services/base'
 import CrudRecordInterface from '~/components/interface/crud/crudRecordInterface.vue'
+import { mapGetters } from 'vuex'
 
 export default {
   components: {
@@ -132,6 +134,8 @@ export default {
       expandTypeObject: null,
       subPageOptions: null,
 
+      generation: 0,
+
       dialogs: {
         editRecord: false,
         editMode: 'view',
@@ -146,6 +150,10 @@ export default {
   },
 
   computed: {
+    ...mapGetters({
+      newUnreadNotifications: 'user/newUnreadNotifications',
+    }),
+
     isExpanded() {
       return !!this.expandTypeObject
     },
@@ -180,10 +188,10 @@ export default {
       return capitalizeString(this.recordInfo.typename)
     },
 
-    interfaceComponent() {
+    paginationComponent() {
       return (
         this.expandTypeObject.component ||
-        this.expandTypeObject.recordInfo.paginationOptions.interfaceComponent ||
+        this.expandTypeObject.recordInfo.paginationOptions.component ||
         CrudRecordInterface
       )
     },
@@ -196,7 +204,7 @@ export default {
 
     recordInfo() {
       this.recordInfoChanged = true
-      this.reset()
+      this.reset(true)
     },
 
     '$route.query.id'() {
@@ -208,12 +216,12 @@ export default {
         return
       }
 
-      this.reset()
+      this.reset(true)
     },
   },
 
-  mounted() {
-    this.reset()
+  created() {
+    this.reset(true)
   },
 
   methods: {
@@ -331,21 +339,25 @@ export default {
       this.loading.loadRecord = false
     },
 
-    reset() {
-      // must independently verify existence of item
-      this.loadRecord().then(() => {
-        // if expand query param set, set the initial expandTypeObject
-        if (this.$route.query.e !== undefined) {
-          this.setExpandTypeObject(this.$route.query.e)
-        }
-      })
+    reset(hardReset = false) {
+      if (hardReset) {
+        // must independently verify existence of item
+        this.loadRecord().then(() => {
+          // if expand query param set, set the initial expandTypeObject
+          if (this.$route.query.e !== undefined) {
+            this.setExpandTypeObject(this.$route.query.e)
+          }
+        })
+      }
+
+      this.generation++
     },
   },
 
   head() {
     return (
       this.head ?? {
-        title: this.recordInfo.title ?? 'View ' + this.recordInfo.name,
+        title: 'View ' + this.recordInfo.name,
       }
     )
   },

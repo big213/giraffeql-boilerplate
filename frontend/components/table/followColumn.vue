@@ -12,6 +12,8 @@
 <script>
 import columnMixin from '~/mixins/column'
 import FollowButton from '~/components/button/followButton.vue'
+import { capitalizeString } from '~/services/base'
+import * as simpleModels from '~/models/simple'
 
 export default {
   components: {
@@ -21,8 +23,11 @@ export default {
   mixins: [columnMixin],
 
   computed: {
+    recordInfo() {
+      return simpleModels[`Simple${capitalizeString(this.item.__typename)}`]
+    },
     followLinkModel() {
-      return this.options?.linkModel
+      return this.recordInfo?.followLinkModel
     },
   },
 }

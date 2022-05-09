@@ -1,11 +1,5 @@
 import type { RecordInfo } from '~/types'
-import TimeagoColumn from '~/components/table/timeagoColumn.vue'
-import AvatarColumn from '~/components/table/avatarColumn.vue'
-import NameAvatarColumn from '~/components/table/nameAvatarColumn.vue'
-import {
-  generateJoinableField,
-  generatePreviewableRecordField,
-} from '~/services/recordInfo'
+import { generateBaseFields } from '~/services/recordInfo'
 
 export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
   typename: '{{ typename }}',
@@ -15,49 +9,16 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
   icon: 'mdi-folder-information',
   renderItem: (item) => item.name,
   fields: {
-    id: {
-      text: 'ID',
-    },
-    name: {
-      text: 'Name',
-    },
-    avatar: {
-      text: 'Avatar',
-      inputType: 'avatar',
-      component: AvatarColumn,
-    },
-    description: {
-      text: 'Description',
-      inputType: 'textarea',
-    },
-    nameWithAvatar: {
-      text: 'Name',
-      fields: ['name', 'avatar'],
-      component: NameAvatarColumn,
-    },
-    createdBy: generateJoinableField({
-      text: 'Created By',
-      fieldname: 'createdBy',
-      typename: 'user',
+    ...generateBaseFields({
+      hasName: true,
       hasAvatar: true,
+      hasDescription: true,
     }),
-    createdByRecord: generatePreviewableRecordField({
-      fieldname: 'createdBy',
-      text: 'Created By',
-      followLinkModel: 'userUserFollowLink',
-    }),
-    createdAt: {
-      text: 'Created At',
-      component: TimeagoColumn,
-    },
-    updatedAt: {
-      text: 'Updated At',
-      component: TimeagoColumn,
-    },
   },
   paginationOptions: {
     hasSearch: false,
     filterOptions: [],
+    heroOptions: {},
     sortOptions: [
       {
         field: 'createdAt',
@@ -70,11 +31,7 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
         hideIfGrid: true,
       },
       {
-        field: 'createdAt',
-        width: '150px',
-      },
-      {
-        field: 'updatedAt',
+        field: 'updatedOrCreatedAt',
         width: '150px',
       },
     ],
@@ -91,6 +48,7 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
   },
   viewOptions: {
     fields: ['avatar', 'name', 'description'],
+    heroOptions: {},
   },
   enterOptions: {
     routeType: 'a'

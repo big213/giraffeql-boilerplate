@@ -1,5 +1,5 @@
 <template>
-  <v-layout column justify-center align-center>
+  <v-layout column justify-center align-center fill-height>
     <v-container xs12 style="max-width: 600px">
       <v-card class="elevation-12">
         <v-toolbar color="accent" flat>

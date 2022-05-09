@@ -1,7 +1,9 @@
 import type { RecordInfo } from '~/types'
-import TimeagoColumn from '~/components/table/timeagoColumn.vue'
 import CopyableColumn from '~/components/table/copyableColumn.vue'
-import { generateJoinableField } from '~/services/recordInfo'
+import {
+  generateBaseFields,
+  generateJoinableField,
+} from '~/services/recordInfo'
 
 export const ApiKey = <RecordInfo<'apiKey'>>{
   typename: 'apiKey',
@@ -11,12 +13,9 @@ export const ApiKey = <RecordInfo<'apiKey'>>{
   icon: 'mdi-view-grid-plus',
   renderItem: (item) => item.name,
   fields: {
-    id: {
-      text: 'ID',
-    },
-    name: {
-      text: 'Name',
-    },
+    ...generateBaseFields({
+      hasName: true,
+    }),
     code: {
       text: 'Code',
       component: CopyableColumn,
@@ -35,27 +34,16 @@ export const ApiKey = <RecordInfo<'apiKey'>>{
       typename: 'user',
       hasAvatar: true,
     }),
-    createdAt: {
-      text: 'Created At',
-      component: TimeagoColumn,
-    },
-    updatedAt: {
-      text: 'Updated At',
-      component: TimeagoColumn,
-    },
   },
   paginationOptions: {
     hasSearch: false,
-    myFilterField: (that) => {
-      return [
-        {
-          field: 'user',
-          operator: 'eq',
-          value: that.$store.getters['auth/user'].id,
-        },
-      ]
-    },
     filterOptions: [],
+    handleRowClick: (that, props) => {
+      that.openEditDialog('view', props.item)
+    },
+    handleGridElementClick: (that, item) => {
+      that.openEditDialog('view', item)
+    },
     sortOptions: [
       {
         field: 'createdAt',

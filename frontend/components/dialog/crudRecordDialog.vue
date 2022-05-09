@@ -8,15 +8,17 @@
     <v-card flat>
       <div>
         <component
-          :is="interfaceComponent"
+          :is="paginationComponent"
           :record-info="recordInfo"
           :locked-filters="lockedFilters"
           :hidden-filters="hiddenFilters"
           :hidden-headers="hiddenHeaders"
+          :page-options="pageOptions"
           :title="title"
           :icon="icon"
           is-dialog
           dense
+          @close="close()"
         >
           <template v-slot:header-action>
             <v-btn icon @click="close()">
@@ -78,11 +80,8 @@ export default {
   },
 
   computed: {
-    interfaceComponent() {
-      return (
-        this.recordInfo.paginationOptions?.interfaceComponent ??
-        CrudRecordInterface
-      )
+    paginationComponent() {
+      return this.recordInfo.paginationOptions?.component ?? CrudRecordInterface
     },
 
     computedMaxWidth() {

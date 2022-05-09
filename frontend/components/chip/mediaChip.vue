@@ -13,18 +13,23 @@
           :src="generateFileServingUrl(file.location)"
           aspect-ratio="1"
           contain
+          @click="openFile()"
         >
           <div :class="{ 'image-hover': hover }">
-            <div :class="{ 'd-none': !hover }" class="black--text pa-2">
-              {{ file.name }} ({{ formatBytes(file.size) }})
-              <div class="text-center">
-                <v-btn v-if="downloadable" icon @click="downloadFile()"
+            <div
+              :class="{ 'd-none': !hover }"
+              class="black--text pa-2 fill-height"
+              :title="mediaTitle"
+            >
+              <v-container class="text-center fill-height justify-center pa-0">
+                <v-btn v-if="downloadable" icon @click.stop="downloadFile()"
                   ><v-icon color="black">mdi-download</v-icon></v-btn
                 >
-                <v-btn v-if="openable" icon @click="openFile()"
+                <v-btn v-if="openable" icon @click.stop="openFile()"
                   ><v-icon color="black">mdi-open-in-new</v-icon></v-btn
                 >
-              </div>
+                <div class="truncate-mobile-row">{{ mediaTitle }}</div>
+              </v-container>
             </div>
           </div>
         </v-img>
@@ -74,10 +79,13 @@ export default {
     }
   },
 
-  computed: {},
+  computed: {
+    mediaTitle() {
+      return `${this.file.name} (${formatBytes(this.file.size)})`
+    },
+  },
 
   methods: {
-    formatBytes,
     generateFileServingUrl,
 
     async downloadFile() {

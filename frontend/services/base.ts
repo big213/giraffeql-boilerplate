@@ -2,7 +2,7 @@ import { format } from 'timeago.js'
 import { convertArrayToCSV } from 'convert-array-to-csv'
 import { executeGiraffeql } from '~/services/giraffeql'
 import * as models from '~/models/base'
-import { CrudInputObject } from '~/types/misc'
+import { CrudInputObject, CrudRawFilterObject } from '~/types/misc'
 
 type StringKeyObject = { [x: string]: any }
 
@@ -379,6 +379,16 @@ export function handleError(that, err) {
   }
 }
 
+export function generateLoginError(setRedirect = true) {
+  if (setRedirect)
+    localStorage.setItem(
+      'redirectPath',
+      window.location.pathname + window.location.search
+    )
+
+  return new Error('Login required')
+}
+
 export function generateCrudRecordRoute(
   that,
   {
@@ -749,4 +759,49 @@ export function camelToKebabCase(str: string) {
 
 export function kebabToCamelCase(str: string) {
   return str.replace(/-./g, (x) => x[1].toUpperCase())
+}
+
+export function generateFilterByObjectArray(
+  crudFilterObjects: CrudRawFilterObject[],
+  recordInfo: any
+) {
+  const filterByObject = crudFilterObjects.reduce((total, rawFilterObject) => {
+    const fieldInfo = lookupFieldInfo(recordInfo, rawFilterObject.field)
+
+    const primaryField = fieldInfo.fields
+      ? fieldInfo.fields[0]
+      : rawFilterObject.field
+
+    if (!total[primaryField]) total[primaryField] = {}
+
+    // if value is '__undefined', exclude it entirely
+    if (rawFilterObject.value === '__undefined') return total
+
+    let value
+
+    const timeLanguageMatch =
+      typeof rawFilterObject.value === 'string' &&
+      rawFilterObject.value.match(/^__t:(.*)/)
+
+    // if value matches __t:now(), parse the time language
+    if (timeLanguageMatch) {
+      if (timeLanguageMatch) {
+        value = parseTimeLanguage(timeLanguageMatch[1])
+      }
+    } else if (rawFilterObject.value === '__null') {
+      // parse '__null' to null
+      value = null
+    } else {
+      value = rawFilterObject.value
+    }
+
+    // apply parseValue function, if any
+    total[primaryField][rawFilterObject.operator] = fieldInfo.parseValue
+      ? fieldInfo.parseValue(value)
+      : value
+
+    return total
+  }, {})
+
+  return Object.keys(filterByObject).length > 0 ? [filterByObject] : []
 }

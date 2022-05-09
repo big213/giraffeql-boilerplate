@@ -1,11 +1,8 @@
 import { getUserRoles } from '~/services/dropdown'
 import type { RecordInfo } from '~/types'
-import TimeagoColumn from '~/components/table/timeagoColumn.vue'
-import NameAvatarColumn from '~/components/table/nameAvatarColumn.vue'
-import AvatarColumn from '~/components/table/avatarColumn.vue'
 import BooleanColumn from '~/components/table/booleanColumn.vue'
 import FollowColumn from '~/components/table/followColumn.vue'
-import { generatePreviewableRecordField } from '~/services/recordInfo'
+import { generateBaseFields } from '~/services/recordInfo'
 
 export const User = <RecordInfo<'user'>>{
   typename: 'user',
@@ -13,30 +10,16 @@ export const User = <RecordInfo<'user'>>{
   name: 'User',
   pluralName: 'Users',
   icon: 'mdi-account',
+  requiredFields: ['avatar', 'name'],
   renderItem: (item) => item.email,
   fields: {
-    id: {
-      text: 'ID',
-    },
-    name: {
-      text: 'Name',
-    },
-    nameWithAvatar: {
-      text: 'Name',
-      fields: ['name', 'avatar'],
-      component: NameAvatarColumn,
-    },
-    record: generatePreviewableRecordField({
-      text: 'User',
-      followLinkModel: 'userUserFollowLink',
+    ...generateBaseFields({
+      hasName: true,
+      hasAvatar: true,
+      hasDescription: false,
     }),
     email: {
       text: 'Email',
-    },
-    avatar: {
-      text: 'Avatar',
-      inputType: 'avatar',
-      component: AvatarColumn,
     },
     password: {
       text: 'Password',
@@ -56,35 +39,36 @@ export const User = <RecordInfo<'user'>>{
     isPublic: {
       text: 'Is Public',
       component: BooleanColumn,
-      parseQueryValue: (val) => val === 'true',
       inputType: 'switch',
+      default: () => true,
+    },
+    allowEmailNotifications: {
+      text: 'Allow Email Notifications',
+      component: BooleanColumn,
+      inputType: 'switch',
+      default: () => true,
     },
     currentUserFollowing: {
       text: 'Follow',
       fields: ['currentUserFollowLink.id'],
       component: FollowColumn,
-      columnOptions: {
-        linkModel: 'userUserFollowLink',
-      },
-    },
-    createdAt: {
-      text: 'Created At',
-      component: TimeagoColumn,
-    },
-    updatedAt: {
-      text: 'Updated At',
-      component: TimeagoColumn,
     },
   },
   paginationOptions: {
     hasSearch: true,
-    publicFilterField: 'isPublic',
+    heroOptions: {},
     filterOptions: [
       {
         field: 'role',
         operator: 'eq',
       },
     ],
+    handleRowClick: (that, props) => {
+      that.openEditDialog('view', props.item)
+    },
+    handleGridElementClick: (that, item) => {
+      that.openEditDialog('view', item)
+    },
     sortOptions: [
       {
         field: 'createdAt',
@@ -124,13 +108,13 @@ export const User = <RecordInfo<'user'>>{
   },
   viewOptions: {
     fields: [
-      'name',
       'email',
       'role',
       'permissions',
       'isPublic',
       'currentUserFollowing',
     ],
+    heroOptions: {},
   },
   enterOptions: {
     routeType: 'a',

@@ -34,17 +34,9 @@ export default {
     },
 
     lockedFilters() {
-      const publicFilterField =
-        this.currentModel?.paginationOptions?.publicFilterField
-      return publicFilterField
-        ? [
-            {
-              field: publicFilterField,
-              operator: 'eq',
-              value: true,
-            },
-          ]
-        : []
+      const publicFilterFieldFn =
+        this.currentModel?.paginationOptions?.defaultLockedFilters
+      return publicFilterFieldFn ? publicFilterFieldFn(this) : []
     },
   },
 }

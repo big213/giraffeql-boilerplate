@@ -23,7 +23,7 @@
             :file="file"
             downloadable
             openable
-            class="md3 sm6 xs12"
+            class="md4 sm6 xs12"
           ></MediaChip>
         </v-layout>
       </v-container>
@@ -67,7 +67,7 @@ export default {
     },
   },
 
-  mounted() {
+  created() {
     this.reset()
   },
 

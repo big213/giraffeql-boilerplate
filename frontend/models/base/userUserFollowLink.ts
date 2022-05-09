@@ -1,6 +1,6 @@
 import type { RecordInfo } from '~/types'
-import TimeagoColumn from '~/components/table/timeagoColumn.vue'
 import {
+  generateBaseLinkFields,
   generateJoinableField,
   generatePreviewableRecordField,
 } from '~/services/recordInfo'
@@ -10,12 +10,10 @@ export const UserUserFollowLink = <RecordInfo<'userUserFollowLink'>>{
   pluralTypename: 'userUserFollowLinks',
   name: 'UserUserFollowLink',
   pluralName: 'UserUserFollowLinks',
-  icon: 'mdi-folder-information',
+  icon: 'mdi-link',
   renderItem: (item) => item.name,
   fields: {
-    id: {
-      text: 'ID',
-    },
+    ...generateBaseLinkFields(),
     user: generateJoinableField({
       text: 'User',
       fieldname: 'user',
@@ -25,7 +23,6 @@ export const UserUserFollowLink = <RecordInfo<'userUserFollowLink'>>{
     userRecord: generatePreviewableRecordField({
       fieldname: 'user',
       text: 'User',
-      followLinkModel: 'userUserFollowLink',
     }),
     target: generateJoinableField({
       text: 'Target',
@@ -36,16 +33,7 @@ export const UserUserFollowLink = <RecordInfo<'userUserFollowLink'>>{
     targetRecord: generatePreviewableRecordField({
       fieldname: 'target',
       text: 'Target',
-      followLinkModel: 'userUserFollowLink',
     }),
-    createdAt: {
-      text: 'Created At',
-      component: TimeagoColumn,
-    },
-    updatedAt: {
-      text: 'Updated At',
-      component: TimeagoColumn,
-    },
   },
   paginationOptions: {
     hasSearch: false,

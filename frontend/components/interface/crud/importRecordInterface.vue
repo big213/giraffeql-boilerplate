@@ -54,7 +54,7 @@ export default {
   props: {
     selectedItem: {
       type: Object,
-      default: () => ({}),
+      required: true,
     },
     recordInfo: {
       type: Object,

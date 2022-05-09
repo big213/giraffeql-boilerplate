@@ -22,7 +22,7 @@ export default {
   props: {
     selectedItem: {
       type: Object,
-      default: () => ({}),
+      required: true,
     },
 
     recordInfo: {
@@ -55,9 +55,10 @@ export default {
       default: 0,
     },
 
-    hiddenFields: {
-      type: Array,
-      default: () => [],
+    // to hide any fields that are locked via selectedItem
+    hideLockedFields: {
+      type: Boolean,
+      default: false,
     },
 
     // the fields to return with handleSubmit, if any
@@ -121,9 +122,12 @@ export default {
     },
 
     visibleInputsArray() {
-      return this.hiddenFields.length
+      if (!this.hideLockedFields) return this.inputsArray
+
+      const hiddenFields = Object.keys(this.selectedItem)
+      return hiddenFields.length
         ? this.inputsArray.filter(
-            (inputObject) => !this.hiddenFields.includes(inputObject.fieldKey)
+            (inputObject) => !hiddenFields.includes(inputObject.fieldKey)
           )
         : this.inputsArray
     },
@@ -330,20 +334,20 @@ export default {
     },
 
     handleSubmitSuccess(data) {
+      this.$emit('close')
+      this.$emit('handle-submit', data)
+
       // run any custom onSuccess functions
       if (this.mode === 'add' || this.mode === 'edit' || this.mode === 'copy') {
         const onSuccess = this.recordInfo[`${this.mode}Options`].onSuccess
 
         if (onSuccess) {
-          onSuccess(this)
+          onSuccess(this, data)
         } else {
           // else emit the generic refresh-interface event
           this.$root.$emit('refresh-interface', this.recordInfo.typename)
         }
       }
-
-      this.$emit('close')
-      this.$emit('handle-submit', data)
     },
 
     async loadRecord() {
@@ -354,47 +358,45 @@ export default {
 
         const data = await executeGiraffeql(this, {
           ['get' + this.capitalizedType]: {
+            id: true,
             __typename: true,
             ...collapseObject(
-              this.fields.reduce(
-                (total, fieldKey) => {
-                  const fieldInfo = lookupFieldInfo(this.recordInfo, fieldKey)
+              this.fields.reduce((total, fieldKey) => {
+                const fieldInfo = lookupFieldInfo(this.recordInfo, fieldKey)
 
-                  // if field is hidden, exclude
-                  if (fieldInfo.hidden) return total
+                // if field is hidden, exclude
+                if (fieldInfo.hidden) return total
 
-                  const fieldsToAdd = new Set()
+                const fieldsToAdd = new Set()
 
-                  // add all fields
-                  if (fieldInfo.fields) {
-                    fieldInfo.fields.forEach((field) => fieldsToAdd.add(field))
-                  } else {
-                    fieldsToAdd.add(fieldKey)
-                  }
+                // add all fields
+                if (fieldInfo.fields) {
+                  fieldInfo.fields.forEach((field) => fieldsToAdd.add(field))
+                } else {
+                  fieldsToAdd.add(fieldKey)
+                }
 
-                  // process fields
-                  fieldsToAdd.forEach((field) => {
-                    total[field] = true
+                // process fields
+                fieldsToAdd.forEach((field) => {
+                  total[field] = true
 
-                    // add a serializer if there is one for the field
-                    const currentFieldInfo = this.recordInfo.fields[field]
-                    if (currentFieldInfo) {
-                      if (currentFieldInfo.serialize) {
-                        serializeMap.set(field, currentFieldInfo.serialize)
-                      }
-
-                      // if field has args, process them
-                      if (currentFieldInfo.args) {
-                        total[currentFieldInfo.args.path + '.__args'] =
-                          currentFieldInfo.args.getArgs(this)
-                      }
+                  // add a serializer if there is one for the field
+                  const currentFieldInfo = this.recordInfo.fields[field]
+                  if (currentFieldInfo) {
+                    if (currentFieldInfo.serialize) {
+                      serializeMap.set(field, currentFieldInfo.serialize)
                     }
-                  })
 
-                  return total
-                },
-                { id: true, __typename: true }
-              )
+                    // if field has args, process them
+                    if (currentFieldInfo.args) {
+                      total[currentFieldInfo.args.path + '.__args'] =
+                        currentFieldInfo.args.getArgs(this)
+                    }
+                  }
+                })
+
+                return total
+              }, {})
             ),
             __args: {
               id: this.selectedItem.id,

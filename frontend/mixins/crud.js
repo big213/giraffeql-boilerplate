@@ -18,7 +18,7 @@ import {
   lookupFieldInfo,
   populateInputObject,
   processQuery,
-  parseTimeLanguage,
+  generateFilterByObjectArray,
 } from '~/services/base'
 import { defaultGridView } from '~/services/config'
 
@@ -88,11 +88,6 @@ export default {
       type: Boolean,
       default: false,
     },
-    // was reset called on parent on this
-    parentResetCalledOnTick: {
-      type: Boolean,
-      default: false,
-    },
   },
 
   data() {
@@ -125,7 +120,7 @@ export default {
 
       reloadGeneration: 0,
 
-      resultsPerPage: 10,
+      resultsPerPage: 12,
 
       // has the recordInfo been changed?
       cancelPageOptionsReset: false,
@@ -215,6 +210,7 @@ export default {
             sortable: false,
             width: headerInfo.width ?? null,
             fieldInfo,
+            hideTitleIfGrid: headerInfo.hideTitleIfGrid ?? false,
             // equal to pathPrefix if provided
             // else equal to the field if single-field
             // else equal to null if multiple-field
@@ -261,8 +257,7 @@ export default {
     childInterfaceComponent() {
       return this.expandTypeObject
         ? this.expandTypeObject.component ||
-            this.expandTypeObject.recordInfo.paginationOptions
-              .interfaceComponent ||
+            this.expandTypeObject.recordInfo.paginationOptions.component ||
             'CrudRecordInterface'
         : null
     },
@@ -399,7 +394,7 @@ export default {
       this.isPolling = true
     }
 
-    if (!this.isChildComponent) {
+    if (!this.isChildComponent && !this.isDialog) {
       if (localStorage.getItem('viewMode')) {
         this.isGrid = localStorage.getItem('viewMode') === 'grid'
       } else {
@@ -419,6 +414,12 @@ export default {
 
     // listen for root refresh events
     this.$root.$on('refresh-interface', this.refreshCb)
+
+    // run any onSuccess functions
+    const onSuccess = this.recordInfo.paginationOptions.onSuccess
+    if (onSuccess) {
+      onSuccess(this)
+    }
   },
 
   destroyed() {
@@ -446,8 +447,8 @@ export default {
 
     toggleGridMode() {
       this.isGrid = !this.isGrid
-      // only save the state if not child component
-      if (!this.isChildComponent) {
+      // only save the state if not child component and not dialog
+      if (!this.isChildComponent && !this.isDialog) {
         localStorage.setItem('viewMode', this.isGrid ? 'grid' : 'list')
       }
     },
@@ -608,54 +609,13 @@ export default {
         )
       }
 
-      const filterBy = this.allFilters.reduce((total, rawFilterObject) => {
-        const fieldInfo = lookupFieldInfo(
-          this.recordInfo,
-          rawFilterObject.field
-        )
-
-        const primaryField = fieldInfo.fields
-          ? fieldInfo.fields[0]
-          : rawFilterObject.field
-
-        if (!total[primaryField]) total[primaryField] = {}
-
-        // if value is '__undefined', exclude it entirely
-        if (rawFilterObject.value === '__undefined') return total
-
-        let value
-
-        const timeLanguageMatch =
-          typeof rawFilterObject.value === 'string' &&
-          rawFilterObject.value.match(/^__t:(.*)/)
-
-        // if value matches __t:now(), parse the time language
-        if (timeLanguageMatch) {
-          if (timeLanguageMatch) {
-            value = parseTimeLanguage(timeLanguageMatch[1])
-          }
-        } else if (rawFilterObject.value === '__null') {
-          // parse '__null' to null
-          value = null
-        } else {
-          value = rawFilterObject.value
-        }
-
-        // apply parseValue function, if any
-        total[primaryField][rawFilterObject.operator] = fieldInfo.parseValue
-          ? fieldInfo.parseValue(value)
-          : value
-
-        return total
-      }, {})
-
       return {
         ...(pagination && {
           first: this.resultsPerPage,
           after: this.endCursor ?? undefined,
         }),
         sortBy,
-        filterBy: Object.keys(filterBy).length > 0 ? [filterBy] : [],
+        filterBy: generateFilterByObjectArray(this.allFilters, this.recordInfo),
         ...(this.search && { search: this.search }),
       }
     },
@@ -773,21 +733,25 @@ export default {
     },
 
     openAddRecordDialog() {
-      const initializedRecord = {}
-
-      this.lockedFilters.forEach((lockedFilter) => {
-        initializedRecord[lockedFilter.field] = lockedFilter.value
-      })
+      const initializedRecord = this.lockedFilters.reduce(
+        (total, crudFilterObject) => {
+          total[crudFilterObject.field] = crudFilterObject.value
+          return total
+        },
+        {}
+      )
 
       this.openEditDialog('add', initializedRecord)
     },
 
     openImportRecordDialog() {
-      const initializedRecord = {}
-
-      this.lockedFilters.forEach((lockedFilter) => {
-        initializedRecord[lockedFilter.field] = lockedFilter.value
-      })
+      const initializedRecord = this.lockedFilters.reduce(
+        (total, crudFilterObject) => {
+          total[crudFilterObject.field] = crudFilterObject.value
+          return total
+        },
+        {}
+      )
 
       this.openEditDialog('import', initializedRecord)
     },

@@ -185,47 +185,66 @@
               md="4"
               lg="3"
             >
-              <v-card class="noselect" @click="handleGridElementClick(item)">
-                <v-img
-                  :src="
-                    getNestedProperty(
-                      item,
-                      recordInfo.paginationOptions.previewImagePath || 'avatar'
-                    )
-                  "
-                  class="white--text align-end"
-                  gradient="to bottom, rgba(0,0,0,.1), rgba(0,0,0,.5)"
-                  height="200px"
-                >
-                  <template v-slot:placeholder>
-                    <v-row
-                      class="fill-height ma-0"
-                      align="center"
-                      justify="center"
-                    >
-                      <v-icon size="200" color="grey darken-3">{{
-                        recordInfo.icon
-                      }}</v-icon>
-                    </v-row>
-                  </template>
-
-                  <v-card-title class="subheading font-weight-bold">{{
-                    getNestedProperty(
-                      item,
-                      recordInfo.paginationOptions.previewNamePath || 'name'
-                    )
-                  }}</v-card-title>
-                </v-img>
-                <v-divider></v-divider>
+              <v-card
+                class="noselect elevation-6"
+                @click="handleGridElementClick(item)"
+              >
+                <div v-if="recordInfo.paginationOptions.heroOptions">
+                  <component
+                    v-if="recordInfo.paginationOptions.heroOptions.component"
+                    :is="recordInfo.paginationOptions.heroOptions.component"
+                    :item="item"
+                    :record-info="recordInfo"
+                  ></component>
+                  <v-img
+                    v-else
+                    :src="
+                      recordInfo.paginationOptions.heroOptions.getPreviewImage
+                        ? recordInfo.paginationOptions.heroOptions.getPreviewImage(
+                            item
+                          )
+                        : item.avatar
+                    "
+                    class="white--text align-end"
+                    gradient="to bottom, rgba(0,0,0,.1), rgba(0,0,0,.5)"
+                    height="200px"
+                  >
+                    <template v-slot:placeholder>
+                      <v-row
+                        class="fill-height ma-0"
+                        align="center"
+                        justify="center"
+                      >
+                        <v-icon size="200" color="grey darken-3">{{
+                          recordInfo.icon
+                        }}</v-icon>
+                      </v-row>
+                    </template>
+                    <v-card-title class="subheading font-weight-bold"
+                      ><span
+                        >{{
+                          recordInfo.paginationOptions.heroOptions
+                            .getPreviewName
+                            ? recordInfo.paginationOptions.heroOptions.getPreviewName(
+                                item
+                              )
+                            : item.name
+                        }}
+                      </span>
+                    </v-card-title>
+                  </v-img>
+                </div>
                 <v-list dense>
                   <v-list-item
                     v-for="(headerItem, j) in headerOptions"
                     :key="j"
                   >
-                    <v-list-item-content
+                    <v-list-item-content v-if="!headerItem.hideTitleIfGrid"
                       >{{ headerItem.text }}:</v-list-item-content
                     >
-                    <v-list-item-content class="text-right">
+                    <v-list-item-content
+                      :class="{ 'text-right': !headerItem.hideTitleIfGrid }"
+                    >
                       <component
                         :is="headerItem.fieldInfo.component"
                         v-if="headerItem.fieldInfo.component"
@@ -283,7 +302,7 @@
         </v-container>
       </template>
       <template v-slot:no-data
-        ><div class="text-center">No records</div></template
+        ><div class="text-center">No {{ recordInfo.pluralName }}</div></template
       >
     </v-data-iterator>
     <v-data-table
@@ -451,7 +470,10 @@
       :mode="dialogs.editMode"
       @close="dialogs.editRecord = false"
     ></EditRecordDialog>
-    <v-dialog v-model="dialogs.expandRecord">
+    <v-dialog
+      v-model="dialogs.expandRecord"
+      :max-width="$vuetify.breakpoint.name === 'xs' ? '100%' : '75%'"
+    >
       <v-card flat>
         <component
           :is="childInterfaceComponent"

@@ -1,25 +1,19 @@
-import { User } from '../base'
+import { MyProfile } from '../special/myProfile'
 
 export const PublicUser = {
-  ...User,
-  title: `Public ${User.pluralName}`,
+  ...MyProfile,
+  title: `Public ${MyProfile.pluralName}`,
   paginationOptions: {
-    ...(!!User.paginationOptions && User.paginationOptions),
-    filterOptions: [],
-    headerOptions: [
-      {
-        field: 'record',
-        hideIfGrid: true,
-      },
-      {
-        field: 'createdAt',
-        width: '150px',
-      },
-    ],
-    downloadOptions: undefined,
-  },
-  viewOptions: {
-    fields: ['avatar', 'name', 'isPublic', 'currentUserFollowing'],
+    ...MyProfile.paginationOptions,
+    defaultLockedFilters: (_that) => {
+      return [
+        {
+          field: 'isPublic',
+          operator: 'eq',
+          value: true,
+        },
+      ]
+    },
   },
   addOptions: undefined,
   editOptions: undefined,

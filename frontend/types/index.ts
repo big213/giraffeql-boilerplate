@@ -1,5 +1,5 @@
 import { InputTypes, MainTypes, FilterByField } from '../../schema'
-import { CrudRawFilterObject, CrudRawSortObject } from './misc'
+import { CrudPageOptions, CrudRawFilterObject, CrudRawSortObject } from './misc'
 
 export type RecordInfo<T extends keyof MainTypes> = {
   // optional title for this recordInfo
@@ -12,6 +12,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
   icon?: string
   // how to render the item as a string
   renderItem?: (item) => string
+
+  // model name for "following" this type
+  followLinkModel?: string
 
   // fields that must always be requested when fetching the specific item and multiple items, along with the id field. could be for certain rendering purposes
   requiredFields?: string[]
@@ -33,6 +36,12 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
       // special options pertaining to the specific inputType
       inputOptions?: InputOptions
+
+      // options for how this component will be rendered in the viewRecordTableInterface
+      tableOptions?: {
+        verticalView?: boolean
+        hideIf?: (fieldValue, item) => boolean
+      }
 
       // special options that will be passed to the column component
       columnOptions?: {
@@ -69,6 +78,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
   // options related to viewing multiple, if possible
   paginationOptions?: {
+    // function that runs when pagination interface is opened for the first time
+    onSuccess?: (that) => void
+
     // does the interface have a search bar?
     hasSearch: `${T}Paginator` extends keyof InputTypes
       ? 'search' extends keyof InputTypes[`${T}Paginator`]
@@ -76,11 +88,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
         : false
       : false
 
-    // the field to filter by on i-crud path, if any
-    publicFilterField?: string
+    defaultPageOptions?: (that: any) => CrudPageOptions
 
-    // the function to generate the lockedFilters for routeType "my"
-    myFilterField?: (that: any) => CrudRawFilterObject[]
+    defaultLockedFilters?: (that: any) => CrudRawFilterObject[]
 
     // all of the possible usable filters
     filterOptions: `${T}FilterByObject` extends keyof InputTypes
@@ -89,12 +99,19 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     sortOptions: SortObject[]
 
-    // what is the path to the preview image, relative to the record? defaults to 'avatar'
-    previewImagePath?: string
-    // what is the path to the preview name, relative to the record? defaults to 'name'
-    previewNamePath?: string
-    // extra sort params that are to be appended to the user-selected sort params
+    // should a hero image be displayed? only applies to grid view
+    heroOptions?: {
+      // function that will get the preview image from the item
+      getPreviewImage?: (item: any) => any
 
+      // function that will get the preview name from the item
+      getPreviewName?: (item: any) => any
+
+      // custom component that should be rendered, which will override the above 2 options
+      component?: any
+    }
+
+    // extra sort params that are to be appended to the user-selected sort params
     additionalSortParams?: CrudRawSortObject[]
 
     // the headers of the table
@@ -108,7 +125,7 @@ export type RecordInfo<T extends keyof MainTypes> = {
     handleGridElementClick?: (that, item) => void
 
     // custom component
-    interfaceComponent?: any
+    component?: any
     // can the results be downloaded?
     downloadOptions?: {
       // custom fields to download. otherwise, the header fields will be downloaded
@@ -124,7 +141,7 @@ export type RecordInfo<T extends keyof MainTypes> = {
     // if not createX, the custom create operation name
     operationName?: string
     // function that runs when recorded is successfully added
-    onSuccess?: (that) => void
+    onSuccess?: (that, item) => void
   }
 
   importOptions?: {
@@ -148,7 +165,7 @@ export type RecordInfo<T extends keyof MainTypes> = {
     // replacement text
     text?: string
     // function that runs when recorded is successfully edited
-    onSuccess?: (that) => void
+    onSuccess?: (that, item) => void
   }
 
   deleteOptions?: {
@@ -158,7 +175,7 @@ export type RecordInfo<T extends keyof MainTypes> = {
     // if not createX, the custom create operation name
     operationName?: string
     // function that runs when recorded is successfully deleted
-    onSuccess?: (that) => void
+    onSuccess?: (that, item) => void
   }
 
   viewOptions?: {
@@ -166,11 +183,36 @@ export type RecordInfo<T extends keyof MainTypes> = {
     fields: string[]
     // custom component
     component?: any
+
+    // function that runs when recorded is successfully viewed
+    onSuccess?: (that, item) => void
+
+    // should the viewOptions interface show a hero image/text at the top
+    heroOptions?: {
+      // function that will get the preview image from the item
+      getPreviewImage?: (item: any) => any
+
+      // function that will get the preview name from the item
+      getPreviewName?: (item: any) => any
+
+      // custom component that should be rendered, which will override the above 2 options
+      component?: any
+    }
   }
 
-  commentOptions?: {
+  previewOptions?: {
+    // required: fields that can be previewed
+    fields: string[]
+  }
+
+  postOptions?: {
     recordInfo: RecordInfo<any>
-    component: any
+
+    // are the posts readonly?
+    readonly?: boolean
+
+    // custom component
+    component?: any
   }
 
   copyOptions?: {
@@ -271,6 +313,7 @@ type HeaderObject = {
   hideIfGrid?: boolean // hide this column if in grid mode
   hideIfList?: boolean // hide this column if in list mode
   hideIf?: (that) => boolean
+  hideTitleIfGrid?: boolean // hide the header if in a grid
 }
 
 export type InputType =

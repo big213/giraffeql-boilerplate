@@ -10,6 +10,16 @@
 
     <v-list dense>
       <v-list-item
+        v-if="recordInfo.viewOptions && !hideView"
+        key="view"
+        @click="openEditDialog('view')"
+      >
+        <v-list-item-icon>
+          <v-icon>mdi-eye</v-icon>
+        </v-list-item-icon>
+        <v-list-item-title>View</v-list-item-title>
+      </v-list-item>
+      <v-list-item
         v-if="recordInfo.enterOptions && !hideEnter"
         key="enter"
         @click="goToRecordPage(true)"
@@ -21,16 +31,6 @@
           >Go To Page
           <v-icon small right>mdi-open-in-new</v-icon>
         </v-list-item-title>
-      </v-list-item>
-      <v-list-item
-        v-if="recordInfo.viewOptions && !hideView"
-        key="view"
-        @click="openEditDialog('view')"
-      >
-        <v-list-item-icon>
-          <v-icon>mdi-eye</v-icon>
-        </v-list-item-icon>
-        <v-list-item-title>View</v-list-item-title>
       </v-list-item>
       <v-list-item
         v-if="recordInfo.shareOptions"

@@ -26,11 +26,9 @@
                 indeterminate
               ></v-progress-linear>
               <template v-else-if="itemData">
-                <v-list-item-subtitle
-                  >Type: {{ itemData.__typename }}</v-list-item-subtitle
-                >
-                <v-list-item-subtitle v-if="showDescription"
-                  >Description: {{ itemData.description }}</v-list-item-subtitle
+                <v-list-item-subtitle v-for="(field, i) in fields" :key="i"
+                  >{{ renderFieldTitle(field) }}:
+                  {{ itemData[field] }}</v-list-item-subtitle
                 >
               </template>
             </template>
@@ -62,9 +60,12 @@ import {
   getIcon,
   enterRoute,
   generateViewRecordRoute,
+  lookupFieldInfo,
+  collapseObject,
 } from '~/services/base'
 import { executeGiraffeql } from '~/services/giraffeql'
 import FollowButton from '~/components/button/followButton.vue'
+import * as simpleModels from '~/models/simple'
 
 export default {
   components: {
@@ -82,18 +83,6 @@ export default {
       validator: (value) => {
         return ['emit', 'openInNew', 'openInDialog'].includes(value)
       },
-    },
-
-    /*
-     ** the modelName of the follow model, if there is one
-     */
-    followLinkModel: {
-      type: String,
-    },
-
-    // should the description field be shown?
-    showDescription: {
-      type: Boolean,
     },
   },
 
@@ -114,6 +103,15 @@ export default {
     capitalizedType() {
       return capitalizeString(this.item.__typename)
     },
+    recordInfo() {
+      return simpleModels[`Simple${capitalizeString(this.item.__typename)}`]
+    },
+    followLinkModel() {
+      return this.recordInfo?.followLinkModel
+    },
+    fields() {
+      return this.recordInfo?.previewOptions?.fields ?? ['__typename']
+    },
   },
 
   watch: {
@@ -124,6 +122,12 @@ export default {
   },
 
   methods: {
+    renderFieldTitle(field) {
+      return field === '__typename'
+        ? 'Type'
+        : this.recordInfo?.fields?.[field]?.text ?? field
+    },
+
     openPage() {
       if (this.openMode === 'openInNew') {
         enterRoute(
@@ -158,9 +162,48 @@ export default {
             __typename: true,
             name: true,
             avatar: true,
-            ...(this.showDescription && {
-              description: true,
-            }),
+            ...(this.recordInfo &&
+              collapseObject(
+                this.fields.reduce((total, fieldKey) => {
+                  // skip if key is __typename
+                  if (fieldKey === '__typename') return total
+
+                  const fieldInfo = lookupFieldInfo(this.recordInfo, fieldKey)
+
+                  // if field is hidden, exclude
+                  if (fieldInfo.hidden) return total
+
+                  const fieldsToAdd = new Set()
+
+                  // add all fields
+                  if (fieldInfo.fields) {
+                    fieldInfo.fields.forEach((field) => fieldsToAdd.add(field))
+                  } else {
+                    fieldsToAdd.add(fieldKey)
+                  }
+
+                  // process fields
+                  fieldsToAdd.forEach((field) => {
+                    total[field] = true
+
+                    // add a serializer if there is one for the field
+                    const currentFieldInfo = this.recordInfo.fields[field]
+                    if (currentFieldInfo) {
+                      if (currentFieldInfo.serialize) {
+                        serializeMap.set(field, currentFieldInfo.serialize)
+                      }
+
+                      // if field has args, process them
+                      if (currentFieldInfo.args) {
+                        total[currentFieldInfo.args.path + '.__args'] =
+                          currentFieldInfo.args.getArgs(this)
+                      }
+                    }
+                  })
+
+                  return total
+                }, {})
+              )),
             ...(this.followLinkModel && {
               currentUserFollowLink: {
                 id: true,

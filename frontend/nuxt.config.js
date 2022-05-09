@@ -73,6 +73,10 @@ export default {
         property: 'og:image',
         content: process.env.SITE_IMAGE_URL,
       },
+      {
+        property: 'og:site_name',
+        content: process.env.SITE_NAME,
+      },
     ],
     link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
   },
