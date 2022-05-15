@@ -15,7 +15,34 @@
   <v-container v-else fluid>
     <v-layout justify-center align-center column d-block>
       <v-row>
+        <v-col v-if="isRecordMinimized" cols="12">
+          <PreviewRecordChip :item="selectedItem">
+            <template v-slot:rightIcon>
+              <RecordActionMenu
+                :record-info="recordInfo"
+                :item="selectedItem"
+                hide-enter
+                expand-mode="emit"
+                left
+                offset-x
+                @handle-action-click="openEditDialog"
+                @handle-custom-action-click="handleCustomActionClick"
+                @handle-expand-click="handleExpandClick"
+              >
+                <template v-slot:activator="{ on, attrs }">
+                  <v-icon v-bind="attrs" v-on="on" right
+                    >mdi-dots-vertical</v-icon
+                  >
+                </template>
+              </RecordActionMenu>
+              <v-icon right @click="toggleRecordMinimized(false)"
+                >mdi-arrow-expand</v-icon
+              >
+            </template>
+          </PreviewRecordChip>
+        </v-col>
         <v-col
+          v-else
           cols="12"
           :md="isExpanded ? 4 : 6"
           class="text-center"
@@ -51,12 +78,15 @@
                     @handle-custom-action-click="handleCustomActionClick"
                     @handle-expand-click="handleExpandClick"
                   ></RecordActionMenu>
+                  <v-btn icon @click="toggleRecordMinimized(true)">
+                    <v-icon>mdi-arrow-collapse</v-icon>
+                  </v-btn>
                 </v-toolbar>
               </template>
             </component>
           </v-card>
         </v-col>
-        <v-col v-if="isExpanded" cols="12" md="8">
+        <v-col v-if="isExpanded" cols="12" :md="isRecordMinimized ? 12 : 8">
           <v-card class="elevation-12">
             <component
               :is="paginationComponent"
@@ -95,6 +125,7 @@
 import ViewRecordTableInterface from '~/components/interface/crud/viewRecordTableInterface.vue'
 import EditRecordDialog from '~/components/dialog/editRecordDialog.vue'
 import RecordActionMenu from '~/components/menu/recordActionMenu.vue'
+import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 import { executeGiraffeql } from '~/services/giraffeql'
 import {
   capitalizeString,
@@ -111,6 +142,7 @@ export default {
     ViewRecordTableInterface,
     EditRecordDialog,
     RecordActionMenu,
+    PreviewRecordChip,
   },
 
   props: {
@@ -133,6 +165,8 @@ export default {
       selectedItem: null,
       expandTypeObject: null,
       subPageOptions: null,
+
+      isRecordMinimized: false,
 
       generation: 0,
 
@@ -202,6 +236,10 @@ export default {
       this.setExpandTypeObject(val)
     },
 
+    '$route.query.r'(val) {
+      // this.setExpandTypeObject(val)
+    },
+
     recordInfo() {
       this.recordInfoChanged = true
       this.reset(true)
@@ -230,12 +268,28 @@ export default {
       this.$emit('handle-submit')
     },
 
+    getChipName(item) {
+      return this.recordInfo?.chipOptions?.getName
+        ? this.recordInfo?.chipOptions?.getName(item)
+        : item.name
+    },
+
+    getChipImage(item) {
+      return this.recordInfo?.chipOptions?.getImage
+        ? this.recordInfo.chipOptions.getImage(item)
+        : item.avatar
+    },
+
     handleExpandClick(_expandTypeObject, index) {
       this.toggleExpand(index)
     },
 
     handleCustomActionClick(actionObject, item) {
       actionObject.handleClick(this, item)
+    },
+
+    toggleRecordMinimized(state) {
+      this.isRecordMinimized = state
     },
 
     toggleExpand(index) {
@@ -303,16 +357,19 @@ export default {
         const data = await executeGiraffeql(this, {
           ['get' + this.capitalizedTypename]: {
             ...collapseObject(
-              (this.recordInfo.requiredFields ?? []).reduce(
-                (total, item) => {
-                  total[item] = true
-                  return total
-                },
-                {
-                  id: true,
-                }
-              )
+              (this.recordInfo.requiredFields ?? [])
+                .concat(this.recordInfo.chipOptions?.fields ?? [])
+                .reduce(
+                  (total, item) => {
+                    total[item] = true
+                    return total
+                  },
+                  {
+                    id: true,
+                  }
+                )
             ),
+            __typename: true,
             __args: {
               ...this.lookupParams,
               ...(this.$route.query.id && { id: this.$route.query.id }),

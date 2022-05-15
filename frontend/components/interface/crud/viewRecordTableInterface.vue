@@ -1,7 +1,7 @@
 <template>
   <v-card flat>
     <slot name="toolbar"></slot>
-    <v-card-text :class="{ 'max-height': dialogMode }" class="pt-3 px-0">
+    <v-card-text :class="{ 'dialog-max-height': dialogMode }" class="pt-3 px-0">
       <CircularLoader
         v-if="isLoading"
         style="min-height: 250px"
@@ -351,9 +351,3 @@ export default {
   },
 }
 </script>
-
-<style scoped>
-.max-height {
-  max-height: 600px;
-}
-</style>

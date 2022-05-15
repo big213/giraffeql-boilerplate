@@ -1,7 +1,7 @@
 <template>
   <v-card flat>
     <slot name="toolbar"></slot>
-    <v-card-text :class="{ 'max-height': dialogMode }" class="py-0 mt-3">
+    <v-card-text :class="{ 'dialog-max-height': dialogMode }" class="py-0 mt-3">
       <v-alert type="info">
         CSV must have the following columns:
         <br />

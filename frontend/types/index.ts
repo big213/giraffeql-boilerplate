@@ -205,6 +205,14 @@ export type RecordInfo<T extends keyof MainTypes> = {
     fields: string[]
   }
 
+  chipOptions?: {
+    fields: string[]
+    // the function to derive the name on the chip. else defaults to name
+    getName?: (item: any) => any
+    // the function to derive the image on the chip. else defaults to avatar
+    getImage?: (item: any) => any
+  }
+
   postOptions?: {
     recordInfo: RecordInfo<any>
 

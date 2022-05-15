@@ -38,3 +38,11 @@
 .break-space {
   white-space: break-spaces;
 }
+
+.dialog-max-height {
+  max-height: 600px;
+}
+
+.highlighted-bg {
+  border: 1px solid rgb(122, 122, 122);
+}

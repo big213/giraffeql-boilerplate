@@ -3,6 +3,7 @@ import CircularLoader from '~/components/common/circularLoader.vue'
 import {
   getNestedProperty,
   handleError,
+  collectPaginatorData,
   capitalizeString,
   generateTimeAgoString,
   generateFilterByObjectArray,
@@ -59,6 +60,14 @@ export default {
       totalRecords: 0,
       endCursor: null,
 
+      // should be overriden depending on the use case
+      /*
+      fields: array of fields to fetch
+      generateFilterArray: (idsArray) => filterObjectArray
+      values: Map<id,value>
+      */
+      knownTypesInfo: {},
+
       returnFields: {
         content: true,
         files: true,
@@ -111,6 +120,11 @@ export default {
       props.item.content = updatedPost.content
       props.item.files = updatedPost.files
       props.isEditing = false
+    },
+
+    // retrieves a known type by id
+    getTypeFromMap(type, id) {
+      return this.knownTypesInfo[type].values?.get(id)
     },
 
     async deletePost(props) {
@@ -200,6 +214,66 @@ export default {
             ele.node.data = JSON.parse(ele.node.data)
           }
         })
+
+        // for any known types that exist in data as data[type], fetch them
+        const knownTypesArray = Object.keys(this.knownTypesInfo)
+
+        const typesToFetch = knownTypesArray.reduce((total, val) => {
+          total[val] = new Set()
+          return total
+        }, {})
+
+        if (knownTypesArray.length) {
+          data.edges.forEach((ele) => {
+            knownTypesArray.forEach((type) => {
+              if (!ele.node.data) return
+
+              if (ele.node.data[type]) {
+                typesToFetch[type].add(ele.node.data[type])
+              }
+            })
+          })
+
+          for (const type in typesToFetch) {
+            const fieldsToFetch = this.knownTypesInfo[type].fields ?? [
+              'id',
+              '__typename',
+              'name',
+              'avatar',
+            ]
+
+            if (typesToFetch[type].size) {
+              const results = await collectPaginatorData(
+                this,
+                `get${capitalizeString(type)}Paginator`,
+                fieldsToFetch.reduce((total, val) => {
+                  total[val] = true
+                  return total
+                }, {}),
+                {
+                  filterBy: this.knownTypesInfo[type].generateFilterArray
+                    ? this.knownTypesInfo[type].generateFilterArray([
+                        ...typesToFetch[type],
+                      ])
+                    : [
+                        {
+                          id: {
+                            in: [...typesToFetch[type]],
+                          },
+                        },
+                      ],
+                }
+              )
+
+              results.forEach((ele) => {
+                if (!this.knownTypesInfo[type].values) {
+                  this.knownTypesInfo[type].values = new Map()
+                }
+                this.knownTypesInfo[type].values.set(ele.id, ele)
+              })
+            }
+          }
+        }
 
         this.records.push(
           ...data.edges.map((ele) => ({

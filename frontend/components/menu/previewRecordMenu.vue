@@ -1,5 +1,5 @@
 <template>
-  <v-menu v-model="open" v-bind="$attrs">
+  <v-menu v-if="item" v-model="open" v-bind="$attrs">
     <!-- pass through scoped slots -->
     <template v-slot:activator="slotData">
       <slot v-if="$scopedSlots.activator" name="activator" v-bind="slotData" />
@@ -51,6 +51,12 @@
       </v-card-actions>
     </v-card>
   </v-menu>
+  <v-chip v-else small>
+    <v-avatar left>
+      <v-icon small>mdi-help</v-icon>
+    </v-avatar>
+    <i>(Not Found)</i></v-chip
+  >
 </template>
 
 <script>
@@ -74,7 +80,6 @@ export default {
   props: {
     item: {
       type: Object,
-      required: true,
     },
 
     openMode: {
@@ -195,8 +200,9 @@ export default {
 
                       // if field has args, process them
                       if (currentFieldInfo.args) {
-                        total[currentFieldInfo.args.path + '.__args'] =
-                          currentFieldInfo.args.getArgs(this)
+                        total[
+                          currentFieldInfo.args.path + '.__args'
+                        ] = currentFieldInfo.args.getArgs(this)
                       }
                     }
                   })

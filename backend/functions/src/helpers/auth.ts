@@ -89,6 +89,7 @@ export async function validateToken(bearerToken: string): Promise<ContextUser> {
       id,
       role,
       permissions,
+      isApiKey: false,
     };
 
     return contextUser;
@@ -124,6 +125,7 @@ export async function validateApiKey(code: string): Promise<ContextUser> {
       permissions: (userRoleToPermissionsMap[role.name] ?? []).concat(
         parsedPermissions
       ),
+      isApiKey: true,
     };
   } catch (err: unknown) {
     throw new AuthenticationError({

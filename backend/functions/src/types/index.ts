@@ -68,6 +68,7 @@ export type ContextUser = {
   id: string;
   role: userRoleKenum | null;
   permissions: userPermissionEnum[];
+  isApiKey: boolean; // was the context created using an API Key?
 };
 
 export type AccessControlMap = {

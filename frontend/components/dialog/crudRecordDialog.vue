@@ -5,35 +5,30 @@
     :max-width="computedMaxWidth"
     persistent
   >
-    <v-card flat>
-      <div>
-        <component
-          :is="paginationComponent"
-          :record-info="recordInfo"
-          :locked-filters="lockedFilters"
-          :hidden-filters="hiddenFilters"
-          :hidden-headers="hiddenHeaders"
-          :page-options="pageOptions"
-          :title="title"
-          :icon="icon"
-          is-dialog
-          dense
-          @close="close()"
-        >
-          <template v-slot:header-action>
-            <v-btn icon @click="close()">
-              <v-icon>mdi-close</v-icon>
-            </v-btn>
-          </template>
-        </component>
-      </div>
+    <component
+      :is="paginationComponent"
+      :record-info="recordInfo"
+      :locked-filters="lockedFilters"
+      :hidden-filters="hiddenFilters"
+      :hidden-headers="hiddenHeaders"
+      :page-options="pageOptions"
+      :title="title"
+      :icon="icon"
+      is-dialog
+      dense
+      @close="close()"
+    >
+      <template v-slot:header-action>
+        <v-btn icon @click="close()">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
+      </template>
 
-      <v-card-actions>
-        <slot name="footer-action"></slot>
+      <template v-slot:footer-action>
         <v-spacer></v-spacer>
         <v-btn color="blue darken-1" text @click="close()">Close</v-btn>
-      </v-card-actions>
-    </v-card>
+      </template>
+    </component>
   </v-dialog>
 </template>
 
