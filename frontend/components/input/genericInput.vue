@@ -1125,9 +1125,3 @@ export default {
   },
 }
 </script>
-
-<style scoped>
-.highlighted-bg {
-  border: 1px solid rgb(122, 122, 122);
-}
-</style>

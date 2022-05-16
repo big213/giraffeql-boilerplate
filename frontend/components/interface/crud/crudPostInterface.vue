@@ -24,14 +24,15 @@
       <v-container class="text-left">
         <v-row>
           <v-col v-if="recordInfo.addOptions" cols="12">
-            <EditRecordInterface
-              class="highlighted-bg"
-              :record-info="recordInfo"
-              mode="add"
-              :selected-item="selectedItem"
-              hide-locked-fields
-              @handle-submit="handlePostSubmit()"
-            ></EditRecordInterface>
+            <div class="highlighted-bg">
+              <EditRecordInterface
+                :record-info="recordInfo"
+                mode="add"
+                :selected-item="selectedItem"
+                hide-locked-fields
+                @handle-submit="handlePostSubmit()"
+              ></EditRecordInterface>
+            </div>
           </v-col>
           <v-col v-for="props in records" :key="props.item.id" cols="12">
             <v-card class="elevation-5" color="grey darken-3">
