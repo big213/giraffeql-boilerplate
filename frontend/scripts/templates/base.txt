@@ -31,7 +31,7 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
         hideIfGrid: true,
       },
       {
-        field: 'updatedOrCreatedAt',
+        field: 'modifiedAt',
         width: '150px',
       },
     ],

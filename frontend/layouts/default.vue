@@ -115,7 +115,6 @@
       :special-mode="dialogs.editRecord.specialMode"
       :mode="dialogs.editRecord.mode"
       @close="dialogs.editRecord = null"
-      @handleSubmit="handleItemAdded()"
     ></EditRecordDialog>
     <CrudRecordDialog
       v-if="dialogs.crudRecord"
@@ -126,6 +125,12 @@
       :page-options="dialogs.crudRecord.pageOptions"
       @close="dialogs.crudRecord = null"
     ></CrudRecordDialog>
+    <ExecuteActionDialog
+      v-if="dialogs.executeAction"
+      :action-options="dialogs.executeAction.actionOptions"
+      :selected-item="dialogs.executeAction.selectedItem"
+      @close="dialogs.executeAction = null"
+    ></ExecuteActionDialog>
   </v-app>
 </template>
 
@@ -139,6 +144,7 @@ import firebase from '~/services/fireinit'
 import 'firebase/auth'
 import EditRecordDialog from '~/components/dialog/editRecordDialog.vue'
 import CrudRecordDialog from '~/components/dialog/crudRecordDialog.vue'
+import ExecuteActionDialog from '~/components/dialog/executeActionDialog.vue'
 import * as allModels from '~/models'
 import { logoHasLightVariant } from '~/services/config'
 
@@ -149,6 +155,7 @@ export default {
     Footer,
     EditRecordDialog,
     CrudRecordDialog,
+    ExecuteActionDialog,
   },
   data() {
     return {
@@ -160,6 +167,7 @@ export default {
       dialogs: {
         editRecord: null,
         crudRecord: null,
+        executeAction: null,
       },
 
       accountItems: [
@@ -230,6 +238,13 @@ export default {
       ) {
         this.dialogs.crudRecord = params
       }
+    })
+
+    /*
+     ** Expecting actionOptions, selectedItem?
+     */
+    this.$root.$on('openExecuteActionDialog', (params) => {
+      this.dialogs.executeAction = params
     })
   },
 

@@ -88,6 +88,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    // if it is a child component, the parent component with at least id
+    parentItem: {
+      type: Object,
+    },
   },
 
   data() {
@@ -730,6 +734,14 @@ export default {
           : null,
       })
       this.filterChanged = false
+    },
+
+    handleAddButtonClick() {
+      if (this.recordInfo.addOptions.customAction) {
+        this.recordInfo.addOptions.customAction(this)
+      } else {
+        this.openAddRecordDialog()
+      }
     },
 
     openAddRecordDialog() {

@@ -13,6 +13,7 @@ import {
   SqlSumQuery,
   SqlUpdateQuery,
   SqlWhereFieldOperator,
+  SqlWhereInput,
   SqlWhereObject,
   sumTableRows,
   updateTableRow,
@@ -680,7 +681,7 @@ export class NormalService extends BaseService {
   async countSqlRecord(
     sqlQuery: Omit<SqlCountQuery, "table">,
     fieldPath?: string[]
-  ): Promise<any> {
+  ): Promise<number> {
     const recordsCount = await countTableRows({
       ...sqlQuery,
       table: this.typename,
@@ -713,7 +714,28 @@ export class NormalService extends BaseService {
         ...sqlQuery.fields,
       },
       table: this.typename,
-    });
+    }).then((res) => res[0]);
+  }
+
+  async createSqlRecordIfNotExists(
+    whereInput: SqlWhereInput,
+    sqlQuery: Omit<SqlInsertQuery, "table">,
+    fieldPath?: string[]
+  ) {
+    let record = await this.getFirstSqlRecord(
+      {
+        select: ["id"],
+        where: whereInput,
+      },
+      fieldPath,
+      false
+    );
+
+    if (!record) {
+      record = await this.createSqlRecord(sqlQuery);
+    }
+
+    return record;
   }
 
   async updateSqlRecord(

@@ -30,7 +30,6 @@ export type RecordInfo<T extends keyof MainTypes> = {
       text?: string
       // hint field for helping the user to fill out the field
       hint?: string
-      icon?: string
 
       inputType?: InputType
 
@@ -140,6 +139,10 @@ export type RecordInfo<T extends keyof MainTypes> = {
     component?: any
     // if not createX, the custom create operation name
     operationName?: string
+
+    // custom action when the "new" button is clicked, if any
+    customAction?: (that) => void
+
     // function that runs when recorded is successfully added
     onSuccess?: (that, item) => void
   }
@@ -269,8 +272,15 @@ export type RecordInfo<T extends keyof MainTypes> = {
     text: string
     icon: string
     showIf?: (that, item) => boolean
-    handleClick: (that, item) => void
-    isAsync?: boolean // should the button have a loader and not be clickable while the operation is processing?
+
+    // if this is specified, it will open a dialog that will allow the user to complete the action (with inputs, if necessary)
+    actionOptions?: ActionOptions
+
+    // if this above is not specified, this must be specified
+    simpleActionOptions?: {
+      handleClick: (that, item) => void
+      isAsync?: boolean // should the button have a loader and not be clickable while the operation is processing?
+    }
   }[]
 }
 
@@ -343,3 +353,29 @@ export type InputType =
   | 'select' // standard select
   | 'multiple-select' // multiple select
   | 'text'
+
+export type ActionOptions = {
+  operationName: string
+  title: string
+  icon: string
+  // custom component, if any
+  component?: any
+  // function that runs when action is successfully completed
+  onSuccess?: (that, item) => void
+  inputs: {
+    field: string
+    definition: {
+      text: string
+      inputType?: InputType
+      hint?: string
+      getOptions?: (that) => Promise<any[]>
+      // special options pertaining to the specific inputType
+      inputOptions?: InputOptions
+      optional?: boolean
+      inputRules?: any[]
+      default?: (that) => unknown
+    }
+  }[]
+  // function that will use the selectedItem (if any) to modify the args fed into the operation
+  argsModifier?: (that, item, args) => void
+}

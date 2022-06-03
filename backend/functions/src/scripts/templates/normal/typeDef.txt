@@ -8,9 +8,10 @@ import {
   generateStringField,
   generateTextField,
   generateTypenameField,
+  processTypeDef
 } from "../../core/helpers/typeDef";
 
-export default new GiraffeqlObjectType(<ObjectTypeDefinition>{
+export default new GiraffeqlObjectType(<ObjectTypeDefinition>processTypeDef({
   name: {{ capitalizedTypename }}.typename,
   description: "{{ capitalizedTypename }} type",
   fields: {
@@ -25,4 +26,4 @@ export default new GiraffeqlObjectType(<ObjectTypeDefinition>{
     ...generateUpdatedAtField(),
     ...generateCreatedByField(User),
   },
-});
+}));

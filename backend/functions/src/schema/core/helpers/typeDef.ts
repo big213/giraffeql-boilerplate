@@ -14,9 +14,10 @@ import {
   GiraffeqlInputFieldType,
   ArrayOptions,
   inputTypeDefs,
+  ObjectTypeDefinition,
 } from "giraffeql";
 import { knex } from "../../../utils/knex";
-import { isObject } from "./shared";
+import { camelToSnake, isObject } from "./shared";
 import {
   BaseService,
   LinkService,
@@ -1217,4 +1218,19 @@ export function generateCurrentUserFollowLinkField(followLink: LinkService) {
       },
     },
   };
+}
+
+// loops through a typeDef object and populates sqlOptions.field for any property with capital letters for which there is no sqlOptions.field
+export function processTypeDef(typeDefObject: ObjectTypeDefinition) {
+  Object.entries(typeDefObject.fields).forEach(([fieldname, def]) => {
+    // if not a sql field, skip
+    if (!def.sqlOptions) return;
+
+    // if it has a capital letter and the sqlOptions.field is not set, set it
+    if (fieldname.match(/[A-Z]/) && !def.sqlOptions.field) {
+      def.sqlOptions.field = camelToSnake(fieldname);
+    }
+  });
+
+  return typeDefObject;
 }

@@ -105,7 +105,6 @@ export default {
 
     selectedItem: {
       type: Object,
-      default: () => ({}),
     },
 
     recordInfo: {
@@ -134,19 +133,8 @@ export default {
       },
     },
 
-    /*
-      {
-        icon: 'mdi-share-variant',
-        prefix: 'Share',
-        defaultInterface: ShareRecordInterface,
-      },
-    */
     specialMode: {
       type: Object,
-    },
-
-    component: {
-      required: false,
     },
   },
   data() {

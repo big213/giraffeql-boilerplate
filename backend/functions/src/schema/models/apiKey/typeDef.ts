@@ -9,32 +9,35 @@ import {
   generateTypenameField,
   generateJoinableField,
   generateArrayField,
+  processTypeDef,
 } from "../../core/helpers/typeDef";
 import * as Scalars from "../../scalars";
 
-export default new GiraffeqlObjectType(<ObjectTypeDefinition>{
-  name: ApiKey.typename,
-  description: "Api key",
-  fields: {
-    ...generateIdField(),
-    ...generateTypenameField(ApiKey),
-    name: generateStringField({ allowNull: false }),
-    code: generateStringField({
-      allowNull: false,
-      sqlOptions: { unique: true },
-      typeDefOptions: { addable: false, updateable: false }, // auto-generated
-    }),
-    user: generateJoinableField({
-      service: User,
-      allowNull: false,
-    }),
-    permissions: generateArrayField({
-      allowNull: true,
-      type: Scalars.userPermission,
-      nestHidden: true,
-    }),
-    ...generateCreatedAtField(),
-    ...generateUpdatedAtField(),
-    ...generateCreatedByField(User),
-  },
-});
+export default new GiraffeqlObjectType(
+  <ObjectTypeDefinition>processTypeDef({
+    name: ApiKey.typename,
+    description: "Api key",
+    fields: {
+      ...generateIdField(),
+      ...generateTypenameField(ApiKey),
+      name: generateStringField({ allowNull: false }),
+      code: generateStringField({
+        allowNull: false,
+        sqlOptions: { unique: true },
+        typeDefOptions: { addable: false, updateable: false }, // auto-generated
+      }),
+      user: generateJoinableField({
+        service: User,
+        allowNull: false,
+      }),
+      permissions: generateArrayField({
+        allowNull: true,
+        type: Scalars.userPermission,
+        nestHidden: true,
+      }),
+      ...generateCreatedAtField(),
+      ...generateUpdatedAtField(),
+      ...generateCreatedByField(User),
+    },
+  })
+);

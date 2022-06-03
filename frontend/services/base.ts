@@ -805,3 +805,75 @@ export function generateFilterByObjectArray(
 
   return Object.keys(filterByObject).length > 0 ? [filterByObject] : []
 }
+
+export async function processInputObject(that, inputObject) {
+  let value
+
+  // if it is a value array, need to assemble the value as an array
+  if (inputObject.inputType === 'value-array') {
+    value = []
+    for (const nestedInputArray of inputObject.nestedInputsArray) {
+      const obj = {}
+      for (const nestedInputObject of nestedInputArray) {
+        obj[nestedInputObject.nestedFieldInfo.key] = await processInputObject(
+          that,
+          nestedInputObject.inputObject
+        )
+      }
+      value.push(obj)
+    }
+  } else {
+    // if the fieldInfo.inputType === 'combobox' | 'server-combobox', it came from a combo box. need to handle accordingly
+    if (
+      (inputObject.inputType === 'combobox' ||
+        inputObject.inputType === 'server-combobox') &&
+      inputObject.inputOptions?.typename
+    ) {
+      if (typeof inputObject.value === 'string') {
+        // expecting either string or obj
+        // create the item, get its id.
+        const results = <any>await executeGiraffeql(null, <any>{
+          ['create' + capitalizeString(inputObject.inputOptions.typename)]: {
+            id: true,
+            name: true,
+            __args: {
+              name: inputObject.value,
+            },
+          },
+        })
+
+        // force reload of memoized options, if any
+        inputObject.getOptions &&
+          inputObject
+            .getOptions(that, true)
+            .then((res) => (inputObject.options = res))
+
+        value = results.id
+      } else if (inputObject.value === null) {
+        value = inputObject.value
+      } else {
+        value = inputObject.value.id
+      }
+    } else if (
+      inputObject.inputType === 'autocomplete' ||
+      inputObject.inputType === 'server-autocomplete' ||
+      inputObject.inputType === 'select'
+    ) {
+      // as we are using return-object option, the entire object will be returned for autocompletes/selects, unless it is null or a number
+      value = isObject(inputObject.value)
+        ? inputObject.value.id
+        : Number.isNaN(inputObject.value)
+        ? null
+        : inputObject.value
+    } else {
+      value = inputObject.value
+    }
+
+    // convert '__null' to null
+    if (value === '__null') value = null
+  }
+
+  return inputObject.fieldInfo?.parseValue
+    ? inputObject.fieldInfo.parseValue(value)
+    : value
+}

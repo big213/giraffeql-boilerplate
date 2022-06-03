@@ -51,10 +51,10 @@ export async function validateToken(bearerToken: string): Promise<ContextUser> {
       // set createdBy to id
       await User.updateSqlRecord({
         fields: {
-          createdBy: addUserResults[0].id,
+          createdBy: addUserResults.id,
         },
         where: {
-          id: addUserResults[0].id,
+          id: addUserResults.id,
         },
       });
 
@@ -62,7 +62,7 @@ export async function validateToken(bearerToken: string): Promise<ContextUser> {
       userRecord = await User.getFirstSqlRecord({
         select: ["id", "role", "permissions"],
         where: {
-          id: addUserResults[0].id,
+          id: addUserResults.id,
         },
       });
     }

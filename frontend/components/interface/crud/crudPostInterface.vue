@@ -134,9 +134,9 @@
         </v-row>
         <v-row v-else>
           <v-col cols="12" class="text-center">
-            <v-btn v-if="records.length < totalRecords" @click="loadMorePosts()"
-              >Load More</v-btn
-            >
+            <div v-if="records.length < totalRecords">
+              <v-btn @click="loadMorePosts()">Load More</v-btn>
+            </div>
             <span v-if="loading.loadMore">...</span>
             <span v-else-if="!totalRecords">---</span>
             <span v-else>

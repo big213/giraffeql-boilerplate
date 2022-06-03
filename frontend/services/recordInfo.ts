@@ -147,5 +147,10 @@ export function generateBaseLinkFields() {
       text: 'Updated At',
       component: TimeagoColumn,
     },
+    modifiedAt: {
+      fields: ['updatedAt', 'createdAt'],
+      text: 'Modified At',
+      component: ModifiedAtColumn,
+    },
   }
 }

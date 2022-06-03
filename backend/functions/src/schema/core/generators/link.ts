@@ -7,6 +7,7 @@ import {
   generateCreatedByField,
   generateJoinableField,
   generateTypenameField,
+  processTypeDef,
 } from "../helpers/typeDef";
 import { ObjectTypeDefinition, ObjectTypeDefinitionField } from "giraffeql";
 
@@ -43,7 +44,7 @@ export function generateLinkTypeDef(
     });
   }
 
-  return <ObjectTypeDefinition>{
+  return <ObjectTypeDefinition>processTypeDef({
     name: currentService.typename,
     description: "Link type",
     fields: {
@@ -55,5 +56,5 @@ export function generateLinkTypeDef(
       ...generateCreatedByField(User),
       ...additionalFields,
     },
-  };
+  });
 }

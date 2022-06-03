@@ -205,10 +205,20 @@ export default {
     },
 
     async handleCustomActionClick(actionWrapper) {
-      // this.$emit('handle-custom-action-click', actionObject, this.item)
+      // if the action has actionOptions, open the dialog
+      if (actionWrapper.actionObject.actionOptions) {
+        this.$root.$emit('openExecuteActionDialog', {
+          actionOptions: actionWrapper.actionObject.actionOptions,
+          selectedItem: this.item,
+        })
+        return
+      }
 
       // if the actionWrapper is already loading and it is asynchronous, prevent the action
-      if (actionWrapper.actionObject.isAsync && actionWrapper.isLoading) {
+      if (
+        actionWrapper.actionObject.simpleActionOptions.isAsync &&
+        actionWrapper.isLoading
+      ) {
         this.$notifier.showSnackbar({
           message: 'Action currently in progress',
           variant: 'warning',
@@ -216,9 +226,13 @@ export default {
         return
       }
 
-      if (actionWrapper.actionObject.isAsync) actionWrapper.isLoading = true
+      if (actionWrapper.actionObject.simpleActionOptions.isAsync)
+        actionWrapper.isLoading = true
 
-      await actionWrapper.actionObject.handleClick(this, this.item)
+      await actionWrapper.actionObject.simpleActionOptions.handleClick(
+        this,
+        this.item
+      )
 
       actionWrapper.isLoading = false
     },

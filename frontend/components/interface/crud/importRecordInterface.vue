@@ -162,11 +162,15 @@ export default {
           variant: 'success',
         })
 
-        this.$emit('handleSubmit')
+        // reload any interfaces containing this type
+        this.$root.$emit('refresh-interface', this.recordInfo.typename)
         this.$emit('close')
       } catch (err) {
         handleError(this, err)
-        this.$emit('handleSubmit')
+        // also reload any interfaces containing this type if at least 1 record was added
+        if (this.recordsDone > 0) {
+          this.$root.$emit('refresh-interface', this.recordInfo.typename)
+        }
       }
       this.loading.importing = false
     },
