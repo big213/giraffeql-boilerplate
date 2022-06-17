@@ -81,6 +81,8 @@ export class NormalService extends BaseService {
     primary: ["id"],
   };
 
+  primaryKeyAutoIncrement: boolean = false;
+
   primaryKeyLength: number = 8;
 
   sortFieldsMap: FieldMap = {};
@@ -806,7 +808,10 @@ export class NormalService extends BaseService {
     const addResults = await createObjectType({
       typename: this.typename,
       addFields: {
-        id: await this.generateRecordId(fieldPath),
+        // only add the id field if the id field is a string (not auto-increment)
+        ...(!this.primaryKeyAutoIncrement && {
+          id: await this.generateRecordId(fieldPath),
+        }),
         ...validatedArgs,
         createdBy: req.user!.id,
       },

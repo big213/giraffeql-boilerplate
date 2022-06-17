@@ -31,7 +31,7 @@ export type ObjectTypeDefSqlOptions = {
 
   getter?: (tableAlias: string, field: string) => string;
   setter?: (value: string) => string;
-  parseValue?: (value: unknown) => unknown; // performed before inserts/updates
+  parseValue?: (value: any) => any; // performed before inserts/updates
 
   // sql definition
   type?: SqlType;
@@ -82,10 +82,10 @@ export type AccessControlFunction = (
 export type DataloaderFunctionInput = {
   req: Request;
   fieldPath: string[];
-  args: unknown;
-  query: unknown;
-  currentObject: unknown;
-  data: any;
+  args: any;
+  query: any;
+  data?: any;
+  idArray: any[];
 };
 
 export type DataloaderFunction = (

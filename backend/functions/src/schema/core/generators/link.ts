@@ -1,4 +1,4 @@
-import { BaseService, NormalService } from "../services";
+import { NormalService } from "../services";
 import { User } from "../../services";
 import {
   generateIdField,
@@ -22,7 +22,7 @@ export type ServicesObjectMap = {
 
 export function generateLinkTypeDef(
   servicesObjectMap: ServicesObjectMap,
-  currentService: BaseService,
+  currentService: NormalService,
   additionalFields?: { [x: string]: ObjectTypeDefinitionField }
 ): ObjectTypeDefinition {
   const typeDefFields = {};
@@ -48,7 +48,7 @@ export function generateLinkTypeDef(
     name: currentService.typename,
     description: "Link type",
     fields: {
-      ...generateIdField(),
+      ...generateIdField(currentService),
       ...generateTypenameField(currentService),
       ...typeDefFields,
       ...generateCreatedAtField(),

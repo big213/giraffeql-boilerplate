@@ -283,7 +283,7 @@ export async function getObjectType({
   rawSelect?: SqlSelectQueryObject[];
   data?: any;
   externalTypeDef?: GiraffeqlObjectType;
-}): Promise<unknown[]> {
+}): Promise<any[]> {
   // shortcut: if no fields were requested, simply return empty object
   if (isObject(externalQuery) && Object.keys(externalQuery).length < 1)
     return [{}];
@@ -498,20 +498,26 @@ async function handleAggregatedQueries({
 
       // aggregate ids
       resultsArray.forEach((result) => {
-        if (result) keySet.add(result[field]);
+        if (!result) return;
+        // if it is an array of ids, need to add them each individually
+        if (Array.isArray(result[field])) {
+          result[field].forEach((nestedResult) => keySet.add(nestedResult));
+        } else {
+          keySet.add(result[field]);
+        }
       });
 
       // set ids in data
-      data.idArray = [...keySet];
+      const idArray = [...keySet];
 
       // lookup all the ids
       const aggregatedResults = await dataloaderFn({
         req,
         args,
         query: nestedResolverNodeMap[field].query,
-        currentObject: {},
         fieldPath: currentFieldPath,
         data,
+        idArray,
       });
 
       // build id -> record map
@@ -522,7 +528,17 @@ async function handleAggregatedQueries({
 
       // join the records in memory
       resultsArray.forEach((result) => {
-        if (result) result[field] = recordMap.get(result[field]);
+        if (!result) return;
+
+        // if it is an array of ids, need to map them each individually
+        if (Array.isArray(result[field])) {
+          // if not found, exclude entirely
+          result[field] = result[field]
+            .map((id) => recordMap.get(id) ?? null)
+            .filter((ele) => ele);
+        } else {
+          result[field] = recordMap.get(result[field]);
+        }
       });
     } else if (nestedResolver) {
       // if field does not have a dataloader, it must be nested.

@@ -2,7 +2,7 @@ import type { RecordInfo } from '~/types'
 import CopyableColumn from '~/components/table/copyableColumn.vue'
 import {
   generateBaseFields,
-  generateJoinableField,
+  generatePreviewableJoinableField,
 } from '~/services/recordInfo'
 
 export const ApiKey = <RecordInfo<'apiKey'>>{
@@ -28,7 +28,7 @@ export const ApiKey = <RecordInfo<'apiKey'>>{
       parseValue: (val: string) =>
         val ? val.split(',').filter((ele) => ele) : [],
     },
-    user: generateJoinableField({
+    ...generatePreviewableJoinableField({
       text: 'User',
       fieldname: 'user',
       typename: 'user',
@@ -77,7 +77,7 @@ export const ApiKey = <RecordInfo<'apiKey'>>{
     fields: ['name', 'permissions'],
   },
   viewOptions: {
-    fields: ['name', 'permissions', 'code', 'user'],
+    fields: ['name', 'permissions', 'code', 'userRecord'],
   },
   enterOptions: {
     routeType: 'a',

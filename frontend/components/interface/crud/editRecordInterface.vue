@@ -15,6 +15,7 @@
             class="py-0"
           >
             <GenericInput
+              v-if="!inputObject.hidden"
               :item="inputObject"
               :parent-item="currentItem"
               :all-items="inputsArray"

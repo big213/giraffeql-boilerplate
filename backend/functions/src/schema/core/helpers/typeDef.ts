@@ -471,12 +471,14 @@ export function generateEnumField(
 export function generateKeyValueArray(
   params: {
     name?: string;
+    keyType?: GiraffeqlScalarType;
     valueType?: GiraffeqlScalarType;
     allowNullValue?: boolean;
   } & GenerateFieldParams
 ) {
   const {
     name,
+    keyType = Scalars.string,
     valueType = Scalars.string,
     allowNullValue = false,
     ...remainingParams
@@ -509,7 +511,7 @@ export function generateKeyValueArray(
       description: "Object Input with key and value properties",
       fields: {
         key: new GiraffeqlInputFieldType({
-          type: Scalars.string,
+          type: keyType,
           required: true,
         }),
         value: new GiraffeqlInputFieldType({
@@ -528,7 +530,7 @@ export function generateKeyValueArray(
       description: "Object with key and value properties",
       fields: {
         key: {
-          type: Scalars.string,
+          type: keyType,
           allowNull: false,
         },
         value: {
@@ -574,13 +576,13 @@ export function generateUpdatedAtField() {
   };
 }
 
-export function generateIdField({ autoIncrement = false } = {}) {
+export function generateIdField(service: NormalService) {
   return {
     id: generateStandardField({
       description: "The unique ID of the field",
       allowNull: false,
-      sqlType: autoIncrement ? "integer" : "string",
-      type: autoIncrement ? Scalars.number : Scalars.id,
+      sqlType: service.primaryKeyAutoIncrement ? "integer" : "string",
+      type: service.primaryKeyAutoIncrement ? Scalars.number : Scalars.id,
       typeDefOptions: { addable: false, updateable: false }, // not addable or updateable
     }),
   };
@@ -641,7 +643,7 @@ export function generateJoinableField(
     allowNull,
     defaultValue,
     hidden,
-    sqlType: "string",
+    sqlType: service.primaryKeyAutoIncrement ? "integer" : "string",
     type: service.typeDefLookup,
     typeDefOptions,
     sqlOptions: {
@@ -655,11 +657,13 @@ export function generateJoinableField(
 export function generateDataloadableField(
   params: {
     service: NormalService;
+    isArray?: boolean;
   } & GenerateFieldParams
 ) {
   const {
     description,
     allowNull = true,
+    isArray = false,
     defaultValue,
     hidden,
     service,
@@ -671,26 +675,42 @@ export function generateDataloadableField(
     allowNull,
     defaultValue,
     hidden,
-    sqlType: "integer",
+    sqlType: service.primaryKeyAutoIncrement ? "integer" : "string",
     type: service.typeDefLookup,
-    sqlOptions,
+    sqlOptions: {
+      ...(isArray && {
+        // necessary for inserting JSON into DB properly
+        parseValue: (val) => {
+          // storing in DB as JSON: ["id1", "id2", ...]
+          // although any unique key combination can be inputted (via typeDefLookup), only the id is currently supported using this simple implementation
+          return JSON.stringify(val.map((input) => input.id));
+        },
+        type: "jsonb",
+      }),
+      ...sqlOptions,
+    },
     typeDefOptions: {
-      defer: true,
-      dataloader: ({ req, args, query, currentObject, fieldPath, data }) => {
-        // if data.idArray empty, return empty array
-        if (!data.idArray.length) return Promise.resolve([]);
-        // aggregator function that must accept data.idArray = [1, 2, 3, ...]
+      dataloader: ({ req, query, fieldPath, data, idArray }) => {
+        // if idArray empty, return empty array
+        if (!idArray.length) return Promise.resolve([]);
+        // aggregator function that must accept idArray = [1, 2, 3, ...]
         return getObjectType({
           typename: service.typename,
           req,
           fieldPath,
           externalQuery: query,
           sqlParams: {
-            where: [{ field: "id", operator: "in", value: data.idArray }],
+            where: [{ field: "id", operator: "in", value: idArray }],
           },
           data,
         });
       },
+      ...(isArray && {
+        arrayOptions: {
+          // nulls are filtered out automatically by dataloader
+          allowNullElement: false,
+        },
+      }),
       ...typeDefOptions,
     },
   });

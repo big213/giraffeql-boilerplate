@@ -18,7 +18,7 @@ export default new GiraffeqlObjectType(
     name: ApiKey.typename,
     description: "Api key",
     fields: {
-      ...generateIdField(),
+      ...generateIdField(ApiKey),
       ...generateTypenameField(ApiKey),
       name: generateStringField({ allowNull: false }),
       code: generateStringField({

@@ -200,6 +200,7 @@ export default {
             getOptions: inputDef.definition.getOptions,
             options: [],
             readonly: false,
+            hidden: false,
             loading: false,
             focused: false,
             cols: inputDef.definition.inputOptions?.cols,

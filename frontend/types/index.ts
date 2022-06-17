@@ -1,6 +1,59 @@
 import { InputTypes, MainTypes, FilterByField } from '../../schema'
 import { CrudPageOptions, CrudRawFilterObject, CrudRawSortObject } from './misc'
 
+export type FieldDefinition = {
+  // the fields involved in this field
+  fields?: string[]
+  // path leading up to the field. i.e. item.blah
+  pathPrefix?: string
+
+  text?: string
+  // hint field for helping the user to fill out the field
+  hint?: string
+
+  inputType?: InputType
+
+  // special options pertaining to the specific inputType
+  inputOptions?: InputOptions
+
+  // options for how this component will be rendered in the viewRecordTableInterface
+  tableOptions?: {
+    verticalView?: boolean
+    hideIf?: (fieldValue, item) => boolean
+  }
+
+  // special options that will be passed to the column component
+  columnOptions?: {
+    [x: string]: any
+  }
+
+  args?: {
+    getArgs: (that) => any
+    path: string
+  }
+
+  inputRules?: any[]
+  getOptions?: (that) => Promise<any[]>
+
+  // filters that should be applied when looking up results (server-X input type)
+  lookupFilters?: (that, inputObjectArray) => any[]
+
+  // is the field hidden? if yes, won't fetch it for edit fields
+  hidden?: boolean
+  // is the field nullable? if so, we will add some text saying that to the input
+  optional?: boolean
+  default?: (that) => unknown
+  // fetching from API, in editRecordInterface (when editing/viewing)
+  serialize?: (val: unknown) => unknown
+  // submitting to API, in filterBy and create/update functions
+  parseValue?: (val: unknown) => unknown
+  // for crudRecordPage. parsing the query params
+  parseQueryValue?: (val: unknown) => unknown
+  // for parsing CSV imports
+  parseImportValue?: (val: unknown) => unknown
+  component?: any // component for rendering the field in table
+}
+
 export type RecordInfo<T extends keyof MainTypes> = {
   // optional title for this recordInfo
   title?: string
@@ -21,58 +74,7 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
   // all of the "known" fields of the type. could be nested types (not included in type hints)
   fields?: {
-    [K in string]?: {
-      // the fields involved in this field
-      fields?: string[]
-      // path leading up to the field. i.e. item.blah
-      pathPrefix?: string
-
-      text?: string
-      // hint field for helping the user to fill out the field
-      hint?: string
-
-      inputType?: InputType
-
-      // special options pertaining to the specific inputType
-      inputOptions?: InputOptions
-
-      // options for how this component will be rendered in the viewRecordTableInterface
-      tableOptions?: {
-        verticalView?: boolean
-        hideIf?: (fieldValue, item) => boolean
-      }
-
-      // special options that will be passed to the column component
-      columnOptions?: {
-        [x: string]: any
-      }
-
-      args?: {
-        getArgs: (that) => any
-        path: string
-      }
-
-      inputRules?: any[]
-      getOptions?: (that) => Promise<any[]>
-
-      // filters that should be applied when looking up results (server-X input type)
-      lookupFilters?: (that, inputObjectArray) => any[]
-
-      // is the field hidden? if yes, won't fetch it for edit fields
-      hidden?: boolean
-      // is the field nullable? if so, we will add some text saying that to the input
-      optional?: boolean
-      default?: (that) => unknown
-      // fetching from API, in editRecordInterface (when editing/viewing)
-      serialize?: (val: unknown) => unknown
-      // submitting to API, in filterBy and create/update functions
-      parseValue?: (val: unknown) => unknown
-      // for crudRecordPage. parsing the query params
-      parseQueryValue?: (val: unknown) => unknown
-      // for parsing CSV imports
-      parseImportValue?: (val: unknown) => unknown
-      component?: any // component for rendering the field in table
-    }
+    [K in string]?: FieldDefinition
   }
 
   // options related to viewing multiple, if possible

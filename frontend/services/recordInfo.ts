@@ -1,16 +1,51 @@
 import RecordColumn from '~/components/table/recordColumn.vue'
-import { InputType } from '~/types'
+import { FieldDefinition, InputType } from '~/types'
 import TimeagoColumn from '~/components/table/timeagoColumn.vue'
 import AvatarColumn from '~/components/table/avatarColumn.vue'
 import NameAvatarColumn from '~/components/table/nameAvatarColumn.vue'
 import ModifiedAtColumn from '~/components/table/modifiedAtColumn.vue'
+import PreviewableFilesColumn from '~/components/table/previewableFilesColumn.vue'
+
+export function generatePreviewableJoinableField({
+  fieldname,
+  typename,
+  text,
+  hasAvatar = false,
+  inputType = 'server-autocomplete',
+  fieldOptions = {},
+}: {
+  fieldname: string
+  typename: string
+  text: string
+  hasAvatar?: boolean
+  inputType?: InputType
+  fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
+}) {
+  return {
+    [fieldname]: generateJoinableField({
+      fieldname,
+      typename,
+      text,
+      hasAvatar,
+      inputType,
+      fieldOptions,
+    }),
+    [`${fieldname}Record`]: generatePreviewableRecordField({
+      fieldname,
+      text,
+      hasAvatar,
+    }),
+  }
+}
 
 export function generatePreviewableRecordField({
   fieldname,
   text,
+  hasAvatar = false,
 }: {
   fieldname?: string
   text: string
+  hasAvatar?: boolean
 }) {
   const fieldnamePrefix = fieldname ? fieldname + '.' : ''
   return {
@@ -19,8 +54,8 @@ export function generatePreviewableRecordField({
       `${fieldnamePrefix}name`,
       `${fieldnamePrefix}id`,
       `${fieldnamePrefix}__typename`,
-      `${fieldnamePrefix}avatar`,
-    ],
+      hasAvatar ? `${fieldnamePrefix}avatar` : null,
+    ].filter((e) => e),
     pathPrefix: fieldname,
     component: RecordColumn,
   }
@@ -32,12 +67,14 @@ export function generateJoinableField({
   text,
   hasAvatar,
   inputType = 'server-autocomplete',
+  fieldOptions = {},
 }: {
   fieldname: string
   typename: string
   text: string
   hasAvatar: boolean
   inputType?: InputType
+  fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
 }) {
   return {
     text,
@@ -47,6 +84,7 @@ export function generateJoinableField({
       hasAvatar,
       typename,
     },
+    ...fieldOptions,
   }
 }
 
@@ -152,5 +190,36 @@ export function generateBaseLinkFields() {
       text: 'Modified At',
       component: ModifiedAtColumn,
     },
+  }
+}
+
+export function generatePreviewableFilesColumn({
+  fieldname,
+  text,
+  inputType = 'multiple-media',
+}: {
+  fieldname: string
+  text: string
+  inputType?: InputType
+}) {
+  return {
+    text,
+    fields: [
+      fieldname,
+      `${fieldname}.id`,
+      `${fieldname}.name`,
+      `${fieldname}.size`,
+      `${fieldname}.contentType`,
+      `${fieldname}.location`,
+    ],
+    pathPrefix: fieldname,
+    inputType,
+    default: () => [],
+    parseValue: (val) => {
+      if (!Array.isArray(val)) return []
+
+      return val.map((id) => ({ id }))
+    },
+    component: PreviewableFilesColumn,
   }
 }

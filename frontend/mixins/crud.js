@@ -986,6 +986,7 @@ export default {
                 getOptions: fieldInfo.getOptions,
                 options: [],
                 readonly: false,
+                hidden: false,
                 loading: false,
                 focused: false,
                 cols: fieldInfo.inputOptions?.cols,

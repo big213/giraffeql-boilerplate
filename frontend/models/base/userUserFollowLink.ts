@@ -2,6 +2,7 @@ import type { RecordInfo } from '~/types'
 import {
   generateBaseLinkFields,
   generateJoinableField,
+  generatePreviewableJoinableField,
   generatePreviewableRecordField,
 } from '~/services/recordInfo'
 
@@ -14,25 +15,17 @@ export const UserUserFollowLink = <RecordInfo<'userUserFollowLink'>>{
   renderItem: (item) => item.name,
   fields: {
     ...generateBaseLinkFields(),
-    user: generateJoinableField({
+    ...generatePreviewableJoinableField({
       text: 'User',
       fieldname: 'user',
       typename: 'user',
       hasAvatar: true,
     }),
-    userRecord: generatePreviewableRecordField({
-      fieldname: 'user',
-      text: 'User',
-    }),
-    target: generateJoinableField({
+    ...generatePreviewableJoinableField({
       text: 'Target',
       fieldname: 'target',
       typename: 'user',
       hasAvatar: true,
-    }),
-    targetRecord: generatePreviewableRecordField({
-      fieldname: 'target',
-      text: 'Target',
     }),
   },
   paginationOptions: {

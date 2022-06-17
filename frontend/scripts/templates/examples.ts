@@ -1,8 +1,10 @@
 import SimplifiedTimeStringColumn from '~/components/table/simplifiedTimeStringColumn.vue'
 import BooleanColumn from '~/components/table/booleanColumn.vue'
+import PreviewableFilesColumn from '~/components/table/previewableFilesColumn.vue'
 import {
   generateBaseFields,
   generateJoinableField,
+  generatePreviewableJoinableField,
   generatePreviewableRecordField,
 } from '~/services/recordInfo'
 import TimeagoColumn from '~/components/table/timeagoColumn.vue'
@@ -46,16 +48,32 @@ export const Event = {
         fieldname: 'locale',
         typename: 'locale',
         hasAvatar: true,
-        inputType: 'autocomplete',
+        // inputType: 'autocomplete',
+        // getOptions: getLocales
       }),
     },
     localeRecord: generatePreviewableRecordField({
       fieldname: 'locale',
       text: 'Locale',
     }),
+    // OR, joinable and previewable fields, combined
+    ...generatePreviewableJoinableField({
+      text: 'Locale',
+      fieldname: 'locale',
+      typename: 'locale',
+      hasAvatar: true,
+      // inputType: 'autocomplete',
+      // getOptions: getLocales
+    }),
     endedAt: {
       text: 'Ended At',
       component: TimeagoColumn,
+    },
+    files: {
+      text: 'Files',
+      inputType: 'multiple-file',
+      default: () => [],
+      component: PreviewableFilesColumn,
     },
   },
   paginationOptions: {
@@ -235,7 +253,24 @@ export const Event = {
   },
   deleteOptions: {},
   shareOptions: {},
-  expandTypes: [],
+  expandTypes: [
+    /*
+    {
+      recordInfo: TaskTemplate,
+      name: 'Task Templates',
+      excludeHeaders: ['taskTemplateCollectionRecord'],
+      lockedFilters: (_that, item) => {
+        return [
+          {
+            field: 'taskTemplateCollection',
+            operator: 'eq',
+            value: item.id,
+          },
+        ]
+      },
+    },
+    */
+  ],
   customActions: [
     {
       text: 'Some Action',

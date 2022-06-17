@@ -168,7 +168,7 @@ export default {
     },
 
     getInputValue(key) {
-      return getInputValue(this.inputsArray, key)
+      return getInputValue(this.inputsArray, key, false)
     },
 
     getInputObject(key) {
@@ -433,8 +433,11 @@ export default {
       this.loading.loadDropdowns = false
     },
 
-    resetInputs() {
+    resetInputs(excludeKeys = []) {
       this.inputsArray.forEach(async (inputObject) => {
+        // skip any fieldKeys that should be excluded
+        if (excludeKeys.includes(inputObject.fieldKey)) return
+
         if (inputObject.fieldKey in this.selectedItem) {
           inputObject.value = this.selectedItem[inputObject.fieldKey]
         } else {
@@ -474,6 +477,7 @@ export default {
             getOptions: fieldInfo.getOptions,
             options: [],
             readonly: false,
+            hidden: false,
             loading: false,
             focused: false,
             cols: fieldInfo.inputOptions?.cols,
@@ -510,7 +514,10 @@ export default {
       this.loading.initInputs = false
     },
 
-    reset() {
+    // function to be called after inputs are initialized
+    afterInitializeInputs() {},
+
+    async reset() {
       // if reset was already called on this tick, stop execution
       if (this.resetCalledOnTick) return
 
@@ -535,7 +542,9 @@ export default {
 
       // initialize inputs
       if (this.mode === 'add') {
-        this.initializeInputs()
+        await this.initializeInputs()
+
+        this.afterInitializeInputs && this.afterInitializeInputs()
       } else {
         this.loadRecord()
       }

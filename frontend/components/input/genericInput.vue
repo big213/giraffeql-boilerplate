@@ -122,6 +122,7 @@
         </v-file-input>
       </div>
     </div>
+    <!--
     <div
       v-else-if="item.inputType === 'multiple-image'"
       class="mb-4 text-center"
@@ -185,7 +186,7 @@
         </v-file-input>
       </div>
     </div>
-
+    -->
     <div v-else-if="item.inputType === 'single-image'" class="mb-4 text-center">
       <v-img
         v-if="item.value"
@@ -706,6 +707,7 @@ import {
   getIcon,
   collectPaginatorData,
   addNestedInputObject,
+  populateInputObject,
   generateDateLocaleString,
 } from '~/services/base'
 import { executeGiraffeql } from '~/services/giraffeql'
@@ -859,6 +861,9 @@ export default {
 
     addRow() {
       addNestedInputObject(this.item)
+
+      // need to load the options
+      populateInputObject(this, this.item, true)
     },
 
     removeRow(index) {
@@ -1065,33 +1070,42 @@ export default {
       inputObject.loading = true
       try {
         if (Array.isArray(inputObject.value) && inputObject.value.length > 0) {
-          // fetch data
-          const fileData = await collectPaginatorData(
-            this,
-            'getFilePaginator',
-            {
-              id: true,
-              name: true,
-              size: true,
-              contentType: true,
-            },
-            {
-              filterBy: [
+          // fetch data if the type is a string
+          if (typeof inputObject.value[0] === 'string') {
+            // only proceed if parent item is defined
+            if (this.parentItem) {
+              const fileData = await collectPaginatorData(
+                this,
+                'getFilePaginator',
                 {
-                  parentKey: {
-                    eq: `${this.parentItem.__typename}_${this.parentItem.id}`,
-                  },
-                  id: {
-                    in: inputObject.value,
-                  },
+                  id: true,
+                  name: true,
+                  size: true,
+                  location: true,
+                  contentType: true,
                 },
-              ],
-            }
-          )
+                {
+                  filterBy: [
+                    {
+                      parentKey: {
+                        eq: `${this.parentItem.__typename}_${this.parentItem.id}`,
+                      },
+                      id: {
+                        in: inputObject.value,
+                      },
+                    },
+                  ],
+                }
+              )
 
-          this.filesData = inputObject.value
-            .map((fileId) => fileData.find((val) => val.id === fileId))
-            .filter((val) => val)
+              this.filesData = inputObject.value
+                .map((fileId) => fileData.find((val) => val.id === fileId))
+                .filter((val) => val)
+            }
+          } else {
+            // otherwise, it should have been pre-loaded
+            this.filesData = inputObject.value
+          }
         }
       } catch (err) {
         handleError(this, err)
@@ -1105,9 +1119,7 @@ export default {
         case 'multiple-media':
           this.filesData = []
           this.filesProcessingQueue = new Map()
-          if (this.parentItem) {
-            this.loadFiles(this.item)
-          }
+          this.loadFiles(this.item)
           break
         case 'datepicker':
           // if the value is a number, transform it into string

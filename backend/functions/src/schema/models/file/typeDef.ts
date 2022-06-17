@@ -18,7 +18,7 @@ export default new GiraffeqlObjectType(
     name: File.typename,
     description: "File",
     fields: {
-      ...generateIdField(),
+      ...generateIdField(File),
       ...generateTypenameField(File),
       name: generateStringField({ allowNull: false }),
       size: generateIntegerField({

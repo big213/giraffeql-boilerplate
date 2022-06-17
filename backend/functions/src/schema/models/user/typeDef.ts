@@ -23,7 +23,7 @@ export default new GiraffeqlObjectType(
     name: User.typename,
     description: "User type",
     fields: {
-      ...generateIdField(),
+      ...generateIdField(User),
       ...generateTypenameField(User),
       name: generateStringField({ allowNull: false }),
       firebaseUid: generateStringField({

@@ -15,7 +15,7 @@ export default new GiraffeqlObjectType(<ObjectTypeDefinition>processTypeDef({
   name: {{ capitalizedTypename }}.typename,
   description: "{{ capitalizedTypename }} type",
   fields: {
-    ...generateIdField(),
+    ...generateIdField({{ capitalizedTypename }}),
     ...generateTypenameField({{ capitalizedTypename }}),
     name: generateStringField({ allowNull: false }),
     avatar: generateStringField({ allowNull: true }),

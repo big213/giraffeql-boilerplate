@@ -520,10 +520,10 @@ export function setInputValue(inputObjectsArray, key, value) {
   inputObject.value = value
 }
 
-export function getInputValue(inputObjectsArray, key) {
+export function getInputValue(inputObjectsArray, key, throwErr = true) {
   const inputObject = inputObjectsArray.find((ele) => ele.fieldKey === key)
-  if (!inputObject) throw new Error(`Input key not found: '${key}'`)
-  return inputObject.value
+  if (!inputObject && throwErr) throw new Error(`Input key not found: '${key}'`)
+  return inputObject?.value ?? null
 }
 
 export function getInputObject(inputObjectsArray, key) {
@@ -531,6 +531,16 @@ export function getInputObject(inputObjectsArray, key) {
   // if (!inputObject) throw new Error(`Input key not found: '${key}'`)
 
   return inputObject ?? null
+}
+
+// must be inserted into a context where this.getInputValue is defined
+export function mapInputGetters(fieldsArray) {
+  return fieldsArray.reduce((total, val) => {
+    total[val] = function () {
+      return this.getInputValue(val)
+    }
+    return total
+  }, {})
 }
 
 export function convertCSVToJSON(text: string) {
@@ -604,6 +614,7 @@ export function populateInputObject(
     })
   } else {
     if (loadOptions && inputObject.getOptions) {
+      inputObject.loading = true
       promisesArray.push(
         inputObject.getOptions(that).then((res) => {
           // set the options
@@ -615,6 +626,8 @@ export function populateInputObject(
               inputObject.options.find((ele) => ele.id === inputObject.value) ??
               null
           }
+
+          inputObject.loading = false
         })
       )
     }
@@ -876,4 +889,19 @@ export async function processInputObject(that, inputObject) {
   return inputObject.fieldInfo?.parseValue
     ? inputObject.fieldInfo.parseValue(value)
     : value
+}
+
+export function retryize(retryizedFn, maxAttempts = 3) {
+  return <any>async function () {
+    for (let i = 0; i < maxAttempts; i++) {
+      try {
+        return await retryizedFn(...arguments)
+      } catch (err) {
+        // reached max number of tries, throw the err
+        if (i + 1 === maxAttempts) {
+          throw err
+        }
+      }
+    }
+  }
 }
