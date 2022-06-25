@@ -80,11 +80,12 @@ export function generateJoinableField({
     text,
     fields: [`${fieldname}.id`],
     inputType,
+    ...fieldOptions,
     inputOptions: {
       hasAvatar,
       typename,
+      ...fieldOptions.inputOptions,
     },
-    ...fieldOptions,
   }
 }
 
