@@ -1,30 +1,23 @@
 import type { RecordInfo } from '~/types'
 import {
   generateBaseLinkFields,
-  generateJoinableField,
-  generatePreviewableRecordField,
+  generatePreviewableJoinableField,
 } from '~/services/recordInfo'
+import { Simple{{ capitalizedTypename }} } from '../simple'
 
 export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
-  typename: '{{ typename }}',
-  pluralTypename: '{{ typename }}s',
-  name: '{{ capitalizedTypename }}',
-  pluralName: '{{ capitalizedTypename }}s',
-  icon: 'mdi-link',
-  renderItem: (item) => item.name,
+  ...Simple{{ capitalizedTypename }},
   fields: {
     ...generateBaseLinkFields(),
     ...generatePreviewableJoinableField({
       text: 'User',
       fieldname: 'user',
       typename: 'user',
-      hasAvatar: true,
     }),
     ...generatePreviewableJoinableField({
       text: 'Target',
       fieldname: 'target',
       typename: 'user',
-      hasAvatar: true,
     }),
   },
   paginationOptions: {
@@ -32,8 +25,12 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
     filterOptions: [],
     sortOptions: [
       {
-        field: 'createdAt',
+        field: 'updatedAt',
         desc: true,
+      },
+      {
+        field: 'updatedAt',
+        desc: false,
       },
     ],
     headerOptions: [
@@ -44,20 +41,13 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
         field: 'targetRecord',
       },
       {
-        field: 'createdAt',
-        width: '150px',
-      },
-      {
         field: 'updatedAt',
         width: '150px',
       },
     ],
-    downloadOptions: {},
+    
   },
   addOptions: {
-    fields: ['user', 'target'],
-  },
-  importOptions: {
     fields: ['user', 'target'],
   },
   editOptions: {

@@ -10,7 +10,7 @@ export default {
     fieldPath: {
       type: String,
     },
-    // special options that will be passed to the column component, if any
+    // special options that will be passed to the column component, if any. ** may be undefined **
     options: {
       type: Object,
     },

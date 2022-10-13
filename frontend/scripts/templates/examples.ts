@@ -8,6 +8,7 @@ import {
   generatePreviewableRecordField,
 } from '~/services/recordInfo'
 import TimeagoColumn from '~/components/table/timeagoColumn.vue'
+import { getUserRoles } from '~/services/dropdown'
 
 export const Event = {
   typename: 'event',
@@ -15,7 +16,6 @@ export const Event = {
   name: 'Event',
   pluralName: 'Events',
   icon: 'mdi-calendar',
-  renderItem: (item) => item.name,
   requiredFields: ['name', 'avatar', 'isActive'],
   fields: {
     ...generateBaseFields({
@@ -55,13 +55,13 @@ export const Event = {
     localeRecord: generatePreviewableRecordField({
       fieldname: 'locale',
       text: 'Locale',
+      typename: 'locale',
     }),
     // OR, joinable and previewable fields, combined
     ...generatePreviewableJoinableField({
       text: 'Locale',
       fieldname: 'locale',
       typename: 'locale',
-      hasAvatar: true,
       // inputType: 'autocomplete',
       // getOptions: getLocales
     }),
@@ -74,6 +74,17 @@ export const Event = {
       inputType: 'multiple-file',
       default: () => [],
       component: PreviewableFilesColumn,
+    },
+    role: {
+      text: 'User Role',
+      getOptions: getUserRoles,
+      inputType: 'select',
+    },
+    permissions: {
+      text: 'Custom Permissions',
+      serialize: (val: string[]) => val && val.join(','),
+      parseValue: (val: string) =>
+        val ? val.split(',').filter((ele) => ele) : [],
     },
   },
   paginationOptions: {
@@ -140,7 +151,6 @@ export const Event = {
         width: '150px',
       },
     ],
-    downloadOptions: {},
   },
   addOptions: {
     fields: [
@@ -267,6 +277,10 @@ export const Event = {
             value: item.id,
           },
         ]
+      },
+      initialSortOptions: {
+        field: 'updatedAt',
+        desc: true,
       },
     },
     */

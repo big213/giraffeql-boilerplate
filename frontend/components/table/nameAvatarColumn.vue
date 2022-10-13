@@ -4,7 +4,8 @@
       <v-img v-if="currentValue.avatar" :src="currentValue.avatar"></v-img>
       <v-icon v-else>{{ fallbackIcon }}</v-icon>
     </v-avatar>
-    {{ currentValue.name }}
+    <span v-if="currentValue.name">{{ currentValue.name }}</span>
+    <i v-else>(Untitled)</i>
   </div>
 </template>
 

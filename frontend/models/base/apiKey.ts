@@ -4,18 +4,12 @@ import {
   generateBaseFields,
   generatePreviewableJoinableField,
 } from '~/services/recordInfo'
+import { SimpleApiKey } from '../simple'
 
 export const ApiKey = <RecordInfo<'apiKey'>>{
-  typename: 'apiKey',
-  pluralTypename: 'apiKeys',
-  name: 'API Key',
-  pluralName: 'API Keys',
-  icon: 'mdi-view-grid-plus',
-  renderItem: (item) => item.name,
+  ...SimpleApiKey,
   fields: {
-    ...generateBaseFields({
-      hasName: true,
-    }),
+    ...generateBaseFields(SimpleApiKey),
     code: {
       text: 'Code',
       component: CopyableColumn,
@@ -32,7 +26,6 @@ export const ApiKey = <RecordInfo<'apiKey'>>{
       text: 'User',
       fieldname: 'user',
       typename: 'user',
-      hasAvatar: true,
     }),
   },
   paginationOptions: {
@@ -46,8 +39,12 @@ export const ApiKey = <RecordInfo<'apiKey'>>{
     },
     sortOptions: [
       {
-        field: 'createdAt',
+        field: 'updatedAt',
         desc: true,
+      },
+      {
+        field: 'updatedAt',
+        desc: false,
       },
     ],
     headerOptions: [
@@ -60,15 +57,10 @@ export const ApiKey = <RecordInfo<'apiKey'>>{
         width: '250px',
       },
       {
-        field: 'createdAt',
-        width: '150px',
-      },
-      {
         field: 'updatedAt',
         width: '150px',
       },
     ],
-    downloadOptions: {},
   },
   addOptions: {
     fields: ['name', 'permissions', 'user'],

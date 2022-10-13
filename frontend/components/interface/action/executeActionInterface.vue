@@ -9,7 +9,7 @@
       <v-container v-else class="px-0">
         <v-row>
           <v-col
-            v-for="(inputObject, i) in inputsArray"
+            v-for="(inputObject, i) in visibleInputsArray"
             :key="i"
             :cols="inputObject.cols || 12"
             class="py-0"
@@ -56,6 +56,10 @@ export default {
     GenericInput,
   },
   props: {
+    item: {
+      type: Object,
+    },
+
     selectedItem: {
       type: Object,
     },
@@ -90,6 +94,12 @@ export default {
   computed: {
     isLoading() {
       return Object.values(this.loading).some((state) => state)
+    },
+    visibleInputsArray() {
+      return this.inputsArray.filter(
+        (inputObject) =>
+          !inputObject.hideIf || !inputObject.hideIf(this, this.inputsArray)
+      )
     },
   },
 
@@ -141,23 +151,30 @@ export default {
 
         // do additional modification of the inputs object, if required
         if (this.actionOptions.argsModifier) {
-          this.actionOptions.argsModifier(this, this.selectedItem, args)
+          this.actionOptions.argsModifier(this, this.item, args)
         }
 
-        const query = {
-          [this.actionOptions.operationName]: {
-            __args: collapseObject(args),
-          },
-        }
+        if (this.actionOptions.operationName) {
+          const query = {
+            [this.actionOptions.operationName]: {
+              __args: collapseObject(args),
+            },
+          }
 
-        const data = await executeGiraffeql(this, query)
+          const data = await executeGiraffeql(this, query)
+          this.handleSubmitSuccess(data)
+        } else if (this.actionOptions.onSubmit) {
+          // if no operationName, must have onSubmit function
+          const data = await this.actionOptions.onSubmit(this, this.item, args)
+          this.handleSubmitSuccess(data)
+        } else {
+          throw new Error('Misconfigured action')
+        }
 
         this.$notifier.showSnackbar({
           message: `Action: ${this.actionOptions.title} completed successfully`,
           variant: 'success',
         })
-
-        this.handleSubmitSuccess(data)
 
         // reset inputs
         // this.resetInputs()
@@ -174,7 +191,7 @@ export default {
       // run any custom onSuccess functions
       const onSuccess = this.actionOptions.onSuccess
       if (onSuccess) {
-        onSuccess(this, data)
+        onSuccess(this, this.item)
       }
     },
 
@@ -186,6 +203,7 @@ export default {
           const inputObject = {
             fieldKey: inputDef.field,
             primaryField: inputDef.field,
+            fieldInfo: inputDef.definition,
             recordInfo: null,
             inputType: inputDef.definition.inputType,
             label: inputDef.definition.text ?? inputDef.field,
@@ -207,10 +225,15 @@ export default {
             generation: 0,
             parentInput: null,
             nestedInputsArray: [],
+            hideIf: inputDef.hideIf,
           }
 
           // is the field in selectedItem? if so, use that and set field to readonly
-          if (this.selectedItem && inputDef.field in this.selectedItem) {
+          if (
+            this.selectedItem &&
+            inputDef.field in this.selectedItem &&
+            this.selectedItem[inputDef.field] !== undefined
+          ) {
             inputObject.value = this.selectedItem[inputDef.field]
             inputObject.readonly = true
           } else {

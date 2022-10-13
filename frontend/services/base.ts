@@ -520,7 +520,7 @@ export function setInputValue(inputObjectsArray, key, value) {
   inputObject.value = value
 }
 
-export function getInputValue(inputObjectsArray, key, throwErr = true) {
+export function getInputValue(inputObjectsArray, key, throwErr = false) {
   const inputObject = inputObjectsArray.find((ele) => ele.fieldKey === key)
   if (!inputObject && throwErr) throw new Error(`Input key not found: '${key}'`)
   return inputObject?.value ?? null
@@ -569,12 +569,15 @@ export function convertCSVToJSON(text: string) {
   for (let k = 1; k < ret.length; k++) {
     const o = {}
     let hasUndefined = false
+    let hasAllEmptyRows = true
     for (let j = 0; j < headers.length; j++) {
       o[headers[j]] = ret[k][j]
       if (ret[k][j] === undefined) hasUndefined = true
+      else if (ret[k][j] !== '') hasAllEmptyRows = false
     }
     // not pushing rows where at least one column is undefined
-    if (!hasUndefined) objArray.push(o)
+    // also not pushing rows where all rows are empty
+    if (!hasUndefined && !hasAllEmptyRows) objArray.push(o)
   }
   return objArray
 }
@@ -711,6 +714,11 @@ export function processQuery(
           (total, field) => {
             const fieldInfo = lookupFieldInfo(recordInfo, field)
 
+            // skip if args.loadIf provided and it returns false
+            if (fieldInfo.args?.loadIf && !fieldInfo.args.loadIf(that)) {
+              return total
+            }
+
             const fieldsToAdd: Set<string> = new Set()
 
             // in export mode, generally will only be fetching the first field
@@ -726,25 +734,41 @@ export function processQuery(
 
             // process fields
             fieldsToAdd.forEach((field) => {
-              total[field] = true
+              const currentFieldInfo = recordInfo.fields[field]
 
               // add a serializer if there is one for the field
-              const currentFieldInfo = recordInfo.fields[field]
               if (currentFieldInfo) {
+                // skip if args.loadIf provided and it returns false
+                if (
+                  currentFieldInfo.args?.loadIf &&
+                  !currentFieldInfo.args.loadIf(that)
+                ) {
+                  return
+                }
+
                 if (currentFieldInfo.serialize) {
                   serializeMap.set(field, currentFieldInfo.serialize)
                 }
 
                 // if field has args, process them
-                if (currentFieldInfo.args) {
+                if (
+                  currentFieldInfo.args &&
+                  (!currentFieldInfo.args.loadIf ||
+                    currentFieldInfo.args.loadIf(that))
+                ) {
                   total[`${currentFieldInfo.args.path}.__args`] =
                     currentFieldInfo.args.getArgs(that)
                 }
               }
+
+              total[field] = true
             })
 
-            // if main fieldInfo has args, process them
-            if (fieldInfo.args) {
+            // if main fieldInfo has args and passes loadIf, process them
+            if (
+              fieldInfo.args &&
+              (!fieldInfo.args.loadIf || fieldInfo.args.loadIf(that))
+            ) {
               total[`${fieldInfo.args.path}.__args`] =
                 fieldInfo.args.getArgs(that)
             }

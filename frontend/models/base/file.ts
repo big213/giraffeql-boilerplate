@@ -2,18 +2,12 @@ import type { RecordInfo } from '~/types'
 import FilesizeColumn from '~/components/table/filesizeColumn.vue'
 import FileColumn from '~/components/table/fileColumn.vue'
 import { generateBaseFields } from '~/services/recordInfo'
+import { SimpleFile } from '../simple'
 
 export const File = <RecordInfo<'file'>>{
-  typename: 'file',
-  pluralTypename: 'files',
-  name: 'File',
-  pluralName: 'Files',
-  icon: 'mdi-file',
-  renderItem: (item) => item.name,
+  ...SimpleFile,
   fields: {
-    ...generateBaseFields({
-      hasName: true,
-    }),
+    ...generateBaseFields(SimpleFile),
     nameWithId: {
       text: 'File',
       fields: ['name', 'id'],
@@ -41,12 +35,12 @@ export const File = <RecordInfo<'file'>>{
     },
     sortOptions: [
       {
-        field: 'createdAt',
+        field: 'updatedAt',
         desc: true,
       },
       {
         field: 'updatedAt',
-        desc: true,
+        desc: false,
       },
     ],
     headerOptions: [
@@ -63,15 +57,10 @@ export const File = <RecordInfo<'file'>>{
         align: 'right',
       },
       {
-        field: 'createdAt',
-        width: '150px',
-      },
-      {
         field: 'updatedAt',
         width: '150px',
       },
     ],
-    downloadOptions: {},
   },
   addOptions: {
     fields: ['name', 'location'],

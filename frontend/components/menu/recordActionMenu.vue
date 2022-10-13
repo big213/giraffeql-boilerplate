@@ -22,14 +22,17 @@
       <v-list-item
         v-if="recordInfo.enterOptions && !hideEnter"
         key="enter"
-        @click="goToRecordPage(true)"
+        @click="goToRecordPage()"
+        @click.middle="goToRecordPage(true)"
       >
         <v-list-item-icon>
           <v-icon>mdi-newspaper-variant-outline</v-icon>
         </v-list-item-icon>
         <v-list-item-title
           >Go To Page
-          <v-icon small right>mdi-open-in-new</v-icon>
+          <v-icon small right @click.stop="goToRecordPage(true)"
+            >mdi-open-in-new</v-icon
+          >
         </v-list-item-title>
       </v-list-item>
       <v-list-item
@@ -78,10 +81,10 @@
         </v-list-item-icon>
         <v-list-item-title>Delete</v-list-item-title>
       </v-list-item>
-      <template v-if="customActions.length > 0">
+      <template v-if="visibleCustomActions.length > 0">
         <v-divider></v-divider>
         <v-list-item
-          v-for="(actionWrapper, i) in customActions"
+          v-for="(actionWrapper, i) in visibleCustomActions"
           :key="'ca' + i"
           dense
           @click="handleCustomActionClick(actionWrapper)"
@@ -106,6 +109,7 @@
         :key="i"
         dense
         @click="openExpandType(expandObject, i)"
+        @click.middle="openExpandType(expandObject, i, true)"
       >
         <v-list-item-icon>
           <v-icon>{{
@@ -114,7 +118,11 @@
         </v-list-item-icon>
         <v-list-item-title
           >{{ expandObject.name || expandObject.recordInfo.name }}
-          <v-icon v-if="expandMode === 'openInNew'" small right
+          <v-icon
+            v-if="expandMode === 'openInNew'"
+            small
+            right
+            @click.stop="openExpandType(expandObject, i, true)"
             >mdi-open-in-new</v-icon
           >
         </v-list-item-title>
@@ -130,7 +138,7 @@ export default {
   props: {
     item: {
       type: Object,
-      default: () => ({}),
+      required: true,
     },
     recordInfo: {
       type: Object,
@@ -142,9 +150,10 @@ export default {
     hideEnter: {
       type: Boolean,
     },
+    // openInNew will go to route when clicked and will open route in new when mdidle clicked
     expandMode: {
       type: String,
-      default: 'emit',
+      default: 'openInNew',
       validator: (value) => {
         return ['emit', 'openInNew', 'openInDialog'].includes(value)
       },
@@ -158,16 +167,22 @@ export default {
     }
   },
 
+  computed: {
+    visibleCustomActions() {
+      return this.customActions.filter((actionWrapper) =>
+        actionWrapper.actionObject.showIf
+          ? actionWrapper.actionObject.showIf(this, this.item)
+          : true
+      )
+    },
+  },
+
   created() {
     this.customActions = this.recordInfo.customActions
-      ? this.recordInfo.customActions
-          .filter((customAction) =>
-            customAction.showIf ? customAction.showIf(this, this.item) : true
-          )
-          .map((actionObject) => ({
-            isLoading: false,
-            actionObject,
-          }))
+      ? this.recordInfo.customActions.map((actionObject) => ({
+          isLoading: false,
+          actionObject,
+        }))
       : []
   },
 
@@ -176,7 +191,7 @@ export default {
       this.$emit('handle-action-click', mode, this.item)
     },
 
-    openExpandType(expandTypeObject, index) {
+    openExpandType(expandTypeObject, index, openInNew = false) {
       if (this.expandMode === 'emit')
         this.$emit('handle-expand-click', expandTypeObject, index)
       else if (this.expandMode === 'openInDialog')
@@ -196,7 +211,7 @@ export default {
           },
         })
       else {
-        this.goToRecordPage(false, index)
+        this.goToRecordPage(openInNew, index)
       }
     },
 
@@ -205,11 +220,21 @@ export default {
     },
 
     async handleCustomActionClick(actionWrapper) {
+      // if the action is already in a loading state, do nothing
+      if (actionWrapper.isLoading) return
+
       // if the action has actionOptions, open the dialog
       if (actionWrapper.actionObject.actionOptions) {
         this.$root.$emit('openExecuteActionDialog', {
           actionOptions: actionWrapper.actionObject.actionOptions,
-          selectedItem: this.item,
+          selectedItem: actionWrapper.actionObject.actionOptions
+            .selectedItemModifier
+            ? actionWrapper.actionObject.actionOptions.selectedItemModifier(
+                this,
+                this.item
+              )
+            : null,
+          item: this.item,
         })
         return
       }
@@ -248,6 +273,8 @@ export default {
         }),
         openInNew
       )
+
+      this.$emit('close-parent')
     },
   },
 }

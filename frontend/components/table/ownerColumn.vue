@@ -1,8 +1,7 @@
 <template>
-  <div>
+  <div v-if="currentValue">
     <PreviewRecordMenu
-      v-if="currentValue"
-      :item="currentValue"
+      :item="currentValue.userOwner || currentValue.organizationOwner"
       :close-on-content-click="false"
       :min-width="300"
       :max-width="300"
@@ -10,7 +9,6 @@
       top
       open-mode="openInDialog"
     ></PreviewRecordMenu>
-    <v-chip v-else small><i>None</i></v-chip>
   </div>
 </template>
 

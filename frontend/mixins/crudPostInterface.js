@@ -70,7 +70,13 @@ export default {
 
       returnFields: {
         content: true,
-        files: true,
+        files: {
+          id: true,
+          name: true,
+          size: true,
+          contentType: true,
+          location: true,
+        },
       },
     }
   },
@@ -170,7 +176,13 @@ export default {
               id: true,
               __typename: true,
               content: true,
-              files: true,
+              files: {
+                id: true,
+                name: true,
+                size: true,
+                contentType: true,
+                location: true,
+              },
               type: true,
               data: true,
               createdAt: true,

@@ -1,68 +1,60 @@
-import {
-  PaginatorInfoService,
-  EdgeService,
-  PaginatedService,
-  BaseService,
-} from "../services";
-
-import { generateTypenameField } from "../helpers/typeDef";
-import type { ObjectTypeDefinition } from "giraffeql";
-import { PaginatorData } from "../../../types";
-import { extractLastValueColumns } from "../helpers/shared";
+import { PaginatedService } from "../services";
+import { GiraffeqlObjectType, ObjectTypeDefinition } from "giraffeql";
+import * as Scalars from "../../scalars";
 
 export function generatePaginatorTypeDef(
-  service: PaginatedService,
-  currentService: BaseService
+  service: PaginatedService
 ): ObjectTypeDefinition {
-  const PaginatorInfo = new PaginatorInfoService(service);
-
-  const Edge = new EdgeService(service);
-
   return <ObjectTypeDefinition>{
-    name: currentService.typename,
+    name: `${service.typename}Paginator`,
     description: "Paginator",
     fields: {
-      ...generateTypenameField(currentService),
+      // ...generateTypenameField(service),
       paginatorInfo: {
-        type: PaginatorInfo.typeDef,
+        type: new GiraffeqlObjectType(
+          {
+            name: "paginatorInfo",
+            fields: {
+              total: {
+                type: Scalars.number,
+                allowNull: false,
+              },
+              count: {
+                type: Scalars.number,
+                allowNull: false,
+              },
+              startCursor: {
+                type: Scalars.string,
+                allowNull: true,
+              },
+              endCursor: {
+                type: Scalars.string,
+                allowNull: true,
+              },
+            },
+          },
+          true
+        ),
         allowNull: false,
-        resolver: ({ req, fieldPath, args, query, data }) => {
-          return PaginatorInfo.getRecord({
-            req,
-            fieldPath,
-            args,
-            query,
-            data,
-          });
-        },
       },
       edges: {
-        type: Edge.typeDef,
+        type: new GiraffeqlObjectType({
+          name: `${service.typename}Edge`,
+          fields: {
+            node: {
+              type: service.typeDefLookup,
+              allowNull: false,
+            },
+            cursor: {
+              type: Scalars.string,
+              allowNull: false,
+            },
+          },
+        }),
         arrayOptions: {
           allowNullElement: false,
         },
         allowNull: false,
-        resolver: async ({ req, fieldPath, args, query, data }) => {
-          const paginatorData = <PaginatorData>data;
-
-          return Promise.all(
-            paginatorData.records.map((item, index) => {
-              // separate the last_id key, if any
-              const { $last_id: lastId, ...remainingItem } = item;
-
-              // aggregate $last_value_N into last_values array
-              const lastValues = extractLastValueColumns(remainingItem, true);
-
-              return Edge.getRecord({
-                req,
-                fieldPath,
-                args,
-                query,
-                data: { item: remainingItem, index, lastId, lastValues },
-              });
-            })
-          );
-        },
       },
     },
   };

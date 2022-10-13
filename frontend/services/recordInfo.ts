@@ -1,23 +1,32 @@
 import RecordColumn from '~/components/table/recordColumn.vue'
-import { FieldDefinition, InputType } from '~/types'
+import { FieldDefinition, InputType, SimpleRecordInfo } from '~/types'
 import TimeagoColumn from '~/components/table/timeagoColumn.vue'
 import AvatarColumn from '~/components/table/avatarColumn.vue'
 import NameAvatarColumn from '~/components/table/nameAvatarColumn.vue'
-import ModifiedAtColumn from '~/components/table/modifiedAtColumn.vue'
+import BooleanColumn from '~/components/table/booleanColumn.vue'
 import PreviewableFilesColumn from '~/components/table/previewableFilesColumn.vue'
+import * as SimpleModels from '../models/simple'
+import { capitalizeString } from './base'
+import OwnerColumn from '~/components/table/ownerColumn.vue'
+import CopyableColumn from '~/components/table/copyableColumn.vue'
+
+export function getSimpleModel(typename: string) {
+  const model = SimpleModels[`Simple${capitalizeString(typename)}`]
+  if (!model) throw new Error(`Simple model not found: ${typename}`)
+
+  return model
+}
 
 export function generatePreviewableJoinableField({
   fieldname,
   typename,
   text,
-  hasAvatar = false,
   inputType = 'server-autocomplete',
   fieldOptions = {},
 }: {
   fieldname: string
   typename: string
   text: string
-  hasAvatar?: boolean
   inputType?: InputType
   fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
 }) {
@@ -26,38 +35,42 @@ export function generatePreviewableJoinableField({
       fieldname,
       typename,
       text,
-      hasAvatar,
       inputType,
       fieldOptions,
     }),
     [`${fieldname}Record`]: generatePreviewableRecordField({
       fieldname,
+      typename,
       text,
-      hasAvatar,
+      fieldOptions,
     }),
   }
 }
 
 export function generatePreviewableRecordField({
+  typename,
   fieldname,
   text,
-  hasAvatar = false,
+  fieldOptions,
 }: {
+  typename: string
   fieldname?: string
   text: string
-  hasAvatar?: boolean
+  fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
 }) {
   const fieldnamePrefix = fieldname ? fieldname + '.' : ''
+  const simpleModel = getSimpleModel(typename)
   return {
     text,
     fields: [
-      `${fieldnamePrefix}name`,
+      simpleModel.hasName ? `${fieldnamePrefix}name` : null,
       `${fieldnamePrefix}id`,
       `${fieldnamePrefix}__typename`,
-      hasAvatar ? `${fieldnamePrefix}avatar` : null,
+      simpleModel.hasAvatar ? `${fieldnamePrefix}avatar` : null,
     ].filter((e) => e),
     pathPrefix: fieldname,
     component: RecordColumn,
+    ...fieldOptions,
   }
 }
 
@@ -65,44 +78,37 @@ export function generateJoinableField({
   fieldname,
   typename,
   text,
-  hasAvatar,
   inputType = 'server-autocomplete',
   fieldOptions = {},
 }: {
   fieldname: string
   typename: string
   text: string
-  hasAvatar: boolean
+  hasAvatar?: boolean
   inputType?: InputType
   fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
 }) {
+  const simpleModel = getSimpleModel(typename)
   return {
     text,
     fields: [`${fieldname}.id`],
     inputType,
     ...fieldOptions,
     inputOptions: {
-      hasAvatar,
+      hasAvatar: simpleModel.hasAvatar,
       typename,
       ...fieldOptions.inputOptions,
     },
   }
 }
 
-export function generateBaseFields({
-  hasName = false,
-  hasAvatar = false,
-  hasDescription = false,
-}: {
-  hasName?: boolean
-  hasAvatar?: boolean
-  hasDescription?: boolean
-}) {
+export function generateBaseFields(simpleModel: SimpleRecordInfo<any>) {
   return {
     id: {
       text: 'ID',
+      component: CopyableColumn,
     },
-    ...(hasName && {
+    ...(simpleModel.hasName && {
       name: {
         text: 'Name',
         tableOptions: {
@@ -110,14 +116,14 @@ export function generateBaseFields({
         },
       },
     }),
-    ...(hasAvatar && {
+    ...(simpleModel.hasAvatar && {
       avatar: {
         text: 'Avatar',
         inputType: 'avatar',
         component: AvatarColumn,
       },
     }),
-    ...(hasDescription && {
+    ...(simpleModel.hasDescription && {
       description: {
         text: 'Description',
         inputType: 'textarea',
@@ -126,8 +132,8 @@ export function generateBaseFields({
         },
       },
     }),
-    ...(hasName &&
-      hasAvatar && {
+    ...(simpleModel.hasName &&
+      simpleModel.hasAvatar && {
         nameWithAvatar: {
           text: 'Name',
           fields: ['name', 'avatar'],
@@ -135,18 +141,26 @@ export function generateBaseFields({
         },
         record: generatePreviewableRecordField({
           text: 'Record',
+          typename: simpleModel.typename,
         }),
       }),
-    createdBy: generateJoinableField({
+    ...generatePreviewableJoinableField({
       text: 'Created By',
       fieldname: 'createdBy',
       typename: 'user',
-      hasAvatar: true,
     }),
-    createdByRecord: generatePreviewableRecordField({
-      fieldname: 'createdBy',
-      text: 'Created By',
-    }),
+    ...(simpleModel.hasOrganizationOwner &&
+      generatePreviewableJoinableField({
+        text: 'Organization Owner',
+        fieldname: 'organizationOwner',
+        typename: 'organization',
+      })),
+    ...(simpleModel.hasUserOwner &&
+      generatePreviewableJoinableField({
+        text: 'User Owner',
+        fieldname: 'userOwner',
+        typename: 'user',
+      })),
     createdAt: {
       text: 'Created At',
       component: TimeagoColumn,
@@ -154,11 +168,6 @@ export function generateBaseFields({
     updatedAt: {
       text: 'Updated At',
       component: TimeagoColumn,
-    },
-    modifiedAt: {
-      fields: ['updatedAt', 'createdAt'],
-      text: 'Modified At',
-      component: ModifiedAtColumn,
     },
   }
 }
@@ -168,15 +177,10 @@ export function generateBaseLinkFields() {
     id: {
       text: 'ID',
     },
-    createdBy: generateJoinableField({
-      text: 'Created By',
+    ...generatePreviewableJoinableField({
+      text: 'CreatedBy',
       fieldname: 'createdBy',
       typename: 'user',
-      hasAvatar: true,
-    }),
-    createdByRecord: generatePreviewableRecordField({
-      fieldname: 'createdBy',
-      text: 'Created By',
     }),
     createdAt: {
       text: 'Created At',
@@ -186,10 +190,45 @@ export function generateBaseLinkFields() {
       text: 'Updated At',
       component: TimeagoColumn,
     },
-    modifiedAt: {
-      fields: ['updatedAt', 'createdAt'],
-      text: 'Modified At',
-      component: ModifiedAtColumn,
+  }
+}
+
+export function generateIsPublicField({
+  defaultValue = true,
+}: {
+  defaultValue?: boolean
+} = {}) {
+  return {
+    isPublic: {
+      text: 'Is Public',
+      component: BooleanColumn,
+      inputType: 'switch',
+      default: () => defaultValue,
+    },
+  }
+}
+
+export function generateDualOwnerPreviewableRecordField({
+  pathPrefix,
+}: {
+  pathPrefix?: string
+} = {}) {
+  const fieldnamePrefix = pathPrefix ? pathPrefix + '.' : ''
+  return {
+    [`${fieldnamePrefix}ownerRecord`]: {
+      text: 'Owner',
+      fields: [
+        `${fieldnamePrefix}userOwner.id`,
+        `${fieldnamePrefix}userOwner.name`,
+        `${fieldnamePrefix}userOwner.__typename`,
+        `${fieldnamePrefix}userOwner.avatar`,
+        `${fieldnamePrefix}organizationOwner.id`,
+        `${fieldnamePrefix}organizationOwner.name`,
+        `${fieldnamePrefix}organizationOwner.__typename`,
+        `${fieldnamePrefix}organizationOwner.avatar`,
+      ],
+      pathPrefix,
+      component: OwnerColumn,
     },
   }
 }
@@ -204,23 +243,141 @@ export function generatePreviewableFilesColumn({
   inputType?: InputType
 }) {
   return {
-    text,
-    fields: [
-      fieldname,
-      `${fieldname}.id`,
-      `${fieldname}.name`,
-      `${fieldname}.size`,
-      `${fieldname}.contentType`,
-      `${fieldname}.location`,
-    ],
-    pathPrefix: fieldname,
-    inputType,
-    default: () => [],
-    parseValue: (val) => {
-      if (!Array.isArray(val)) return []
+    [fieldname]: {
+      text,
+      fields: [
+        fieldname,
+        `${fieldname}.id`,
+        `${fieldname}.name`,
+        `${fieldname}.size`,
+        `${fieldname}.contentType`,
+        `${fieldname}.location`,
+      ],
+      pathPrefix: fieldname,
+      inputType,
+      default: () => [],
+      parseValue: (val) => {
+        if (!Array.isArray(val)) return []
 
-      return val.map((id) => ({ id }))
+        return val.map((id) => ({ id }))
+      },
+      component: PreviewableFilesColumn,
     },
-    component: PreviewableFilesColumn,
+  }
+}
+
+// paginationOption helpers
+export function generateClickRowToOpenOptions() {
+  return {
+    handleRowClick: (that, props) => {
+      that.openEditDialog('view', props.item)
+    },
+    handleGridElementClick: (that, item) => {
+      that.openEditDialog('view', item)
+    },
+  }
+}
+
+export function generateKeyValueArrayField({
+  fieldname,
+  text,
+  fieldOptions = {},
+}: {
+  fieldname: string
+  text: string
+  fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
+}) {
+  return {
+    [fieldname]: {
+      text,
+      fields: [`${fieldname}`, `${fieldname}.key`, `${fieldname}.value`],
+      inputType: 'value-array',
+      inputOptions: {
+        nestedFields: [
+          {
+            key: 'key',
+            inputType: 'text',
+            text: 'Key',
+            inputOptions: {
+              cols: 6,
+            },
+          },
+          {
+            key: 'value',
+            inputType: 'text',
+            text: 'Value',
+            inputOptions: {
+              cols: 6,
+            },
+          },
+        ],
+      },
+      // filter out empty keys
+      parseValue: (val) => {
+        if (!Array.isArray(val)) throw new Error('Array expected')
+
+        return val.filter((ele) => ele.key)
+      },
+      ...fieldOptions,
+    },
+  }
+}
+
+export function generateValueArrayField({
+  fieldname,
+  text,
+  fieldOptions = {},
+}: {
+  fieldname: string
+  text: string
+  fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
+}) {
+  return {
+    [fieldname]: {
+      text,
+      inputType: 'value-array',
+      inputOptions: {
+        nestedFields: [
+          {
+            key: 'value',
+            inputType: 'text',
+            text: 'Value',
+          },
+        ],
+      },
+      parseValue: (val) => {
+        if (!Array.isArray(val)) return []
+
+        return val.map((ele) => ele.value)
+      },
+      serialize: (val) => {
+        return val.map((ele) => ({ value: ele }))
+      },
+      ...fieldOptions,
+    },
+  }
+}
+
+export function generateDualOwnerInputOptions() {
+  return {
+    lookupParams: (that, _inputObjectArray) => {
+      return {
+        filterBy: [
+          that.$store.getters['organizationUserMemberLink/current']
+            ? {
+                'organizationOwner.id': {
+                  eq: that.$store.getters['organizationUserMemberLink/current']
+                    .organization.id,
+                },
+              }
+            : null,
+          {
+            'userOwner.id': {
+              eq: that.$store.getters['auth/user'].id,
+            },
+          },
+        ].filter((e) => e),
+      }
+    },
   }
 }

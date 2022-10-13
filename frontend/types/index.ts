@@ -30,13 +30,12 @@ export type FieldDefinition = {
   args?: {
     getArgs: (that) => any
     path: string
+    // if provided, only load this field if this returns true
+    loadIf?: (that) => boolean
   }
 
   inputRules?: any[]
   getOptions?: (that) => Promise<any[]>
-
-  // filters that should be applied when looking up results (server-X input type)
-  lookupFilters?: (that, inputObjectArray) => any[]
 
   // is the field hidden? if yes, won't fetch it for edit fields
   hidden?: boolean
@@ -44,15 +43,16 @@ export type FieldDefinition = {
   optional?: boolean
   default?: (that) => unknown
   // fetching from API, in editRecordInterface (when editing/viewing)
-  serialize?: (val: unknown) => unknown
+  serialize?: (val: any) => any
   // submitting to API, in filterBy and create/update functions
-  parseValue?: (val: unknown) => unknown
+  parseValue?: (val: any) => any
   // for crudRecordPage. parsing the query params
-  parseQueryValue?: (val: unknown) => unknown
-  // for parsing CSV imports
-  parseImportValue?: (val: unknown) => unknown
+  parseQueryValue?: (val: any) => unknown
+
   component?: any // component for rendering the field in table
 }
+
+export type SimpleRecordInfo<T extends keyof MainTypes> = Partial<RecordInfo<T>>
 
 export type RecordInfo<T extends keyof MainTypes> = {
   // optional title for this recordInfo
@@ -63,7 +63,12 @@ export type RecordInfo<T extends keyof MainTypes> = {
   name: string
   pluralName: string
   icon?: string
-  // how to render the item as a string
+  hasName?: boolean
+  hasAvatar?: boolean
+  hasDescription?: boolean
+  hasOrganizationOwner?: boolean
+  hasUserOwner?: boolean
+  // how to render the item as a string. by default, it is usually rendered as name || id
   renderItem?: (item) => string
 
   // model name for "following" this type
@@ -117,6 +122,10 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // the headers of the table
     headerOptions: HeaderObject[]
+
+    // header fields that should be hidden
+    excludeHeaders?: string[]
+
     // special options for overriding the action header element
     headerActionOptions?: {
       text?: string
@@ -129,48 +138,72 @@ export type RecordInfo<T extends keyof MainTypes> = {
     component?: any
     // can the results be downloaded?
     downloadOptions?: {
-      // custom fields to download. otherwise, the header fields will be downloaded
-      fields?: string[]
+      // custom fields to download
+      fields: ExportFieldDefinition[]
     }
   }
 
   addOptions?: {
     // required: fields that can be added
-    fields: string[]
+    fields: (string | EditFieldDefinition)[]
     // custom component
     component?: any
     // if not createX, the custom create operation name
     operationName?: string
 
-    // custom action when the "new" button is clicked, if any
-    customAction?: (that) => void
+    // custom function to modify the inputs in-place before they get sent as args
+    inputsModifier?: (that, inputs) => void
 
-    // function that runs when recorded is successfully added
+    // custom action when the "new" button is clicked, if any. item refers to parentItem, if any
+    customAction?: (that, parentItem) => void
+
+    // function that runs when record is successfully added
     onSuccess?: (that, item) => void
+
+    // post-processing of inputs, if any
+    afterLoaded?: (that, inputsArray) => Promise<void>
+
+    // will the button be hidden on the interface?
+    hidden?: boolean
   }
 
   importOptions?: {
     // required: fields that can be added
-    fields: string[]
+    fields: ImportFieldDefinition[]
     // custom component
     component?: any
     // if not createX, the custom create operation name
     operationName?: string
+
+    // custom function to modify the inputs in-place before they get sent as args
+    inputsModifier?: (that, inputs) => void
+
+    // skip the import row if this is true
+    skipIf?: (that, inputs) => boolean
+
+    // function that runs when import is successfully run on at least one record
+    onSuccess?: (that) => void
   }
 
   editOptions?: {
     // required: fields that can be added
-    fields: string[]
+    fields: (string | EditFieldDefinition)[]
     // custom component
     component?: any
     // if not createX, the custom create operation name
     operationName?: string
+
+    // custom function to modify the inputs in-place before they get sent as args
+    inputsModifier?: (that, inputs) => void
     // replacement icon
     icon?: string
     // replacement text
     text?: string
     // function that runs when recorded is successfully edited
     onSuccess?: (that, item) => void
+
+    // post-processing of inputs, if any
+    afterLoaded?: (that, inputsArray) => Promise<void>
   }
 
   deleteOptions?: {
@@ -185,7 +218,7 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
   viewOptions?: {
     // required: fields that can be viewed
-    fields: string[]
+    fields: (string | ViewFieldDefinition)[]
     // custom component
     component?: any
 
@@ -268,6 +301,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // initial sort options that should be applied to nested component
     initialSortOptions?: CrudRawSortObject
+
+    // number of results to show per page for this expand option. else, defaults to 12
+    resultsPerPage?: number
   }[]
 
   customActions?: {
@@ -297,6 +333,10 @@ type InputOptions = {
   // nestedValueText?: string
   typename?: string
   cols?: number // defaults to 12
+
+  // params that should be applied when looking up results (server-X input type) -- namely filterBy, sortBy
+  lookupParams?: (that, inputObjectArray) => any
+
   // only applies to value-array
   nestedFields?: {
     key: string
@@ -357,7 +397,12 @@ export type InputType =
   | 'text'
 
 export type ActionOptions = {
-  operationName: string
+  // if there is a singular giraffeql operation to execute
+  operationName?: string
+
+  // if there is a custom function to execute when submitted
+  onSubmit?: (that, item, args) => void
+
   title: string
   icon: string
   // custom component, if any
@@ -377,7 +422,50 @@ export type ActionOptions = {
       inputRules?: any[]
       default?: (that) => unknown
     }
+    hideIf?: (that, inputsArray) => boolean
   }[]
+
   // function that will use the selectedItem (if any) to modify the args fed into the operation
   argsModifier?: (that, item, args) => void
+  // modifier function that will use the original item to assemble the selectedItem (for pre-populating fields in the executeActionInterface)
+  selectedItemModifier?: (that, item) => any
+}
+
+export type EditFieldDefinition = {
+  field: string
+  cols?: number
+  handleFileAdded?: (that, inputsArray, inputObject, fileRecord) => void
+  // not currently implemented
+  // hideIf?: (that, inputsArray) => boolean
+}
+
+export type ViewFieldDefinition = {
+  field: string
+  hideIf?: (that, fieldValue, item, inputsArray) => boolean
+}
+
+export type ImportFieldDefinition = {
+  // the corresponding field, for use with selectedItem binding
+  field: string
+
+  // the fieldpath that should be imported, in dot notation
+  path?: string
+
+  // for parsing CSV imports
+  parseValue?: (val: unknown) => unknown
+}
+
+export type ExportFieldDefinition = {
+  // the fieldpath that should be exported
+  field: string
+
+  // should the field be excluded if this returns true
+  hideIf?: (that) => boolean
+
+  args?: {
+    getArgs: (that) => any
+    path: string
+    // if provided, only load this field if this returns true
+    loadIf?: (that) => boolean
+  }
 }

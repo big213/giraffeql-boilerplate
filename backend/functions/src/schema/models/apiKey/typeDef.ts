@@ -2,14 +2,13 @@ import { User, ApiKey } from "../../services";
 import { GiraffeqlObjectType, ObjectTypeDefinition } from "giraffeql";
 import {
   generateIdField,
-  generateCreatedAtField,
-  generateUpdatedAtField,
   generateCreatedByField,
   generateStringField,
   generateTypenameField,
   generateJoinableField,
   generateArrayField,
   processTypeDef,
+  generateTimestampFields,
 } from "../../core/helpers/typeDef";
 import * as Scalars from "../../scalars";
 
@@ -35,8 +34,7 @@ export default new GiraffeqlObjectType(
         type: Scalars.userPermission,
         nestHidden: true,
       }),
-      ...generateCreatedAtField(),
-      ...generateUpdatedAtField(),
+      ...generateTimestampFields(),
       ...generateCreatedByField(User),
     },
   })

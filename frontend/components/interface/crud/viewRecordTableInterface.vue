@@ -173,6 +173,11 @@ export default {
       type: Number,
       default: 0,
     },
+
+    // expecting object with showLoader? property
+    resetInstruction: {
+      type: Object,
+    },
   },
 
   computed: {
@@ -201,10 +206,21 @@ export default {
     visibleInputsArray() {
       // if hideIf is specified, check if the input should be visible
       return this.inputsArray.filter((inputObject) => {
-        const hideIf = inputObject.fieldInfo.tableOptions?.hideIf
+        const hideIf = inputObject.hideIf
 
         if (hideIf) {
-          return !hideIf(inputObject.value, this.currentItem)
+          return !hideIf(
+            this,
+            inputObject.value,
+            this.currentItem,
+            this.inputsArray
+          )
+        }
+
+        const tableOptionsHideIf = inputObject.fieldInfo.tableOptions?.hideIf
+
+        if (tableOptionsHideIf) {
+          return !tableOptionsHideIf(inputObject.value, this.currentItem)
         }
 
         return true
@@ -215,16 +231,26 @@ export default {
   watch: {
     generation() {
       // also need to reset the posts, if any
-      this.reset(true)
+      this.reset({
+        resetPosts: true,
+      })
+    },
+
+    resetInstruction(val) {
+      this.reset(val)
     },
 
     recordInfo() {
-      this.reset(true)
+      this.reset({
+        resetPosts: true,
+      })
     },
   },
 
   created() {
-    this.reset(true)
+    this.reset({
+      resetPosts: true,
+    })
 
     this.$root.$on('refresh-interface', this.refreshCb)
   },
@@ -238,7 +264,9 @@ export default {
 
     refreshCb(typename) {
       if (this.recordInfo.typename === typename) {
-        this.reset(true)
+        this.reset({
+          resetPosts: true,
+        })
       }
     },
 
@@ -261,13 +289,17 @@ export default {
 
     handleItemUpdated() {
       this.$emit('item-updated')
-      this.reset(true)
+      this.reset({
+        resetPosts: true,
+      })
     },
 
-    async loadRecord() {
-      this.loading.loadRecord = true
+    async loadRecord(showLoader = true) {
+      if (showLoader) this.loading.loadRecord = true
       try {
-        const fields = this.recordInfo.viewOptions.fields
+        const fields = this.recordInfo.viewOptions.fields.map((fieldElement) =>
+          typeof fieldElement === 'string' ? fieldElement : fieldElement.field
+        )
 
         const { query, serializeMap } = processQuery(
           this,
@@ -305,7 +337,12 @@ export default {
 
         // build inputs Array
         this.inputsArray = await Promise.all(
-          fields.map((fieldKey) => {
+          this.recordInfo.viewOptions.fields.map((fieldElement) => {
+            const fieldKey =
+              typeof fieldElement === 'string'
+                ? fieldElement
+                : fieldElement.field
+
             const fieldInfo = lookupFieldInfo(this.recordInfo, fieldKey)
 
             const fieldValue = fieldInfo.hidden
@@ -319,6 +356,8 @@ export default {
               options: [],
               readonly: true,
               generation: 0,
+              hideIf:
+                typeof fieldElement === 'string' ? false : fieldElement.hideIf,
             }
 
             return inputObject
@@ -327,10 +366,10 @@ export default {
       } catch (err) {
         handleError(this, err)
       }
-      this.loading.loadRecord = false
+      if (showLoader) this.loading.loadRecord = false
     },
 
-    reset(resetPosts = false) {
+    reset({ resetPosts = false, showLoader = true }) {
       // if reset was already called on this tick, stop execution
       if (this.resetCalledOnTick) return
 
@@ -342,7 +381,7 @@ export default {
         this.resetCalledOnTick = false
       })
 
-      this.loadRecord()
+      this.loadRecord(showLoader)
 
       if (resetPosts) {
         this.postsGeneration++

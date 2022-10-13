@@ -1,9 +1,5 @@
 <template>
-  <div
-    :class="{
-      'expanded-table-bg': isChildComponent,
-    }"
-  >
+  <div :class="{ 'expanded-table-bg': isChildComponent }">
     <v-card flat>
       <v-toolbar flat color="accent" dense>
         <v-icon left>{{ icon || recordInfo.icon || 'mdi-domain' }}</v-icon>
@@ -11,13 +7,13 @@
           title || recordInfo.title || recordInfo.pluralName
         }}</v-toolbar-title>
         <v-divider
-          v-if="recordInfo.addOptions"
+          v-if="recordInfo.addOptions && !recordInfo.addOptions.hidden"
           class="mx-4"
           inset
           vertical
         ></v-divider>
         <v-btn
-          v-if="recordInfo.addOptions"
+          v-if="recordInfo.addOptions && !recordInfo.addOptions.hidden"
           color="primary"
           @click="handleAddButtonClick()"
         >
@@ -394,6 +390,7 @@
               :key="props.item.id"
               :class="{
                 'expanded-row-bg': props.isExpanded,
+                'pointer-cursor': !!recordInfo.paginationOptions.handleRowClick,
               }"
               @click="handleRowClick(props)"
             >
@@ -471,7 +468,9 @@
                 is-child-component
                 :parent-item="expandedItem"
                 :dense="dense"
+                :results-per-page="expandTypeObject.resultsPerPage"
                 @pageOptions-updated="handleSubPageOptionsUpdated"
+                @reload-parent-item="handleReloadParentItem"
               >
                 <template v-slot:header-action>
                   <v-btn icon @click="closeExpandedItems()">
@@ -511,7 +510,9 @@
             :hidden-filters="hiddenSubFilters"
             is-child-component
             :dense="dense"
+            :results-per-page="expandTypeObject.resultsPerPage"
             @pageOptions-updated="handleSubPageOptionsUpdated"
+            @reload-parent-item="handleReloadParentItem"
           >
             <template v-slot:header-action>
               <v-btn icon @click="dialogs.expandRecord = false">

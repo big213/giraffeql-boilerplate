@@ -8,6 +8,7 @@ declare global {
   namespace Giraffeql {
     interface ObjectTypeDefinitionField {
       sqlOptions?: ObjectTypeDefSqlOptions;
+      allowNullInput?: boolean;
       addable?: boolean;
       updateable?: boolean;
       dataloader?: DataloaderFunction;

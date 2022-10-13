@@ -9,6 +9,7 @@ import {
 } from "giraffeql";
 import Knex = require("knex");
 import { isDev } from "../../../config";
+import { SpecialJoinFunction } from "../../../types";
 import { executeDBQuery, knex } from "../../../utils/knex";
 import { linkDefs } from "../../links";
 
@@ -59,6 +60,7 @@ export type SqlWhereFieldObject = {
 export type SqlSelectQueryObject = {
   field: string;
   as?: string;
+  args?: any;
 };
 
 export type SqlWhereFieldOperator =
@@ -87,6 +89,7 @@ export type SqlSelectQuery = {
   // distinct?: boolean;
   distinctOn?: string[];
   specialParams?: any;
+  transaction?: Knex.Transaction;
 };
 
 export type SqlCountQuery = {
@@ -96,6 +99,7 @@ export type SqlCountQuery = {
   limit?: number;
   distinct?: boolean;
   specialParams?: any;
+  transaction?: Knex.Transaction;
 };
 
 export type SqlSumQuery = {
@@ -105,6 +109,16 @@ export type SqlSumQuery = {
   limit?: number;
   distinct?: boolean;
   specialParams?: any;
+  transaction?: Knex.Transaction;
+};
+
+export type SqlRawQuery = {
+  table: string;
+  where: SqlWhereInput;
+  limit?: number;
+  distinct?: boolean;
+  specialParams?: any;
+  transaction?: Knex.Transaction;
 };
 
 export type SqlInsertQuery = {
@@ -113,6 +127,7 @@ export type SqlInsertQuery = {
     [x: string]: any;
   };
   extendFn?: KnexExtendFunction;
+  transaction?: Knex.Transaction;
 };
 
 export type KnexExtendFunction = (knexObject: Knex.QueryBuilder) => void;
@@ -124,15 +139,27 @@ export type SqlUpdateQuery = {
   };
   where: SqlWhereInput;
   extendFn?: KnexExtendFunction;
+  transaction?: Knex.Transaction;
+};
+
+export type SqlIncrementQuery = {
+  table: string;
+  fields: {
+    [x: string]: number;
+  };
+  where: SqlWhereInput;
+  extendFn?: KnexExtendFunction;
+  transaction?: Knex.Transaction;
 };
 
 export type SqlDeleteQuery = {
   table: string;
   where: SqlWhereInput;
   extendFn?: KnexExtendFunction;
+  transaction?: Knex.Transaction;
 };
 
-function generateError(err: unknown, fieldPath?: string[]) {
+function handleSqlError(err: unknown) {
   console.log(err);
 
   // double check if err is type Error
@@ -146,7 +173,6 @@ function generateError(err: unknown, fieldPath?: string[]) {
 
   return new GiraffeqlBaseError({
     message: errMessage,
-    fieldPath,
   });
 }
 
@@ -170,14 +196,17 @@ type JoinObject = {
     field: string; // field from the originating table
     joinField: string; // field to be joined from joinedTable
   };
-  specialJoin?: {
-    table: string;
-    alias: string;
-    joinFunction: Function;
-  };
+  specialJoin?: SpecialJoinDefinition;
   nested: {
     [x: string]: JoinObject;
   };
+};
+
+export type SpecialJoinDefinition = {
+  table: string;
+  alias: string;
+  joinFunction: SpecialJoinFunction;
+  args: any;
 };
 
 function acquireTableAlias(tableIndexMap: Map<string, number>, table) {
@@ -188,7 +217,7 @@ function acquireTableAlias(tableIndexMap: Map<string, number>, table) {
   return table + currentTableIndex;
 }
 
-function processFields(relevantFields: Set<string>, table: string) {
+function processFields(relevantFields: Map<string, any>, table: string) {
   // get the typeDef
   const typeDef = objectTypeDefs.get(table);
   if (!typeDef) throw new Error(`TypeDef for ${table} not found`);
@@ -206,7 +235,7 @@ function processFields(relevantFields: Set<string>, table: string) {
   tableIndexMap.set(table, 0);
 
   // go through the relevant fields, build join statements
-  relevantFields.forEach((field) => {
+  for (const [field, args] of relevantFields) {
     // does the field have a "."? if so, must join
     const fieldParts = field.split(/\./);
 
@@ -319,6 +348,7 @@ function processFields(relevantFields: Set<string>, table: string) {
               table: joinType,
               alias: joinTableAlias,
               joinFunction: typeDefField.sqlOptions.specialJoin.joinFunction,
+              args,
             },
             nested: {},
           };
@@ -349,7 +379,9 @@ function processFields(relevantFields: Set<string>, table: string) {
         let joinTableAlias;
         let specialJoinTableAlias;
         if (currentJoinObject[actualFieldPart]) {
-          joinTableAlias = currentJoinObject[actualFieldPart].normalJoin!.alias;
+          joinTableAlias =
+            currentJoinObject[actualFieldPart].normalJoin?.alias ??
+            currentJoinObject[actualFieldPart].specialJoin?.alias;
         } else {
           joinTableAlias = acquireTableAlias(tableIndexMap, joinType);
 
@@ -374,10 +406,21 @@ function processFields(relevantFields: Set<string>, table: string) {
                   alias: specialJoinTableAlias,
                   joinFunction:
                     typeDefField.sqlOptions.specialJoin.joinFunction,
+                  args,
                 }
               : undefined,
             nested: {},
           };
+
+          // if normalJoin.table and specialJoin.table are the same, unset the normalJoin and switch specialJoin.alias
+          if (
+            currentJoinObject[actualFieldPart].normalJoin!.table ===
+            currentJoinObject[actualFieldPart].specialJoin?.table
+          ) {
+            currentJoinObject[actualFieldPart].specialJoin!.alias =
+              currentJoinObject[actualFieldPart].normalJoin!.alias;
+            currentJoinObject[actualFieldPart].normalJoin = undefined;
+          }
         }
 
         // shift these variables
@@ -387,7 +430,7 @@ function processFields(relevantFields: Set<string>, table: string) {
         currentTableAlias = joinTableAlias;
       }
     });
-  });
+  }
 
   return {
     fieldInfoMap,
@@ -584,12 +627,13 @@ function applyJoins(
     // is there a special join?
     if (currentJoinObject[field].specialJoin) {
       // if so, apply it before doing the left join
-      currentJoinObject[field].specialJoin!.joinFunction(
+      currentJoinObject[field].specialJoin!.joinFunction({
         knexObject,
         parentTableAlias,
-        currentJoinObject[field].specialJoin!.alias,
-        specialParams
-      );
+        joinTableAlias: currentJoinObject[field].specialJoin!.alias,
+        specialParams,
+        specialJoinDefinition: currentJoinObject[field].specialJoin!,
+      });
 
       // shift the currentParentTableAlias after doing special join
       currentParentTableAlias = currentJoinObject[field].specialJoin!.alias;
@@ -633,30 +677,30 @@ function standardizeWhereObject(
   };
 }
 
-export async function fetchTableRows(
-  sqlQuery: SqlSelectQuery,
-  fieldPath?: string[]
-) {
+export async function fetchTableRows(sqlQuery: SqlSelectQuery) {
   try {
     const tableAlias = sqlQuery.table + "0";
 
-    const relevantFields: Set<string> = new Set();
+    const relevantFields: Map<string, any> = new Map();
 
     // gather all of the "known fields" in select, where, groupBy,
     sqlQuery.select.forEach((ele) => {
-      relevantFields.add(typeof ele === "string" ? ele : ele.field);
+      relevantFields.set(
+        typeof ele === "string" ? ele : ele.field,
+        typeof ele === "string" ? null : ele.args
+      );
     });
 
     if (sqlQuery.groupBy)
-      sqlQuery.groupBy.forEach((field) => relevantFields.add(field));
+      sqlQuery.groupBy.forEach((field) => relevantFields.set(field, null));
 
     if (sqlQuery.orderBy)
-      sqlQuery.orderBy.forEach((ele) => relevantFields.add(ele.field));
+      sqlQuery.orderBy.forEach((ele) => relevantFields.set(ele.field, null));
 
     const standardizedWhereObject = standardizeWhereObject(sqlQuery.where);
 
     extractFields(standardizedWhereObject).forEach((field) =>
-      relevantFields.add(field)
+      relevantFields.set(field, null)
     );
 
     const { fieldInfoMap, requiredJoins, tableIndexMap } = processFields(
@@ -732,25 +776,26 @@ export async function fetchTableRows(
       );
     }
 
+    if (sqlQuery.transaction) {
+      knexObject.transacting(sqlQuery.transaction);
+    }
+
     return await knexObject;
   } catch (err) {
-    throw generateError(err, fieldPath);
+    throw handleSqlError(err);
   }
 }
 
-export async function countTableRows(
-  sqlQuery: SqlCountQuery,
-  fieldPath?: string[]
-) {
+export async function countTableRows(sqlQuery: SqlCountQuery) {
   try {
     const tableAlias = sqlQuery.table + "0";
 
-    const relevantFields: Set<string> = new Set();
+    const relevantFields: Map<string, any> = new Map();
 
     const standardizedWhereObject = standardizeWhereObject(sqlQuery.where);
 
     extractFields(standardizedWhereObject).forEach((field) =>
-      relevantFields.add(field)
+      relevantFields.set(field, null)
     );
 
     const { fieldInfoMap, requiredJoins, tableIndexMap } = processFields(
@@ -778,30 +823,31 @@ export async function countTableRows(
       knex.raw(`"${tableAlias}"."${sqlQuery.field ?? "id"}"`)
     );
 
+    if (sqlQuery.transaction) {
+      knexObject.transacting(sqlQuery.transaction);
+    }
+
     const results = await knexObject;
     return Number(results[0].count);
   } catch (err) {
-    throw generateError(err, fieldPath);
+    throw handleSqlError(err);
   }
 }
 
-export async function sumTableRows(
-  sqlQuery: SqlSumQuery,
-  fieldPath?: string[]
-) {
+export async function sumTableRows(sqlQuery: SqlSumQuery) {
   try {
     const tableAlias = sqlQuery.table + "0";
 
-    const relevantFields: Set<string> = new Set();
+    const relevantFields: Map<string, any> = new Map();
 
     const standardizedWhereObject = standardizeWhereObject(sqlQuery.where);
 
     extractFields(standardizedWhereObject).forEach((field) =>
-      relevantFields.add(field)
+      relevantFields.set(field, null)
     );
 
     // add the field to be summed
-    relevantFields.add(sqlQuery.field);
+    relevantFields.set(sqlQuery.field, null);
 
     const { fieldInfoMap, requiredJoins, tableIndexMap } = processFields(
       relevantFields,
@@ -831,17 +877,55 @@ export async function sumTableRows(
       knex.raw(`"${sumFieldInfo.tableAlias}"."${sumFieldInfo.finalField}"`)
     );
 
+    if (sqlQuery.transaction) {
+      knexObject.transacting(sqlQuery.transaction);
+    }
+
     const results = await knexObject;
     return Number(results[0].sum);
   } catch (err) {
-    throw generateError(err, fieldPath);
+    throw handleSqlError(err);
   }
 }
 
-export async function insertTableRow(
-  sqlQuery: SqlInsertQuery,
-  fieldPath?: string[]
-) {
+export function getRawKnexObject(sqlQuery: SqlRawQuery) {
+  try {
+    const tableAlias = sqlQuery.table + "0";
+
+    const relevantFields: Map<string, any> = new Map();
+
+    const standardizedWhereObject = standardizeWhereObject(sqlQuery.where);
+
+    extractFields(standardizedWhereObject).forEach((field) =>
+      relevantFields.set(field, null)
+    );
+
+    const { fieldInfoMap, requiredJoins, tableIndexMap } = processFields(
+      relevantFields,
+      sqlQuery.table
+    );
+
+    const knexObject = knex.from({ [tableAlias]: sqlQuery.table });
+
+    // apply the joins
+    applyJoins(knexObject, requiredJoins, tableAlias, sqlQuery.specialParams);
+
+    // apply where
+    if (standardizedWhereObject.fields.length > 0) {
+      applyWhere(knexObject, standardizedWhereObject, fieldInfoMap);
+    }
+
+    if (sqlQuery.transaction) {
+      knexObject.transacting(sqlQuery.transaction);
+    }
+
+    return knexObject;
+  } catch (err) {
+    throw handleSqlError(err);
+  }
+}
+
+export async function insertTableRow(sqlQuery: SqlInsertQuery) {
   try {
     // check if there is a sql setter on the field
     const currentTypeDef = objectTypeDefs.get(sqlQuery.table);
@@ -863,27 +947,28 @@ export async function insertTableRow(
 
     const knexObject = knex(sqlQuery.table).insert(sqlFields).returning(["id"]);
 
+    if (sqlQuery.transaction) {
+      knexObject.transacting(sqlQuery.transaction);
+    }
+
     sqlQuery.extendFn && sqlQuery.extendFn(knexObject);
 
     return await knexObject;
   } catch (err) {
-    throw generateError(err, fieldPath);
+    throw handleSqlError(err);
   }
 }
 
-export async function updateTableRow(
-  sqlQuery: SqlUpdateQuery,
-  fieldPath?: string[]
-) {
+export async function updateTableRow(sqlQuery: SqlUpdateQuery) {
   try {
     const tableAlias = sqlQuery.table + "0";
 
-    const relevantFields: Set<string> = new Set();
+    const relevantFields: Map<string, any> = new Map();
 
     const standardizedWhereObject = standardizeWhereObject(sqlQuery.where);
 
     extractFields(standardizedWhereObject).forEach((field) =>
-      relevantFields.add(field)
+      relevantFields.set(field, null)
     );
 
     const { fieldInfoMap, requiredJoins, tableIndexMap } = processFields(
@@ -909,6 +994,10 @@ export async function updateTableRow(
         : sqlQuery.fields[fieldname];
     }
 
+    if (Object.keys(sqlFields).length < 1) {
+      throw new Error("No fields to update");
+    }
+
     const knexObject = knex.from({ [tableAlias]: sqlQuery.table });
 
     // apply the joins
@@ -919,27 +1008,92 @@ export async function updateTableRow(
       applyWhere(knexObject, standardizedWhereObject, fieldInfoMap);
     }
 
+    if (sqlQuery.transaction) {
+      knexObject.transacting(sqlQuery.transaction);
+    }
+
     sqlQuery.extendFn && sqlQuery.extendFn(knexObject);
 
     return await knexObject.update(sqlFields);
   } catch (err) {
-    throw generateError(err, fieldPath);
+    throw handleSqlError(err);
   }
 }
 
-export async function deleteTableRow(
-  sqlQuery: SqlDeleteQuery,
-  fieldPath?: string[]
-) {
+export async function incrementTableRow(sqlQuery: SqlIncrementQuery) {
   try {
     const tableAlias = sqlQuery.table + "0";
 
-    const relevantFields: Set<string> = new Set();
+    const relevantFields: Map<string, any> = new Map();
 
     const standardizedWhereObject = standardizeWhereObject(sqlQuery.where);
 
     extractFields(standardizedWhereObject).forEach((field) =>
-      relevantFields.add(field)
+      relevantFields.set(field, null)
+    );
+
+    const { fieldInfoMap, requiredJoins, tableIndexMap } = processFields(
+      relevantFields,
+      sqlQuery.table
+    );
+
+    // check if there is a sql setter on the field
+    const currentTypeDef = objectTypeDefs.get(sqlQuery.table);
+    if (!currentTypeDef) {
+      throw new Error(`TypeDef for '${sqlQuery.table}' not found`);
+    }
+
+    // handle set fields and convert to actual sql fields, if aliased
+    const sqlFields: { [x: string]: number } = {};
+    for (const fieldname in sqlQuery.fields) {
+      const sqlOptions =
+        currentTypeDef.definition.fields[fieldname]?.sqlOptions;
+      if (!sqlOptions) throw new Error(`'${fieldname}' is not a sql field`);
+
+      sqlFields[sqlOptions.field ?? fieldname] = sqlQuery.fields[fieldname];
+    }
+
+    if (Object.keys(sqlFields).length < 1) {
+      throw new Error("No fields to increment");
+    }
+
+    const knexObject = knex.from({ [tableAlias]: sqlQuery.table });
+
+    // apply the joins
+    applyJoins(knexObject, requiredJoins, tableAlias);
+
+    // apply where
+    if (standardizedWhereObject.fields.length > 0) {
+      applyWhere(knexObject, standardizedWhereObject, fieldInfoMap);
+    }
+
+    if (sqlQuery.transaction) {
+      knexObject.transacting(sqlQuery.transaction);
+    }
+
+    sqlQuery.extendFn && sqlQuery.extendFn(knexObject);
+
+    for (const field in sqlFields) {
+      // due to some weird glitch, increment will be called twice per field so we're just gonna return it here. only the very first field will be incremented
+      return await knexObject.increment(field, sqlFields[field]);
+    }
+
+    return knexObject;
+  } catch (err) {
+    throw handleSqlError(err);
+  }
+}
+
+export async function deleteTableRow(sqlQuery: SqlDeleteQuery) {
+  try {
+    const tableAlias = sqlQuery.table + "0";
+
+    const relevantFields: Map<string, any> = new Map();
+
+    const standardizedWhereObject = standardizeWhereObject(sqlQuery.where);
+
+    extractFields(standardizedWhereObject).forEach((field) =>
+      relevantFields.set(field, null)
     );
 
     const { fieldInfoMap, requiredJoins, tableIndexMap } = processFields(
@@ -957,11 +1111,15 @@ export async function deleteTableRow(
       applyWhere(knexObject, standardizedWhereObject, fieldInfoMap);
     }
 
+    if (sqlQuery.transaction) {
+      knexObject.transacting(sqlQuery.transaction);
+    }
+
     sqlQuery.extendFn && sqlQuery.extendFn(knexObject);
 
     return await knexObject.delete();
   } catch (err) {
-    throw generateError(err, fieldPath);
+    throw handleSqlError(err);
   }
 }
 

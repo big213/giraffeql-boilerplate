@@ -12,6 +12,7 @@ import {
   lookupFieldInfo,
   addNestedInputObject,
   processInputObject,
+  processQuery,
 } from '~/services/base'
 import GenericInput from '~/components/input/genericInput.vue'
 
@@ -20,9 +21,9 @@ export default {
     GenericInput,
   },
   props: {
+    // only required for edit mode
     selectedItem: {
       type: Object,
-      required: true,
     },
 
     recordInfo: {
@@ -99,6 +100,15 @@ export default {
       return this.customFields ?? this.recordInfo[`${this.mode}Options`].fields
     },
 
+    // extracts the field from any EditFieldDefinitions
+    rawFields() {
+      if (!this.fields) return []
+
+      return this.fields.map((fieldElement) =>
+        typeof fieldElement === 'string' ? fieldElement : fieldElement.field
+      )
+    },
+
     capitalizedType() {
       return capitalizeString(this.recordInfo.typename)
     },
@@ -124,7 +134,9 @@ export default {
     visibleInputsArray() {
       if (!this.hideLockedFields) return this.inputsArray
 
-      const hiddenFields = Object.keys(this.selectedItem)
+      const hiddenFields = this.selectedItem
+        ? Object.keys(this.selectedItem)
+        : []
       return hiddenFields.length
         ? this.inputsArray.filter(
             (inputObject) => !hiddenFields.includes(inputObject.fieldKey)
@@ -205,6 +217,17 @@ export default {
       setTimeout(this.submit, sleep ? 500 : 0)
     },
 
+    handleFileAdded(inputObject, fileRecord) {
+      if (inputObject.handleFileAdded) {
+        inputObject.handleFileAdded(
+          this,
+          this.inputsArray,
+          inputObject,
+          fileRecord
+        )
+      }
+    },
+
     async submit() {
       this.loading.editRecord = true
       try {
@@ -220,6 +243,11 @@ export default {
         // add/copy mode
         let query
         if (this.mode === 'add' || this.mode === 'copy') {
+          // run the inputsModifier, if any
+          if (this.recordInfo.addOptions.inputsModifier) {
+            this.recordInfo.addOptions.inputsModifier(this, inputs)
+          }
+
           query = {
             [this.recordInfo.addOptions.operationName ??
             'create' + this.capitalizedType]: {
@@ -229,6 +257,11 @@ export default {
             },
           }
         } else {
+          // run the inputsModifier, if any
+          if (this.recordInfo.editOptions.inputsModifier) {
+            this.recordInfo.editOptions.inputsModifier(this, inputs)
+          }
+
           query = {
             [this.recordInfo.editOptions.operationName ??
             'update' + this.capitalizedType]: {
@@ -284,51 +317,15 @@ export default {
     async loadRecord() {
       this.loading.loadRecord = true
       try {
-        // create a map field -> serializeFn for fast serialization
-        const serializeMap = new Map()
+        const { serializeMap, query } = processQuery(
+          this,
+          this.recordInfo,
+          this.rawFields
+        )
 
         const data = await executeGiraffeql(this, {
-          ['get' + this.capitalizedType]: {
-            id: true,
-            __typename: true,
-            ...collapseObject(
-              this.fields.reduce((total, fieldKey) => {
-                const fieldInfo = lookupFieldInfo(this.recordInfo, fieldKey)
-
-                // if field is hidden, exclude
-                if (fieldInfo.hidden) return total
-
-                const fieldsToAdd = new Set()
-
-                // add all fields
-                if (fieldInfo.fields) {
-                  fieldInfo.fields.forEach((field) => fieldsToAdd.add(field))
-                } else {
-                  fieldsToAdd.add(fieldKey)
-                }
-
-                // process fields
-                fieldsToAdd.forEach((field) => {
-                  total[field] = true
-
-                  // add a serializer if there is one for the field
-                  const currentFieldInfo = this.recordInfo.fields[field]
-                  if (currentFieldInfo) {
-                    if (currentFieldInfo.serialize) {
-                      serializeMap.set(field, currentFieldInfo.serialize)
-                    }
-
-                    // if field has args, process them
-                    if (currentFieldInfo.args) {
-                      total[currentFieldInfo.args.path + '.__args'] =
-                        currentFieldInfo.args.getArgs(this)
-                    }
-                  }
-                })
-
-                return total
-              }, {})
-            ),
+          [`get${this.capitalizedType}`]: {
+            ...query,
             __args: {
               id: this.selectedItem.id,
             },
@@ -357,7 +354,12 @@ export default {
 
         // build inputs Array
         this.inputsArray = await Promise.all(
-          inputFields.map(async (fieldKey) => {
+          inputFields.map(async (fieldElement) => {
+            const fieldKey =
+              typeof fieldElement === 'string'
+                ? fieldElement
+                : fieldElement.field
+
             const fieldInfo = lookupFieldInfo(this.recordInfo, fieldKey)
 
             const primaryField = fieldInfo.fields
@@ -379,18 +381,25 @@ export default {
               inputOptions: fieldInfo.inputOptions,
               value: null,
               getOptions: fieldInfo.getOptions,
+              handleFileAdded:
+                typeof fieldElement === 'string'
+                  ? null
+                  : fieldElement.handleFileAdded,
               options: [],
               readonly: this.mode === 'view',
               loading: false,
               focused: false,
-              cols: fieldInfo.inputOptions?.cols,
+              cols:
+                typeof fieldElement === 'string'
+                  ? fieldInfo.inputOptions?.cols
+                  : fieldElement.cols,
               generation: 0,
               parentInput: null,
               nestedInputsArray: [],
             }
 
             // if copy mode and fieldKey not in original fields, use default
-            if (this.mode === 'copy' && !this.fields.includes(fieldKey)) {
+            if (this.mode === 'copy' && !this.rawFields.includes(fieldKey)) {
               inputObject.value = fieldInfo.default
                 ? await fieldInfo.default(this)
                 : null
@@ -415,7 +424,20 @@ export default {
             return inputObject
           })
         )
-
+        // do post-processing on inputsArray, if function provided
+        if (this.mode === 'edit') {
+          this.recordInfo.editOptions.afterLoaded &&
+            (await this.recordInfo.editOptions.afterLoaded(
+              this,
+              this.inputsArray
+            ))
+        } else if (this.mode === 'copy') {
+          this.recordInfo.addOptions.afterLoaded &&
+            (await this.recordInfo.addOptions.afterLoaded(
+              this,
+              this.inputsArray
+            ))
+        }
         // wait for all dropdown-related promises to complete
         await Promise.all(dropdownPromises)
       } catch (err) {
@@ -438,7 +460,7 @@ export default {
         // skip any fieldKeys that should be excluded
         if (excludeKeys.includes(inputObject.fieldKey)) return
 
-        if (inputObject.fieldKey in this.selectedItem) {
+        if (this.selectedItem && inputObject.fieldKey in this.selectedItem) {
           inputObject.value = this.selectedItem[inputObject.fieldKey]
         } else {
           inputObject.value = inputObject.fieldInfo.default
@@ -447,7 +469,6 @@ export default {
         }
 
         // increment inputObject.generation to reset inputs, if necessary
-
         inputObject.generation++
       })
     },
@@ -455,62 +476,86 @@ export default {
     async initializeInputs() {
       // set loading state until all inputs are done loading
       this.loading.initInputs = true
-      this.inputsArray = await Promise.all(
-        this.recordInfo.addOptions.fields.map(async (fieldKey) => {
-          const fieldInfo = lookupFieldInfo(this.recordInfo, fieldKey)
+      try {
+        if (!this.fields) {
+          throw new Error('Adding of this record is not configured')
+        }
 
-          const inputObject = {
-            fieldKey,
-            primaryField: fieldInfo.fields ? fieldInfo.fields[0] : fieldKey,
-            fieldInfo,
-            recordInfo: this.recordInfo,
-            inputType: fieldInfo.inputType,
-            label: fieldInfo.text ?? fieldKey,
-            hint: fieldInfo.hint,
-            clearable: true,
-            closeable: false,
-            optional: fieldInfo.optional,
-            inputRules: fieldInfo.inputRules,
-            inputOptions: fieldInfo.inputOptions,
-            value: null,
-            inputValue: null,
-            getOptions: fieldInfo.getOptions,
-            options: [],
-            readonly: false,
-            hidden: false,
-            loading: false,
-            focused: false,
-            cols: fieldInfo.inputOptions?.cols,
-            generation: 0,
-            parentInput: null,
-            nestedInputsArray: [],
-          }
+        this.inputsArray = await Promise.all(
+          this.fields.map(async (fieldElement) => {
+            const fieldKey =
+              typeof fieldElement === 'string'
+                ? fieldElement
+                : fieldElement.field
 
-          // is the field in selectedItem? if so, use that and set field to readonly
-          if (fieldKey in this.selectedItem) {
-            inputObject.value = this.selectedItem[fieldKey]
-            inputObject.readonly = true
-          } else {
-            inputObject.value = fieldInfo.default
-              ? await fieldInfo.default(this)
-              : null
-          }
+            const fieldInfo = lookupFieldInfo(this.recordInfo, fieldKey)
 
-          // if it is an array, populate the nestedInputsArray
-          if (inputObject.inputType === 'value-array') {
-            if (Array.isArray(inputObject.value)) {
-              inputObject.value.forEach((ele) =>
-                addNestedInputObject(inputObject, ele)
-              )
+            const inputObject = {
+              fieldKey,
+              primaryField: fieldInfo.fields ? fieldInfo.fields[0] : fieldKey,
+              fieldInfo,
+              recordInfo: this.recordInfo,
+              inputType: fieldInfo.inputType,
+              label: fieldInfo.text ?? fieldKey,
+              hint: fieldInfo.hint,
+              clearable: true,
+              closeable: false,
+              optional: fieldInfo.optional,
+              inputRules: fieldInfo.inputRules,
+              inputOptions: fieldInfo.inputOptions,
+              value: null,
+              inputValue: null,
+              getOptions: fieldInfo.getOptions,
+              handleFileAdded:
+                typeof fieldElement === 'string'
+                  ? null
+                  : fieldElement.handleFileAdded,
+              options: [],
+              readonly: false,
+              hidden: false,
+              loading: false,
+              focused: false,
+              cols:
+                typeof fieldElement === 'string'
+                  ? fieldInfo.inputOptions?.cols
+                  : fieldElement.cols,
+              generation: 0,
+              parentInput: null,
+              nestedInputsArray: [],
             }
-          }
 
-          // populate inputObjects if we need to translate any IDs to objects, and also populate any options
-          await Promise.all(populateInputObject(this, inputObject))
+            // is the field in selectedItem? if so, use that and set field to readonly
+            if (
+              this.selectedItem &&
+              fieldKey in this.selectedItem &&
+              this.selectedItem[fieldKey] !== undefined
+            ) {
+              inputObject.value = this.selectedItem[fieldKey]
+              inputObject.readonly = true
+            } else {
+              inputObject.value = fieldInfo.default
+                ? await fieldInfo.default(this)
+                : null
+            }
 
-          return inputObject
-        })
-      )
+            // if it is an array, populate the nestedInputsArray
+            if (inputObject.inputType === 'value-array') {
+              if (Array.isArray(inputObject.value)) {
+                inputObject.value.forEach((ele) =>
+                  addNestedInputObject(inputObject, ele)
+                )
+              }
+            }
+
+            // populate inputObjects if we need to translate any IDs to objects, and also populate any options
+            await Promise.all(populateInputObject(this, inputObject))
+
+            return inputObject
+          })
+        )
+      } catch (err) {
+        handleError(this, err)
+      }
       this.loading.initInputs = false
     },
 
@@ -543,7 +588,9 @@ export default {
       // initialize inputs
       if (this.mode === 'add') {
         await this.initializeInputs()
-
+        // do post-processing on inputsArray, if function provided
+        this.recordInfo.addOptions.afterLoaded &&
+          (await this.recordInfo.addOptions.afterLoaded(this, this.inputsArray))
         this.afterInitializeInputs && this.afterInitializeInputs()
       } else {
         this.loadRecord()

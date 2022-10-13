@@ -1,10 +1,14 @@
 <template>
-  <v-chip pill v-bind="$attrs">
+  <v-chip pill v-bind="$attrs" v-on="$listeners">
     <v-avatar left>
       <v-img v-if="avatar" :src="avatar" contain></v-img
       ><v-icon v-else>{{ fallbackIcon }} </v-icon>
     </v-avatar>
-    {{ name }}
+    <i v-if="item.name === undefined">{{ item.id }}</i>
+    <span v-else-if="name">
+      {{ name }}
+    </span>
+    <i v-else> (Untitled) </i>
     <slot name="rightIcon" />
   </v-chip>
 </template>
@@ -14,14 +18,11 @@ import { capitalizeString } from '~/services/base'
 
 export default {
   props: {
-    // __typename is required
+    // __typename, id is required. avatar/name optional
     item: {
       type: Object,
       required: true,
     },
-  },
-  data() {
-    return {}
   },
 
   computed: {

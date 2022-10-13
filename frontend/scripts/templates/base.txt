@@ -1,19 +1,11 @@
 import type { RecordInfo } from '~/types'
 import { generateBaseFields } from '~/services/recordInfo'
+import { Simple{{ capitalizedTypename }} } from '../simple'
 
 export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
-  typename: '{{ typename }}',
-  pluralTypename: '{{ typename }}s',
-  name: '{{ capitalizedTypename }}',
-  pluralName: '{{ capitalizedTypename }}s',
-  icon: 'mdi-folder-information',
-  renderItem: (item) => item.name,
+  ...Simple{{ capitalizedTypename }},
   fields: {
-    ...generateBaseFields({
-      hasName: true,
-      hasAvatar: true,
-      hasDescription: true,
-    }),
+    ...generateBaseFields(Simple{{ capitalizedTypename }}),
   },
   paginationOptions: {
     hasSearch: false,
@@ -21,8 +13,12 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
     heroOptions: {},
     sortOptions: [
       {
-        field: 'createdAt',
+        field: 'updatedAt',
         desc: true,
+      },
+      {
+        field: 'updatedAt',
+        desc: false,
       },
     ],
     headerOptions: [
@@ -31,16 +27,13 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
         hideIfGrid: true,
       },
       {
-        field: 'modifiedAt',
+        field: 'updatedAt',
         width: '150px',
       },
     ],
-    downloadOptions: {},
+    
   },
   addOptions: {
-    fields: ['avatar', 'name', 'description'],
-  },
-  importOptions: {
     fields: ['avatar', 'name', 'description'],
   },
   editOptions: {

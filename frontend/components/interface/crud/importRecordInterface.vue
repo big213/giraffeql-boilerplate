@@ -5,23 +5,26 @@
       <v-alert type="info">
         CSV must have the following columns:
         <br />
-        <span v-for="(field, i) in recordInfo.importOptions.fields" :key="i"
-          >{{ field }},
-        </span>
+        <span>{{ acceptedFieldsString }}</span>
       </v-alert>
       <v-container>
         <v-row>
           <v-col xs="12" class="py-0">
-            <v-file-input
-              v-model="miscInputs.file"
-              accept="text/csv"
-              label="File input (CSV only)"
-              ref="csvFile"
-              @change="handleFileUpload"
-              @click:clear="reset()"
-            ></v-file-input>
+            <div v-cloak @drop.prevent="handleDropEvent" @dragover.prevent>
+              <v-file-input
+                v-model="miscInputs.file"
+                accept="text/csv"
+                label="File input (CSV only) (Drag and Drop)"
+                ref="csvFile"
+                @change="handleFileUpload"
+                @click:clear="reset()"
+              ></v-file-input>
+            </div>
             <div>
-              {{ recordsDone }} / {{ miscInputs.records.length }} Records Added
+              {{ recordsDone }} / {{ validRecords }} Records Added ({{
+                recordsSkipped
+              }}
+              Skipped)
             </div>
           </v-col>
         </v-row>
@@ -86,6 +89,39 @@ export default {
     recordsDone() {
       return this.miscInputs.records.filter((ele) => ele.isFinished).length
     },
+
+    validRecords() {
+      return this.miscInputs.records.filter((ele) => !ele.isSkipped).length
+    },
+
+    recordsSkipped() {
+      return this.miscInputs.records.filter((ele) => ele.isSkipped).length
+    },
+
+    acceptedFieldObjects() {
+      // need to exclude any fields in selectedItem that are not undefined
+      const excludeFields = Object.entries(this.selectedItem).reduce(
+        (total, [key, val]) => {
+          if (val !== undefined) total.push(key)
+          return total
+        },
+        []
+      )
+
+      return this.recordInfo.importOptions.fields.filter(
+        (importFieldObject) => {
+          if (!importFieldObject.field) return true
+
+          return !excludeFields.includes(importFieldObject.field)
+        }
+      )
+    },
+
+    acceptedFieldsString() {
+      return this.acceptedFieldObjects
+        .map((ele) => ele.path ?? ele.field)
+        .join(', ')
+    },
   },
 
   created() {
@@ -93,6 +129,21 @@ export default {
   },
 
   methods: {
+    handleDropEvent(e) {
+      try {
+        const files = Array.from(e.dataTransfer.files)
+
+        // only 1 file allowed
+        if (files.length !== 1) {
+          throw new Error('Only 1 filed allowed to be dropped')
+        }
+
+        this.handleFileUpload(files[0])
+      } catch (err) {
+        handleError(this, err)
+      }
+    },
+
     handleFileUpload(file) {
       if (!file) return
       const reader = new FileReader()
@@ -100,25 +151,88 @@ export default {
         try {
           const data = convertCSVToJSON(event.target.result)
 
-          this.miscInputs.records = data.map((ele) => ({
-            data: ele,
-            isFinished: false,
-            record: null,
-          }))
+          // if no rows, throw err
+          if (!data.length) {
+            throw new Error(`No rows in CSV`)
+          }
+
+          const acceptedCsvFields = this.acceptedFieldObjects.map(
+            (fieldObject) => fieldObject.path ?? fieldObject.field
+          )
+
+          // check if only valid fields present (only need to do for first one)
+          const firstEntry = data[0]
+          for (const key in firstEntry) {
+            if (!acceptedCsvFields.includes(key)) {
+              throw new Error(`Unrecognized field in CSV: ${key}`)
+            }
+          }
+
+          const lockedFieldsMap = new Map()
+          for (const field in this.selectedItem) {
+            const fieldObject = this.recordInfo.importOptions.fields.find(
+              (innerFieldObject) => innerFieldObject.field === field
+            )
+            if (fieldObject) {
+              lockedFieldsMap.set(
+                fieldObject.path ?? fieldObject.field,
+                this.selectedItem[fieldObject.field]
+              )
+            }
+          }
+
+          this.miscInputs.records = data.map((ele) => {
+            // inject any locked fields (via selectedItem) into data
+            lockedFieldsMap.forEach((val, key) => {
+              ele[key] = val
+            })
+
+            return {
+              data: ele,
+              isFinished: false,
+              isSkipped: false,
+              record: null,
+            }
+          })
+
+          // build the path -> parseValue map
+          const parseValueMap = new Map()
+          this.acceptedFieldObjects.forEach((importFieldObject) => {
+            if (importFieldObject.parseValue) {
+              parseValueMap.set(
+                importFieldObject.path,
+                importFieldObject.parseValue
+              )
+            }
+          })
 
           // parse the data if there is a parse function for the field
           this.miscInputs.records.forEach((recordData) => {
             for (const field in recordData.data) {
-              // if any field is invalid, throw err
-              if (!this.recordInfo.fields[field])
-                throw new Error(`Unrecognized field: ${field}`)
-
-              const parseFn = this.recordInfo.fields[field].parseImportValue
-              if (parseFn)
+              // is there a parseValue for this field?
+              const parseFn = parseValueMap.get(field)
+              if (parseFn) {
                 recordData.data[field] = parseFn(recordData.data[field])
+              }
 
               // if the value is an empty string, parse this to null by default
               if (recordData.data[field] === '') recordData.data[field] = null
+            }
+
+            // run the inputsModifier, if any
+            if (this.recordInfo.importOptions.inputsModifier) {
+              this.recordInfo.importOptions.inputsModifier(
+                this,
+                recordData.data
+              )
+            }
+
+            // if there is a skipIf function, check it to see if this entry should be skippeed
+            if (
+              this.recordInfo.importOptions.skipIf &&
+              this.recordInfo.importOptions.skipIf(this, recordData.data)
+            ) {
+              recordData.isSkipped = true
             }
           })
 
@@ -146,6 +260,9 @@ export default {
           // skip if already finished
           if (recordData.isFinished) continue
 
+          // skip if skipped
+          if (recordData.isSkipped) continue
+
           recordData.record = await executeGiraffeql(this, {
             [this.recordInfo.addOptions.operationName ??
             'create' + capitalizeString(this.recordInfo.typename)]: {
@@ -162,17 +279,28 @@ export default {
           variant: 'success',
         })
 
-        // reload any interfaces containing this type
-        this.$root.$emit('refresh-interface', this.recordInfo.typename)
         this.$emit('close')
       } catch (err) {
         handleError(this, err)
+      } finally {
         // also reload any interfaces containing this type if at least 1 record was added
         if (this.recordsDone > 0) {
-          this.$root.$emit('refresh-interface', this.recordInfo.typename)
+          this.handleSuccess()
         }
       }
       this.loading.importing = false
+    },
+
+    handleSuccess() {
+      // run any custom onSuccess functions
+      const onSuccess = this.recordInfo.importOptions.onSuccess
+
+      if (onSuccess) {
+        onSuccess(this)
+      } else {
+        // else emit the generic refresh-interface event
+        this.$root.$emit('refresh-interface', this.recordInfo.typename)
+      }
     },
 
     reset() {

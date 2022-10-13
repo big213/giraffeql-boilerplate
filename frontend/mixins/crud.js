@@ -19,8 +19,10 @@ import {
   populateInputObject,
   processQuery,
   generateFilterByObjectArray,
+  collapseObject,
 } from '~/services/base'
 import { defaultGridView } from '~/services/config'
+import { executeGiraffeql } from '~/services/giraffeql'
 
 export default {
   name: 'CrudRecordInterface',
@@ -47,7 +49,6 @@ export default {
     // header fields that should be hidden
     hiddenHeaders: {
       type: Array,
-      default: () => [],
     },
     // type: CrudPageOptions | null
     pageOptions: {
@@ -92,6 +93,11 @@ export default {
     parentItem: {
       type: Object,
     },
+
+    resultsPerPage: {
+      type: Number,
+      default: 12,
+    },
   },
 
   data() {
@@ -123,8 +129,6 @@ export default {
       },
 
       reloadGeneration: 0,
-
-      resultsPerPage: 12,
 
       // has the recordInfo been changed?
       cancelPageOptionsReset: false,
@@ -175,10 +179,21 @@ export default {
       })
     },
 
+    // if this.hiddenHeaders is defined, override the default exclude headers on the recordInfo.paginationOptions
+    hiddenHeadersComputed() {
+      return (
+        this.hiddenHeaders ??
+        this.recordInfo.paginationOptions.excludeHeaders ??
+        []
+      )
+    },
+
     // type: recordInfo.paginationOptions.headers to CrudHeaderObject[]
     headerOptions() {
       const headerOptions = this.recordInfo.paginationOptions.headerOptions
-        .filter((headerInfo) => !this.hiddenHeaders.includes(headerInfo.field))
+        .filter(
+          (headerInfo) => !this.hiddenHeadersComputed.includes(headerInfo.field)
+        )
         .filter((headerInfo) => {
           // if there is a hideIf function, check it
           if (headerInfo.hideIf && headerInfo.hideIf(this)) return false
@@ -441,11 +456,22 @@ export default {
     getIcon,
     getNestedProperty,
 
-    refreshCb(typename) {
+    refreshCb(typename, { refreshParent = false, id } = {}) {
       if (this.recordInfo.typename === typename) {
-        this.reset({
-          resetExpanded: false,
-        })
+        // if ID is provided, only reload that specific record
+        if (id) {
+          this.reloadRecord(id)
+        } else {
+          // otherwise, reset all records
+          this.reset({
+            resetExpanded: true,
+          })
+        }
+
+        // if refreshParent is provided and there is a parentItem, reload and merge that record as well
+        if (refreshParent && this.parentItem) {
+          this.$emit('reload-parent-item')
+        }
       }
     },
 
@@ -627,25 +653,33 @@ export default {
     async exportData() {
       this.loading.exportData = true
       try {
-        // use custom download fields if provided
-        const customFields =
-          this.recordInfo.paginationOptions.downloadOptions.fields
-        const fields =
-          customFields ??
-          this.recordInfo.paginationOptions.headerOptions
-            .concat(
-              (this.recordInfo.requiredFields ?? []).map((field) => ({
-                field,
-              }))
-            )
-            .map((headerObject) => headerObject.field)
+        // fields required
+        if (!this.recordInfo.paginationOptions.downloadOptions.fields) {
+          throw new Error(`Downloads not configured for this record type`)
+        }
 
-        if (fields.length < 1) throw new Error('No fields to export')
+        const query = collapseObject(
+          this.recordInfo.paginationOptions.downloadOptions.fields.reduce(
+            (total, fieldObject) => {
+              if (fieldObject.args) {
+                // if args has loadIf and if it returns false, skip this field entirely
+                if (fieldObject.args.loadIf && !fieldObject.args.loadIf(this)) {
+                  return total
+                }
 
-        const { query, serializeMap } = processQuery(
-          this,
-          this.recordInfo,
-          fields
+                // else add the args
+                // can skip if it has already been set
+                if (!total[`${fieldObject.args.path}.__args`]) {
+                  total[`${fieldObject.args.path}.__args`] =
+                    fieldObject.args.getArgs(this)
+                }
+              }
+
+              total[fieldObject.field] = true
+              return total
+            },
+            {}
+          )
         )
 
         // fetch data
@@ -656,45 +690,26 @@ export default {
           this.generatePaginatorArgs(false)
         )
 
-        // remove any undefined serializeMap elements
-        serializeMap.forEach((val, key) => {
-          if (val === undefined) serializeMap.delete(key)
+        // extract data from results
+        const data = results.map((item) => {
+          const returnItem = {}
+
+          this.recordInfo.paginationOptions.downloadOptions.fields.forEach(
+            (fieldObject) => {
+              // skip if hideIf returns true
+              if (fieldObject.hideIf && fieldObject.hideIf(this)) {
+                return
+              }
+
+              returnItem[fieldObject.field] = getNestedProperty(
+                item,
+                fieldObject.field
+              )
+            }
+          )
+
+          return returnItem
         })
-
-        // apply serialization to results
-        results.forEach((ele) => {
-          serializeMap.forEach((serialzeFn, field) => {
-            serializeNestedProperty(ele, field, serialzeFn)
-          })
-        })
-
-        // extract results
-        const data = customFields
-          ? results.map((item) => {
-              const returnItem = {}
-              customFields.forEach((field) => {
-                const fieldInfo = lookupFieldInfo(this.recordInfo, field)
-
-                const actualField = fieldInfo.fields
-                  ? fieldInfo.fields[0]
-                  : field
-
-                returnItem[actualField] = getNestedProperty(item, actualField)
-              })
-              return returnItem
-            })
-          : results.map((item) => {
-              const returnItem = {}
-              this.headerOptions.forEach((headerObject) => {
-                if (headerObject.value) {
-                  returnItem[headerObject.value] = this.getTableRowData(
-                    headerObject,
-                    item
-                  )
-                }
-              })
-              return returnItem
-            })
 
         if (data.length < 1) {
           throw new Error('No results to export')
@@ -738,7 +753,7 @@ export default {
 
     handleAddButtonClick() {
       if (this.recordInfo.addOptions.customAction) {
-        this.recordInfo.addOptions.customAction(this)
+        this.recordInfo.addOptions.customAction(this, this.parentItem)
       } else {
         this.openAddRecordDialog()
       }
@@ -801,7 +816,27 @@ export default {
       this.loading.loadMore = false
     },
 
-    async fetchData() {
+    // reloads the expandedItem and merges the fields back into the record
+    async handleReloadParentItem() {
+      if (!this.expandedItem) return
+
+      const record = await this.fetchData(this.expandedItem.id)
+
+      Object.assign(this.expandedItem, record)
+    },
+
+    // reloads a specific record in the pageData, if it is present
+    async reloadRecord(id) {
+      const matchingResult = this.records.find((result) => result.id === id)
+
+      if (!matchingResult) return
+
+      const record = await this.fetchData(id)
+
+      Object.assign(matchingResult, record)
+    },
+    // if itemId is specific, it will fetch only that specific ID
+    async fetchData(itemId = null) {
       const fields = this.recordInfo.paginationOptions.headerOptions
         .map((headerInfo) => headerInfo.field)
         .concat(this.recordInfo.requiredFields ?? [])
@@ -812,26 +847,39 @@ export default {
         fields
       )
 
-      const results = await getPaginatorData(
-        this,
-        'get' + this.capitalizedType + 'Paginator',
-        query,
-        this.generatePaginatorArgs(true)
-      )
-
-      // remove any undefined serializeMap elements
-      serializeMap.forEach((val, key) => {
-        if (val === undefined) serializeMap.delete(key)
-      })
-
-      // apply serialization to results
-      results.edges.forEach((ele) => {
-        serializeMap.forEach((serialzeFn, field) => {
-          serializeNestedProperty(ele.node, field, serialzeFn)
+      if (itemId) {
+        const result = await executeGiraffeql(this, {
+          [`get${this.capitalizedType}`]: {
+            ...query,
+            __args: {
+              id: itemId,
+            },
+          },
         })
-      })
 
-      return results
+        // apply serialization to result before returning
+        serializeMap.forEach((serialzeFn, field) => {
+          serializeNestedProperty(result, field, serialzeFn)
+        })
+
+        return result
+      } else {
+        const results = await getPaginatorData(
+          this,
+          'get' + this.capitalizedType + 'Paginator',
+          query,
+          this.generatePaginatorArgs(true)
+        )
+
+        // apply serialization to results before returning
+        results.edges.forEach((ele) => {
+          serializeMap.forEach((serialzeFn, field) => {
+            serializeNestedProperty(ele.node, field, serialzeFn)
+          })
+        })
+
+        return results
+      }
     },
 
     async loadInitialData(showLoader = true, currentReloadGeneration) {
@@ -920,7 +968,7 @@ export default {
       // resetFilters = false,
       // resetSort = false,
       // resetCursor = false,
-      // resetExpanded = true,
+      resetExpanded = false,
       // reloadData = true,
       // resetPolling = true,
       showLoader = true,
@@ -940,6 +988,10 @@ export default {
       if (clearRecords) {
         this.records = []
         this.totalRecords = null
+      }
+
+      if (resetExpanded) {
+        this.closeExpandedItems()
       }
 
       if (initFilters) {
@@ -972,7 +1024,7 @@ export default {
                 fieldInfo,
                 recordInfo: this.recordInfo,
                 inputType: filterObject.inputType ?? fieldInfo.inputType,
-                label: fieldInfo.text ?? filterObject.field,
+                label: filterObject.text ?? filterObject.field,
                 hint: fieldInfo.hint,
                 clearable: true,
                 closeable: false,

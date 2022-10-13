@@ -1,7 +1,6 @@
 import { userRoleKenum, userPermissionEnum } from "../enums";
-import { StringKeyObject } from "giraffeql";
 import { Request } from "express";
-import { NormalService } from "../core/services";
+import { PaginatedService } from "../core/services";
 import { AccessControlFunction } from "../../types";
 import { isObject } from "giraffeql/lib/helpers/base";
 import { objectOnlyHasFields } from "../core/helpers/shared";
@@ -12,7 +11,7 @@ export const userRoleToPermissionsMap = {
 };
 
 export function generateItemCreatedByUserGuard(
-  service: NormalService
+  service: PaginatedService
 ): AccessControlFunction {
   return async function ({ req, args, fieldPath }) {
     // args should be validated already
@@ -26,7 +25,7 @@ export function generateItemCreatedByUserGuard(
           select: ["createdBy"],
           where: validatedArgs.item ?? validatedArgs,
         },
-        fieldPath
+        true
       );
 
       return itemRecord?.createdBy === req.user.id;
@@ -75,12 +74,16 @@ export function isCurrentUser(req: Request, userId: string) {
 }
 
 // does every filterObject in the args array pass the filterFn?
-export function filterPassesTest(filterByArray, filterFn) {
-  return (
-    Array.isArray(filterByArray) &&
-    filterByArray.length > 0 &&
-    filterByArray.every(filterFn)
-  );
+export async function filterPassesTest(filterByArray, filterFn) {
+  // if empty array, return false
+  if (!Array.isArray(filterByArray) || !filterByArray.length) return false;
+
+  for (const filterObject of filterByArray) {
+    if (!(await filterFn(filterObject))) return false;
+  }
+
+  // if it passed all of the conditions, return true
+  return true;
 }
 
 // does the first filterObject have the fieldPath attribute, and if so, do other filterObjects also have the same exact value?

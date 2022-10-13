@@ -2,13 +2,12 @@ import { User, File } from "../../services";
 import { GiraffeqlObjectType, ObjectTypeDefinition } from "giraffeql";
 import {
   generateIdField,
-  generateCreatedAtField,
-  generateUpdatedAtField,
   generateCreatedByField,
   generateStringField,
   generateTypenameField,
   generateIntegerField,
   processTypeDef,
+  generateTimestampFields,
 } from "../../core/helpers/typeDef";
 import * as Scalars from "../../scalars";
 import * as admin from "firebase-admin";
@@ -54,8 +53,7 @@ export default new GiraffeqlObjectType(
         allowNull: true,
         typeDefOptions: { addable: true, updateable: false },
       }),
-      ...generateCreatedAtField(),
-      ...generateUpdatedAtField(),
+      ...generateTimestampFields(),
       ...generateCreatedByField(User),
     },
   })

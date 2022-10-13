@@ -22,81 +22,7 @@
           size="16"
         ></v-progress-circular>
       </v-chip>
-      <template v-else-if="user">
-        <v-menu :close-on-content-click="true" :max-width="300" offset-y bottom>
-          <template v-slot:activator="{ on }">
-            <v-chip pill v-on="on">
-              <v-avatar left>
-                <v-img
-                  v-if="firebaseUser.photoURL"
-                  :src="firebaseUser.photoURL"
-                ></v-img
-                ><v-icon v-else>mdi-account</v-icon>
-              </v-avatar>
-              {{ firebaseUser.displayName }}
-              <v-progress-circular
-                v-if="!user"
-                class="ml-2"
-                indeterminate
-                size="16"
-              ></v-progress-circular>
-            </v-chip>
-          </template>
-
-          <v-card>
-            <v-list>
-              <v-list-item>
-                <v-list-item-avatar>
-                  <v-img
-                    v-if="firebaseUser.photoURL"
-                    :src="firebaseUser.photoURL"
-                  />
-                  <v-icon v-else>mdi-account</v-icon>
-                </v-list-item-avatar>
-                <v-list-item-content>
-                  <v-list-item-title>{{
-                    firebaseUser.displayName
-                  }}</v-list-item-title>
-                  <v-list-item-subtitle>{{
-                    firebaseUser.email
-                  }}</v-list-item-subtitle>
-                  <v-list-item-subtitle
-                    >Role: <span v-if="user">{{ user.role }}</span
-                    ><v-progress-circular
-                      v-else
-                      class="ml-2"
-                      indeterminate
-                      size="16"
-                    ></v-progress-circular
-                  ></v-list-item-subtitle>
-                </v-list-item-content>
-              </v-list-item>
-            </v-list>
-
-            <v-divider></v-divider>
-
-            <v-list dense>
-              <v-list-item
-                v-for="(item, i) in accountItems"
-                :key="i"
-                :to="item.to"
-                exact
-                nuxt
-              >
-                <v-list-item-content>
-                  <v-list-item-title>{{ item.title }}</v-list-item-title>
-                </v-list-item-content>
-              </v-list-item>
-              <v-divider></v-divider>
-              <v-list-item @click="logout()">
-                <v-list-item-content>
-                  <v-list-item-title>Logout</v-list-item-title>
-                </v-list-item-content>
-              </v-list-item>
-            </v-list>
-          </v-card>
-        </v-menu>
-      </template>
+      <UserMenu v-else-if="user"></UserMenu>
       <v-btn v-else text nuxt to="/login" exact>
         <v-icon left>mdi-login</v-icon>
         Login
@@ -122,12 +48,13 @@
       :locked-filters="dialogs.crudRecord.lockedFilters"
       :hidden-headers="dialogs.crudRecord.hiddenHeaders"
       :hidden-filters="dialogs.crudRecord.hiddenFilters"
-      :page-options="dialogs.crudRecord.pageOptions"
+      :initial-page-options="dialogs.crudRecord.pageOptions"
       @close="dialogs.crudRecord = null"
     ></CrudRecordDialog>
     <ExecuteActionDialog
       v-if="dialogs.executeAction"
       :action-options="dialogs.executeAction.actionOptions"
+      :item="dialogs.executeAction.item"
       :selected-item="dialogs.executeAction.selectedItem"
       @close="dialogs.executeAction = null"
     ></ExecuteActionDialog>
@@ -137,11 +64,9 @@
 <script>
 import { mapGetters } from 'vuex'
 import Snackbar from '~/components/snackbar/snackbar'
-import { handleError } from '~/services/base'
 import NavDrawer from '~/components/navigation/navDrawer.vue'
+import UserMenu from '~/components/navigation/userMenu.vue'
 import Footer from '~/components/navigation/footer.vue'
-import firebase from '~/services/fireinit'
-import 'firebase/auth'
 import EditRecordDialog from '~/components/dialog/editRecordDialog.vue'
 import CrudRecordDialog from '~/components/dialog/crudRecordDialog.vue'
 import ExecuteActionDialog from '~/components/dialog/executeActionDialog.vue'
@@ -153,6 +78,7 @@ export default {
     NavDrawer,
     Snackbar,
     Footer,
+    UserMenu,
     EditRecordDialog,
     CrudRecordDialog,
     ExecuteActionDialog,
@@ -169,18 +95,12 @@ export default {
         crudRecord: null,
         executeAction: null,
       },
-
-      accountItems: [
-        { title: 'My Profile', to: '/my-profile', exact: false },
-        { title: 'Settings', to: '/settings', exact: false },
-      ],
     }
   },
 
   computed: {
     ...mapGetters({
       user: 'auth/user',
-      firebaseUser: 'auth/firebaseUser',
       isAttemptingLogin: 'auth/isAttemptingLogin',
     }),
 
@@ -227,37 +147,34 @@ export default {
     })
 
     /*
-     ** Expecting recordInfo, lockedFilters, title, icon, hiddenHeaders, hiddenFilters, pageOptions
+     ** Expecting recordInfo, lockedFilters?, title, icon, hiddenHeaders?, hiddenFilters, pageOptions?
      */
     this.$root.$on('openCrudRecordDialog', (params) => {
-      // confirm the recordInfo exists
-      if (
+      const model =
         typeof params.recordInfo === 'string'
           ? allModels[params.recordInfo]
           : params.recordInfo
-      ) {
+      // confirm the recordInfo exists
+      if (model) {
+        // set default pageOption and lockedFilters if defined on the model
+        if (model.paginationOptions.defaultPageOptions) {
+          params.pageOptions = model.paginationOptions.defaultPageOptions(this)
+        }
+
+        if (model.paginationOptions.defaultLockedFilters) {
+          params.lockedFilters =
+            model.paginationOptions.defaultLockedFilters(this)
+        }
         this.dialogs.crudRecord = params
       }
     })
 
     /*
-     ** Expecting actionOptions, selectedItem?
+     ** Expecting actionOptions, item, selectedItem?
      */
     this.$root.$on('openExecuteActionDialog', (params) => {
       this.dialogs.executeAction = params
     })
-  },
-
-  methods: {
-    logout() {
-      try {
-        firebase.auth().signOut()
-
-        this.$router.push('/')
-      } catch (err) {
-        handleError(this, err)
-      }
-    },
   },
 }
 </script>

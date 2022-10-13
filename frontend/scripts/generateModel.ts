@@ -58,6 +58,11 @@ if (!fs.existsSync(`models/base`)) {
   fs.mkdirSync(`models/base`)
 }
 
+// create the directory for the simple models
+if (!fs.existsSync(`models/simple`)) {
+  fs.mkdirSync(`models/simple`)
+}
+
 // use different template depending on whether it is a link or not
 const template = fs.readFileSync(
   `scripts/templates/${isLink ? 'baseLink.txt' : 'base.txt'}`,
@@ -78,6 +83,23 @@ if (!fs.existsSync(`models/base/${typename}.ts`)) {
   throw new Error('File already exists')
 }
 
+// write the simple model
+const simpleTemplate = fs.readFileSync(`scripts/templates/simple.txt`, 'utf8')
+
+// write the simple model if it doesn't already exist
+if (!fs.existsSync(`models/simple/${typename}.ts`)) {
+  fs.writeFileSync(
+    `models/simple/${typename}.ts`,
+    processTemplate(simpleTemplate, {
+      typename,
+      capitalizedTypename,
+    })
+  )
+} else {
+  // if it already exists, throw error
+  throw new Error('File already exists')
+}
+
 // add the export statement to models/base/index.ts
 let fileContents = fs.readFileSync('models/base/index.ts', 'utf8')
 
@@ -89,5 +111,17 @@ fileContents = insertStatementBefore(
 
 // replace the file
 fs.writeFileSync('models/base/index.ts', fileContents)
+
+// add the export statement to models/simple/index.ts
+let simpleFileContents = fs.readFileSync('models/simple/index.ts', 'utf8')
+
+simpleFileContents = insertStatementBefore(
+  simpleFileContents,
+  `/** END Simple Model Import */`,
+  `export { Simple${capitalizedTypename} } from './${typename}'`
+)
+
+// replace the file
+fs.writeFileSync('models/simple/index.ts', simpleFileContents)
 
 console.log(`Done adding ${typename} model`)

@@ -41,14 +41,11 @@ export class FileService extends PaginatedService {
     Allow if:
     - createdBy.id is currentUser
     */
-    get: async ({ req, args, fieldPath }) => {
-      const record = await this.getFirstSqlRecord(
-        {
-          select: ["createdBy.id"],
-          where: args,
-        },
-        fieldPath
-      );
+    get: async ({ req, args }) => {
+      const record = await this.getFirstSqlRecord({
+        select: ["createdBy.id"],
+        where: args,
+      });
       if (isCurrentUser(req, record["createdBy.id"])) {
         return true;
       }
@@ -61,9 +58,9 @@ export class FileService extends PaginatedService {
     - filtering by createdBy.id is currentUser,
     - OR, temporarily allowing all (would normally need to check the parentKey)
     */
-    getMultiple: ({ req, args }) => {
+    getMultiple: async ({ req, args }) => {
       if (
-        filterPassesTest(args.filterBy, (filterObject) => {
+        await filterPassesTest(args.filterBy, (filterObject) => {
           return isCurrentUser(req, filterObject["createdBy.id"]?.eq);
         })
       ) {
@@ -78,7 +75,7 @@ export class FileService extends PaginatedService {
     Allow if:
     - is logged in
     */
-    create: async ({ req, args, fieldPath }) => {
+    create: async ({ req }) => {
       if (!isUserLoggedIn(req)) return false;
 
       return true;
@@ -88,7 +85,7 @@ export class FileService extends PaginatedService {
     Allow if:
     - user created the item
     */
-    update: async ({ req, args, fieldPath }) => {
+    update: async ({ req, args }) => {
       if (!isUserLoggedIn(req)) return false;
 
       const record = await this.getFirstSqlRecord(
@@ -96,7 +93,7 @@ export class FileService extends PaginatedService {
           select: ["createdBy.id"],
           where: args.item,
         },
-        fieldPath
+        true
       );
 
       if (isCurrentUser(req, record["createdBy.id"])) return true;
@@ -108,7 +105,7 @@ export class FileService extends PaginatedService {
     Allow if:
     - user created the item
     */
-    delete: async ({ req, args, fieldPath }) => {
+    delete: async ({ req, args }) => {
       if (!isUserLoggedIn(req)) return false;
 
       const record = await this.getFirstSqlRecord(
@@ -116,7 +113,7 @@ export class FileService extends PaginatedService {
           select: ["createdBy.id"],
           where: args,
         },
-        fieldPath
+        true
       );
 
       if (isCurrentUser(req, record["createdBy.id"])) return true;
@@ -141,25 +138,22 @@ export class FileService extends PaginatedService {
     // must associate them with the parent item
     if (fileIdsArray.size) {
       // ensure all the files belong to the currentUser
-      await this.updateSqlRecord(
-        {
-          fields: {
-            parentKey: `${typename}_${itemId}`,
-          },
-          where: [
-            {
-              field: "createdBy",
-              value: userId,
-            },
-            {
-              field: "id",
-              operator: "in",
-              value: [...fileIdsArray],
-            },
-          ],
+      await this.updateSqlRecord({
+        fields: {
+          parentKey: `${typename}_${itemId}`,
         },
-        fieldPath
-      );
+        where: [
+          {
+            field: "createdBy",
+            value: userId,
+          },
+          {
+            field: "id",
+            operator: "in",
+            value: [...fileIdsArray],
+          },
+        ],
+      });
     }
   }
 
@@ -172,23 +166,20 @@ export class FileService extends PaginatedService {
     data = {},
     isAdmin = false,
   }: ServiceFunctionInputs) {
-    // args should be validated already
-    const validatedArgs = <any>args;
-
-    await this.handleLookupArgs(args, fieldPath);
+    await this.handleLookupArgs(args);
 
     // verify location exists and move it into /source folder
     const bucket = admin.storage().bucket();
-    const file = bucket.file("temp/" + validatedArgs.location);
+    const file = bucket.file("temp/" + args.location);
     const [metadata] = await file.getMetadata();
 
-    await file.move("source/" + validatedArgs.location);
+    await file.move("source/" + args.location);
 
     const addResults = await createObjectType({
       typename: this.typename,
       addFields: {
-        id: await this.generateRecordId(fieldPath),
-        ...validatedArgs,
+        id: await this.generateRecordId(),
+        ...args,
         size: metadata.size,
         contentType: metadata.contentType,
         createdBy: req.user!.id,
@@ -218,15 +209,13 @@ export class FileService extends PaginatedService {
     data = {},
     isAdmin = false,
   }: ServiceFunctionInputs) {
-    // args should be validated already
-    const validatedArgs = <any>args;
     // confirm existence of item and get ID
     const item = await this.getFirstSqlRecord(
       {
         select: ["id", "location"],
         where: args,
       },
-      fieldPath
+      true
     );
 
     // verify location exists and delete it

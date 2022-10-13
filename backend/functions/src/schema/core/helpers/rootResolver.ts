@@ -10,7 +10,7 @@ import {
   GiraffeqlInputFieldType,
   lookupSymbol,
 } from "giraffeql";
-import { NormalService, PaginatedService, EnumService } from "../services";
+import { PaginatedService, EnumService } from "../services";
 import { generatePaginatorPivotResolverObject } from "../helpers/typeDef";
 import { capitalizeString, isObject } from "../helpers/shared";
 import { Request } from "express";
@@ -88,7 +88,7 @@ export function generateBaseRootResolvers({
   methods,
   restMethods = [],
 }: {
-  service: NormalService;
+  service: PaginatedService;
   methods: BaseRootResolverTypes[];
   restMethods?:
     | BaseRootResolverTypes[]
@@ -147,8 +147,9 @@ export function generateBaseRootResolvers({
       }
       case "getMultiple": {
         if (service instanceof PaginatedService) {
-          const methodName =
-            "get" + capitalizeString(service.paginator.typename);
+          const methodName = `get${capitalizeString(
+            service.paginator.typename
+          )}`;
           rootResolvers[methodName] = new GiraffeqlRootResolverType(<
             RootResolverDefinition
           >{
@@ -174,10 +175,6 @@ export function generateBaseRootResolvers({
             ...generatePaginatorPivotResolverObject({
               pivotService: service,
             }),
-          });
-        } else {
-          throw new GiraffeqlInitializationError({
-            message: `Cannot getMultiple of a non-paginated type '${service.typename}'`,
           });
         }
         break;
@@ -231,7 +228,8 @@ export function generateBaseRootResolvers({
               updateArgs[key] = new GiraffeqlInputFieldType({
                 type: typeField,
                 required: false,
-                allowNull: typeDefField.allowNull,
+                allowNull:
+                  typeDefField.allowNullInput ?? typeDefField.allowNull,
                 arrayOptions: typeDefField.arrayOptions,
               });
             }
@@ -318,7 +316,8 @@ export function generateBaseRootResolvers({
               createArgs[key] = new GiraffeqlInputFieldType({
                 type: typeField,
                 required: typeDefField.required,
-                allowNull: typeDefField.allowNull,
+                allowNull:
+                  typeDefField.allowNullInput ?? typeDefField.allowNull,
                 arrayOptions: typeDefField.arrayOptions,
               });
             }

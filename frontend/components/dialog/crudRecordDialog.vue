@@ -11,11 +11,12 @@
       :locked-filters="lockedFilters"
       :hidden-filters="hiddenFilters"
       :hidden-headers="hiddenHeaders"
-      :page-options="pageOptions"
+      :page-options="pageOptions || initialPageOptions"
       :title="title"
       :icon="icon"
       is-dialog
       dense
+      @pageOptions-updated="handlePageOptionsUpdated"
       @close="close()"
     >
       <template v-slot:header-action>
@@ -55,7 +56,6 @@ export default {
     },
     hiddenHeaders: {
       type: Array,
-      default: () => [],
     },
     lockedFilters: {
       type: Array,
@@ -65,13 +65,15 @@ export default {
       type: Array,
       default: () => [],
     },
-    pageOptions: {
+    initialPageOptions: {
       type: Object,
       default: null,
     },
   },
   data() {
-    return {}
+    return {
+      pageOptions: null,
+    }
   },
 
   computed: {
@@ -92,6 +94,10 @@ export default {
     },
   },
   methods: {
+    handlePageOptionsUpdated(pageOptions) {
+      this.pageOptions = pageOptions
+    },
+
     close() {
       this.$emit('close')
     },

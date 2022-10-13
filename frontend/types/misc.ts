@@ -37,6 +37,8 @@ export type CrudInputObject = {
   value: any // the actual value of the input
   inputValue: any // the proxy value of the input
   getOptions?: (that) => any
+  // function that will get run whenever a file gets added to the input (if it is a file input)
+  handleFileAdded?: (that, inputsArray, inputObject, fileRecord) => void
   options: any[] // the options of the input, if it applies
   readonly?: boolean // is the input readonly?
   hidden: boolean // is the input hidden (not visible?)
@@ -46,6 +48,7 @@ export type CrudInputObject = {
   generation: number // generation of the input. used for forcing refreshes
   parentInput: CrudInputObject | null // the parent of the input. can be used to determine if it is nested as well
   nestedInputsArray: NestedInputObject[][] // any nested input objects
+  hideIf?: (that, inputsArray) => boolean // hide this input if...
 }
 
 export type CrudHeaderObject = {

@@ -20,6 +20,7 @@ export class ApiKeyService extends PaginatedService {
   sortFieldsMap = {
     id: {},
     createdAt: {},
+    updatedAt: {},
   };
 
   searchFieldsMap = {
@@ -33,14 +34,15 @@ export class ApiKeyService extends PaginatedService {
     Allow if:
     - user.id is currentUser
     */
-    get: async ({ req, args, fieldPath }) => {
+    get: async ({ req, args }) => {
       const record = await this.getFirstSqlRecord(
         {
           select: ["user.id"],
           where: args,
         },
-        fieldPath
+        true
       );
+
       if (isCurrentUser(req, record["user.id"])) {
         return true;
       }
@@ -52,9 +54,9 @@ export class ApiKeyService extends PaginatedService {
     Allow if:
     - filtering by user.id is currentUser
     */
-    getMultiple: ({ req, args }) => {
+    getMultiple: async ({ req, args }) => {
       if (
-        filterPassesTest(args.filterBy, (filterObject) => {
+        await filterPassesTest(args.filterBy, (filterObject) => {
           return isCurrentUser(req, filterObject["user.id"]?.eq);
         })
       ) {
@@ -68,14 +70,15 @@ export class ApiKeyService extends PaginatedService {
     Allow if:
     - user.id is currentUser
     */
-    update: async ({ req, args, fieldPath }) => {
+    update: async ({ req, args }) => {
       const record = await this.getFirstSqlRecord(
         {
           select: ["user.id"],
           where: args.item,
         },
-        fieldPath
+        true
       );
+
       if (isCurrentUser(req, record["user.id"])) {
         return true;
       }
@@ -87,13 +90,13 @@ export class ApiKeyService extends PaginatedService {
     Allow if:
     - user.id is currentUser
     */
-    delete: async ({ req, args, fieldPath }) => {
+    delete: async ({ req, args }) => {
       const record = await this.getFirstSqlRecord(
         {
           select: ["user.id"],
           where: args,
         },
-        fieldPath
+        true
       );
       if (isCurrentUser(req, record["user.id"])) {
         return true;
@@ -106,9 +109,9 @@ export class ApiKeyService extends PaginatedService {
     Allow if:
     - args.user is currentUser
     */
-    create: async ({ req, args, fieldPath }) => {
+    create: async ({ req, args }) => {
       // handle lookupArgs, convert lookups into ids
-      await this.handleLookupArgs(args, fieldPath);
+      await this.handleLookupArgs(args);
 
       if (isCurrentUser(req, args.user)) return true;
 
@@ -127,12 +130,12 @@ export class ApiKeyService extends PaginatedService {
     // args should be validated already
     const validatedArgs = <any>args;
 
-    await this.handleLookupArgs(args, fieldPath);
+    await this.handleLookupArgs(args);
 
     const addResults = await createObjectType({
       typename: this.typename,
       addFields: {
-        id: await this.generateRecordId(fieldPath),
+        id: await this.generateRecordId(),
         ...validatedArgs,
         code: nanoid(),
         createdBy: req.user!.id,

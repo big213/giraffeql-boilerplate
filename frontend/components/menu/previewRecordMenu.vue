@@ -3,24 +3,27 @@
     <!-- pass through scoped slots -->
     <template v-slot:activator="slotData">
       <slot v-if="$scopedSlots.activator" name="activator" v-bind="slotData" />
-      <v-chip v-else pill small v-bind="slotData.attrs" v-on="slotData.on">
-        <v-avatar left>
-          <v-img v-if="item.avatar" :src="item.avatar" contain></v-img
-          ><v-icon v-else>{{ icon }} </v-icon>
-        </v-avatar>
-        {{ item.name }}
-      </v-chip>
+      <PreviewRecordChip
+        v-else
+        :item="item"
+        small
+        v-bind="slotData.attrs"
+        v-on="slotData.on"
+      ></PreviewRecordChip>
     </template>
     <v-card>
       <v-list>
         <v-list-item>
           <v-list-item-avatar>
             <v-img v-if="item.avatar" :src="item.avatar" />
-            <v-icon v-else>{{ icon }} </v-icon>
+            <v-icon v-else>{{ fallbackIcon }} </v-icon>
           </v-list-item-avatar>
           <v-list-item-content>
             <template>
-              <v-list-item-title>{{ item.name }}</v-list-item-title>
+              <v-list-item-title>
+                <i v-if="item.name === undefined">{{ item.id }}</i>
+                <span v-else> {{ item.name }}</span>
+              </v-list-item-title>
               <v-progress-linear
                 v-if="loading.loadData"
                 indeterminate
@@ -63,7 +66,6 @@
 import {
   handleError,
   capitalizeString,
-  getIcon,
   enterRoute,
   generateViewRecordRoute,
   lookupFieldInfo,
@@ -71,13 +73,16 @@ import {
 } from '~/services/base'
 import { executeGiraffeql } from '~/services/giraffeql'
 import FollowButton from '~/components/button/followButton.vue'
+import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 import * as simpleModels from '~/models/simple'
 
 export default {
   components: {
     FollowButton,
+    PreviewRecordChip,
   },
   props: {
+    // __typename, id is required. avatar/name optional
     item: {
       type: Object,
     },
@@ -102,8 +107,8 @@ export default {
   },
 
   computed: {
-    icon() {
-      return getIcon(this.item.__typename)
+    fallbackIcon() {
+      return this.recordInfo?.icon
     },
     capitalizedType() {
       return capitalizeString(this.item.__typename)
@@ -165,8 +170,6 @@ export default {
           ['get' + this.capitalizedType]: {
             id: true,
             __typename: true,
-            name: true,
-            avatar: true,
             ...(this.recordInfo &&
               collapseObject(
                 this.fields.reduce((total, fieldKey) => {
@@ -200,9 +203,8 @@ export default {
 
                       // if field has args, process them
                       if (currentFieldInfo.args) {
-                        total[
-                          currentFieldInfo.args.path + '.__args'
-                        ] = currentFieldInfo.args.getArgs(this)
+                        total[currentFieldInfo.args.path + '.__args'] =
+                          currentFieldInfo.args.getArgs(this)
                       }
                     }
                   })

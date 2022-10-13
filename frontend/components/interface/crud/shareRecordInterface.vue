@@ -56,10 +56,11 @@ export default {
             })
         : ''
     },
+    // default to name || id
     itemIdentifier() {
-      return this.recordInfo.renderItem && this.selectedItem
+      return this.recordInfo.renderItem
         ? this.recordInfo.renderItem(this.selectedItem)
-        : null
+        : this.selectedItem.name || this.selectedItem.id
     },
   },
 

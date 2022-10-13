@@ -2,11 +2,10 @@ import { GiraffeqlBaseError } from "giraffeql";
 
 export class PermissionsError extends GiraffeqlBaseError {
   constructor(params: { message?: string; fieldPath?: string[] }) {
-    const { message = "Insufficient permissions", fieldPath = [] } = params;
+    const { message = "Insufficient permissions" } = params;
     super({
       errorName: "PermissionsError",
       message,
-      fieldPath,
       statusCode: 403,
     });
   }
@@ -14,11 +13,10 @@ export class PermissionsError extends GiraffeqlBaseError {
 
 export class TimeoutError extends GiraffeqlBaseError {
   constructor(params: { message?: string; fieldPath?: string[] }) {
-    const { message = "Request timed out", fieldPath = [] } = params;
+    const { message = "Request timed out" } = params;
     super({
       errorName: "TimeoutError",
       message,
-      fieldPath,
       statusCode: 500,
     });
   }
@@ -26,11 +24,10 @@ export class TimeoutError extends GiraffeqlBaseError {
 
 export class AuthenticationError extends GiraffeqlBaseError {
   constructor(params: { message?: string; fieldPath?: string[] }) {
-    const { message = "Error authenticating", fieldPath = [] } = params;
+    const { message = "Error authenticating" } = params;
     super({
       errorName: "AuthenticationError",
       message,
-      fieldPath,
       statusCode: 401,
     });
   }
@@ -38,7 +35,7 @@ export class AuthenticationError extends GiraffeqlBaseError {
 
 export function generateError(
   message: string,
-  fieldPath: string[],
+  fieldPath?: string[],
   statusCode = 400
 ): GiraffeqlBaseError {
   return new GiraffeqlBaseError({
@@ -46,8 +43,4 @@ export function generateError(
     fieldPath,
     statusCode,
   });
-}
-
-export function itemNotFoundError(fieldPath: string[]): GiraffeqlBaseError {
-  return generateError("Record was not found", fieldPath, 404);
 }

@@ -1,9 +1,16 @@
 <template>
-  <v-chip v-bind="$attrs" @click:close="$emit('handleCloseClick')">
+  <v-chip
+    v-bind="$attrs"
+    :title="file.name"
+    @click:close="$emit('handleCloseClick')"
+  >
     <v-avatar left
       ><v-icon small>{{ icon }}</v-icon></v-avatar
     >
-    {{ file.name }} ({{ formatBytes(file.size) }})
+    <span style="max-width: 120px" class="truncate">
+      {{ file.name }}
+    </span>
+    <span> ({{ formatBytes(file.size) }})</span>
     <v-icon v-if="downloadable" small class="ml-2" @click="downloadFile()"
       >mdi-download</v-icon
     >
@@ -89,5 +96,3 @@ export default {
   },
 }
 </script>
-
-<style scoped></style>

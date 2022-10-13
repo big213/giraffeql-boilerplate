@@ -1,8 +1,9 @@
 import { executeGiraffeql } from '~/services/giraffeql'
 import firebase from '~/services/fireinit'
 import 'firebase/auth'
+import { handleError } from './base'
 
-export async function handleLogin(store, authPayload) {
+export async function handleLogin(that, store, authPayload) {
   // set loading state
   store.commit('auth/setIsAttemptingLogin', true)
 
@@ -28,8 +29,8 @@ export async function handleLogin(store, authPayload) {
 
     // unset the redirectPath whenever user logs in or out
     localStorage.removeItem('redirectPath')
-  } catch (e) {
-    console.log(e)
+  } catch (err) {
+    handleError(that, err)
     firebase.auth().signOut()
   }
 
@@ -45,6 +46,6 @@ export async function handleUserRefreshed(that) {
   that.$store.commit('auth/setFirebaseUser', firebase.auth().currentUser)
 }
 
-export function handleLogout(store) {
+export function handleLogout(that, store) {
   store.commit('auth/unsetUser')
 }

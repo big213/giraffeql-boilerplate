@@ -15,15 +15,11 @@ import {
   ArrayOptions,
   inputTypeDefs,
   ObjectTypeDefinition,
+  GiraffeqlInputTypeLookup,
 } from "giraffeql";
 import { knex } from "../../../utils/knex";
 import { camelToSnake, isObject } from "./shared";
-import {
-  BaseService,
-  LinkService,
-  NormalService,
-  PaginatedService,
-} from "../services";
+import { BaseService, LinkService, PaginatedService } from "../services";
 import * as Scalars from "../../scalars";
 import type {
   ObjectTypeDefSqlOptions,
@@ -36,7 +32,8 @@ import { SqlSelectQuery } from "./sql";
 type GenerateFieldParams = {
   name?: string;
   description?: string;
-  allowNull: boolean;
+  allowNull: boolean; // this actually corresponds to the input
+  allowNullOutput?: boolean;
   hidden?: boolean;
   nestHidden?: boolean;
   defaultValue?: unknown;
@@ -59,6 +56,7 @@ export function generateStandardField(
   const {
     description,
     allowNull,
+    allowNullOutput = allowNull,
     arrayOptions,
     hidden = false,
     nestHidden = false,
@@ -73,7 +71,8 @@ export function generateStandardField(
     type,
     description,
     arrayOptions,
-    allowNull,
+    allowNull: allowNullOutput,
+    allowNullInput: allowNull,
     required: defaultValue === undefined && !allowNull,
     sqlOptions: sqlType
       ? {
@@ -101,6 +100,7 @@ export function generateGenericScalarField(
   const {
     description,
     allowNull = true,
+    allowNullOutput,
     arrayOptions,
     defaultValue,
     hidden,
@@ -112,6 +112,7 @@ export function generateGenericScalarField(
   return generateStandardField({
     description,
     allowNull,
+    allowNullOutput,
     arrayOptions,
     defaultValue,
     hidden,
@@ -130,6 +131,7 @@ export function generateStringField(
   const {
     description,
     allowNull = true,
+    allowNullOutput,
     defaultValue,
     hidden,
     nestHidden,
@@ -140,6 +142,7 @@ export function generateStringField(
   return generateStandardField({
     description,
     allowNull,
+    allowNullOutput,
     defaultValue,
     hidden,
     nestHidden,
@@ -159,6 +162,7 @@ export function generateUnixTimestampField(
   const {
     description,
     allowNull = true,
+    allowNullOutput,
     defaultValue,
     hidden,
     nestHidden,
@@ -169,6 +173,7 @@ export function generateUnixTimestampField(
   return generateStandardField({
     description,
     allowNull,
+    allowNullOutput,
     defaultValue,
     hidden,
     nestHidden,
@@ -197,6 +202,7 @@ export function generateDateField(params: GenerateFieldParams) {
   const {
     description,
     allowNull = true,
+    allowNullOutput,
     defaultValue,
     hidden,
     nestHidden,
@@ -206,6 +212,7 @@ export function generateDateField(params: GenerateFieldParams) {
   return generateStandardField({
     description,
     allowNull,
+    allowNullOutput,
     defaultValue,
     hidden,
     nestHidden,
@@ -220,6 +227,7 @@ export function generateTextField(params: GenerateFieldParams) {
   const {
     description,
     allowNull = true,
+    allowNullOutput,
     hidden,
     nestHidden,
     sqlOptions,
@@ -227,7 +235,8 @@ export function generateTextField(params: GenerateFieldParams) {
   } = params;
   return generateStandardField({
     description,
-    allowNull: allowNull,
+    allowNull,
+    allowNullOutput,
     hidden,
     nestHidden,
     sqlType: "text",
@@ -241,6 +250,7 @@ export function generateIntegerField(params: GenerateFieldParams) {
   const {
     description,
     allowNull = true,
+    allowNullOutput,
     defaultValue,
     hidden,
     nestHidden,
@@ -250,6 +260,7 @@ export function generateIntegerField(params: GenerateFieldParams) {
   return generateStandardField({
     description,
     allowNull,
+    allowNullOutput,
     defaultValue,
     hidden,
     nestHidden,
@@ -264,6 +275,7 @@ export function generateFloatField(params: GenerateFieldParams) {
   const {
     description,
     allowNull = true,
+    allowNullOutput,
     defaultValue,
     hidden,
     nestHidden,
@@ -273,6 +285,7 @@ export function generateFloatField(params: GenerateFieldParams) {
   return generateStandardField({
     description,
     allowNull,
+    allowNullOutput,
     defaultValue,
     hidden,
     nestHidden,
@@ -287,6 +300,7 @@ export function generateDecimalField(params: GenerateFieldParams) {
   const {
     description,
     allowNull = true,
+    allowNullOutput,
     defaultValue,
     hidden,
     nestHidden,
@@ -296,6 +310,7 @@ export function generateDecimalField(params: GenerateFieldParams) {
   return generateStandardField({
     description,
     allowNull,
+    allowNullOutput,
     defaultValue,
     hidden,
     nestHidden,
@@ -310,6 +325,7 @@ export function generateBooleanField(params: GenerateFieldParams) {
   const {
     description,
     allowNull = true,
+    allowNullOutput,
     defaultValue,
     hidden,
     nestHidden,
@@ -319,6 +335,7 @@ export function generateBooleanField(params: GenerateFieldParams) {
   return generateStandardField({
     description,
     allowNull,
+    allowNullOutput,
     defaultValue,
     hidden,
     nestHidden,
@@ -339,6 +356,7 @@ export function generateArrayField(
   const {
     description,
     allowNull = true,
+    allowNullOutput,
     allowNullElement = false,
     hidden,
     nestHidden,
@@ -380,6 +398,7 @@ export function generateArrayField(
       allowNullElement,
     },
     allowNull,
+    allowNullOutput,
     hidden,
     nestHidden,
     sqlType: "jsonb",
@@ -399,28 +418,66 @@ export function generateArrayField(
 // generic JSON field, stored as JSON, but input/output as stringified JSON by default
 export function generateJSONField(
   params: {
-    jsonString?: boolean;
+    // custom type can be Scalars.jsonString, Scalars.json, or some other custom json structure
+    type?: GiraffeqlScalarType | GiraffeqlObjectType;
   } & GenerateFieldParams
 ) {
   const {
-    jsonString = true,
+    type = Scalars.jsonString,
     description,
     allowNull = true,
+    allowNullOutput,
     hidden,
     nestHidden,
     sqlOptions,
     typeDefOptions,
   } = params;
+
+  // if type is a giraffeqlObjectType, need to also generate and register the matching input
+  if (type instanceof GiraffeqlObjectType) {
+    const inputName = type.definition.name;
+    if (!inputTypeDefs.has(inputName)) {
+      new GiraffeqlInputType({
+        name: inputName,
+        description: type.definition.description,
+        fields: Object.entries(type.definition.fields).reduce(
+          (total, [key, val]) => {
+            // currently only allowed to put scalars in nested json objects (sorry)
+            if (val.type instanceof GiraffeqlScalarType) {
+              total[key] = new GiraffeqlInputFieldType({
+                type: val.type,
+                required: true,
+                arrayOptions: val.arrayOptions,
+                allowNull: val.allowNullInput,
+              });
+            } else if (val.type instanceof GiraffeqlObjectTypeLookup) {
+              // also allowing GiraffeqlObjectTypeLookup
+              total[key] = new GiraffeqlInputFieldType({
+                type: new GiraffeqlInputTypeLookup(val.type.name),
+                required: true,
+                arrayOptions: val.arrayOptions,
+                allowNull: val.allowNullInput,
+              });
+            }
+            return total;
+          },
+          {}
+        ),
+      });
+    }
+  }
+
   return generateStandardField({
     description,
     allowNull,
+    allowNullOutput,
     hidden,
     nestHidden,
     sqlType: "jsonb",
-    type: jsonString ? Scalars.jsonString : Scalars.json,
+    type,
     sqlOptions: {
       // if not a JSON string, need to stringify it to insert into DB properly
-      ...(!jsonString && {
+      ...(type !== Scalars.jsonString && {
         parseValue: (val) => JSON.stringify(val),
       }),
       ...sqlOptions,
@@ -441,7 +498,8 @@ export function generateEnumField(
   const {
     description,
     allowNull = true,
-    defaultValue,
+    allowNullOutput,
+    defaultValue, // must be abcEnum.parsed
     hidden,
     nestHidden,
     scalarDefinition,
@@ -450,15 +508,11 @@ export function generateEnumField(
     isKenum = false,
   } = params;
 
-  // if scalarDefinition.parseValue, run that on defaultValue
-
   return generateStandardField({
     description,
-    allowNull: allowNull,
-    defaultValue:
-      scalarDefinition.definition.parseValue && defaultValue !== undefined
-        ? scalarDefinition.definition.parseValue(defaultValue)
-        : defaultValue,
+    allowNull,
+    allowNullOutput,
+    defaultValue,
     hidden,
     nestHidden,
     sqlType: isKenum ? "integer" : "string",
@@ -552,7 +606,7 @@ export function generateKeyValueArray(
  ** Field Helpers (Commonly used fields)
  */
 
-export function generateCreatedAtField() {
+export function generateTimestampFields() {
   return {
     createdAt: generateUnixTimestampField({
       description: "When the record was created",
@@ -561,14 +615,10 @@ export function generateCreatedAtField() {
       sqlOptions: { field: "created_at" },
       typeDefOptions: { addable: false, updateable: false }, // not addable or updateable
     }),
-  };
-}
-
-export function generateUpdatedAtField() {
-  return {
     updatedAt: generateUnixTimestampField({
       description: "When the record was last updated",
-      allowNull: true,
+      allowNull: false,
+      defaultValue: knex.fn.now(),
       sqlOptions: { field: "updated_at" },
       typeDefOptions: { addable: false, updateable: false }, // not addable or updateable
       nowOnly: true,
@@ -576,7 +626,7 @@ export function generateUpdatedAtField() {
   };
 }
 
-export function generateIdField(service: NormalService) {
+export function generateIdField(service: PaginatedService) {
   return {
     id: generateStandardField({
       description: "The unique ID of the field",
@@ -609,7 +659,7 @@ export function generateTypenameField(service: BaseService) {
 }
 
 export function generateCreatedByField(
-  service: NormalService,
+  service: PaginatedService,
   allowNull = false
 ) {
   return {
@@ -626,12 +676,13 @@ export function generateCreatedByField(
 
 export function generateJoinableField(
   params: {
-    service: NormalService;
+    service: PaginatedService;
   } & GenerateFieldParams
 ) {
   const {
     description,
     allowNull = true,
+    allowNullOutput,
     defaultValue,
     hidden,
     sqlOptions,
@@ -641,6 +692,7 @@ export function generateJoinableField(
   return generateStandardField({
     description,
     allowNull,
+    allowNullOutput,
     defaultValue,
     hidden,
     sqlType: service.primaryKeyAutoIncrement ? "integer" : "string",
@@ -656,13 +708,14 @@ export function generateJoinableField(
 // alternative strategy for "joins"
 export function generateDataloadableField(
   params: {
-    service: NormalService;
+    service: PaginatedService;
     isArray?: boolean;
   } & GenerateFieldParams
 ) {
   const {
     description,
     allowNull = true,
+    allowNullOutput,
     isArray = false,
     defaultValue,
     hidden,
@@ -673,7 +726,11 @@ export function generateDataloadableField(
   return generateStandardField({
     description,
     allowNull,
-    defaultValue,
+    allowNullOutput,
+    defaultValue:
+      defaultValue === undefined && isArray && !allowNullOutput
+        ? []
+        : defaultValue,
     hidden,
     sqlType: service.primaryKeyAutoIncrement ? "integer" : "string",
     type: service.typeDefLookup,
@@ -837,12 +894,13 @@ export function generatePivotResolverObject({
 
 // should work for *most* cases
 // returns resolver object instead of a typeDef because it is also used to generate the rootResolver
-export function generatePaginatorPivotResolverObject(params: {
+export function generatePaginatorPivotResolverObject({
+  pivotService,
+  filterByField,
+}: {
   pivotService: PaginatedService;
   filterByField?: string;
 }) {
-  const { pivotService, filterByField } = params;
-
   // if filterByField, ensure that filterByField is a valid filterField on pivotService
   if (filterByField && !pivotService.filterFieldsMap[filterByField]) {
     throw new GiraffeqlInitializationError({
@@ -1025,7 +1083,7 @@ export function generatePaginatorPivotResolverObject(params: {
       });
     };
   } else {
-    rootResolverFunction = (inputs) => pivotService.paginator.getRecord(inputs);
+    rootResolverFunction = (inputs) => pivotService.getPaginator(inputs);
   }
 
   const hasSearchFields =
@@ -1212,12 +1270,12 @@ export function generateCurrentUserFollowLinkField(followLink: LinkService) {
       specialJoin: {
         field: "id",
         foreignTable: followLink.typename,
-        joinFunction: (
+        joinFunction: ({
           knexObject,
           parentTableAlias,
           joinTableAlias,
-          specialParams
-        ) => {
+          specialParams,
+        }) => {
           knexObject.leftJoin(
             {
               [joinTableAlias]: followLink.typename,

@@ -4,6 +4,7 @@
       :is="interfaceComponent"
       v-if="status"
       :action-options="actionOptions"
+      :item="item"
       :selected-item="selectedItem"
       dialog-mode
       :generation="generation"
@@ -37,6 +38,10 @@ export default {
     status: {
       type: Boolean,
       default: true,
+    },
+
+    item: {
+      type: Object,
     },
 
     selectedItem: {

@@ -44,10 +44,11 @@ export default {
   },
 
   computed: {
+    // default to name || id
     itemIdentifier() {
       return this.recordInfo.renderItem
         ? this.recordInfo.renderItem(this.selectedItem)
-        : ''
+        : this.selectedItem.name || this.selectedItem.id
     },
 
     capitalizedTypename() {

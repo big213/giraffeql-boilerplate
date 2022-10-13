@@ -2,7 +2,6 @@ import { BaseService } from ".";
 import { GiraffeqlObjectType } from "giraffeql";
 import { ServiceFunctionInputs } from "../../../types";
 import { getObjectType } from "../helpers/resolver";
-import { itemNotFoundError } from "../helpers/error";
 
 export class SimpleService extends BaseService {
   typeDef!: GiraffeqlObjectType;
@@ -32,7 +31,7 @@ export class SimpleService extends BaseService {
     });
 
     if (results.length < 1) {
-      throw itemNotFoundError(fieldPath);
+      throw new Error("Item not found");
     }
 
     return results[0];

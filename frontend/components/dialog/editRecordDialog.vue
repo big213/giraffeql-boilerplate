@@ -33,6 +33,7 @@
             @handle-action-click="openEditDialog"
             @handle-custom-action-click="handleCustomActionClick"
             @reload-parent="generation++"
+            @close-parent="close()"
           ></RecordActionMenu>
           <v-btn icon @click="close()">
             <v-icon>mdi-close</v-icon>

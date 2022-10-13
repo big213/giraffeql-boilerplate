@@ -2,8 +2,6 @@ import { ObjectTypeDefinition, GiraffeqlObjectType } from "giraffeql";
 import { User, UserUserFollowLink } from "../../services";
 import {
   generateIdField,
-  generateCreatedAtField,
-  generateUpdatedAtField,
   generateCreatedByField,
   generateStringField,
   generateEnumField,
@@ -13,6 +11,8 @@ import {
   generateBooleanField,
   generateCurrentUserFollowLinkField,
   processTypeDef,
+  generateTimestampFields,
+  generateTextField,
 } from "../../core/helpers/typeDef";
 import * as Scalars from "../../scalars";
 import { userRoleKenum } from "../../enums";
@@ -54,10 +54,13 @@ export default new GiraffeqlObjectType(
       avatar: generateStringField({
         allowNull: true,
       }),
+      description: generateTextField({
+        allowNull: true,
+      }),
       role: generateEnumField({
         scalarDefinition: Scalars.userRole,
         allowNull: false,
-        defaultValue: "NORMAL",
+        defaultValue: userRoleKenum.NORMAL.parsed,
         isKenum: true,
         nestHidden: true,
       }),
@@ -80,12 +83,14 @@ export default new GiraffeqlObjectType(
 
           const allPermissions: string[] = [];
 
-          if (role)
-            allPermissions.push(
-              ...userRoleToPermissionsMap[
-                userRoleKenum.fromUnknown(role).name
-              ].map((ele) => ele.name)
-            );
+          if (role) {
+            const roleName = userRoleKenum.fromUnknown(role).name;
+            if (roleName in userRoleToPermissionsMap) {
+              allPermissions.push(
+                ...userRoleToPermissionsMap[roleName].map((ele) => ele.name)
+              );
+            }
+          }
 
           if (permissions) allPermissions.push(...permissions);
 
@@ -96,10 +101,13 @@ export default new GiraffeqlObjectType(
         allowNull: false,
         defaultValue: true,
       }),
+      allowEmailNotifications: generateBooleanField({
+        allowNull: false,
+        defaultValue: true,
+      }),
       currentUserFollowLink:
         generateCurrentUserFollowLinkField(UserUserFollowLink),
-      ...generateCreatedAtField(),
-      ...generateUpdatedAtField(),
+      ...generateTimestampFields(),
       ...generateCreatedByField(User),
     },
   })

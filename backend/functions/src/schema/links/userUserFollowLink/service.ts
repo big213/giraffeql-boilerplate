@@ -24,13 +24,13 @@ export class UserUserFollowLinkService extends LinkService {
     Allow if:
     - user.id is currentUser
     */
-    get: async ({ req, args, fieldPath }) => {
+    get: async ({ req, args }) => {
       const record = await this.getFirstSqlRecord(
         {
           select: ["user.id"],
           where: args,
         },
-        fieldPath
+        true
       );
       if (isCurrentUser(req, record["user.id"])) {
         return true;
@@ -43,13 +43,13 @@ export class UserUserFollowLinkService extends LinkService {
     Allow if:
     - user.id is currentUser
     */
-    delete: async ({ req, args, fieldPath }) => {
+    delete: async ({ req, args }) => {
       const record = await this.getFirstSqlRecord(
         {
           select: ["user.id"],
           where: args,
         },
-        fieldPath
+        true
       );
       if (isCurrentUser(req, record["user.id"])) {
         return true;
@@ -62,9 +62,9 @@ export class UserUserFollowLinkService extends LinkService {
     Allow if:
     - args.user is currentUser
     */
-    create: async ({ req, args, fieldPath }) => {
+    create: async ({ req, args }) => {
       // handle lookupArgs, convert lookups into ids
-      await this.handleLookupArgs(args, fieldPath);
+      await this.handleLookupArgs(args);
 
       if (isCurrentUser(req, args.user)) return true;
 

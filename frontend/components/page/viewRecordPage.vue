@@ -54,6 +54,7 @@
               :selected-item="selectedItem"
               :record-info="recordInfo"
               :generation="generation"
+              :reset-instruction="recordResetInstruction"
               mode="view"
             >
               <template v-slot:toolbar>
@@ -97,8 +98,10 @@
               :locked-filters="lockedSubFilters"
               :page-options="subPageOptions"
               :hidden-filters="hiddenSubFilters"
+              :parent-item="selectedItem"
               dense
               @pageOptions-updated="handleSubPageOptionsUpdated"
+              @reload-parent-item="handleReloadParentItem()"
             >
               <template v-slot:header-action>
                 <v-btn icon @click="toggleExpand(null)">
@@ -133,6 +136,7 @@ import {
   collapseObject,
   serializeNestedProperty,
   lookupFieldInfo,
+  processQuery,
 } from '~/services/base'
 import CrudRecordInterface from '~/components/interface/crud/crudRecordInterface.vue'
 import { mapGetters } from 'vuex'
@@ -169,6 +173,8 @@ export default {
       isRecordMinimized: false,
 
       generation: 0,
+
+      recordResetInstruction: null,
 
       dialogs: {
         editRecord: false,
@@ -268,6 +274,13 @@ export default {
       this.$emit('handle-submit')
     },
 
+    async handleReloadParentItem() {
+      if (!this.selectedItem) return
+
+      // force reset of the table component, hiding the loader
+      this.recordResetInstruction = { showLoader: false }
+    },
+
     getChipName(item) {
       return this.recordInfo?.chipOptions?.getName
         ? this.recordInfo?.chipOptions?.getName(item)
@@ -354,22 +367,17 @@ export default {
     async loadRecord() {
       this.loading.loadRecord = true
       try {
+        const { serializeMap, query } = processQuery(
+          this,
+          this.recordInfo,
+          (this.recordInfo.requiredFields ?? []).concat(
+            this.recordInfo.chipOptions?.fields ?? []
+          )
+        )
+
         const data = await executeGiraffeql(this, {
-          ['get' + this.capitalizedTypename]: {
-            ...collapseObject(
-              (this.recordInfo.requiredFields ?? [])
-                .concat(this.recordInfo.chipOptions?.fields ?? [])
-                .reduce(
-                  (total, item) => {
-                    total[item] = true
-                    return total
-                  },
-                  {
-                    id: true,
-                  }
-                )
-            ),
-            __typename: true,
+          [`get${this.capitalizedTypename}`]: {
+            ...query,
             __args: {
               ...this.lookupParams,
               ...(this.$route.query.id && { id: this.$route.query.id }),
@@ -377,16 +385,15 @@ export default {
           },
         })
 
-        // apply serialization to results
-        if (this.recordInfo.requiredfields) {
-          // check if there is a parser on the fieldInfo
-          this.recordInfo.requiredfields.forEach((field) => {
-            const fieldInfo = lookupFieldInfo(this.recordInfo, field)
+        // remove any undefined serializeMap elements
+        serializeMap.forEach((val, key) => {
+          if (val === undefined) serializeMap.delete(key)
+        })
 
-            if (fieldInfo.serialize)
-              serializeNestedProperty(data, field, fieldInfo.serialize)
-          })
-        }
+        // apply serialization to results
+        serializeMap.forEach((serialzeFn, field) => {
+          serializeNestedProperty(data, field, serialzeFn)
+        })
 
         this.selectedItem = data
       } catch (err) {

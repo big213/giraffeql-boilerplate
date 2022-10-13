@@ -12,6 +12,7 @@ export class {{ capitalizedTypename }}Service extends LinkService {
 
   sortFieldsMap = {
     createdAt: {},
+    updatedAt: {}
   };
 
   searchFieldsMap = {};

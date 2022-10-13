@@ -2,22 +2,18 @@ import { getUserRoles } from '~/services/dropdown'
 import type { RecordInfo } from '~/types'
 import BooleanColumn from '~/components/table/booleanColumn.vue'
 import FollowColumn from '~/components/table/followColumn.vue'
-import { generateBaseFields } from '~/services/recordInfo'
+import {
+  generateBaseFields,
+  generateClickRowToOpenOptions,
+  generateIsPublicField,
+} from '~/services/recordInfo'
+import { SimpleUser } from '../simple'
 
 export const User = <RecordInfo<'user'>>{
-  typename: 'user',
-  pluralTypename: 'users',
-  name: 'User',
-  pluralName: 'Users',
-  icon: 'mdi-account',
+  ...SimpleUser,
   requiredFields: ['avatar', 'name'],
-  renderItem: (item) => item.email,
   fields: {
-    ...generateBaseFields({
-      hasName: true,
-      hasAvatar: true,
-      hasDescription: false,
-    }),
+    ...generateBaseFields(SimpleUser),
     email: {
       text: 'Email',
     },
@@ -36,12 +32,7 @@ export const User = <RecordInfo<'user'>>{
       parseValue: (val: string) =>
         val ? val.split(',').filter((ele) => ele) : [],
     },
-    isPublic: {
-      text: 'Is Public',
-      component: BooleanColumn,
-      inputType: 'switch',
-      default: () => true,
-    },
+    ...generateIsPublicField(),
     allowEmailNotifications: {
       text: 'Allow Email Notifications',
       component: BooleanColumn,
@@ -63,16 +54,15 @@ export const User = <RecordInfo<'user'>>{
         operator: 'eq',
       },
     ],
-    handleRowClick: (that, props) => {
-      that.openEditDialog('view', props.item)
-    },
-    handleGridElementClick: (that, item) => {
-      that.openEditDialog('view', item)
-    },
+    ...generateClickRowToOpenOptions(),
     sortOptions: [
       {
-        field: 'createdAt',
+        field: 'updatedAt',
         desc: true,
+      },
+      {
+        field: 'updatedAt',
+        desc: false,
       },
     ],
     headerOptions: [
@@ -89,25 +79,40 @@ export const User = <RecordInfo<'user'>>{
         width: '150px',
       },
       {
-        field: 'createdAt',
-        width: '150px',
-      },
-      {
         field: 'updatedAt',
         width: '150px',
       },
     ],
-    downloadOptions: {},
   },
 
   addOptions: {
-    fields: ['name', 'email', 'password', 'role', 'permissions', 'isPublic'],
+    fields: [
+      'avatar',
+      'name',
+      'description',
+      'email',
+      'password',
+      'role',
+      'permissions',
+      'isPublic',
+    ],
   },
   editOptions: {
-    fields: ['name', 'email', 'role', 'permissions', 'isPublic'],
+    fields: [
+      'avatar',
+      'name',
+      'description',
+      'email',
+      'role',
+      'permissions',
+      'isPublic',
+    ],
   },
   viewOptions: {
     fields: [
+      'avatar',
+      'name',
+      'description',
       'email',
       'role',
       'permissions',

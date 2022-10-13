@@ -152,21 +152,40 @@ export function generateId(size = 8) {
   return generateIdFn();
 }
 
-// extracts last_value_N values from an object and returns an array
-export function extractLastValueColumns(
-  obj: StringKeyObject,
-  deleteProps = false
-) {
-  const lastValues: any[] = [];
-
+// removes the cursor-related columns from the rawNode and returns a new object
+export function processRawNode(rawNode) {
+  const returnNode = { ...rawNode };
   let lastValueIndex = 0;
-  while (`$last_value_${lastValueIndex}` in obj) {
-    lastValues.push(obj[`$last_value_${lastValueIndex}`]);
-    if (deleteProps) delete obj[`$last_value_${lastValueIndex}`];
+  while (`$last_value_${lastValueIndex}` in returnNode) {
+    delete returnNode[`$last_value_${lastValueIndex}`];
     lastValueIndex++;
   }
 
-  return lastValues;
+  delete returnNode.$last_id;
+
+  return returnNode;
+}
+
+// retrieves the cursor from the raw node
+export function generateCursorFromNode(rawNode) {
+  if (!rawNode) return null;
+
+  const lastValues: any[] = [];
+
+  let lastValueIndex = 0;
+  while (`$last_value_${lastValueIndex}` in rawNode) {
+    lastValues.push(rawNode[`$last_value_${lastValueIndex}`]);
+    lastValueIndex++;
+  }
+
+  const lastId = rawNode.$last_id;
+
+  return atob(
+    JSON.stringify({
+      lastId,
+      lastValues,
+    })
+  );
 }
 
 // returns a boolean saying if the request is about to be timed out (5 sec before timeout)

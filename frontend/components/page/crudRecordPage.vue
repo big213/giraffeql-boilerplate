@@ -44,7 +44,6 @@ export default {
     },
     hiddenHeaders: {
       type: Array,
-      default: () => [],
     },
     lockedFilters: {
       type: Array,

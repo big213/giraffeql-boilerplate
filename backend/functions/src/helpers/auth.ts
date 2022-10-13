@@ -18,16 +18,12 @@ export async function validateToken(bearerToken: string): Promise<ContextUser> {
 
     // check if firebase_uid exists
     // fetch role from database
-    let userRecord = await User.getFirstSqlRecord(
-      {
-        select: ["id", "role", "permissions"],
-        where: {
-          firebaseUid: decodedToken.uid,
-        },
+    let userRecord = await User.getFirstSqlRecord({
+      select: ["id", "role", "permissions"],
+      where: {
+        firebaseUid: decodedToken.uid,
       },
-      undefined,
-      false
-    );
+    });
 
     const permissions: userPermissionEnum[] = [];
 

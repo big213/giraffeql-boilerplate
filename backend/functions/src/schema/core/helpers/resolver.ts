@@ -25,6 +25,7 @@ import { CustomResolverFunction } from "../../../types";
 
 import { expandObject, isObject } from "../helpers/shared";
 import type { Request } from "express";
+import { Transaction } from "knex";
 
 type CustomResolver = {
   resolver: CustomResolverFunction;
@@ -46,18 +47,19 @@ export async function createObjectType({
   fieldPath,
   addFields,
   extendFn,
+  transaction,
 }: {
   typename: string;
   req: Request;
   fieldPath: string[];
   addFields: { [x: string]: unknown };
   extendFn?: KnexExtendFunction;
+  transaction?: Transaction;
 }): Promise<any> {
   const typeDef = objectTypeDefs.get(typename);
   if (!typeDef) {
     throw new GiraffeqlBaseError({
       message: `Invalid typeDef '${typename}'`,
-      fieldPath,
     });
   }
 
@@ -71,7 +73,6 @@ export async function createObjectType({
     if (!(field in typeDef.definition.fields)) {
       throw new GiraffeqlBaseError({
         message: `Invalid add field: ${field}`,
-        fieldPath,
       });
     }
 
@@ -94,14 +95,12 @@ export async function createObjectType({
 
   // do the sql fields first, if any
   if (Object.keys(sqlFields).length > 0) {
-    addedResults = await insertTableRow(
-      {
-        table: typename,
-        fields: sqlFields,
-        extendFn,
-      },
-      fieldPath
-    );
+    addedResults = await insertTableRow({
+      table: typename,
+      fields: sqlFields,
+      extendFn,
+      transaction,
+    });
   }
 
   const resultObject = addedResults ? addedResults[0] : {};
@@ -126,18 +125,19 @@ export async function updateObjectType({
   fieldPath,
   updateFields,
   id,
+  transaction,
 }: {
   typename: string;
   req: Request;
   fieldPath: string[];
   updateFields: { [x: string]: unknown };
   id: number;
+  transaction?: Transaction;
 }): Promise<any> {
   const typeDef = objectTypeDefs.get(typename);
   if (!typeDef) {
     throw new GiraffeqlBaseError({
       message: `Invalid typeDef '${typename}'`,
-      fieldPath,
     });
   }
 
@@ -151,7 +151,6 @@ export async function updateObjectType({
     if (!(field in typeDef.definition.fields)) {
       throw new GiraffeqlBaseError({
         message: `Invalid update field`,
-        fieldPath,
       });
     }
 
@@ -172,16 +171,14 @@ export async function updateObjectType({
 
   // do the sql first, if any fields
   if (Object.keys(sqlFields).length > 0) {
-    await updateTableRow(
-      {
-        table: typename,
-        fields: sqlFields,
-        where: {
-          id,
-        },
+    await updateTableRow({
+      table: typename,
+      fields: sqlFields,
+      where: {
+        id,
       },
-      fieldPath
-    );
+      transaction,
+    });
   }
 
   const resultObject = {
@@ -207,18 +204,19 @@ export async function deleteObjectType({
   req,
   fieldPath,
   id,
+  transaction,
 }: {
   typename: string;
   req: Request;
   fieldPath: string[];
   id: number;
+  transaction?: Transaction;
 }): Promise<any> {
   //resolve the deleters
   const typeDef = objectTypeDefs.get(typename);
   if (!typeDef) {
     throw new GiraffeqlBaseError({
       message: `Invalid typeDef '${typename}'`,
-      fieldPath,
     });
   }
 
@@ -243,15 +241,13 @@ export async function deleteObjectType({
 
   // do the sql first
   if (hasSqlFields)
-    await deleteTableRow(
-      {
-        table: typename,
-        where: {
-          id,
-        },
+    await deleteTableRow({
+      table: typename,
+      where: {
+        id,
       },
-      fieldPath
-    );
+      transaction,
+    });
 
   const resultObject = {
     id,
@@ -284,15 +280,10 @@ export async function getObjectType({
   data?: any;
   externalTypeDef?: GiraffeqlObjectType;
 }): Promise<any[]> {
-  // shortcut: if no fields were requested, simply return empty object
-  if (isObject(externalQuery) && Object.keys(externalQuery).length < 1)
-    return [{}];
-
   const typeDef = objectTypeDefs.get(typename);
   if (!typeDef) {
     throw new GiraffeqlBaseError({
       message: `Invalid typeDef '${typename}'`,
-      fieldPath,
     });
   }
 
@@ -317,14 +308,13 @@ export async function getObjectType({
 
   let giraffeqlResultsTreeArray: SqlSelectQueryOutput[];
 
-  // if no sql fields, skip
-  if (validatedSqlSelectArray.length < 1) {
+  // if no sql fields and no sql params, skip
+  if (!sqlParams && validatedSqlSelectArray.length < 1) {
     giraffeqlResultsTreeArray = [{}];
   } else {
     if (!sqlParams)
       throw new GiraffeqlBaseError({
         message: `SQL Params required`,
-        fieldPath,
       });
     const sqlQuery = {
       select: validatedSqlSelectArray.concat(rawSelect),
@@ -332,8 +322,8 @@ export async function getObjectType({
       ...sqlParams,
     };
 
-    giraffeqlResultsTreeArray = (await fetchTableRows(sqlQuery, fieldPath)).map(
-      (obj) => expandObject(obj)
+    giraffeqlResultsTreeArray = (await fetchTableRows(sqlQuery)).map((obj) =>
+      expandObject(obj)
     );
   }
 
@@ -370,27 +360,27 @@ export function countObjectType(
   whereInput: SqlWhereInput,
   distinct?: boolean
 ): Promise<number> {
-  return countTableRows(
-    {
-      table: typename,
-      where: whereInput,
-      distinct,
-    },
-    fieldPath
-  );
+  return countTableRows({
+    table: typename,
+    where: whereInput,
+    distinct,
+  });
 }
 
 function generateSqlQuerySelectObject({
   nestedResolverNodeMap,
   parentFields = [],
+  parentArgs,
   fieldPath,
 }: {
   nestedResolverNodeMap: { [x: string]: GiraffeqlResolverNode };
   parentFields?: string[];
+  parentArgs?: any;
   fieldPath: string[];
 }) {
   const sqlSelectObjectArray: {
     field: string;
+    args?: any;
   }[] = [];
 
   let addIdField = true;
@@ -416,6 +406,7 @@ function generateSqlQuerySelectObject({
           ...generateSqlQuerySelectObject({
             nestedResolverNodeMap: nested,
             parentFields: parentPlusCurrentField,
+            parentArgs: nestedResolverNodeMap[field].args,
             fieldPath,
           })
         );
@@ -431,6 +422,7 @@ function generateSqlQuerySelectObject({
 
           sqlSelectObjectArray.push({
             field: parentPlusCurrentField.join("."),
+            args: parentArgs,
           });
         }
       }
@@ -448,6 +440,7 @@ function generateSqlQuerySelectObject({
         typeDef.requiredSqlFields.forEach((field) => {
           sqlSelectObjectArray.push({
             field: parentFields.concat(field).join("."),
+            args: parentArgs,
           });
         });
       }
@@ -462,6 +455,7 @@ function generateSqlQuerySelectObject({
   ) {
     sqlSelectObjectArray.push({
       field: parentFields.concat("id").join("."),
+      args: parentArgs,
     });
   }
 

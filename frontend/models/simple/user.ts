@@ -6,10 +6,9 @@ export const SimpleUser = <Partial<RecordInfo<'user'>>>{
   name: 'User',
   pluralName: 'Users',
   icon: 'mdi-account',
+  hasName: true,
+  hasAvatar: true,
+  hasDescription: true,
   renderItem: (item) => item.email,
   followLinkModel: 'userUserFollowLink',
-  fields: {},
-  previewOptions: {
-    fields: ['__typename'],
-  },
 }

@@ -27,48 +27,47 @@ if (env.base?.origins) {
 
 // extract the user ID from all requests.
 app.use(async function (req, res, next) {
-  // set the start time
-  req.startTime = Date.now();
-
-  // handle origins -- only accepting string type origins.
-  // if allowedOrigins is empty, allow all origins "*"
-  const origin = allowedOrigins.length
-    ? typeof req.headers.origin === "string" &&
-      allowedOrigins.includes(req.headers.origin)
-      ? req.headers.origin
-      : allowedOrigins[0]
-    : "*";
-
-  res.header("Access-Control-Allow-Origin", origin);
-  if (origin !== "*") {
-    res.header("Vary", "Origin");
-  }
-
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control"
-  );
-
-  res.header("Access-Control-Allow-Methods", "PUT, POST, GET, DELETE, OPTIONS");
-
-  const apiKey = req.get("x-api-key");
   try {
+    // set the start time
+    req.startTime = Date.now();
+
+    // handle origins -- only accepting string type origins.
+    // if allowedOrigins is empty, allow all origins "*"
+    const origin = allowedOrigins.length
+      ? typeof req.headers.origin === "string" &&
+        allowedOrigins.includes(req.headers.origin)
+        ? req.headers.origin
+        : allowedOrigins[0]
+      : "*";
+
+    res.header("Access-Control-Allow-Origin", origin);
+    if (origin !== "*") {
+      res.header("Vary", "Origin");
+    }
+
+    res.header(
+      "Access-Control-Allow-Headers",
+      "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control"
+    );
+
+    res.header(
+      "Access-Control-Allow-Methods",
+      "PUT, POST, GET, DELETE, OPTIONS"
+    );
+
+    const apiKey = req.get("x-api-key");
+
     if (apiKey) {
       // if api key provided, attempt to validate using that
       req.user = await validateApiKey(apiKey);
     } else if (req.headers.authorization) {
       req.user = await validateToken(req.headers.authorization);
     }
-  } catch (err: unknown) {
-    return sendErrorResponse(
-      err instanceof Error
-        ? err
-        : new Error("An unspecified error has occurred"),
-      res
-    );
-  }
 
-  return next();
+    return next();
+  } catch (err: unknown) {
+    return sendErrorResponse(err, res);
+  }
 });
 
 app.options("*", function (req, res, next) {

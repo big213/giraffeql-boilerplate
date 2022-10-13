@@ -1,15 +1,23 @@
 import type { Request } from "express";
 import Knex = require("knex");
+import { SpecialJoinDefinition } from "../schema/core/helpers/sql";
 import { userPermissionEnum, userRoleKenum } from "../schema/enums";
 
 export type StringKeyObject = Record<string, unknown>;
 
-export type SpecialJoinFunction = (
-  knexObject: Knex.QueryBuilder,
-  parentTableAlias: string,
-  joinTableAlias: string,
-  specialParams: any
-) => void;
+export type SpecialJoinFunction = ({
+  knexObject,
+  parentTableAlias,
+  joinTableAlias,
+  specialJoinDefinition,
+  specialParams,
+}: {
+  knexObject: Knex.QueryBuilder;
+  parentTableAlias: string;
+  joinTableAlias: string;
+  specialJoinDefinition: SpecialJoinDefinition;
+  specialParams: any;
+}) => void;
 
 export type ObjectTypeDefSqlOptions = {
   // if this is a join field, the typename of the joinType

@@ -20,6 +20,7 @@
               :parent-item="currentItem"
               :all-items="inputsArray"
               @handle-submit="handleSubmit()"
+              @file-added="handleFileAdded"
             ></GenericInput>
           </v-col>
         </v-row>

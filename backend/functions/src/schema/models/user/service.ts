@@ -36,6 +36,11 @@ export class UserService extends PaginatedService {
     role: {},
   };
 
+  uniqueKeyMap = {
+    primary: ["id"],
+    email: ["email"],
+  };
+
   sortFieldsMap = {
     id: {},
     createdAt: {},
@@ -53,13 +58,13 @@ export class UserService extends PaginatedService {
     - item isPublic === true AND requested fields has fields id, name, avatar, email, isPublic, currentUserFollowLink ONLY
     - OR, if requested fields are id, name, avatar, isPublic, currentUserFollowLink  ONLY
     */
-    get: async ({ req, args, query, fieldPath }) => {
+    get: async ({ req, args, query }) => {
       const record = await this.getFirstSqlRecord(
         {
           select: ["createdBy.id", "isPublic"],
           where: args,
         },
-        fieldPath
+        true
       );
 
       if (isCurrentUser(req, record["createdBy.id"])) return true;
@@ -71,6 +76,7 @@ export class UserService extends PaginatedService {
           "__typename",
           "name",
           "avatar",
+          "description",
           "email",
           "isPublic",
           "currentUserFollowLink",
@@ -87,6 +93,7 @@ export class UserService extends PaginatedService {
           "__typename",
           "name",
           "avatar",
+          "description",
           "isPublic",
           "currentUserFollowLink",
         ])
@@ -102,7 +109,7 @@ export class UserService extends PaginatedService {
     - filtering by isPublic === true
     - if requested fields are id, name, avatar, isPublic, currentUserFollowLink ONLY, or NO query
     */
-    getMultiple: async ({ req, args, query, fieldPath }) => {
+    getMultiple: async ({ args, query }) => {
       if (
         (isObject(query) &&
           objectOnlyHasFields(query, [
@@ -110,6 +117,7 @@ export class UserService extends PaginatedService {
             "__typename",
             "name",
             "avatar",
+            "description",
             "isPublic",
             "currentUserFollowLink",
           ])) ||
@@ -119,7 +127,7 @@ export class UserService extends PaginatedService {
       }
 
       if (
-        filterPassesTest(args.filterBy, (filterObject) => {
+        await filterPassesTest(args.filterBy, (filterObject) => {
           return filterObject["isPublic"]?.eq === true;
         })
       ) {
@@ -137,7 +145,12 @@ export class UserService extends PaginatedService {
       if (
         isUserLoggedIn(req) &&
         isCurrentUser(req, args.item.id) &&
-        objectOnlyHasFields(args.fields, ["avatar", "name", "isPublic"])
+        objectOnlyHasFields(args.fields, [
+          "avatar",
+          "name",
+          "description",
+          "isPublic",
+        ])
       ) {
         return true;
       }
@@ -161,26 +174,23 @@ export class UserService extends PaginatedService {
     data = {},
     isAdmin = false,
   }: ServiceFunctionInputs) {
-    // args should be validated already
-    const validatedArgs = <any>args;
-
-    await this.handleLookupArgs(args, fieldPath);
+    await this.handleLookupArgs(args);
 
     // create firebase user
     const firebaseUser = await admin.auth().createUser({
-      email: validatedArgs.email,
+      email: args.email,
       emailVerified: false,
-      password: validatedArgs.password,
-      displayName: validatedArgs.name,
+      password: args.password,
+      displayName: args.name,
       disabled: false,
-      photoURL: validatedArgs.avatar,
+      photoURL: args.avatar,
     });
 
     const addResults = await createObjectType({
       typename: this.typename,
       addFields: {
-        id: await this.generateRecordId(fieldPath),
-        ...validatedArgs,
+        id: await this.generateRecordId(),
+        ...args,
         firebaseUid: firebaseUser.uid,
         createdBy: req.user!.id,
       },
@@ -209,8 +219,6 @@ export class UserService extends PaginatedService {
     data,
     isAdmin = false,
   }: ServiceFunctionInputs) {
-    // args should be validated already
-    const validatedArgs = <any>args;
     //check if record exists
     const item = await this.getFirstSqlRecord(
       {
@@ -219,20 +227,20 @@ export class UserService extends PaginatedService {
           id: data!.id,
         },
       },
-      fieldPath
+      true
     );
 
     // make sure email field, if provided, matches the firebase user email
-    if ("email" in validatedArgs) {
+    if ("email" in args) {
       const userRecord = await admin.auth().getUser(item.firebaseUid);
-      validatedArgs.email = userRecord.email;
+      args.email = userRecord.email;
     }
 
     await updateObjectType({
       typename: this.typename,
-      id: <number>validatedArgs.id,
+      id: <number>args.id,
       updateFields: {
-        ...validatedArgs,
+        ...args,
         updatedAt: 1,
       },
       req,
@@ -241,7 +249,7 @@ export class UserService extends PaginatedService {
 
     return this.getRecord({
       req,
-      args: { id: validatedArgs.id },
+      args: { id: args.id },
       query,
       fieldPath,
     });
@@ -256,25 +264,23 @@ export class UserService extends PaginatedService {
     data = {},
     isAdmin = false,
   }: ServiceFunctionInputs) {
-    // args should be validated already
-    const validatedArgs = <any>args;
     // check if record exists, get ID
     const item = await this.getFirstSqlRecord(
       {
         select: ["id", "role", "firebaseUid"],
-        where: validatedArgs.item,
+        where: args.item,
       },
-      fieldPath
+      true
     );
 
     // convert any lookup/joined fields into IDs
-    await this.handleLookupArgs(validatedArgs.fields, fieldPath);
+    await this.handleLookupArgs(args.fields);
 
     await updateObjectType({
       typename: this.typename,
       id: item.id,
       updateFields: {
-        ...validatedArgs.fields,
+        ...args.fields,
         updatedAt: 1,
       },
       req,
@@ -283,17 +289,17 @@ export class UserService extends PaginatedService {
 
     // update firebase user fields
     const firebaseUserFields = {
-      ...("name" in validatedArgs.fields && {
-        displayName: validatedArgs.fields.name,
+      ...("name" in args.fields && {
+        displayName: args.fields.name,
       }),
-      ...("avatar" in validatedArgs.fields && {
-        photoURL: validatedArgs.fields.avatar,
+      ...("avatar" in args.fields && {
+        photoURL: args.fields.avatar,
       }),
-      ...("email" in validatedArgs.fields && {
-        email: validatedArgs.fields.email,
+      ...("email" in args.fields && {
+        email: args.fields.email,
       }),
-      ...("password" in validatedArgs.fields && {
-        password: validatedArgs.fields.password,
+      ...("password" in args.fields && {
+        password: args.fields.password,
       }),
     };
 
@@ -322,16 +328,13 @@ export class UserService extends PaginatedService {
     data,
     isAdmin = false,
   }: ServiceFunctionInputs) {
-    // args should be validated already
-    const validatedArgs = <any>args;
-
     // confirm existence of item and get ID
     const item = await this.getFirstSqlRecord(
       {
         select: ["id", "firebaseUid"],
-        where: validatedArgs,
+        where: args,
       },
-      fieldPath
+      true
     );
 
     // first, fetch the requested query, if any

@@ -64,9 +64,10 @@ function generateMigration(initSubscriptions = true, force = false) {
         let operationString = `table.${typeDefField.sqlOptions.type}("${sqlFieldName}")`;
 
         // handle (not) nullable
-        operationString += typeDefField.allowNull
-          ? `.nullable()`
-          : `.notNullable()`;
+        operationString +=
+          typeDefField.allowNullInput ?? typeDefField.allowNull
+            ? `.nullable()`
+            : `.notNullable()`;
 
         // set default value
         if (typeDefField.sqlOptions.defaultValue !== undefined) {

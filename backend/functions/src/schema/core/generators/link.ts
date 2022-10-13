@@ -1,19 +1,18 @@
-import { NormalService } from "../services";
+import { PaginatedService } from "../services";
 import { User } from "../../services";
 import {
   generateIdField,
-  generateCreatedAtField,
-  generateUpdatedAtField,
   generateCreatedByField,
   generateJoinableField,
   generateTypenameField,
   processTypeDef,
+  generateTimestampFields,
 } from "../helpers/typeDef";
 import { ObjectTypeDefinition, ObjectTypeDefinitionField } from "giraffeql";
 
 export type ServicesObjectMap = {
   [x: string]: {
-    service: NormalService;
+    service: PaginatedService;
     allowNull?: boolean;
     sqlField?: string; // sql alias for the field, e.g. if it has CAPS
     updateable?: boolean; // can this field be updated?
@@ -22,7 +21,7 @@ export type ServicesObjectMap = {
 
 export function generateLinkTypeDef(
   servicesObjectMap: ServicesObjectMap,
-  currentService: NormalService,
+  currentService: PaginatedService,
   additionalFields?: { [x: string]: ObjectTypeDefinitionField }
 ): ObjectTypeDefinition {
   const typeDefFields = {};
@@ -51,8 +50,7 @@ export function generateLinkTypeDef(
       ...generateIdField(currentService),
       ...generateTypenameField(currentService),
       ...typeDefFields,
-      ...generateCreatedAtField(),
-      ...generateUpdatedAtField(),
+      ...generateTimestampFields(),
       ...generateCreatedByField(User),
       ...additionalFields,
     },

@@ -195,7 +195,7 @@
         max-height="200"
       ></v-img>
       <v-icon v-else>mdi-file-image</v-icon>
-      <div v-cloak @drop.prevent="handleSingleDropFile" @dragover.prevent>
+      <div v-cloak @drop.prevent="handleDropEvent" @dragover.prevent>
         <v-file-input
           v-if="!item.readonly"
           v-model="item.inputValue"
@@ -208,7 +208,7 @@
           :loading="item.loading"
           persistent-hint
           @click:append="handleSingleFileInputClear(item)"
-          @change="handleSingleFileInputChange(item)"
+          @change="handleSingleFileInputChange()"
           @click:append-outer="handleClose()"
         >
           <template v-slot:selection="{ file, text }">
@@ -233,47 +233,44 @@
     </div>
     <div
       v-else-if="item.inputType === 'avatar'"
-      class="mb-4"
+      class="mb-4 highlighted-bg"
       :class="isReadonly ? 'text-center' : 'd-flex text-left'"
+      v-cloak
+      @drop.prevent="handleDropEvent"
+      @dragover.prevent
     >
       <v-avatar size="64">
         <v-img v-if="item.value" :src="item.value"></v-img>
         <v-icon v-else>{{ recordIcon }}</v-icon>
       </v-avatar>
-      <v-file-input
-        v-if="!item.readonly"
-        v-model="item.inputValue"
-        :append-icon="item.value ? 'mdi-close' : null"
-        :append-outer-icon="item.closeable ? 'mdi-close' : null"
-        :clearable="false"
-        class="pl-2"
-        accept="image/*"
+      <label for="file-upload" class="custom-file-upload pt-5">
+        <v-icon>mdi-upload</v-icon>
+        Upload
+      </label>
+      <input
+        id="file-upload"
+        type="file"
+        style="display: none"
+        @change="handleSingleFileInputChange"
+      />
+      <v-text-field
+        v-model="item.value"
         :label="item.label + (item.optional ? ' (optional)' : '')"
+        :readonly="isReadonly"
+        :rules="item.inputRules"
         :hint="item.hint"
         :loading="item.loading"
+        :append-icon="appendIcon"
+        :append-outer-icon="item.closeable ? 'mdi-close' : null"
         persistent-hint
-        @click:append="handleSingleFileInputClear(item)"
-        @change="handleSingleFileInputChange(item)"
+        filled
+        dense
+        class="pl-2 py-0"
+        v-on="$listeners"
+        @click:append="handleClear()"
         @click:append-outer="handleClose()"
-      >
-        <template v-slot:selection="{ file, text }">
-          <v-chip
-            small
-            label
-            color="primary"
-            close
-            close-icon="mdi-close-outline"
-            @click:close="handleSingleFileInputClear(item)"
-          >
-            {{ text }} -
-            {{
-              file.fileUploadObject
-                ? file.fileUploadObject.progress.toFixed(1)
-                : ''
-            }}%
-          </v-chip>
-        </template>
-      </v-file-input>
+        @input="triggerInput()"
+      ></v-text-field>
     </div>
     <v-textarea
       v-else-if="item.inputType === 'textarea'"
@@ -934,12 +931,21 @@ export default {
       this.handleMultipleFileInputChange(this.item)
     },
 
-    handleSingleDropFile(e) {
-      if (!this.item.inputValue) this.item.inputValue = []
-      const filesArray = Array.from(e.dataTransfer.files)
-      this.item.inputValue = filesArray[filesArray.length - 1]
+    handleDropEvent(e) {
+      try {
+        const files = Array.from(e.dataTransfer.files)
 
-      this.handleSingleFileInputChange(this.item)
+        // only 1 file allowed
+        if (files.length !== 1) {
+          throw new Error('Only 1 filed allowed to be dropped')
+        }
+
+        this.item.inputValue = files[0]
+
+        this.handleSingleFileInputChange()
+      } catch (err) {
+        handleError(this, err)
+      }
     },
 
     handleMultipleFileInputChange(inputObject, removeFromInput = true) {
@@ -1000,7 +1006,16 @@ export default {
       inputObject.loading = false
     },
 
-    handleSingleFileInputChange(inputObject) {
+    handleSingleFileInputChange(event = null) {
+      // if no file, do nothing
+      if (event && !event.target.files[0]) return
+
+      if (event) {
+        this.item.inputValue = event.target.files[0]
+      }
+
+      const inputObject = this.item
+
       if (!inputObject.inputValue) {
         this.handleSingleFileInputClear(inputObject)
         return
@@ -1018,13 +1033,16 @@ export default {
       inputObject.filesQueue = [inputObject.inputValue]
 
       // upload the file(s) to CDN, then load them into value on finish
-      uploadFile(this, inputObject.inputValue, (file) => {
+      uploadFile(this, inputObject.inputValue, (file, fileRecord) => {
         inputObject.value = file.fileUploadObject.servingUrl
         inputObject.loading = false
 
         // remove from filesQueue
         const index = inputObject.filesQueue.indexOf(file)
         if (index !== -1) inputObject.filesQueue.splice(index, 1)
+
+        // emit the file to parent (in case it is needed)
+        this.$emit('file-added', inputObject, fileRecord)
 
         this.$notifier.showSnackbar({
           message: 'File Uploaded',
@@ -1052,9 +1070,12 @@ export default {
             __args: {
               first: 20,
               search: inputObject.inputValue,
-              filterBy: inputObject.fieldInfo.lookupFilters
-                ? inputObject.fieldInfo.lookupFilters(this, this.allItems)
-                : [],
+              filterBy: [],
+              sortBy: [],
+              ...inputObject.fieldInfo.inputOptions?.lookupParams?.(
+                this,
+                this.allItems
+              ),
             },
           },
         })
@@ -1106,6 +1127,8 @@ export default {
             // otherwise, it should have been pre-loaded
             this.filesData = inputObject.value
           }
+
+          this.handleFilesDataUpdate()
         }
       } catch (err) {
         handleError(this, err)
@@ -1137,3 +1160,10 @@ export default {
   },
 }
 </script>
+<style scoped>
+.custom-file-upload {
+  display: inline-block;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+</style>
