@@ -269,9 +269,20 @@ export default {
               id: true,
               __args: collapseObject(recordData.data),
             },
+          }).catch((err) => {
+            // if there is an error and there is a custom onError function, run that. else throw
+            if (this.recordInfo.importOptions.onError) {
+              this.recordInfo.importOptions.onError(this, err)
+
+              // if the error is caught, mark the record as skipped
+              recordData.isSkipped = true
+            } else {
+              throw err
+            }
           })
 
-          recordData.isFinished = true
+          // if the record was skipped, it must have been due to being caught.
+          if (!recordData.isSkipped) recordData.isFinished = true
         }
 
         this.$notifier.showSnackbar({
