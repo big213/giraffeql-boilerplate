@@ -33,6 +33,17 @@ export class AuthenticationError extends GiraffeqlBaseError {
   }
 }
 
+export class DuplicateError extends GiraffeqlBaseError {
+  constructor(params: { message?: string; fieldPath?: string[] }) {
+    const { message = "Duplicate entry" } = params;
+    super({
+      errorName: "DuplicateError",
+      message,
+      statusCode: 400,
+    });
+  }
+}
+
 export function generateError(
   message: string,
   fieldPath?: string[],

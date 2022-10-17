@@ -183,6 +183,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // function that runs when import is successfully run on at least one record
     onSuccess?: (that) => void
+
+    // function that runs when an import operation throws an error. it is a way to ignore (catch) the error if it should be caught
+    onError?: (that, err) => void
   }
 
   editOptions?: {
