@@ -60,6 +60,13 @@ export type FieldMap = {
   [x: string]: FieldObject;
 };
 
+export type SearchFieldMap = {
+  [x: string]: {
+    field?: string;
+    exact?: boolean;
+  };
+};
+
 export type KeyMap = {
   [x: string]: string[];
 };
@@ -99,7 +106,7 @@ export class PaginatedService extends BaseService {
 
   groupByFieldsMap: FieldMap = {};
 
-  searchFieldsMap: FieldMap = {};
+  searchFieldsMap: SearchFieldMap = {};
 
   constructor(typename?: string) {
     super(typename);

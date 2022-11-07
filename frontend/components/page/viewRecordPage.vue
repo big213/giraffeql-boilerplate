@@ -133,9 +133,7 @@ import { executeGiraffeql } from '~/services/giraffeql'
 import {
   capitalizeString,
   handleError,
-  collapseObject,
   serializeNestedProperty,
-  lookupFieldInfo,
   processQuery,
 } from '~/services/base'
 import CrudRecordInterface from '~/components/interface/crud/crudRecordInterface.vue'
@@ -242,8 +240,10 @@ export default {
       this.setExpandTypeObject(val)
     },
 
-    '$route.query.r'(val) {
-      // this.setExpandTypeObject(val)
+    '$route.query.m'(val) {
+      if (val) {
+        this.isRecordMinimized = true
+      }
     },
 
     recordInfo() {
@@ -293,8 +293,8 @@ export default {
         : item.avatar
     },
 
-    handleExpandClick(_expandTypeObject, index) {
-      this.toggleExpand(index)
+    handleExpandClick(expandTypeObject) {
+      this.toggleExpand(expandTypeObject.key)
     },
 
     handleCustomActionClick(actionObject, item) {
@@ -302,16 +302,34 @@ export default {
     },
 
     toggleRecordMinimized(state) {
-      this.isRecordMinimized = state
-    },
-
-    toggleExpand(index) {
       const query = {
         ...this.$route.query,
       }
 
-      if (index !== null) {
-        query.e = index
+      if (state) {
+        query.m = '1'
+      } else {
+        delete query.m
+      }
+
+      // push to route
+      this.$router
+        .replace({
+          path: this.$route.path,
+          query,
+        })
+        .catch((e) => e)
+
+      this.isRecordMinimized = state
+    },
+
+    toggleExpand(expandKey) {
+      const query = {
+        ...this.$route.query,
+      }
+
+      if (expandKey) {
+        query.e = expandKey
       } else {
         delete query.e
       }
@@ -325,18 +343,25 @@ export default {
         .catch((e) => e)
     },
 
-    setExpandTypeObject(index) {
-      // if index is undefined, unset it
-      if (index === undefined) {
+    setExpandTypeObject(expandKey) {
+      // if expandKey is undefined, unset it
+      if (expandKey === undefined) {
         this.expandTypeObject = null
         return
       }
 
-      if (
-        Array.isArray(this.recordInfo.expandTypes) &&
-        this.recordInfo.expandTypes[index]
-      ) {
-        const expandTypeObject = this.recordInfo.expandTypes[index]
+      if (Array.isArray(this.recordInfo.expandTypes)) {
+        // find the expandTypeObject with the matching key
+        // if expandKey === null, set to first expandType
+        const expandTypeObject =
+          expandKey === null
+            ? this.recordInfo.expandTypes[0]
+            : this.recordInfo.expandTypes.find(
+                (expandTypeObject) => expandTypeObject.key === expandKey
+              )
+
+        // if not found, return
+        if (!expandTypeObject) return
 
         this.expandTypeObject = expandTypeObject
 
@@ -367,12 +392,18 @@ export default {
     async loadRecord() {
       this.loading.loadRecord = true
       try {
+        const fields = (this.recordInfo.requiredFields ?? []).concat(
+          this.recordInfo.chipOptions?.fields ?? []
+        )
+
+        // if the record type has name/avatar, also fetch those
+        if (this.recordInfo.hasName) fields.push('name')
+        if (this.recordInfo.hasAvatar) fields.push('avatar')
+
         const { serializeMap, query } = processQuery(
           this,
           this.recordInfo,
-          (this.recordInfo.requiredFields ?? []).concat(
-            this.recordInfo.chipOptions?.fields ?? []
-          )
+          fields
         )
 
         const data = await executeGiraffeql(this, {
@@ -404,12 +435,18 @@ export default {
     },
 
     reset(hardReset = false) {
+      console.log(this.$route.query)
       if (hardReset) {
         // must independently verify existence of item
         this.loadRecord().then(() => {
           // if expand query param set, set the initial expandTypeObject
           if (this.$route.query.e !== undefined) {
             this.setExpandTypeObject(this.$route.query.e)
+          }
+
+          // if minimize query param set, set the initial isRecordMinimized
+          if (this.$route.query.m !== undefined) {
+            this.isRecordMinimized = true
           }
         })
       }

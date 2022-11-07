@@ -159,12 +159,21 @@ export class PaginatorService extends SimpleService {
         fields: [],
       };
 
-      for (const prop in this.service.searchFieldsMap) {
-        whereSubObject.fields.push({
-          field: this.service.searchFieldsMap[prop].field ?? prop,
-          value: new RegExp(escapeRegExp(args.search), "i"),
-          operator: "regex",
-        });
+      for (const field in this.service.searchFieldsMap) {
+        // if field options has exact, ony allow eq
+        if (this.service.searchFieldsMap[field].exact) {
+          whereSubObject.fields.push({
+            field: field,
+            value: args.search,
+            operator: "eq",
+          });
+        } else {
+          whereSubObject.fields.push({
+            field: this.service.searchFieldsMap[field].field ?? field,
+            value: new RegExp(escapeRegExp(args.search), "i"),
+            operator: "regex",
+          });
+        }
       }
 
       whereObject.fields.push(whereSubObject);
@@ -348,12 +357,21 @@ export class PaginatorService extends SimpleService {
         fields: [],
       };
 
-      for (const prop in this.service.searchFieldsMap) {
-        whereSubObject.fields.push({
-          field: this.service.searchFieldsMap[prop].field ?? prop,
-          value: new RegExp(escapeRegExp(args.search), "i"),
-          operator: "regex",
-        });
+      for (const field in this.service.searchFieldsMap) {
+        // if field options has exact, ony allow eq
+        if (this.service.searchFieldsMap[field].exact) {
+          whereSubObject.fields.push({
+            field: field,
+            value: args.search,
+            operator: "eq",
+          });
+        } else {
+          whereSubObject.fields.push({
+            field: this.service.searchFieldsMap[field].field ?? field,
+            value: new RegExp(escapeRegExp(args.search), "i"),
+            operator: "regex",
+          });
+        }
       }
 
       whereObject.fields.push(whereSubObject);

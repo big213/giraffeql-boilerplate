@@ -82,6 +82,12 @@ export type RecordInfo<T extends keyof MainTypes> = {
     [K in string]?: FieldDefinition
   }
 
+  // options related to viewing a single record (via viewRecordPage), if any
+  pageOptions?: {
+    // custom function that will return the lookup params, if any
+    getLookupParams?: (that) => any
+  }
+
   // options related to viewing multiple, if possible
   paginationOptions?: {
     // function that runs when pagination interface is opened for the first time
@@ -286,6 +292,8 @@ export type RecordInfo<T extends keyof MainTypes> = {
   }
 
   expandTypes: {
+    // the key that will be associated with this in the URL
+    key: string
     // recordInfo is required unless it is a custom component
     recordInfo?: RecordInfo<any>
     component?: any

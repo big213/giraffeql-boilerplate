@@ -108,8 +108,8 @@
         v-for="(expandObject, i) in recordInfo.expandTypes"
         :key="i"
         dense
-        @click="openExpandType(expandObject, i)"
-        @click.middle="openExpandType(expandObject, i, true)"
+        @click="openExpandType(expandObject)"
+        @click.middle="openExpandType(expandObject, true)"
       >
         <v-list-item-icon>
           <v-icon>{{
@@ -122,7 +122,7 @@
             v-if="expandMode === 'openInNew'"
             small
             right
-            @click.stop="openExpandType(expandObject, i, true)"
+            @click.stop="openExpandType(expandObject, true)"
             >mdi-open-in-new</v-icon
           >
         </v-list-item-title>
@@ -191,9 +191,9 @@ export default {
       this.$emit('handle-action-click', mode, this.item)
     },
 
-    openExpandType(expandTypeObject, index, openInNew = false) {
+    openExpandType(expandTypeObject, openInNew = false) {
       if (this.expandMode === 'emit')
-        this.$emit('handle-expand-click', expandTypeObject, index)
+        this.$emit('handle-expand-click', expandTypeObject)
       else if (this.expandMode === 'openInDialog')
         this.$root.$emit('openCrudRecordDialog', {
           recordInfo: expandTypeObject.recordInfo,
@@ -211,7 +211,7 @@ export default {
           },
         })
       else {
-        this.goToRecordPage(openInNew, index)
+        this.goToRecordPage(openInNew, expandTypeObject)
       }
     },
 
@@ -262,14 +262,14 @@ export default {
       actionWrapper.isLoading = false
     },
 
-    goToRecordPage(openInNew, expandIndex) {
+    goToRecordPage(openInNew, expandTypeObject) {
       enterRoute(
         this,
         generateViewRecordRoute(this, {
           typename: this.recordInfo.typename,
           routeType: this.recordInfo.enterOptions.routeType,
           id: this.item.id,
-          expand: expandIndex,
+          expandKey: expandTypeObject.key,
         }),
         openInNew
       )

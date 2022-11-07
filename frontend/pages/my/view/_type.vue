@@ -2,6 +2,7 @@
   <ViewRecordPage
     v-if="currentModel"
     :record-info="currentModel"
+    :lookup-params="lookupParams"
   ></ViewRecordPage>
   <v-container v-else fill-height>
     <v-layout align-center justify-center>
@@ -32,6 +33,16 @@ export default {
   computed: {
     currentModel() {
       return myModels[`My${capitalizeString(this.type)}`]
+    },
+
+    lookupParams() {
+      const getLookupParams = this.currentModel?.pageOptions?.getLookupParams
+
+      return getLookupParams
+        ? getLookupParams(this)
+        : {
+            id: this.$store.getters['auth/user'].id,
+          }
     },
   },
 }

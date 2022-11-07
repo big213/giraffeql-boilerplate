@@ -430,14 +430,14 @@ export function generateViewRecordRoute(
     routeType,
     queryParams,
     id,
-    expand = 0,
+    expandKey = null,
   }: {
     path?: string
     typename?: string
     routeType?: 'i' | 'a' | 'my' | 's'
     queryParams?: any
     id: string
-    expand?: number
+    expandKey?: string | null
   }
 ) {
   // either path or typename/routeType required
@@ -449,7 +449,7 @@ export function generateViewRecordRoute(
     path: path ?? `/${routeType!}/view/${camelToKebabCase(typename!)}`,
     query: {
       id,
-      e: expand,
+      e: expandKey,
       ...queryParams,
     },
   }).href
