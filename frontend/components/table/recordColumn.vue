@@ -3,6 +3,7 @@
     <PreviewRecordMenu
       v-if="currentValue"
       :item="currentValue"
+      :typename="currentValue.__typename"
       :close-on-content-click="false"
       :min-width="300"
       :max-width="300"

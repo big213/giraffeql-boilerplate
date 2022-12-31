@@ -10,13 +10,14 @@ import {
   processRawNode,
 } from "../helpers/shared";
 import {
-  SqlOrderByObject,
   SqlSelectQuery,
-  SqlSelectQueryObject,
+  SqlSimpleOrderByObject,
+  SqlSimpleSelectObject,
   SqlWhereFieldOperator,
   SqlWhereObject,
 } from "../helpers/sql";
 import { countObjectType, getObjectType } from "../helpers/resolver";
+import { generateSqlSingleFieldObject } from "../helpers/sqlHelper";
 
 export class PaginatorService extends SimpleService {
   service: PaginatedService;
@@ -138,10 +139,11 @@ export class PaginatorService extends SimpleService {
         Object.entries(filterByObject).forEach(
           ([filterKey, filterKeyObject]) => {
             Object.entries(<any>filterKeyObject).forEach(
-              ([operationKey, operationValue]) => {
+              ([operationKey, operationValue]: [string, any]) => {
                 filterByAndObject.fields.push({
-                  field:
-                    this.service.filterFieldsMap[filterKey].field ?? filterKey,
+                  field: generateSqlSingleFieldObject(
+                    this.service.filterFieldsMap[filterKey].field ?? filterKey
+                  ),
                   operator: <SqlWhereFieldOperator>operationKey,
                   value: operationValue,
                 });
@@ -160,19 +162,33 @@ export class PaginatorService extends SimpleService {
       };
 
       for (const field in this.service.searchFieldsMap) {
-        // if field options has exact, ony allow eq
-        if (this.service.searchFieldsMap[field].exact) {
-          whereSubObject.fields.push({
-            field: field,
-            value: args.search,
-            operator: "eq",
-          });
+        const fieldPath = this.service.searchFieldsMap[field].field ?? field;
+
+        // if there is a custom handler on the options, use that
+        const customProcessor =
+          this.service.searchFieldsMap[field].customProcessor;
+        if (customProcessor) {
+          customProcessor(
+            whereSubObject,
+            args.search,
+            this.service.searchFieldsMap[field],
+            fieldPath
+          );
         } else {
-          whereSubObject.fields.push({
-            field: this.service.searchFieldsMap[field].field ?? field,
-            value: new RegExp(escapeRegExp(args.search), "i"),
-            operator: "regex",
-          });
+          // if field options has exact, ony allow eq
+          if (this.service.searchFieldsMap[field].exact) {
+            whereSubObject.fields.push({
+              field: fieldPath,
+              value: args.search.query,
+              operator: "eq",
+            });
+          } else {
+            whereSubObject.fields.push({
+              field: fieldPath,
+              value: new RegExp(escapeRegExp(args.search.query), "i"),
+              operator: "regex",
+            });
+          }
         }
       }
 
@@ -180,8 +196,10 @@ export class PaginatorService extends SimpleService {
     }
 
     // process sort fields
-    const orderBy: SqlOrderByObject[] = [];
-    const rawSelect: SqlSelectQueryObject[] = [{ field: "id", as: "$last_id" }];
+    const orderBy: SqlSimpleOrderByObject[] = [];
+    const rawSelect: SqlSimpleSelectObject[] = [
+      { field: "id", as: "$last_id" },
+    ];
 
     // add secondary, etc. sort parameters
     if (Array.isArray(args.sortBy)) {
@@ -336,10 +354,11 @@ export class PaginatorService extends SimpleService {
         Object.entries(filterByObject).forEach(
           ([filterKey, filterKeyObject]) => {
             Object.entries(<any>filterKeyObject).forEach(
-              ([operationKey, operationValue]) => {
+              ([operationKey, operationValue]: [string, any]) => {
                 filterByAndObject.fields.push({
-                  field:
-                    this.service.filterFieldsMap[filterKey].field ?? filterKey,
+                  field: generateSqlSingleFieldObject(
+                    this.service.filterFieldsMap[filterKey].field ?? filterKey
+                  ),
                   operator: <SqlWhereFieldOperator>operationKey,
                   value: operationValue,
                 });
@@ -350,7 +369,7 @@ export class PaginatorService extends SimpleService {
       });
     }
 
-    //handle search fields
+    // handle search fields
     if (args.search) {
       const whereSubObject: SqlWhereObject = {
         connective: "OR",
@@ -358,19 +377,33 @@ export class PaginatorService extends SimpleService {
       };
 
       for (const field in this.service.searchFieldsMap) {
-        // if field options has exact, ony allow eq
-        if (this.service.searchFieldsMap[field].exact) {
-          whereSubObject.fields.push({
-            field: field,
-            value: args.search,
-            operator: "eq",
-          });
+        const fieldPath = this.service.searchFieldsMap[field].field ?? field;
+
+        // if there is a custom handler on the options, use that
+        const customProcessor =
+          this.service.searchFieldsMap[field].customProcessor;
+        if (customProcessor) {
+          customProcessor(
+            whereSubObject,
+            args.search,
+            this.service.searchFieldsMap[field],
+            fieldPath
+          );
         } else {
-          whereSubObject.fields.push({
-            field: this.service.searchFieldsMap[field].field ?? field,
-            value: new RegExp(escapeRegExp(args.search), "i"),
-            operator: "regex",
-          });
+          // if field options has exact, ony allow eq
+          if (this.service.searchFieldsMap[field].exact) {
+            whereSubObject.fields.push({
+              field: fieldPath,
+              value: args.search.query,
+              operator: "eq",
+            });
+          } else {
+            whereSubObject.fields.push({
+              field: fieldPath,
+              value: new RegExp(escapeRegExp(args.search.query), "i"),
+              operator: "regex",
+            });
+          }
         }
       }
 

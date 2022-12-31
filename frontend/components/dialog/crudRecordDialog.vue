@@ -56,6 +56,7 @@ export default {
     },
     hiddenHeaders: {
       type: Array,
+      default: () => [],
     },
     lockedFilters: {
       type: Array,
@@ -68,6 +69,9 @@ export default {
     initialPageOptions: {
       type: Object,
       default: null,
+    },
+    maxWidth: {
+      type: String,
     },
   },
   data() {
@@ -82,7 +86,10 @@ export default {
     },
 
     computedMaxWidth() {
-      return this.$vuetify.breakpoint.name === 'xs' ? '100%' : '75%'
+      return (
+        this.maxWidth ??
+        (this.$vuetify.breakpoint.name === 'xs' ? '100%' : '75%')
+      )
     },
   },
 

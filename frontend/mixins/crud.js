@@ -98,6 +98,12 @@ export default {
       type: Number,
       default: 12,
     },
+
+    // should the preset filters be hidden?
+    hidePresets: {
+      type: Boolean,
+      default: false,
+    },
   },
 
   data() {
@@ -288,6 +294,14 @@ export default {
         (ele) => !this.hiddenFilters.includes(ele.filterObject.field)
       )
     },
+    visiblePresetFiltersArray() {
+      return this.filterInputsArray.filter(
+        (ele) =>
+          ele.filterObject.preset &&
+          !this.hiddenFilters.includes(ele.filterObject.field)
+      )
+    },
+
     visibleRawFiltersArray() {
       return this.rawFilters.filter(
         (ele) => !this.hiddenFilters.includes(ele.field)
@@ -334,7 +348,14 @@ export default {
     hasFilters() {
       return (
         this.recordInfo.paginationOptions.filterOptions.length > 0 ||
-        this.recordInfo.paginationOptions.hasSearch
+        this.recordInfo.paginationOptions.searchOptions
+      )
+    },
+
+    hasPresetFilters() {
+      return (
+        this.recordInfo.paginationOptions.filterOptions.filter((e) => e.preset)
+          .length > 0 || this.recordInfo.paginationOptions.searchOptions?.preset
       )
     },
 
@@ -559,9 +580,9 @@ export default {
       this.subPageOptions = pageOptions
     },
 
-    // toggle the expand state. if it is mobile view, use dialog
+    // toggle the expand state. if it is mobile view (or forceDialog), use dialog
     toggleItemExpanded(props, expandTypeObject) {
-      if (props.isMobile) {
+      if (props.isMobile || expandTypeObject.forceDialog) {
         this.openExpandDialog(props.item, expandTypeObject)
       } else {
         this.openExpandContainer(props, expandTypeObject)
@@ -639,6 +660,9 @@ export default {
         )
       }
 
+      const getSearchParams =
+        this.recordInfo.paginationOptions.searchOptions?.getParams
+
       return {
         ...(pagination && {
           first: this.resultsPerPage,
@@ -646,7 +670,14 @@ export default {
         }),
         sortBy,
         filterBy: generateFilterByObjectArray(this.allFilters, this.recordInfo),
-        ...(this.search && { search: this.search }),
+        ...(this.search && {
+          search: {
+            query: this.search,
+            params: getSearchParams
+              ? getSearchParams(this, this.search)
+              : undefined,
+          },
+        }),
       }
     },
 

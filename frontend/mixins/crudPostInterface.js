@@ -156,6 +156,16 @@ export default {
           this.records.splice(index, 1)
         }
 
+        // perform onSuccess function for deleteOptions
+        const onSuccess = this.recordInfo.deleteOptions?.onSuccess
+
+        if (onSuccess) {
+          onSuccess(this)
+        } else {
+          // else emit the generic refresh-interface event
+          this.$root.$emit('refresh-interface', this.recordInfo.typename)
+        }
+
         // decrement the number of records to keep it in sync
         this.totalRecords--
       } catch (err) {

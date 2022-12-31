@@ -12,13 +12,7 @@ import { isDev } from "../../../config";
 import { SpecialJoinFunction } from "../../../types";
 import { executeDBQuery, knex } from "../../../utils/knex";
 import { linkDefs } from "../../links";
-
-type FieldInfo = {
-  alias: string;
-  tableAlias: string;
-  finalField: string;
-  fieldDef: ObjectTypeDefinitionField;
-};
+import { generateSqlSingleFieldObject } from "./sqlHelper";
 
 function isSqlWhereObject(
   obj: SqlWhereFieldObject | SqlWhereObject
@@ -26,40 +20,60 @@ function isSqlWhereObject(
   return (obj as SqlWhereObject).fields !== undefined;
 }
 
-// technically this could fail if there happens to be a simple object with "fields" as an array, but this seems unlikely
-function isSqlSimpleWhereObject(
-  ele: SqlWhereInput
-): ele is SqlSimpleWhereObject {
-  return !Array.isArray(ele);
-}
-
 export type SqlWhereObject = {
   connective?: string;
   fields: (SqlWhereObject | SqlWhereFieldObject)[];
 };
 
-export type SqlSimpleWhereObject = {
-  [x: string]: unknown;
-};
-
-export type SqlWhereInput =
-  | SqlSimpleWhereObject
-  | (SqlWhereObject | SqlWhereFieldObject)[];
-
 export type SqlOrderByObject = {
-  field: string;
+  field: SqlSingleFieldObject | string;
   desc?: boolean;
 };
 
 export type SqlWhereFieldObject = {
-  field: string;
-  value: unknown;
+  field: SqlSingleFieldObject | string;
+  value: any;
   operator?: SqlWhereFieldOperator;
 };
 
+type FieldsObjectMap = {
+  fields: {
+    [x: string]: FieldsObjectMap & {
+      field: string;
+      args?: any;
+      fieldInfo?: {
+        tableAlias: string;
+        fieldDef: ObjectTypeDefinitionField;
+      };
+    };
+  };
+};
+
+/* export type SqlSelectQueryObject = {
+  [x: string]: {
+    fields: SqlSelectQueryObject;
+    field: string;
+    args?: any;
+    as?: string;
+  };
+}; */
+
 export type SqlSelectQueryObject = {
+  [x: string]: SqlSingleFieldObject;
+};
+
+// for groupBy, orderBy
+export type SqlSingleFieldObject = {
   field: string;
-  as?: string;
+  args?: any;
+  nested?: SqlSingleFieldObject | null;
+};
+
+// for select
+export type SqlMultipleFieldObject = {
+  fields: {
+    [x: string]: SqlMultipleFieldObject | true;
+  };
   args?: any;
 };
 
@@ -78,16 +92,26 @@ export type SqlWhereFieldOperator =
   | "contains"
   | "containsAll";
 
+export type SqlSimpleSelectObject = {
+  field: string;
+  as?: string;
+  args?: any;
+};
+
+export type SqlSimpleOrderByObject = {
+  field: string;
+  desc?: boolean;
+};
+
 export type SqlSelectQuery = {
-  select: (SqlSelectQueryObject | string)[];
+  select: SqlSelectQueryObject | (SqlSimpleSelectObject | string)[];
   table: string;
   where: SqlWhereInput;
-  groupBy?: string[];
+  groupBy?: (SqlSingleFieldObject | string)[];
   orderBy?: SqlOrderByObject[];
   offset?: number;
   limit?: number;
-  // distinct?: boolean;
-  distinctOn?: string[];
+  distinctOn?: (SqlSingleFieldObject | string)[];
   specialParams?: any;
   transaction?: Knex.Transaction;
 };
@@ -103,7 +127,7 @@ export type SqlCountQuery = {
 };
 
 export type SqlSumQuery = {
-  field: string;
+  field: SqlSingleFieldObject | string;
   table: string;
   where: SqlWhereInput;
   limit?: number;
@@ -159,9 +183,15 @@ export type SqlDeleteQuery = {
   transaction?: Knex.Transaction;
 };
 
-function handleSqlError(err: unknown) {
-  console.log(err);
+export type SqlSimpleWhereObject = {
+  [x: string]: unknown;
+};
 
+export type SqlWhereInput =
+  | SqlSimpleWhereObject
+  | (SqlWhereObject | SqlWhereFieldObject)[];
+
+function handleSqlError(err: unknown) {
   // double check if err is type Error
   let errMessage: string;
   if (err instanceof Error) {
@@ -176,30 +206,19 @@ function handleSqlError(err: unknown) {
   });
 }
 
-function extractFields(whereObject: SqlWhereObject): string[] {
-  const fields: string[] = [];
-  whereObject.fields.forEach((whereSubObject) => {
-    if (isSqlWhereObject(whereSubObject)) {
-      fields.push(...extractFields(whereSubObject));
-    } else {
-      fields.push(whereSubObject.field);
-    }
-  });
-
-  return fields;
-}
+type JoinObjectMap = {
+  [x: string]: JoinObject;
+};
 
 type JoinObject = {
   normalJoin?: {
-    table: string;
-    alias: string;
-    field: string; // field from the originating table
-    joinField: string; // field to be joined from joinedTable
+    table: string; // the table to join
+    alias: string; // the alias of the table to join
+    parentTableField: string; // field on the previous parent table
+    field: string; // field to be joined from joinedTable
   };
   specialJoin?: SpecialJoinDefinition;
-  nested: {
-    [x: string]: JoinObject;
-  };
+  nested: JoinObjectMap;
 };
 
 export type SpecialJoinDefinition = {
@@ -209,257 +228,293 @@ export type SpecialJoinDefinition = {
   args: any;
 };
 
-function acquireTableAlias(tableIndexMap: Map<string, number>, table) {
+// technically this could fail if there happens to be a simple object with "fields" as an array, but this seems unlikely
+function isSqlSimpleWhereObject(
+  ele: SqlWhereInput
+): ele is SqlSimpleWhereObject {
+  return !Array.isArray(ele);
+}
+
+function standardizeSqlSingleSelectField(input: SqlSingleFieldObject | string) {
+  return typeof input === "string"
+    ? generateSqlSingleFieldObject(input)
+    : input;
+}
+
+function standardizeWhereInput(
+  whereObject: SqlSimpleWhereObject | (SqlWhereObject | SqlWhereFieldObject)[]
+) {
+  return {
+    fields: isSqlSimpleWhereObject(whereObject)
+      ? Object.entries(whereObject).reduce((total, [field, value]) => {
+          total.push({
+            field: generateSqlSingleFieldObject(field),
+            value,
+          });
+          return total;
+        }, <Array<SqlWhereFieldObject>>[])
+      : whereObject,
+  };
+}
+
+export function standardizeSelectInput(
+  selectInput: SqlSelectQueryObject | (SqlSimpleSelectObject | string)[]
+) {
+  if (Array.isArray(selectInput)) {
+    // is array, need to process
+    // standardize all to SqlSimpleSelectObject
+    return selectInput
+      .map((ele) => (typeof ele === "string" ? { field: ele } : ele))
+      .reduce((selectObject, simpleSelectObject) => {
+        selectObject[simpleSelectObject.as ?? simpleSelectObject.field] =
+          generateSqlSingleFieldObject(
+            simpleSelectObject.field,
+            simpleSelectObject.args
+          );
+        return selectObject;
+      }, {});
+  } else {
+    return selectInput;
+  }
+}
+
+function acquireTableAlias(
+  table: string,
+  tableIndexMap: Map<string, number> = new Map()
+) {
   // increment tableIndexMap
   let currentTableIndex = tableIndexMap.get(table) ?? -1;
 
-  tableIndexMap.set(table, ++currentTableIndex);
-  return table + currentTableIndex;
+  currentTableIndex += 1;
+  tableIndexMap.set(table, currentTableIndex);
+
+  return {
+    tableAlias: table + currentTableIndex,
+    tableIndexMap,
+  };
 }
 
-function processFields(relevantFields: Map<string, any>, table: string) {
-  // get the typeDef
-  const typeDef = objectTypeDefs.get(table);
-  if (!typeDef) throw new Error(`TypeDef for ${table} not found`);
+// retrives the field alias from the fieldsObjectMap given the singleFieldObject
+function getSingleFieldAlias(
+  fieldsObjectMap: FieldsObjectMap,
+  singleFieldObject: SqlSingleFieldObject,
+  { ignoreGetter = false, wrapTableAlias = true } = {}
+) {
+  const keyName = generateKeyName(
+    singleFieldObject.field,
+    singleFieldObject.args
+  );
 
-  const tableAlias = table + "0";
+  if (singleFieldObject.nested) {
+    // nested, go deeper
+    return getSingleFieldAlias(
+      fieldsObjectMap.fields[keyName],
+      singleFieldObject.nested,
+      {
+        ignoreGetter,
+        wrapTableAlias,
+      }
+    );
+  } else {
+    // no nested, return. but check if there is a sql getter
+    const fieldInfo = fieldsObjectMap.fields[keyName].fieldInfo!;
+    const sqlField = fieldInfo.fieldDef.sqlOptions?.field!;
+    const getter = fieldInfo.fieldDef.sqlOptions?.getter;
 
-  // track required joins
-  const requiredJoins: { [x: string]: JoinObject } = {};
+    const tableAlias = wrapTableAlias
+      ? `"${fieldInfo.tableAlias}"`
+      : fieldInfo.tableAlias;
 
-  // map relevantFields to actual fields
-  const fieldInfoMap: Map<string, FieldInfo> = new Map();
-  // track table aliases
-  const tableIndexMap: Map<string, number> = new Map();
-  // set main table to index 0
-  tableIndexMap.set(table, 0);
+    return getter && !ignoreGetter
+      ? getter(fieldInfo.tableAlias, sqlField)
+      : `${tableAlias}.${sqlField}`;
+  }
+}
 
-  // go through the relevant fields, build join statements
-  for (const [field, args] of relevantFields) {
-    // does the field have a "."? if so, must join
-    const fieldParts = field.split(/\./);
+function processJoinFields(
+  table: string,
+  tableAlias: string,
+  fieldsObjectMap: FieldsObjectMap,
+  tableIndexMap: Map<string, number>,
+  joinObjectMap: JoinObjectMap = {}
+) {
+  if (Object.keys(fieldsObjectMap.fields).length) {
+    // get the typeDef of the table
+    const typeDef = objectTypeDefs.get(table);
+    if (!typeDef) throw new Error(`TypeDef for ${table} not found`);
 
-    let currentTypeDef = typeDef;
-    let currentTableAlias = tableAlias;
-    let currentJoinObject = requiredJoins;
+    // loop through the fieldsObjectMap.fields
+    Object.entries(fieldsObjectMap.fields).forEach(([keyName, nestedValue]) => {
+      // does the field have a "/"? if so, handle differently
+      if (nestedValue.field.match(/\//)) {
+        // ensure it matches the pattern `table/field`
+        const fieldParts = nestedValue.field.split(/\//).filter((e) => e);
 
-    fieldParts.forEach((fieldPart, index) => {
-      // does the field have a "/"? if so, must handle differently
-      let actualFieldPart = fieldPart;
-      if (fieldPart.match(/\//)) {
-        const subParts = fieldPart.split(/\//);
-        const linkJoinType = subParts[0];
+        if (fieldParts.length !== 2) {
+          throw new Error(`Misconfigured compound (*/*) field`);
+        }
 
-        // ensure the type exists
-        const linkService = linkDefs.get(linkJoinType);
-        if (!linkService)
-          throw new Error(`Link type '${linkJoinType}' does not exist`);
+        const [joinTable, joinField] = fieldParts;
+
+        // ensure the link table exists
+        const linkService = linkDefs.get(joinTable);
+
+        if (!linkService) {
+          throw new Error(`Link type '${joinTable}' does not exist`);
+        }
 
         const linkJoinTypeDef = linkService.typeDef;
-
-        // determine how to join this table, based on the definition
-        const joinField = currentTypeDef.definition.name;
 
         // find the field on the typeDef
         const typeDefField = linkJoinTypeDef.definition.fields[joinField];
 
-        if (!typeDefField)
+        if (!typeDefField) {
           throw new Error(
-            `Field '${joinField}' does not exist on type '${typeDef.definition.name}'`
+            `Field '${joinField}' does not exist on type '${linkJoinTypeDef.definition.name}'`
           );
-
-        if (!typeDefField.sqlOptions)
-          throw new Error(
-            `Field '${joinField}' on type '${typeDef.definition.name}' is not a SQL field`
-          );
-
-        // set the actualFieldPart to the 2nd part
-        actualFieldPart = subParts[1];
-
-        // determine actual join field
-        const actualJoinField =
-          typeDefField.sqlOptions.specialJoin?.field ??
-          typeDefField.sqlOptions.field ??
-          joinField;
-
-        if (!actualJoinField)
-          throw new Error(
-            `Joining type '${linkJoinType}' from type '${joinField}' is not configured`
-          );
-
-        // advance the currentTypeDef to the link Join Type Def
-        currentTypeDef = linkJoinTypeDef;
-
-        // only proceed IF the ${linkJoinType}/* is not already in the joinObject
-        const linkJoinTypeStr = linkJoinType + "/*";
-        if (!(linkJoinTypeStr in currentJoinObject)) {
-          const linkTableAlias = acquireTableAlias(tableIndexMap, linkJoinType);
-
-          // set and advance the join table
-          currentJoinObject[linkJoinTypeStr] = {
-            normalJoin: {
-              table: linkJoinType,
-              alias: linkTableAlias,
-              field: "id",
-              joinField: actualJoinField,
-            },
-            nested: {},
-          };
         }
 
-        // set currentTableAlias
-        currentTableAlias =
-          currentJoinObject[linkJoinTypeStr].normalJoin!.alias;
-
-        // advance the join object
-        currentJoinObject = currentJoinObject[linkJoinTypeStr].nested;
-      }
-
-      // find the field on the currentTypeDef
-      const typeDefField = currentTypeDef.definition.fields[actualFieldPart];
-
-      if (!typeDefField)
-        throw new Error(
-          `Field '${actualFieldPart}' does not exist on type '${currentTypeDef.definition.name}'`
-        );
-
-      if (!typeDefField.sqlOptions)
-        throw new Error(
-          `Field '${actualFieldPart}' on type '${currentTypeDef.definition.name}' is not a SQL field`
-        );
-
-      const actualSqlField =
-        typeDefField.sqlOptions.specialJoin?.field ??
-        typeDefField.sqlOptions.field ??
-        actualFieldPart;
-
-      // if no more fields, set the alias
-      if (fieldParts.length < index + 2) {
-        // if there is a special join, need to add it to the currentJoinObject
-        if (typeDefField.sqlOptions.specialJoin) {
-          const joinType = typeDefField.sqlOptions.specialJoin.foreignTable;
-          const joinTableAlias = acquireTableAlias(
-            tableIndexMap,
-            typeDefField.sqlOptions.specialJoin.foreignTable
+        if (!typeDefField.sqlOptions) {
+          throw new Error(
+            `Field '${joinField}' on type '${linkJoinTypeDef.definition.name}' is not a SQL field`
           );
-          currentJoinObject[actualFieldPart] = {
-            normalJoin: undefined,
-            specialJoin: {
-              table: joinType,
-              alias: joinTableAlias,
-              joinFunction: typeDefField.sqlOptions.specialJoin.joinFunction,
-              args,
-            },
-            nested: {},
-          };
-
-          currentTableAlias = joinTableAlias;
         }
 
-        fieldInfoMap.set(field, {
-          alias: currentTableAlias + "." + actualSqlField,
-          tableAlias: currentTableAlias,
-          fieldDef: typeDefField,
-          finalField: actualSqlField,
-        });
+        const nestedJoinType = typeDefField.sqlOptions.joinType!;
+
+        const { tableAlias: joinTableAlias } = acquireTableAlias(
+          joinTable,
+          tableIndexMap
+        );
+
+        const { tableAlias: nestedJoinTableAlias } = acquireTableAlias(
+          nestedJoinType,
+          tableIndexMap
+        );
+
+        // add the keyname with a special name
+        joinObjectMap[`${keyName}/*`] = {
+          normalJoin: {
+            table: joinTable,
+            alias: joinTableAlias,
+            parentTableField: "id",
+            field: joinField,
+          },
+          // automatically apply the nested field
+          nested: {
+            [joinField]: {
+              normalJoin: {
+                table: nestedJoinType,
+                alias: nestedJoinTableAlias,
+                parentTableField: joinField,
+                field: "id",
+              },
+              nested: {},
+            },
+          },
+        };
+
+        // if there are additional fields that need to be joined inside the value.fields, need to drill down and join those as well
+        processJoinFields(
+          nestedJoinType,
+          nestedJoinTableAlias,
+          nestedValue,
+          tableIndexMap,
+          joinObjectMap[`${keyName}/*`].nested[joinField].nested
+        );
       } else {
-        // if more fields, ensure joinInfo is set. need to join this field
-        const joinType = typeDefField.sqlOptions.joinType;
-        if (!joinType)
-          throw new Error(
-            `Field '${actualFieldPart}' is not joinable on type '${currentTypeDef.definition.name}'`
-          );
+        // get the typeDefField
+        const typeDefField = typeDef.definition.fields[nestedValue.field];
 
-        // ensure the type exists
-        const nextTypeDef = objectTypeDefs.get(joinType);
-        if (!nextTypeDef)
-          throw new Error(`Join type '${joinType}' does not exist`);
+        if (!typeDefField.sqlOptions) {
+          throw new Error(`Misconfigured SQL field`);
+        }
 
-        // check requiredJoins to see if is already joined
-        let joinTableAlias;
-        let specialJoinTableAlias;
-        if (currentJoinObject[actualFieldPart]) {
-          joinTableAlias =
-            currentJoinObject[actualFieldPart].normalJoin?.alias ??
-            currentJoinObject[actualFieldPart].specialJoin?.alias;
-        } else {
-          joinTableAlias = acquireTableAlias(tableIndexMap, joinType);
+        // populate the fieldDef and tableAlias
+        fieldsObjectMap.fields[keyName].fieldInfo = {
+          fieldDef: typeDefField,
+          tableAlias: tableAlias,
+        };
 
-          if (typeDefField.sqlOptions.specialJoin) {
-            specialJoinTableAlias = acquireTableAlias(
-              tableIndexMap,
-              typeDefField.sqlOptions.specialJoin.foreignTable
+        // if the value is object with more fields, need to join
+        if (Object.keys(nestedValue.fields).length) {
+          // set an entry in the joinObjectMap
+          const joinTable = typeDefField.sqlOptions.joinType;
+
+          if (!joinTable) {
+            throw new Error(
+              `Field '${nestedValue.field}' is not joinable on type '${typeDef.definition.name}'`
             );
           }
 
-          // set current field as join field
-          currentJoinObject[actualFieldPart] = {
-            normalJoin: {
-              table: joinType,
-              alias: joinTableAlias,
-              field: actualSqlField,
-              joinField: "id",
-            },
-            specialJoin: typeDefField.sqlOptions.specialJoin
-              ? {
-                  table: typeDefField.sqlOptions.specialJoin.foreignTable,
-                  alias: specialJoinTableAlias,
-                  joinFunction:
-                    typeDefField.sqlOptions.specialJoin.joinFunction,
-                  args,
-                }
-              : undefined,
-            nested: {},
-          };
+          const { tableAlias: joinTableAlias } = acquireTableAlias(
+            joinTable,
+            tableIndexMap
+          );
 
-          // if normalJoin.table and specialJoin.table are the same, unset the normalJoin and switch specialJoin.alias
-          if (
-            currentJoinObject[actualFieldPart].normalJoin!.table ===
-            currentJoinObject[actualFieldPart].specialJoin?.table
-          ) {
-            currentJoinObject[actualFieldPart].specialJoin!.alias =
-              currentJoinObject[actualFieldPart].normalJoin!.alias;
-            currentJoinObject[actualFieldPart].normalJoin = undefined;
+          // if there is a specialJoin function, handle differently
+          if (typeDefField.sqlOptions?.specialJoin) {
+            joinObjectMap[keyName] = {
+              specialJoin: {
+                table: joinTable,
+                alias: joinTableAlias,
+                joinFunction: typeDefField.sqlOptions.specialJoin.joinFunction,
+                args: nestedValue.args,
+              },
+              nested: {},
+            };
+          } else {
+            // otherwise, handle it like a normal join
+            joinObjectMap[keyName] = {
+              normalJoin: {
+                table: joinTable,
+                alias: joinTableAlias,
+                parentTableField: typeDefField.sqlOptions.field!,
+                field: "id",
+              },
+              nested: {},
+            };
           }
+          // if there are additional fields that need to be joined inside the value.fields, need to drill down and join those as well
+          processJoinFields(
+            joinTable,
+            joinTableAlias,
+            nestedValue,
+            tableIndexMap,
+            joinObjectMap[keyName].nested
+          );
         }
-
-        // shift these variables
-        currentJoinObject = currentJoinObject[actualFieldPart].nested;
-        currentTypeDef = nextTypeDef;
-        // currentTableAlias = specialJoinTableAlias ?? joinTableAlias;
-        currentTableAlias = joinTableAlias;
       }
     });
   }
 
   return {
-    fieldInfoMap,
-    requiredJoins,
-    tableIndexMap,
+    fieldsObjectMap,
+    joinObjectMap,
   };
 }
 
-function applyWhere(
+function applyKnexWhere(
   knexObject: Knex.QueryBuilder,
   whereObject: SqlWhereObject,
-  fieldInfoMap: Map<string, FieldInfo>
+  fieldsObjectMap: FieldsObjectMap
 ) {
   whereObject.fields.forEach((whereSubObject) => {
     if (isSqlWhereObject(whereSubObject)) {
       knexObject[whereObject.connective === "OR" ? "orWhere" : "andWhere"](
         (builder) => {
-          applyWhere(builder, whereSubObject, fieldInfoMap);
+          applyKnexWhere(builder, whereSubObject, fieldsObjectMap);
         }
       );
     } else {
       const operator = whereSubObject.operator ?? "eq";
-      const fieldInfo = fieldInfoMap.get(whereSubObject.field)!;
-      const getter = fieldInfo.fieldDef.sqlOptions?.getter;
       const bindings: any[] = [];
+      const fieldAlias = getSingleFieldAlias(
+        fieldsObjectMap,
+        standardizeSqlSingleSelectField(whereSubObject.field)
+      );
 
-      let whereSubstatement = getter
-        ? getter(fieldInfo.tableAlias, fieldInfo.finalField)
-        : `"${fieldInfo.tableAlias}".${fieldInfo.finalField}`;
+      let whereSubstatement = fieldAlias;
       switch (operator) {
         case "eq":
           if (whereSubObject.value === null) {
@@ -643,8 +698,8 @@ function applyJoins(
     if (normalJoin) {
       knexObject.leftJoin(
         { [normalJoin.alias]: normalJoin.table },
-        currentParentTableAlias + "." + normalJoin.field,
-        normalJoin.alias + "." + normalJoin.joinField
+        currentParentTableAlias + "." + normalJoin.parentTableField,
+        normalJoin.alias + "." + normalJoin.field
       );
 
       currentParentTableAlias = normalJoin.alias;
@@ -661,82 +716,139 @@ function applyJoins(
   }
 }
 
-function standardizeWhereObject(
-  whereObject: SqlSimpleWhereObject | (SqlWhereObject | SqlWhereFieldObject)[]
+// helper function to generate keynames for SqlSelectQueryObject
+function generateKeyName(key: string, args: any) {
+  return `${key}${args ? `-${JSON.stringify(args)}` : ""}`;
+}
+
+function processSingleFieldObject(
+  singleFieldObject: SqlSingleFieldObject,
+  fieldsObjectMap: FieldsObjectMap
 ) {
-  return {
-    fields: isSqlSimpleWhereObject(whereObject)
-      ? Object.entries(whereObject).reduce((total, [field, value]) => {
-          total.push({
-            field,
-            value,
-          });
-          return total;
-        }, <Array<SqlWhereFieldObject>>[])
-      : whereObject,
-  };
+  // if not exists, initialize
+  const keyName = generateKeyName(
+    singleFieldObject.field,
+    singleFieldObject.args
+  );
+  if (!fieldsObjectMap.fields[keyName]) {
+    fieldsObjectMap.fields[keyName] = {
+      fields: {},
+      field: singleFieldObject.field,
+      args: singleFieldObject.args,
+    };
+  }
+
+  // if nested, process the nested field
+  if (singleFieldObject.nested) {
+    processSingleFieldObject(
+      singleFieldObject.nested,
+      fieldsObjectMap.fields[keyName]
+    );
+  }
+
+  return fieldsObjectMap;
+}
+
+function processWhereObject(
+  whereObject: SqlWhereObject,
+  fieldsObjectMap: FieldsObjectMap = { fields: {} }
+) {
+  whereObject.fields.forEach((whereSubObject) => {
+    if (isSqlWhereObject(whereSubObject)) {
+      processWhereObject(whereSubObject, fieldsObjectMap);
+    } else {
+      const singleSelectField = standardizeSqlSingleSelectField(
+        whereSubObject.field
+      );
+
+      processSingleFieldObject(singleSelectField, fieldsObjectMap);
+    }
+  });
+
+  return fieldsObjectMap;
 }
 
 export async function fetchTableRows(sqlQuery: SqlSelectQuery) {
   try {
-    const tableAlias = sqlQuery.table + "0";
+    // acquire alias of the first table
+    const { tableIndexMap, tableAlias } = acquireTableAlias(sqlQuery.table);
 
-    const relevantFields: Map<string, any> = new Map();
+    const standardizedSelectObject = standardizeSelectInput(sqlQuery.select);
 
-    // gather all of the "known fields" in select, where, groupBy,
-    sqlQuery.select.forEach((ele) => {
-      relevantFields.set(
-        typeof ele === "string" ? ele : ele.field,
-        typeof ele === "string" ? null : ele.args
-      );
-    });
+    // initialize fieldsObjectMap
+    const fieldsObjectMap = { fields: {} };
 
-    if (sqlQuery.groupBy)
-      sqlQuery.groupBy.forEach((field) => relevantFields.set(field, null));
-
-    if (sqlQuery.orderBy)
-      sqlQuery.orderBy.forEach((ele) => relevantFields.set(ele.field, null));
-
-    const standardizedWhereObject = standardizeWhereObject(sqlQuery.where);
-
-    extractFields(standardizedWhereObject).forEach((field) =>
-      relevantFields.set(field, null)
+    // gather all of the known fields in select, insert them into the fieldsObjectMap
+    Object.entries(standardizedSelectObject).forEach(
+      ([_alias, singleFieldObject]) => {
+        processSingleFieldObject(singleFieldObject, fieldsObjectMap);
+      }
     );
 
-    const { fieldInfoMap, requiredJoins, tableIndexMap } = processFields(
-      relevantFields,
-      sqlQuery.table
+    // process groupBy
+    if (sqlQuery.groupBy) {
+      sqlQuery.groupBy.forEach((ele) =>
+        processSingleFieldObject(
+          standardizeSqlSingleSelectField(ele),
+          fieldsObjectMap
+        )
+      );
+    }
+
+    // process orderBy
+    if (sqlQuery.orderBy) {
+      sqlQuery.orderBy.forEach((orderByObject) =>
+        processSingleFieldObject(
+          standardizeSqlSingleSelectField(orderByObject.field),
+          fieldsObjectMap
+        )
+      );
+    }
+
+    // standardize the where input
+    const standardizedWhereObject = standardizeWhereInput(sqlQuery.where);
+
+    // process the where
+    processWhereObject(standardizedWhereObject, fieldsObjectMap);
+
+    // finalize processing of fields
+    const { joinObjectMap } = processJoinFields(
+      sqlQuery.table,
+      tableAlias,
+      fieldsObjectMap,
+      tableIndexMap
     );
 
     const knexObject = knex.from({ [tableAlias]: sqlQuery.table });
 
     // apply the joins
-    applyJoins(knexObject, requiredJoins, tableAlias, sqlQuery.specialParams);
+    applyJoins(knexObject, joinObjectMap, tableAlias, sqlQuery.specialParams);
 
     // build and apply select object
     const knexSelectObject = {};
 
-    sqlQuery.select.forEach((ele) => {
-      const fieldInfo = fieldInfoMap.get(
-        typeof ele === "string" ? ele : ele.field
-      )!;
-      // does it have a getter?
-      const getter = fieldInfo.fieldDef.sqlOptions?.getter;
-
-      knexSelectObject[typeof ele === "string" ? ele : ele.as ?? ele.field] =
-        getter
-          ? knex.raw(getter(fieldInfo.tableAlias, fieldInfo.finalField))
-          : fieldInfo.alias;
-    });
+    Object.entries(standardizedSelectObject).forEach(
+      ([alias, singleFieldObject]) => {
+        knexSelectObject[alias] = knex.raw(
+          getSingleFieldAlias(fieldsObjectMap, singleFieldObject)
+        );
+      }
+    );
 
     knexObject.select(knexSelectObject);
 
     // apply groupBy
     if (sqlQuery.groupBy) {
-      sqlQuery.groupBy.forEach((field) => {
-        const mappedField = fieldInfoMap.get(field);
+      sqlQuery.groupBy.forEach((ele) => {
         // should always exist
-        mappedField && knexObject.groupBy(mappedField.alias);
+        knexObject.groupBy(
+          knex.raw(
+            getSingleFieldAlias(
+              fieldsObjectMap,
+              standardizeSqlSingleSelectField(ele)
+            )
+          )
+        );
       });
     }
 
@@ -744,19 +856,20 @@ export async function fetchTableRows(sqlQuery: SqlSelectQuery) {
     if (sqlQuery.orderBy) {
       knexObject.orderByRaw(
         sqlQuery.orderBy
-          .map((ele) => {
-            const fieldInfo = fieldInfoMap.get(ele.field)!;
-            return `"${fieldInfo.tableAlias}".${fieldInfo.finalField} ${
-              ele.desc ? "desc NULLS LAST" : "asc NULLS FIRST"
-            }`;
+          .map((orderByObject) => {
+            return `${getSingleFieldAlias(
+              fieldsObjectMap,
+              standardizeSqlSingleSelectField(orderByObject.field),
+              { ignoreGetter: true }
+            )} ${orderByObject.desc ? "desc NULLS LAST" : "asc NULLS FIRST"}`;
           })
           .join(", ")
       );
     }
 
-    // apply where
+    // apply where, if any fields
     if (standardizedWhereObject.fields.length > 0) {
-      applyWhere(knexObject, standardizedWhereObject, fieldInfoMap);
+      applyKnexWhere(knexObject, standardizedWhereObject, fieldsObjectMap);
     }
 
     // apply limit
@@ -772,7 +885,16 @@ export async function fetchTableRows(sqlQuery: SqlSelectQuery) {
     // apply distinct
     if (sqlQuery.distinctOn) {
       knexObject.distinctOn(
-        sqlQuery.distinctOn.map((field) => fieldInfoMap.get(field)!.alias)
+        sqlQuery.distinctOn.map((ele) =>
+          getSingleFieldAlias(
+            fieldsObjectMap,
+            standardizeSqlSingleSelectField(ele),
+            {
+              ignoreGetter: true,
+              wrapTableAlias: false, // not wrapping table alias because knex will do it for us here
+            }
+          )
+        )
       );
     }
 
@@ -788,29 +910,30 @@ export async function fetchTableRows(sqlQuery: SqlSelectQuery) {
 
 export async function countTableRows(sqlQuery: SqlCountQuery) {
   try {
-    const tableAlias = sqlQuery.table + "0";
+    // acquire alias of the first table
+    const { tableIndexMap, tableAlias } = acquireTableAlias(sqlQuery.table);
 
-    const relevantFields: Map<string, any> = new Map();
+    // standardize the where input
+    const standardizedWhereObject = standardizeWhereInput(sqlQuery.where);
 
-    const standardizedWhereObject = standardizeWhereObject(sqlQuery.where);
+    const fieldsObjectMap = processWhereObject(standardizedWhereObject);
 
-    extractFields(standardizedWhereObject).forEach((field) =>
-      relevantFields.set(field, null)
-    );
-
-    const { fieldInfoMap, requiredJoins, tableIndexMap } = processFields(
-      relevantFields,
-      sqlQuery.table
+    // finalize processing of fields
+    const { joinObjectMap } = processJoinFields(
+      sqlQuery.table,
+      tableAlias,
+      fieldsObjectMap,
+      tableIndexMap
     );
 
     const knexObject = knex.from({ [tableAlias]: sqlQuery.table });
 
     // apply the joins
-    applyJoins(knexObject, requiredJoins, tableAlias, sqlQuery.specialParams);
+    applyJoins(knexObject, joinObjectMap, tableAlias, sqlQuery.specialParams);
 
-    // apply where
+    // apply where, if any fields
     if (standardizedWhereObject.fields.length > 0) {
-      applyWhere(knexObject, standardizedWhereObject, fieldInfoMap);
+      applyKnexWhere(knexObject, standardizedWhereObject, fieldsObjectMap);
     }
 
     // apply limit
@@ -836,32 +959,36 @@ export async function countTableRows(sqlQuery: SqlCountQuery) {
 
 export async function sumTableRows(sqlQuery: SqlSumQuery) {
   try {
-    const tableAlias = sqlQuery.table + "0";
+    // acquire alias of the first table
+    const { tableIndexMap, tableAlias } = acquireTableAlias(sqlQuery.table);
 
-    const relevantFields: Map<string, any> = new Map();
+    // standardize the where input
+    const standardizedWhereObject = standardizeWhereInput(sqlQuery.where);
 
-    const standardizedWhereObject = standardizeWhereObject(sqlQuery.where);
-
-    extractFields(standardizedWhereObject).forEach((field) =>
-      relevantFields.set(field, null)
-    );
+    const fieldsObjectMap = processWhereObject(standardizedWhereObject);
 
     // add the field to be summed
-    relevantFields.set(sqlQuery.field, null);
+    processSingleFieldObject(
+      standardizeSqlSingleSelectField(sqlQuery.field),
+      fieldsObjectMap
+    );
 
-    const { fieldInfoMap, requiredJoins, tableIndexMap } = processFields(
-      relevantFields,
-      sqlQuery.table
+    // finalize processing of fields
+    const { joinObjectMap } = processJoinFields(
+      sqlQuery.table,
+      tableAlias,
+      fieldsObjectMap,
+      tableIndexMap
     );
 
     const knexObject = knex.from({ [tableAlias]: sqlQuery.table });
 
     // apply the joins
-    applyJoins(knexObject, requiredJoins, tableAlias, sqlQuery.specialParams);
+    applyJoins(knexObject, joinObjectMap, tableAlias, sqlQuery.specialParams);
 
-    // apply where
+    // apply where, if any fields
     if (standardizedWhereObject.fields.length > 0) {
-      applyWhere(knexObject, standardizedWhereObject, fieldInfoMap);
+      applyKnexWhere(knexObject, standardizedWhereObject, fieldsObjectMap);
     }
 
     // apply limit
@@ -869,12 +996,14 @@ export async function sumTableRows(sqlQuery: SqlSumQuery) {
       knexObject.limit(sqlQuery.limit);
     }
 
-    // this shoud always exist
-    const sumFieldInfo = fieldInfoMap.get(sqlQuery.field)!;
-
     // apply distinct
     knexObject[sqlQuery.distinct ? "sumDistinct" : "sum"](
-      knex.raw(`"${sumFieldInfo.tableAlias}"."${sumFieldInfo.finalField}"`)
+      knex.raw(
+        getSingleFieldAlias(
+          fieldsObjectMap,
+          standardizeSqlSingleSelectField(sqlQuery.field)
+        )
+      )
     );
 
     if (sqlQuery.transaction) {
@@ -890,29 +1019,30 @@ export async function sumTableRows(sqlQuery: SqlSumQuery) {
 
 export function getRawKnexObject(sqlQuery: SqlRawQuery) {
   try {
-    const tableAlias = sqlQuery.table + "0";
+    // acquire alias of the first table
+    const { tableIndexMap, tableAlias } = acquireTableAlias(sqlQuery.table);
 
-    const relevantFields: Map<string, any> = new Map();
+    // standardize the where input
+    const standardizedWhereObject = standardizeWhereInput(sqlQuery.where);
 
-    const standardizedWhereObject = standardizeWhereObject(sqlQuery.where);
+    const fieldsObjectMap = processWhereObject(standardizedWhereObject);
 
-    extractFields(standardizedWhereObject).forEach((field) =>
-      relevantFields.set(field, null)
-    );
-
-    const { fieldInfoMap, requiredJoins, tableIndexMap } = processFields(
-      relevantFields,
-      sqlQuery.table
+    // finalize processing of fields
+    const { joinObjectMap } = processJoinFields(
+      sqlQuery.table,
+      tableAlias,
+      fieldsObjectMap,
+      tableIndexMap
     );
 
     const knexObject = knex.from({ [tableAlias]: sqlQuery.table });
 
     // apply the joins
-    applyJoins(knexObject, requiredJoins, tableAlias, sqlQuery.specialParams);
+    applyJoins(knexObject, joinObjectMap, tableAlias, sqlQuery.specialParams);
 
-    // apply where
+    // apply where, if any fields
     if (standardizedWhereObject.fields.length > 0) {
-      applyWhere(knexObject, standardizedWhereObject, fieldInfoMap);
+      applyKnexWhere(knexObject, standardizedWhereObject, fieldsObjectMap);
     }
 
     if (sqlQuery.transaction) {
@@ -961,19 +1091,20 @@ export async function insertTableRow(sqlQuery: SqlInsertQuery) {
 
 export async function updateTableRow(sqlQuery: SqlUpdateQuery) {
   try {
-    const tableAlias = sqlQuery.table + "0";
+    // acquire alias of the first table
+    const { tableIndexMap, tableAlias } = acquireTableAlias(sqlQuery.table);
 
-    const relevantFields: Map<string, any> = new Map();
+    // standardize the where input
+    const standardizedWhereObject = standardizeWhereInput(sqlQuery.where);
 
-    const standardizedWhereObject = standardizeWhereObject(sqlQuery.where);
+    const fieldsObjectMap = processWhereObject(standardizedWhereObject);
 
-    extractFields(standardizedWhereObject).forEach((field) =>
-      relevantFields.set(field, null)
-    );
-
-    const { fieldInfoMap, requiredJoins, tableIndexMap } = processFields(
-      relevantFields,
-      sqlQuery.table
+    // finalize processing of fields
+    const { joinObjectMap } = processJoinFields(
+      sqlQuery.table,
+      tableAlias,
+      fieldsObjectMap,
+      tableIndexMap
     );
 
     // check if there is a sql setter on the field
@@ -1001,11 +1132,11 @@ export async function updateTableRow(sqlQuery: SqlUpdateQuery) {
     const knexObject = knex.from({ [tableAlias]: sqlQuery.table });
 
     // apply the joins
-    applyJoins(knexObject, requiredJoins, tableAlias);
+    applyJoins(knexObject, joinObjectMap, tableAlias);
 
-    // apply where
+    // apply where, if any fields
     if (standardizedWhereObject.fields.length > 0) {
-      applyWhere(knexObject, standardizedWhereObject, fieldInfoMap);
+      applyKnexWhere(knexObject, standardizedWhereObject, fieldsObjectMap);
     }
 
     if (sqlQuery.transaction) {
@@ -1022,19 +1153,20 @@ export async function updateTableRow(sqlQuery: SqlUpdateQuery) {
 
 export async function incrementTableRow(sqlQuery: SqlIncrementQuery) {
   try {
-    const tableAlias = sqlQuery.table + "0";
+    // acquire alias of the first table
+    const { tableIndexMap, tableAlias } = acquireTableAlias(sqlQuery.table);
 
-    const relevantFields: Map<string, any> = new Map();
+    // standardize the where input
+    const standardizedWhereObject = standardizeWhereInput(sqlQuery.where);
 
-    const standardizedWhereObject = standardizeWhereObject(sqlQuery.where);
+    const fieldsObjectMap = processWhereObject(standardizedWhereObject);
 
-    extractFields(standardizedWhereObject).forEach((field) =>
-      relevantFields.set(field, null)
-    );
-
-    const { fieldInfoMap, requiredJoins, tableIndexMap } = processFields(
-      relevantFields,
-      sqlQuery.table
+    // finalize processing of fields
+    const { joinObjectMap } = processJoinFields(
+      sqlQuery.table,
+      tableAlias,
+      fieldsObjectMap,
+      tableIndexMap
     );
 
     // check if there is a sql setter on the field
@@ -1060,11 +1192,11 @@ export async function incrementTableRow(sqlQuery: SqlIncrementQuery) {
     const knexObject = knex.from({ [tableAlias]: sqlQuery.table });
 
     // apply the joins
-    applyJoins(knexObject, requiredJoins, tableAlias);
+    applyJoins(knexObject, joinObjectMap, tableAlias);
 
-    // apply where
+    // apply where, if any fields
     if (standardizedWhereObject.fields.length > 0) {
-      applyWhere(knexObject, standardizedWhereObject, fieldInfoMap);
+      applyKnexWhere(knexObject, standardizedWhereObject, fieldsObjectMap);
     }
 
     if (sqlQuery.transaction) {
@@ -1086,29 +1218,30 @@ export async function incrementTableRow(sqlQuery: SqlIncrementQuery) {
 
 export async function deleteTableRow(sqlQuery: SqlDeleteQuery) {
   try {
-    const tableAlias = sqlQuery.table + "0";
+    // acquire alias of the first table
+    const { tableIndexMap, tableAlias } = acquireTableAlias(sqlQuery.table);
 
-    const relevantFields: Map<string, any> = new Map();
+    // standardize the where input
+    const standardizedWhereObject = standardizeWhereInput(sqlQuery.where);
 
-    const standardizedWhereObject = standardizeWhereObject(sqlQuery.where);
+    const fieldsObjectMap = processWhereObject(standardizedWhereObject);
 
-    extractFields(standardizedWhereObject).forEach((field) =>
-      relevantFields.set(field, null)
-    );
-
-    const { fieldInfoMap, requiredJoins, tableIndexMap } = processFields(
-      relevantFields,
-      sqlQuery.table
+    // finalize processing of fields
+    const { joinObjectMap } = processJoinFields(
+      sqlQuery.table,
+      tableAlias,
+      fieldsObjectMap,
+      tableIndexMap
     );
 
     const knexObject = knex.from({ [tableAlias]: sqlQuery.table });
 
     // apply the joins
-    applyJoins(knexObject, requiredJoins, tableAlias);
+    applyJoins(knexObject, joinObjectMap, tableAlias);
 
-    // apply where
+    // apply where, if any fields
     if (standardizedWhereObject.fields.length > 0) {
-      applyWhere(knexObject, standardizedWhereObject, fieldInfoMap);
+      applyKnexWhere(knexObject, standardizedWhereObject, fieldsObjectMap);
     }
 
     if (sqlQuery.transaction) {

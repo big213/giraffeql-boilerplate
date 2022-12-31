@@ -96,7 +96,7 @@
               :icon="expandTypeObject.icon"
               :hidden-headers="expandTypeObject.excludeHeaders"
               :locked-filters="lockedSubFilters"
-              :page-options="subPageOptions"
+              :page-options="pageOptions"
               :hidden-filters="hiddenSubFilters"
               :parent-item="selectedItem"
               dense
@@ -233,6 +233,13 @@ export default {
         CrudRecordInterface
       )
     },
+
+    // type: CrudPageOptions | null
+    pageOptions() {
+      return this.$route.query.pageOptions
+        ? JSON.parse(atob(decodeURIComponent(this.$route.query.pageOptions)))
+        : null
+    },
   },
 
   watch: {
@@ -261,6 +268,13 @@ export default {
       }
 
       this.reset(true)
+    },
+
+    '$route.query.pageOptions'(val) {
+      // if no pageOptions, automatically redirect if there is a defaultPageOptions
+      if (!val && this.recordInfo.paginationOptions.defaultPageOptions) {
+        this.navigateToDefaultRoute()
+      }
     },
   },
 
@@ -332,6 +346,7 @@ export default {
         query.e = expandKey
       } else {
         delete query.e
+        delete query.pageOptions
       }
 
       // push to route
@@ -343,10 +358,12 @@ export default {
         .catch((e) => e)
     },
 
-    setExpandTypeObject(expandKey) {
+    setExpandTypeObject(expandKey, init = false) {
       // if expandKey is undefined, unset it
       if (expandKey === undefined) {
         this.expandTypeObject = null
+        // also need to unset the pageOptions
+
         return
       }
 
@@ -365,17 +382,41 @@ export default {
 
         this.expandTypeObject = expandTypeObject
 
-        // when item expanded, reset the filters
-        this.subPageOptions = {
-          search: null,
-          filters: expandTypeObject.initialFilters ?? [],
-          sort: expandTypeObject.initialSortOptions ?? null,
+        // when item expanded, initialize the filters if not init, or if init and pageOptions not defined
+        if (!init || (init && !this.$route.query.pageOptions)) {
+          this.handleSubPageOptionsUpdated({
+            search: null,
+            filters: expandTypeObject.initialFilters ?? [],
+            sort: expandTypeObject.initialSortOptions ?? null,
+          })
         }
       }
     },
 
     handleSubPageOptionsUpdated(pageOptions) {
-      this.subPageOptions = pageOptions
+      const query = {
+        ...this.$route.query,
+      }
+
+      // check if any valid options
+      if (
+        pageOptions &&
+        (pageOptions.search || pageOptions.filters.length || pageOptions.sort)
+      ) {
+        query.pageOptions = encodeURIComponent(
+          btoa(JSON.stringify(pageOptions))
+        )
+      } else {
+        delete query.pageOptions
+      }
+
+      this.$router
+        .replace({
+          path: this.$route.path,
+          query,
+        })
+        .catch((e) => e)
+      // catches if the query is exactly the same
     },
 
     openDialog(dialogName) {
@@ -435,18 +476,16 @@ export default {
     },
 
     reset(hardReset = false) {
-      console.log(this.$route.query)
       if (hardReset) {
+        // if minimize query param set, set the initial isRecordMinimized
+        if (this.$route.query.m !== undefined) {
+          this.isRecordMinimized = true
+        }
         // must independently verify existence of item
         this.loadRecord().then(() => {
           // if expand query param set, set the initial expandTypeObject
           if (this.$route.query.e !== undefined) {
-            this.setExpandTypeObject(this.$route.query.e)
-          }
-
-          // if minimize query param set, set the initial isRecordMinimized
-          if (this.$route.query.m !== undefined) {
-            this.isRecordMinimized = true
+            this.setExpandTypeObject(this.$route.query.e, true)
           }
         })
       }

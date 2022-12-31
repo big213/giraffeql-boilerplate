@@ -2,6 +2,7 @@ import type { RecordInfo } from '~/types'
 import {
   generateBaseLinkFields,
   generatePreviewableJoinableField,
+  generateSortOptions,
 } from '~/services/recordInfo'
 import { Simple{{ capitalizedTypename }} } from '../simple'
 
@@ -21,17 +22,10 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
     }),
   },
   paginationOptions: {
-    hasSearch: false,
+    searchOptions: undefined,
     filterOptions: [],
     sortOptions: [
-      {
-        field: 'updatedAt',
-        desc: true,
-      },
-      {
-        field: 'updatedAt',
-        desc: false,
-      },
+      ...generateSortOptions("updatedAt"),
     ],
     headerOptions: [
       {

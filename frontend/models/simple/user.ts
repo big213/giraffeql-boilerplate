@@ -11,4 +11,8 @@ export const SimpleUser = <Partial<RecordInfo<'user'>>>{
   hasDescription: true,
   renderItem: (item) => item.email,
   followLinkModel: 'userUserFollowLink',
+  previewOptions: {
+    fields: ['__typename'],
+    heroOptions: {},
+  },
 }

@@ -3,6 +3,7 @@ import CopyableColumn from '~/components/table/copyableColumn.vue'
 import {
   generateBaseFields,
   generatePreviewableJoinableField,
+  generateSortOptions,
 } from '~/services/recordInfo'
 import { SimpleApiKey } from '../simple'
 
@@ -29,7 +30,7 @@ export const ApiKey = <RecordInfo<'apiKey'>>{
     }),
   },
   paginationOptions: {
-    hasSearch: false,
+    searchOptions: undefined,
     filterOptions: [],
     handleRowClick: (that, props) => {
       that.openEditDialog('view', props.item)
@@ -37,16 +38,7 @@ export const ApiKey = <RecordInfo<'apiKey'>>{
     handleGridElementClick: (that, item) => {
       that.openEditDialog('view', item)
     },
-    sortOptions: [
-      {
-        field: 'updatedAt',
-        desc: true,
-      },
-      {
-        field: 'updatedAt',
-        desc: false,
-      },
-    ],
+    sortOptions: [...generateSortOptions('updatedAt')],
     headerOptions: [
       {
         field: 'name',

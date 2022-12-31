@@ -73,10 +73,11 @@ export default {
   },
 
   created() {
-    // if there is a redirectUrl, go there
+    // if there is a redirectUrl, go there and unset it
     this.redirectPath = localStorage.getItem('redirectPath')
 
     if (this.redirectPath) {
+      localStorage.removeItem('redirectPath')
       this.$router.push(this.redirectPath)
     }
   },

@@ -2,6 +2,7 @@ import type { RecordInfo } from '~/types'
 import {
   generateBaseLinkFields,
   generatePreviewableJoinableField,
+  generateSortOptions,
 } from '~/services/recordInfo'
 import { SimpleUserUserFollowLink } from '../simple'
 
@@ -21,18 +22,9 @@ export const UserUserFollowLink = <RecordInfo<'userUserFollowLink'>>{
     }),
   },
   paginationOptions: {
-    hasSearch: false,
+    searchOptions: undefined,
     filterOptions: [],
-    sortOptions: [
-      {
-        field: 'updatedAt',
-        desc: true,
-      },
-      {
-        field: 'updatedAt',
-        desc: false,
-      },
-    ],
+    sortOptions: [...generateSortOptions('updatedAt')],
     headerOptions: [
       {
         field: 'userRecord',

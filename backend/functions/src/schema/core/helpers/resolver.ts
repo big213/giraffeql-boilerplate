@@ -18,14 +18,22 @@ import {
   countTableRows,
   KnexExtendFunction,
   SqlSelectQuery,
-  SqlSelectQueryObject,
   SqlWhereInput,
+  SqlSimpleSelectObject,
+  SqlSelectQueryObject,
+  standardizeSelectInput,
+  SqlSingleFieldObject,
 } from "./sql";
 import { CustomResolverFunction } from "../../../types";
 
-import { expandObject, isObject } from "../helpers/shared";
+import { expandObject } from "../helpers/shared";
 import type { Request } from "express";
 import { Transaction } from "knex";
+import {
+  generateFieldPath,
+  generateSqlSingleFieldObject,
+  generateSqlSingleFieldObjectFromArray,
+} from "./sqlHelper";
 
 type CustomResolver = {
   resolver: CustomResolverFunction;
@@ -276,7 +284,7 @@ export async function getObjectType({
   fieldPath: string[];
   externalQuery: unknown;
   sqlParams?: Omit<SqlSelectQuery, "table" | "select">;
-  rawSelect?: SqlSelectQueryObject[];
+  rawSelect?: SqlSimpleSelectObject[];
   data?: any;
   externalTypeDef?: GiraffeqlObjectType;
 }): Promise<any[]> {
@@ -299,25 +307,25 @@ export async function getObjectType({
     validateArgs: false, // should already be validated
   });
 
+  // merge rawSelect into a selectObject first
+  const rawSelectObject = standardizeSelectInput(rawSelect);
+
   // convert GiraffeqlResolverNode into a validatedSqlQuery
-  const validatedSqlSelectArray = generateSqlQuerySelectObject({
+  const selectObject = generateSqlQuerySelectObject({
     // should never end up in here without a nested query
     nestedResolverNodeMap: giraffeqlResolverTree.nested!,
+    selectObject: rawSelectObject,
     fieldPath,
   });
 
   let giraffeqlResultsTreeArray: SqlSelectQueryOutput[];
 
-  // if no sql fields and no sql params, skip
-  if (!sqlParams && validatedSqlSelectArray.length < 1) {
+  // if no sql params, skip and return an empty object
+  if (!sqlParams) {
     giraffeqlResultsTreeArray = [{}];
   } else {
-    if (!sqlParams)
-      throw new GiraffeqlBaseError({
-        message: `SQL Params required`,
-      });
     const sqlQuery = {
-      select: validatedSqlSelectArray.concat(rawSelect),
+      select: selectObject,
       table: typename,
       ...sqlParams,
     };
@@ -369,97 +377,152 @@ export function countObjectType(
 
 function generateSqlQuerySelectObject({
   nestedResolverNodeMap,
-  parentFields = [],
-  parentArgs,
+  selectObject = {},
   fieldPath,
 }: {
   nestedResolverNodeMap: { [x: string]: GiraffeqlResolverNode };
-  parentFields?: string[];
-  parentArgs?: any;
+  selectObject?: SqlSelectQueryObject;
   fieldPath: string[];
 }) {
-  const sqlSelectObjectArray: {
-    field: string;
-    args?: any;
-  }[] = [];
+  // traverse the nestedResolverNodeMap and retrieve all required fields
+  const requiredFields = retrieveAllRequiredFields(nestedResolverNodeMap);
 
-  let addIdField = true;
-  for (const field in nestedResolverNodeMap) {
-    const typeDef = nestedResolverNodeMap[field].typeDef;
+  // insert the required fields into selectObject
+  [...requiredFields].reduce((total, fieldPath) => {
+    selectObject[fieldPath] = generateSqlSingleFieldObject(fieldPath);
+    return selectObject;
+  }, selectObject);
+
+  // traverse the nestedResolverNodeMap and return an array of SqlSingleFieldObject
+  const singleFieldsObjects: SqlSingleFieldObject[] =
+    generateSqlSingleFieldObjectArray({
+      nestedResolverNodeMap,
+      fieldPath,
+    });
+
+  // populate the selectObject.
+  singleFieldsObjects.forEach((singleFieldObject) => {
+    selectObject[generateFieldPath(singleFieldObject)] = singleFieldObject;
+  });
+
+  return selectObject;
+}
+
+function retrieveAllRequiredFields(
+  nestedResolverNodeMap: {
+    [x: string]: GiraffeqlResolverNode;
+  },
+  // going to assume the base level is always a sql field
+  isSqlField = true,
+  isDataloader = false,
+  isJoinable = true,
+  fieldPath: string[] = []
+) {
+  const requiredFields: Set<string> = new Set();
+
+  // if it is a sql field, not a dataloader, is joinable always add fieldPath + "id" as a required field
+  if (isSqlField && !isDataloader && isJoinable) {
+    requiredFields.add(fieldPath.length ? `${fieldPath.join(".")}.id` : "id");
+  }
+
+  Object.entries(nestedResolverNodeMap).forEach(([field, resolverNode]) => {
+    if (isRootResolverDefinition(resolverNode.typeDef)) {
+      throw new Error(`Misconfigured giraffeql`);
+    }
+
+    if (resolverNode.typeDef.requiredSqlFields) {
+      resolverNode.typeDef.requiredSqlFields
+        .map((requiredField) =>
+          fieldPath.length
+            ? `${fieldPath.join(".")}.${requiredField}`
+            : requiredField
+        )
+        .forEach((ele) => {
+          requiredFields.add(ele);
+        });
+    }
+    resolverNode.typeDef.sqlOptions?.joinType;
+
+    // if nested, traverse the tree
+    if (resolverNode.nested) {
+      retrieveAllRequiredFields(
+        resolverNode.nested,
+        !!resolverNode.typeDef.sqlOptions,
+        !!resolverNode.typeDef.dataloader,
+        !!resolverNode.typeDef.sqlOptions?.joinType,
+        fieldPath.concat(field)
+      ).forEach((ele) => requiredFields.add(ele));
+    }
+  });
+
+  return requiredFields;
+}
+
+function generateSqlSingleFieldObjectArray({
+  nestedResolverNodeMap,
+  fieldInfoArray = [],
+  singleFieldsObjects = [],
+  fieldPath,
+}: {
+  nestedResolverNodeMap: { [x: string]: GiraffeqlResolverNode };
+  fieldInfoArray?: {
+    field: string;
+    args: any;
+  }[];
+  singleFieldsObjects?: SqlSingleFieldObject[];
+  fieldPath: string[];
+}) {
+  // traverse the nestedResolverNodeMap
+  Object.entries(nestedResolverNodeMap).forEach(([field, resolverNode]) => {
+    const typeDef = resolverNode.typeDef;
     // if root resolver object, skip (should never reach this case)
     if (isRootResolverDefinition(typeDef)) {
-      continue;
+      throw new Error(`Misconfigured giraffeql`);
     }
 
-    const parentPlusCurrentField = parentFields.concat(field);
-    const nested = nestedResolverNodeMap[field].nested;
-    const sqlOptions = typeDef.sqlOptions;
-    if (sqlOptions) {
+    // always check if the field is nestHidden
+    // if nestHidden, only allowed if on root level of query (cannot access the field in a nested context)
+    if (fieldInfoArray.length && typeDef.nestHidden) {
+      throw new GiraffeqlBaseError({
+        message: `Requested field not allowed to be accessed directly in an nested context`,
+        fieldPath: fieldPath.concat(field),
+      });
+    }
+
+    if (typeDef.sqlOptions) {
+      // duplicate the path, add the current field info
+      const currentFieldInfoArray = [
+        ...fieldInfoArray,
+        {
+          field,
+          args: resolverNode.args,
+        },
+      ];
+
       // if nested with no resolver and no dataloader, AND joinable
       if (
-        nested &&
+        resolverNode.nested &&
         !typeDef.resolver &&
         !typeDef.dataloader &&
-        sqlOptions.joinType
+        typeDef.sqlOptions.joinType
       ) {
-        sqlSelectObjectArray.push(
-          ...generateSqlQuerySelectObject({
-            nestedResolverNodeMap: nested,
-            parentFields: parentPlusCurrentField,
-            parentArgs: nestedResolverNodeMap[field].args,
-            fieldPath,
-          })
-        );
+        // if yes, go deeper
+        generateSqlSingleFieldObjectArray({
+          nestedResolverNodeMap: resolverNode.nested,
+          fieldInfoArray: currentFieldInfoArray,
+          singleFieldsObjects,
+          fieldPath: fieldPath.concat(field),
+        });
       } else {
-        // if not root level AND nestHidden, throw error
-        if (parentFields.length && typeDef.nestHidden) {
-          throw new GiraffeqlBaseError({
-            message: `Requested field not allowed to be accessed directly in an nested context`,
-            fieldPath: fieldPath.concat(parentPlusCurrentField),
-          });
-        } else {
-          if (field === "id") addIdField = false;
-
-          sqlSelectObjectArray.push({
-            field: parentPlusCurrentField.join("."),
-            args: parentArgs,
-          });
-        }
-      }
-    } else {
-      // if no sqlOptions, still check if field is nestHidden
-      if (parentFields.length && typeDef.nestHidden) {
-        throw new GiraffeqlBaseError({
-          message: `Requested field not allowed to be accessed directly in an nested context`,
-          fieldPath: fieldPath.concat(parentPlusCurrentField),
-        });
-      }
-
-      // also check to see if it has any requiredSqlFields
-      if (typeDef.requiredSqlFields) {
-        typeDef.requiredSqlFields.forEach((field) => {
-          sqlSelectObjectArray.push({
-            field: parentFields.concat(field).join("."),
-            args: parentArgs,
-          });
-        });
+        // if no, it's a leaf node. build the singleFieldObject and add to return array
+        singleFieldsObjects.push(
+          generateSqlSingleFieldObjectFromArray(currentFieldInfoArray)
+        );
       }
     }
-  }
+  });
 
-  // if any sql fields requested at this node and it is deeper than 0, add the id field
-  if (
-    sqlSelectObjectArray.length > 0 &&
-    parentFields.length > 0 &&
-    addIdField
-  ) {
-    sqlSelectObjectArray.push({
-      field: parentFields.concat("id").join("."),
-      args: parentArgs,
-    });
-  }
-
-  return sqlSelectObjectArray;
+  return singleFieldsObjects;
 }
 
 async function handleAggregatedQueries({

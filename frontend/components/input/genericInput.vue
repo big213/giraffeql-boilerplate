@@ -399,6 +399,7 @@
       persistent-hint
       filled
       hide-no-data
+      no-filter
       class="py-0"
       v-on="$listeners"
       :chips="item.inputOptions && item.inputOptions.hasAvatar"
@@ -409,10 +410,19 @@
       @click:append-outer="handleClose()"
     >
       <template
-        v-if="item.inputOptions && item.inputOptions.hasAvatar"
+        v-if="
+          item.inputOptions &&
+          (item.inputOptions.hasAvatar || item.inputOptions.selectionComponent)
+        "
         v-slot:item="data"
       >
-        <v-chip pill>
+        <component
+          v-if="item.inputOptions.selectionComponent"
+          :is="item.inputOptions.selectionComponent"
+          :value="data.item"
+        >
+        </component>
+        <v-chip v-else pill>
           <v-avatar left>
             <v-img
               v-if="data.item.avatar"
@@ -425,10 +435,19 @@
         </v-chip>
       </template>
       <template
-        v-if="item.inputOptions && item.inputOptions.hasAvatar"
+        v-if="
+          item.inputOptions &&
+          (item.inputOptions.hasAvatar || item.inputOptions.selectionComponent)
+        "
         v-slot:selection="data"
       >
-        <v-chip v-bind="data.attrs" pill>
+        <component
+          v-if="item.inputOptions.selectionComponent"
+          :is="item.inputOptions.selectionComponent"
+          :value="data.item"
+        >
+        </component>
+        <v-chip v-else v-bind="data.attrs" pill>
           <v-avatar left>
             <v-img
               v-if="data.item.avatar"
@@ -511,6 +530,7 @@
       filled
       hide-no-data
       return-object
+      no-filter
       class="py-0"
       :chips="item.inputOptions && item.inputOptions.hasAvatar"
       v-on="$listeners"
@@ -521,10 +541,19 @@
       @click:append-outer="handleClose()"
     >
       <template
-        v-if="item.inputOptions && item.inputOptions.hasAvatar"
+        v-if="
+          item.inputOptions &&
+          (item.inputOptions.hasAvatar || item.inputOptions.selectionComponent)
+        "
         v-slot:item="data"
       >
-        <v-chip pill>
+        <component
+          v-if="item.inputOptions.selectionComponent"
+          :is="item.inputOptions.selectionComponent"
+          :value="data.item"
+        >
+        </component>
+        <v-chip v-else pill>
           <v-avatar left>
             <v-img
               v-if="data.item.avatar"
@@ -537,10 +566,19 @@
         </v-chip>
       </template>
       <template
-        v-if="item.inputOptions && item.inputOptions.hasAvatar"
+        v-if="
+          item.inputOptions &&
+          (item.inputOptions.hasAvatar || item.inputOptions.selectionComponent)
+        "
         v-slot:selection="data"
       >
-        <v-chip v-bind="data.attrs" pill>
+        <component
+          v-if="item.inputOptions.selectionComponent"
+          :is="item.inputOptions.selectionComponent"
+          :value="data.item"
+        >
+        </component>
+        <v-chip v-else v-bind="data.attrs" pill>
           <v-avatar left>
             <v-img
               v-if="data.item.avatar"
@@ -577,10 +615,19 @@
       @click:append-outer="handleClose()"
     >
       <template
-        v-if="item.inputOptions && item.inputOptions.hasAvatar"
+        v-if="
+          item.inputOptions &&
+          (item.inputOptions.hasAvatar || item.inputOptions.selectionComponent)
+        "
         v-slot:item="data"
       >
-        <v-chip pill>
+        <component
+          v-if="item.inputOptions.selectionComponent"
+          :is="item.inputOptions.selectionComponent"
+          :value="data.item"
+        >
+        </component>
+        <v-chip v-else pill>
           <v-avatar left>
             <v-img
               v-if="data.item.avatar"
@@ -593,10 +640,19 @@
         </v-chip>
       </template>
       <template
-        v-if="item.inputOptions && item.inputOptions.hasAvatar"
+        v-if="
+          item.inputOptions &&
+          (item.inputOptions.hasAvatar || item.inputOptions.selectionComponent)
+        "
         v-slot:selection="data"
       >
-        <v-chip v-bind="data.attrs" pill>
+        <component
+          v-if="item.inputOptions.selectionComponent"
+          :is="item.inputOptions.selectionComponent"
+          :value="data.item"
+        >
+        </component>
+        <v-chip v-else v-bind="data.attrs" pill>
           <v-avatar left>
             <v-img
               v-if="data.item.avatar"
@@ -1069,7 +1125,13 @@ export default {
             },
             __args: {
               first: 20,
-              search: inputObject.inputValue,
+              search: {
+                query: inputObject.inputValue,
+                params: inputObject.fieldInfo.inputOptions?.searchParams?.(
+                  this,
+                  this.allItems
+                ),
+              },
               filterBy: [],
               sortBy: [],
               ...inputObject.fieldInfo.inputOptions?.lookupParams?.(

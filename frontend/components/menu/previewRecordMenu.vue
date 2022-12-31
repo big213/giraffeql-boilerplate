@@ -12,15 +12,50 @@
       ></PreviewRecordChip>
     </template>
     <v-card>
-      <v-list>
+      <div v-if="hasHeroOptions">
+        <component
+          v-if="recordInfo.previewOptions.heroOptions.component"
+          :is="recordInfo.previewOptions.heroOptions.component"
+          :item="item"
+          :record-info="recordInfo"
+        ></component>
+        <v-img
+          v-else
+          :src="
+            recordInfo.previewOptions.heroOptions.getPreviewImage
+              ? recordInfo.previewOptions.heroOptions.getPreviewImage(item)
+              : item.avatar
+          "
+          class="white--text align-end"
+          gradient="to bottom, rgba(0,0,0,.1), rgba(0,0,0,.5)"
+          height="100px"
+        >
+          <template v-slot:placeholder>
+            <v-row class="fill-height ma-0" align="center" justify="center">
+              <v-icon size="100" color="grey darken-3">{{
+                recordInfo.icon
+              }}</v-icon>
+            </v-row>
+          </template>
+
+          <v-card-title class="subheading font-weight-bold"
+            >{{
+              recordInfo.previewOptions.heroOptions.getPreviewName
+                ? recordInfo.previewOptions.heroOptions.getPreviewName(item)
+                : item.name
+            }}
+          </v-card-title>
+        </v-img>
+      </div>
+      <v-list v-if="hasLineItems">
         <v-list-item>
-          <v-list-item-avatar>
+          <v-list-item-avatar v-if="!hasHeroOptions">
             <v-img v-if="item.avatar" :src="item.avatar" />
             <v-icon v-else>{{ fallbackIcon }} </v-icon>
           </v-list-item-avatar>
           <v-list-item-content>
             <template>
-              <v-list-item-title>
+              <v-list-item-title v-if="!hasHeroOptions">
                 <i v-if="item.name === undefined">{{ item.id }}</i>
                 <span v-else> {{ item.name }}</span>
               </v-list-item-title>
@@ -31,8 +66,15 @@
               <template v-else-if="itemData">
                 <v-list-item-subtitle v-for="(field, i) in fields" :key="i"
                   >{{ renderFieldTitle(field) }}:
-                  {{ itemData[field] }}</v-list-item-subtitle
-                >
+                  <component
+                    v-if="getFieldComponent(field)"
+                    :is="getFieldComponent(field)"
+                    :item="itemData"
+                    :field-path="getFieldPath(field)"
+                    style="display: inline"
+                  ></component>
+                  <span v-else>{{ itemData[field] }}</span>
+                </v-list-item-subtitle>
               </template>
             </template>
           </v-list-item-content>
@@ -41,10 +83,10 @@
       <v-divider></v-divider>
       <v-card-actions>
         <FollowButton
-          v-if="itemData && followLinkModel"
+          v-if="itemData && recordInfo.followLinkModel"
           color="primary"
           :item="itemData"
-          :follow-link-model="followLinkModel"
+          :follow-link-model="recordInfo.followLinkModel"
         ></FollowButton>
         <v-spacer></v-spacer>
         <v-btn color="primary" @click="openPage()">
@@ -82,9 +124,16 @@ export default {
     PreviewRecordChip,
   },
   props: {
-    // __typename, id is required. avatar/name optional
+    // avatar/name optional
     item: {
       type: Object,
+      required: true,
+    },
+
+    // required
+    typename: {
+      type: String,
+      required: true,
     },
 
     openMode: {
@@ -108,19 +157,24 @@ export default {
 
   computed: {
     fallbackIcon() {
-      return this.recordInfo?.icon
+      return this.recordInfo.icon
     },
     capitalizedType() {
-      return capitalizeString(this.item.__typename)
+      return capitalizeString(this.typename)
     },
+    // must exist
     recordInfo() {
-      return simpleModels[`Simple${capitalizeString(this.item.__typename)}`]
+      return simpleModels[`Simple${capitalizeString(this.typename)}`]
     },
-    followLinkModel() {
-      return this.recordInfo?.followLinkModel
-    },
+    // if previewOptions is not specified, default to showing typename only
     fields() {
-      return this.recordInfo?.previewOptions?.fields ?? ['__typename']
+      return this.recordInfo.previewOptions?.fields ?? ['__typename']
+    },
+    hasHeroOptions() {
+      return !!this.recordInfo.previewOptions?.heroOptions
+    },
+    hasLineItems() {
+      return this.fields.length > 0 || !this.hasHeroOptions
     },
   },
 
@@ -135,7 +189,23 @@ export default {
     renderFieldTitle(field) {
       return field === '__typename'
         ? 'Type'
-        : this.recordInfo?.fields?.[field]?.text ?? field
+        : this.recordInfo.fields?.[field]?.text ?? field
+    },
+
+    getFieldComponent(field) {
+      return this.recordInfo.fields?.[field]?.component
+    },
+
+    // pathPrefix, OR fields[0], OR the name of the field
+    getFieldPath(field) {
+      const fieldInfo = this.recordInfo.fields?.[field]
+
+      if (!fieldInfo) return null
+
+      return (
+        fieldInfo.pathPrefix ??
+        (fieldInfo.fields && fieldInfo.fields.length > 1 ? null : field)
+      )
     },
 
     openPage() {
@@ -143,7 +213,7 @@ export default {
         enterRoute(
           this,
           generateViewRecordRoute(this, {
-            typename: this.item.__typename,
+            typename: this.typename,
             routeType: 'i',
             id: this.item.id,
           }),
@@ -212,7 +282,7 @@ export default {
                   return total
                 }, {})
               )),
-            ...(this.followLinkModel && {
+            ...(this.recordInfo.followLinkModel && {
               currentUserFollowLink: {
                 id: true,
               },

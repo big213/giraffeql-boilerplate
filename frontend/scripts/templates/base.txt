@@ -1,5 +1,5 @@
 import type { RecordInfo } from '~/types'
-import { generateBaseFields } from '~/services/recordInfo'
+import { generateBaseFields, generateSortOptions } from '~/services/recordInfo'
 import { Simple{{ capitalizedTypename }} } from '../simple'
 
 export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
@@ -8,18 +8,11 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
     ...generateBaseFields(Simple{{ capitalizedTypename }}),
   },
   paginationOptions: {
-    hasSearch: false,
+    searchOptions: undefined,
     filterOptions: [],
     heroOptions: {},
     sortOptions: [
-      {
-        field: 'updatedAt',
-        desc: true,
-      },
-      {
-        field: 'updatedAt',
-        desc: false,
-      },
+      ...generateSortOptions("updatedAt"),
     ],
     headerOptions: [
       {
@@ -31,7 +24,6 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
         width: '150px',
       },
     ],
-    
   },
   addOptions: {
     fields: ['avatar', 'name', 'description'],

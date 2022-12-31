@@ -25,7 +25,7 @@ export const File = <RecordInfo<'file'>>{
     },
   },
   paginationOptions: {
-    hasSearch: false,
+    searchOptions: undefined,
     filterOptions: [],
     handleRowClick: (that, props) => {
       that.openEditDialog('view', props.item)

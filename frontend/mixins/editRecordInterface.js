@@ -132,16 +132,7 @@ export default {
     },
 
     visibleInputsArray() {
-      if (!this.hideLockedFields) return this.inputsArray
-
-      const hiddenFields = this.selectedItem
-        ? Object.keys(this.selectedItem)
-        : []
-      return hiddenFields.length
-        ? this.inputsArray.filter(
-            (inputObject) => !hiddenFields.includes(inputObject.fieldKey)
-          )
-        : this.inputsArray
+      return this.inputsArray.filter((inputObject) => !inputObject.hidden)
     },
   },
 
@@ -532,6 +523,8 @@ export default {
             ) {
               inputObject.value = this.selectedItem[fieldKey]
               inputObject.readonly = true
+              // if hideLockedFields, also set those fields to hidden
+              if (this.hideLockedFields) inputObject.hidden = true
             } else {
               inputObject.value = fieldInfo.default
                 ? await fieldInfo.default(this)

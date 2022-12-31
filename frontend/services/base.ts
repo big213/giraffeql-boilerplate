@@ -640,27 +640,34 @@ export function populateInputObject(
       const originalFieldValue = inputObject.value
       inputObject.value = null // set this to null initially while the results load, to prevent console error
 
-      if (originalFieldValue && originalFieldValue !== '__undefined') {
-        promisesArray.push(
-          executeGiraffeql(that, <any>{
-            [`get${capitalizeString(inputObject.inputOptions?.typename)}`]: {
-              id: true,
-              name: true,
-              ...(inputObject.inputOptions?.hasAvatar && {
-                avatar: true,
-              }),
-              __args: {
-                id: originalFieldValue,
+      // if input is both hidden AND readonly, must be due to locked and hidden input. Can safely skip the lookup
+      if (inputObject.hidden && inputObject.readonly) {
+        inputObject.value = {
+          id: originalFieldValue,
+        }
+      } else {
+        if (originalFieldValue && originalFieldValue !== '__undefined') {
+          promisesArray.push(
+            executeGiraffeql(that, <any>{
+              [`get${capitalizeString(inputObject.inputOptions?.typename)}`]: {
+                id: true,
+                name: true,
+                ...(inputObject.inputOptions?.hasAvatar && {
+                  avatar: true,
+                }),
+                __args: {
+                  id: originalFieldValue,
+                },
               },
-            },
-          })
-            .then((res) => {
-              // change value to object
-              inputObject.value = res
-              inputObject.options = [res]
             })
-            .catch((e) => e)
-        )
+              .then((res) => {
+                // change value to object
+                inputObject.value = res
+                inputObject.options = [res]
+              })
+              .catch((e) => e)
+          )
+        }
       }
     }
   }

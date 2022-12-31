@@ -1,5 +1,55 @@
 <template>
   <div :class="{ 'expanded-table-bg': isChildComponent }">
+    <v-container
+      v-if="!hidePresets && hasPresetFilters"
+      fluid
+      class="px-0 text-center"
+    >
+      <v-row justify="center" class="mt-3">
+        <v-col
+          v-if="
+            recordInfo.paginationOptions.searchOptions &&
+            recordInfo.paginationOptions.searchOptions.preset
+          "
+          :key="-1"
+          cols="12"
+          lg="3"
+          class="py-0"
+        >
+          <v-text-field
+            v-model="searchInput"
+            label="Search"
+            placeholder="Type to search"
+            outlined
+            prepend-icon="mdi-magnify"
+            clearable
+            @click:clear="handleClearSearch()"
+            @keyup.enter="updatePageOptions()"
+          ></v-text-field>
+        </v-col>
+        <v-col
+          v-for="(crudFilterObject, i) in visiblePresetFiltersArray"
+          :key="i"
+          cols="12"
+          lg="3"
+          class="py-0"
+        >
+          <GenericInput
+            :item="crudFilterObject.inputObject"
+            @change="updatePageOptions"
+            @handle-input="filterChanged = true"
+          ></GenericInput>
+        </v-col>
+      </v-row>
+      <v-toolbar v-if="filterChanged" dense flat color="transparent">
+        <v-spacer></v-spacer>
+        <v-btn color="primary" class="mb-2" @click="updatePageOptions()">
+          <v-icon left>mdi-filter</v-icon>
+          Update Filters
+        </v-btn>
+      </v-toolbar>
+    </v-container>
+
     <v-card flat>
       <v-toolbar flat color="accent" dense>
         <v-icon left>{{ icon || recordInfo.icon || 'mdi-domain' }}</v-icon>
@@ -21,13 +71,13 @@
           New
         </v-btn>
         <v-divider
-          v-if="recordInfo.paginationOptions.hasSearch"
+          v-if="recordInfo.paginationOptions.searchOptions"
           class="mx-4"
           inset
           vertical
         ></v-divider>
         <SearchDialog
-          v-if="recordInfo.paginationOptions.hasSearch"
+          v-if="recordInfo.paginationOptions.searchOptions"
           v-model="searchInput"
           @handleSubmit="handleSearchDialogSubmit"
         >
@@ -114,7 +164,7 @@
       <v-container v-if="showFilterInterface" fluid class="pb-0 mt-3">
         <v-row>
           <v-col
-            v-if="recordInfo.paginationOptions.hasSearch"
+            v-if="recordInfo.paginationOptions.searchOptions"
             :key="-1"
             cols="12"
             lg="3"
@@ -469,6 +519,7 @@
                 :parent-item="expandedItem"
                 :dense="dense"
                 :results-per-page="expandTypeObject.resultsPerPage"
+                :hide-presets="!expandTypeObject.showPresets"
                 @pageOptions-updated="handleSubPageOptionsUpdated"
                 @reload-parent-item="handleReloadParentItem"
               >

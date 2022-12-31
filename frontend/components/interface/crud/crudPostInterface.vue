@@ -49,6 +49,7 @@
                 <v-list-item-content>
                   <PreviewRecordMenu
                     :item="props.item.createdBy"
+                    :typename="props.item.createdBy.__typename"
                     :close-on-content-click="false"
                     :min-width="300"
                     :max-width="300"

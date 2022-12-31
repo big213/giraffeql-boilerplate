@@ -93,12 +93,17 @@ export type RecordInfo<T extends keyof MainTypes> = {
     // function that runs when pagination interface is opened for the first time
     onSuccess?: (that) => void
 
-    // does the interface have a search bar?
-    hasSearch: `${T}Paginator` extends keyof InputTypes
+    // does the interface have the ability to search?
+    searchOptions?: `${T}Paginator` extends keyof InputTypes
       ? 'search' extends keyof InputTypes[`${T}Paginator`]
-        ? boolean
-        : false
-      : false
+        ? {
+            // should the search bar show up in the presets
+            preset?: boolean
+            // function that will return the params to be passed with the search, if any
+            getParams?: (that, searchQuery) => any
+          }
+        : null
+      : null
 
     defaultPageOptions?: (that: any) => CrudPageOptions
 
@@ -250,6 +255,18 @@ export type RecordInfo<T extends keyof MainTypes> = {
   previewOptions?: {
     // required: fields that can be previewed
     fields: string[]
+
+    // should the previewOptions interface show a hero image/text at the top
+    heroOptions?: {
+      // function that will get the preview image from the item
+      getPreviewImage?: (item: any) => any
+
+      // function that will get the preview name from the item
+      getPreviewName?: (item: any) => any
+
+      // custom component that should be rendered, which will override the above 2 options
+      component?: any
+    }
   }
 
   chipOptions?: {
@@ -313,6 +330,12 @@ export type RecordInfo<T extends keyof MainTypes> = {
     // initial sort options that should be applied to nested component
     initialSortOptions?: CrudRawSortObject
 
+    // force use of dialog for this expandType. default false.
+    forceDialog?: boolean
+
+    // show any preset filters that may be on the recordInfo (default no)
+    showPresets?: boolean
+
     // number of results to show per page for this expand option. else, defaults to 12
     resultsPerPage?: number
   }[]
@@ -334,8 +357,11 @@ export type RecordInfo<T extends keyof MainTypes> = {
 }
 
 type InputOptions = {
-  // for server-autocomplete and server-combobox
+  // for server-autocomplete and server-combobox, multiple-select -- a simple way to get an avatar/name chip.
   hasAvatar?: boolean
+
+  // for server-autocomplete, server-combobox, multiple-select -- a way to fully customize the chip appearance. will override the hasAvatar
+  selectionComponent?: any
   // for avatar
   // fallbackIcon?: string
   // the nested type for this input if it is value-array
@@ -347,6 +373,9 @@ type InputOptions = {
 
   // params that should be applied when looking up results (server-X input type) -- namely filterBy, sortBy
   lookupParams?: (that, inputObjectArray) => any
+
+  // params that should be passed along with the search query (i.e. search.params)
+  searchParams?: (that, inputObjectArray) => any
 
   // only applies to value-array
   nestedFields?: {
@@ -372,6 +401,7 @@ export type FilterObject = {
   field: string
   operator: keyof FilterByField<any>
   inputType?: InputType
+  preset?: boolean // should this filter show up as a preset
 }
 
 type HeaderObject = {

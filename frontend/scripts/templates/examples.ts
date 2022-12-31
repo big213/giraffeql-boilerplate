@@ -88,7 +88,7 @@ export const Event = {
     },
   },
   paginationOptions: {
-    hasSearch: true,
+    searchOptions: {},
     filterOptions: [
       {
         field: 'createdBy',

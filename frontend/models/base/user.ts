@@ -46,7 +46,7 @@ export const User = <RecordInfo<'user'>>{
     },
   },
   paginationOptions: {
-    hasSearch: true,
+    searchOptions: {},
     heroOptions: {},
     filterOptions: [
       {

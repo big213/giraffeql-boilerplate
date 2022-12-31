@@ -381,3 +381,36 @@ export function generateDualOwnerInputOptions() {
     },
   }
 }
+
+export function generateSortOptions(field: string) {
+  return [
+    {
+      field,
+      desc: true,
+    },
+    {
+      field,
+      desc: false,
+    },
+  ]
+}
+
+// custom functions
+export function generateThingSkuLookupSearchOptions(prefix?: string) {
+  return {
+    getParams: (that, _searchQuery) => {
+      const dictionaryIds = [
+        that.$store.getters['dictionary/current']?.id,
+        that.$store.getters['dictionary/foreign']?.id,
+      ].filter((e) => e)
+
+      // generate the params
+      return dictionaryIds.length
+        ? {
+            [`${prefix ? `${prefix}.` : ''}dictionaryItem.dictionary.id_in`]:
+              dictionaryIds,
+          }
+        : undefined
+    },
+  }
+}

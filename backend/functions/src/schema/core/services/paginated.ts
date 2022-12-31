@@ -10,13 +10,10 @@ import {
   SqlDeleteQuery,
   SqlIncrementQuery,
   SqlInsertQuery,
-  SqlOrderByObject,
   SqlRawQuery,
   SqlSelectQuery,
-  SqlSelectQueryObject,
   SqlSumQuery,
   SqlUpdateQuery,
-  SqlWhereFieldOperator,
   SqlWhereInput,
   SqlWhereObject,
   sumTableRows,
@@ -41,7 +38,7 @@ import {
 
 import { ExternalQuery, ServiceFunctionInputs } from "../../../types";
 
-import { capitalizeString, generateId, isObject } from "../helpers/shared";
+import { generateId, isObject } from "../helpers/shared";
 import {
   createObjectType,
   deleteObjectType,
@@ -60,11 +57,15 @@ export type FieldMap = {
   [x: string]: FieldObject;
 };
 
-export type SearchFieldMap = {
-  [x: string]: {
-    field?: string;
-    exact?: boolean;
-  };
+export type SearchFieldObject = {
+  field?: string;
+  exact?: boolean;
+  customProcessor?: (
+    whereSubObject: SqlWhereObject,
+    searchObject: any,
+    searchFieldObject: SearchFieldObject,
+    fieldPath: string
+  ) => void;
 };
 
 export type KeyMap = {
@@ -106,7 +107,10 @@ export class PaginatedService extends BaseService {
 
   groupByFieldsMap: FieldMap = {};
 
-  searchFieldsMap: SearchFieldMap = {};
+  searchFieldsMap: { [x: string]: SearchFieldObject } = {};
+
+  searchParams: { [x: string]: GiraffeqlInputFieldType } | undefined =
+    undefined;
 
   constructor(typename?: string) {
     super(typename);

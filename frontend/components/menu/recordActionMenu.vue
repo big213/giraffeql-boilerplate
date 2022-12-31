@@ -262,14 +262,13 @@ export default {
       actionWrapper.isLoading = false
     },
 
-    goToRecordPage(openInNew, expandTypeObject) {
+    goToRecordPage(openInNew) {
       enterRoute(
         this,
         generateViewRecordRoute(this, {
           typename: this.recordInfo.typename,
           routeType: this.recordInfo.enterOptions.routeType,
           id: this.item.id,
-          expandKey: expandTypeObject.key,
         }),
         openInNew
       )

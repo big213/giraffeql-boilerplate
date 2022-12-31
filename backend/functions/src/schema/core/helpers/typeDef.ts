@@ -1149,7 +1149,33 @@ export function generatePaginatorPivotResolverObject({
             }),
             ...(hasSearchFields && {
               search: new GiraffeqlInputFieldType({
-                type: Scalars.string,
+                type: new GiraffeqlInputType(
+                  {
+                    name: `${pivotService.typename}SearchObject`,
+                    fields: {
+                      query: new GiraffeqlInputFieldType({
+                        type: Scalars.string,
+                        required: true,
+                      }),
+                      ...(pivotService.searchParams && {
+                        params: new GiraffeqlInputFieldType({
+                          type: new GiraffeqlInputType(
+                            {
+                              name: `${pivotService.typename}SearchParams`,
+                              fields: pivotService.searchParams,
+                            },
+                            true
+                          ),
+                          // required if any child searchParams are required
+                          required: Object.values(
+                            pivotService.searchParams
+                          ).some((ele) => ele.definition.required),
+                        }),
+                      }),
+                    },
+                  },
+                  true
+                ),
               }),
             }),
           },
@@ -1304,8 +1330,8 @@ export function processTypeDef(typeDefObject: ObjectTypeDefinition) {
     // if not a sql field, skip
     if (!def.sqlOptions) return;
 
-    // if it has a capital letter and the sqlOptions.field is not set, set it
-    if (fieldname.match(/[A-Z]/) && !def.sqlOptions.field) {
+    // always set the sqlOptions.field, if not already set
+    if (!def.sqlOptions.field) {
       def.sqlOptions.field = camelToSnake(fieldname);
     }
   });
