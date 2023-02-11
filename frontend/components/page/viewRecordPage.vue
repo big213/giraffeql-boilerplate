@@ -16,7 +16,7 @@
     <v-layout justify-center align-center column d-block>
       <v-row>
         <v-col v-if="isRecordMinimized" cols="12">
-          <PreviewRecordChip :item="selectedItem">
+          <PreviewRecordChip :value="selectedItem">
             <template v-slot:rightIcon>
               <RecordActionMenu
                 :record-info="recordInfo"

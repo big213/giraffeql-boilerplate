@@ -462,8 +462,8 @@
                     @handle-custom-action-click="handleCustomActionClick"
                   >
                     <template v-slot:activator="{ on, attrs }">
-                      <v-icon small v-bind="attrs" v-on="on"
-                        >mdi-dots-vertical</v-icon
+                      <v-btn small v-bind="attrs" v-on="on">
+                        <v-icon small>mdi-dots-vertical</v-icon></v-btn
                       >
                     </template>
                   </RecordActionMenu>
@@ -538,7 +538,7 @@
         <slot name="footer-action"></slot>
       </v-card-actions>
       <EditRecordDialog
-        :status="dialogs.editRecord"
+        v-model="dialogs.editRecord"
         :record-info="recordInfo"
         :selected-item="dialogs.selectedItem"
         :mode="dialogs.editMode"

@@ -35,6 +35,7 @@
     <Snackbar />
     <EditRecordDialog
       v-if="dialogs.editRecord"
+      v-model="dialogs.editRecord.status"
       :record-info="editRecordDialogRecordInfo"
       :selected-item="dialogs.editRecord.selectedItem"
       :custom-fields="dialogs.editRecord.customFields"
@@ -44,15 +45,18 @@
     ></EditRecordDialog>
     <CrudRecordDialog
       v-if="dialogs.crudRecord"
+      v-model="dialogs.crudRecord.status"
       :record-info="crudRecordDialogRecordInfo"
       :locked-filters="dialogs.crudRecord.lockedFilters"
       :hidden-headers="dialogs.crudRecord.hiddenHeaders"
       :hidden-filters="dialogs.crudRecord.hiddenFilters"
       :initial-page-options="dialogs.crudRecord.pageOptions"
+      :max-width="dialogs.crudRecord.maxWidth"
       @close="dialogs.crudRecord = null"
     ></CrudRecordDialog>
     <ExecuteActionDialog
       v-if="dialogs.executeAction"
+      v-model="dialogs.executeAction.status"
       :action-options="dialogs.executeAction.actionOptions"
       :item="dialogs.executeAction.item"
       :selected-item="dialogs.executeAction.selectedItem"
@@ -142,12 +146,13 @@ export default {
           ? allModels[params.recordInfo]
           : params.recordInfo
       ) {
+        this.$set(params, 'status', true)
         this.dialogs.editRecord = params
       }
     })
 
     /*
-     ** Expecting recordInfo, lockedFilters?, title, icon, hiddenHeaders?, hiddenFilters, pageOptions?
+     ** Expecting recordInfo, lockedFilters?, title?, icon?, hiddenHeaders?, hiddenFilters?, pageOptions?, maxWidth?
      */
     this.$root.$on('openCrudRecordDialog', (params) => {
       const model =
@@ -165,6 +170,8 @@ export default {
           params.lockedFilters =
             model.paginationOptions.defaultLockedFilters(this)
         }
+
+        this.$set(params, 'status', true)
         this.dialogs.crudRecord = params
       }
     })
@@ -173,6 +180,7 @@ export default {
      ** Expecting actionOptions, item, selectedItem?
      */
     this.$root.$on('openExecuteActionDialog', (params) => {
+      this.$set(params, 'status', true)
       this.dialogs.executeAction = params
     })
   },

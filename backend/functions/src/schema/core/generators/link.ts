@@ -1,4 +1,4 @@
-import { PaginatedService } from "../services";
+import { LinkService, PaginatedService } from "../services";
 import { User } from "../../services";
 import {
   generateIdField,
@@ -14,6 +14,7 @@ export type ServicesObjectMap = {
   [x: string]: {
     service: PaginatedService;
     allowNull?: boolean;
+    allowNullOutput?: boolean;
     sqlField?: string; // sql alias for the field, e.g. if it has CAPS
     updateable?: boolean; // can this field be updated?
   };
@@ -21,15 +22,26 @@ export type ServicesObjectMap = {
 
 export function generateLinkTypeDef(
   servicesObjectMap: ServicesObjectMap,
-  currentService: PaginatedService,
+  currentService: LinkService,
   additionalFields?: { [x: string]: ObjectTypeDefinitionField }
 ): ObjectTypeDefinition {
+  // set the servicesObjectMap on currentService
+  currentService.servicesObjectMap = servicesObjectMap;
+
+  // only 2 services supported at the moment. additional fields may not work properly in sql.ts processJoinFields
+  if (Object.keys(servicesObjectMap).length > 2) {
+    throw new Error(
+      `Maximum 2 services supported for link types at the moment`
+    );
+  }
+
   const typeDefFields = {};
 
   for (const field in servicesObjectMap) {
     typeDefFields[field] = generateJoinableField({
       service: servicesObjectMap[field].service,
       allowNull: servicesObjectMap[field].allowNull ?? false,
+      allowNullOutput: servicesObjectMap[field].allowNullOutput,
       typeDefOptions: {
         addable: true,
         updateable: servicesObjectMap[field].updateable ?? true,

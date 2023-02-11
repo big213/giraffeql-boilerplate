@@ -179,19 +179,6 @@ export default {
     },
 
     handleSubmit() {
-      // if any comboboxes, wait for 500 ms before doing submit to let the value sync
-      let sleep = false
-      if (
-        this.inputsArray.some((ele) => {
-          return (
-            ele.fieldInfo.inputType === 'combobox' ||
-            ele.fieldInfo.inputType === 'server-combobox'
-          )
-        })
-      ) {
-        sleep = true
-      }
-
       // if any inputs are loading, hold
       if (
         this.inputsArray.some((inputObject) => inputObject.loading === true)
@@ -205,7 +192,7 @@ export default {
       // set editRecord loading to true to prevent clicking multiple times
       this.loading.editRecord = true
 
-      setTimeout(this.submit, sleep ? 500 : 0)
+      this.submit()
     },
 
     handleFileAdded(inputObject, fileRecord) {

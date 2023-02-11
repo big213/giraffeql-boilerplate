@@ -64,6 +64,11 @@ export default {
       required: true,
     },
 
+    generation: {
+      type: Number,
+      default: 0,
+    },
+
     // in dialog mode, some changes are made in the component, like max-height
     dialogMode: {
       type: Boolean,
@@ -121,6 +126,12 @@ export default {
       return this.acceptedFieldObjects
         .map((ele) => ele.path ?? ele.field)
         .join(', ')
+    },
+  },
+
+  watch: {
+    generation() {
+      this.reset()
     },
   },
 

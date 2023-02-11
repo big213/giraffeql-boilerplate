@@ -1,10 +1,11 @@
 <template>
-  <v-dialog v-model="status" max-width="500px" persistent>
+  <v-dialog max-width="500px" v-bind="$attrs" v-on="$listeners">
     <v-card flat>
       <slot name="toolbar"></slot>
       <v-card-text class="pt-3">
         <v-autocomplete
-          v-bind="$attrs"
+          :value="initialValue"
+          :otpions="options"
           :items="options"
           item-text="name"
           item-value="id"
@@ -16,11 +17,11 @@
           @change="handleChange"
         >
           <template v-slot:selection="data">
-            <PreviewRecordChip :item="data.item"></PreviewRecordChip>
+            <PreviewRecordChip :value="data.item"></PreviewRecordChip>
           </template>
 
           <template v-slot:item="data">
-            <PreviewRecordChip :item="data.item"></PreviewRecordChip>
+            <PreviewRecordChip :value="data.item"></PreviewRecordChip>
           </template>
         </v-autocomplete>
       </v-card-text>
@@ -46,10 +47,7 @@ export default {
   },
 
   props: {
-    status: {
-      type: Boolean,
-      default: true,
-    },
+    initialValue: {},
     options: {
       type: Array,
       required: true,
@@ -57,7 +55,7 @@ export default {
   },
 
   watch: {
-    status(val) {
+    '$attrs.value'(val) {
       if (val) {
         this.reset()
       }

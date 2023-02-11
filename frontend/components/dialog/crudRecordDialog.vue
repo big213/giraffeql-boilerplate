@@ -1,9 +1,9 @@
 <template>
   <v-dialog
-    v-model="status"
     scrollable
     :max-width="computedMaxWidth"
-    persistent
+    v-bind="$attrs"
+    v-on="$listeners"
   >
     <component
       :is="paginationComponent"
@@ -38,10 +38,6 @@ import CrudRecordInterface from '~/components/interface/crud/crudRecordInterface
 
 export default {
   props: {
-    status: {
-      type: Boolean,
-      default: true,
-    },
     title: {
       type: String,
       default: null,
@@ -94,7 +90,7 @@ export default {
   },
 
   watch: {
-    status(val) {
+    '$attrs.value'(val) {
       if (val) {
         this.reset()
       }

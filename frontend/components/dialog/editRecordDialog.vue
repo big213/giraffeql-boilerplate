@@ -1,8 +1,13 @@
 <template>
-  <v-dialog v-model="status" scrollable max-width="800px" persistent>
+  <v-dialog
+    scrollable
+    max-width="800px"
+    v-bind="$attrs"
+    v-on="$listeners"
+    :persistent="modeObject.persistent"
+  >
     <component
       :is="interfaceComponent"
-      v-if="status"
       :selected-item="selectedItem"
       :record-info="recordInfo"
       :custom-fields="customFields"
@@ -59,36 +64,43 @@ const modesMap = {
   add: {
     icon: 'mdi-plus',
     prefix: 'New',
+    persistent: true,
     defaultInterface: EditRecordInterface,
   },
   import: {
     icon: 'mdi-upload',
     prefix: 'Import',
+    persistent: true,
     defaultInterface: ImportRecordInterface,
   },
   copy: {
     icon: 'mdi-content-copy',
     prefix: 'Copy',
+    persistent: true,
     defaultInterface: EditRecordInterface,
   },
   edit: {
     icon: 'mdi-pencil',
     prefix: 'Edit',
+    persistent: true,
     defaultInterface: EditRecordInterface,
   },
   view: {
     icon: 'mdi-eye',
     prefix: 'View',
+    persistent: false,
     defaultInterface: ViewRecordTableInterface,
   },
   delete: {
     icon: 'mdi-delete',
     prefix: 'Delete',
+    persistent: false,
     defaultInterface: DeleteRecordInterface,
   },
   share: {
     icon: 'mdi-share-variant',
     prefix: 'Share',
+    persistent: false,
     defaultInterface: ShareRecordInterface,
   },
 }
@@ -99,11 +111,6 @@ export default {
   },
 
   props: {
-    status: {
-      type: Boolean,
-      default: true,
-    },
-
     selectedItem: {
       type: Object,
     },
@@ -170,7 +177,7 @@ export default {
   },
 
   watch: {
-    status(val) {
+    '$attrs.value'(val) {
       if (val) {
         this.reset()
       }

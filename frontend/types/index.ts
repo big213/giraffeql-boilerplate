@@ -432,6 +432,7 @@ export type InputType =
   | 'combobox' // combobox allows the user to add new inputs on the fly (will change to autocomplete in filter interfaces)
   | 'server-combobox' // server-combobox allows the user to add new inputs on the fly with getOptions optional, and fetching results from server (will change to autocomplete in filter interfaces)
   | 'autocomplete' // same as combobox but cannot add new inputs
+  | 'autocomplete-multiple' // same as combobox but cannot add new inputs
   | 'server-autocomplete' // if there's lots of entries, may not want to fetch all of the entries at once. getOptions will be optional
   | 'select' // standard select
   | 'multiple-select' // multiple select

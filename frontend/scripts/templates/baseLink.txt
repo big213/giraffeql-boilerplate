@@ -9,7 +9,7 @@ import { Simple{{ capitalizedTypename }} } from '../simple'
 export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
   ...Simple{{ capitalizedTypename }},
   fields: {
-    ...generateBaseLinkFields(),
+    ...generateBaseLinkFields(Simple{{ capitalizedTypename }}),
     ...generatePreviewableJoinableField({
       text: 'User',
       fieldname: 'user',

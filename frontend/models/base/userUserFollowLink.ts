@@ -9,7 +9,7 @@ import { SimpleUserUserFollowLink } from '../simple'
 export const UserUserFollowLink = <RecordInfo<'userUserFollowLink'>>{
   ...SimpleUserUserFollowLink,
   fields: {
-    ...generateBaseLinkFields(),
+    ...generateBaseLinkFields(SimpleUserUserFollowLink),
     ...generatePreviewableJoinableField({
       text: 'User',
       fieldname: 'user',

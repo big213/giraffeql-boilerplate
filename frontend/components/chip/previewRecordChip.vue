@@ -4,7 +4,7 @@
       <v-img v-if="avatar" :src="avatar" contain></v-img
       ><v-icon v-else>{{ fallbackIcon }} </v-icon>
     </v-avatar>
-    <i v-if="item.name === undefined">{{ item.id }}</i>
+    <i v-if="value.name === undefined">{{ value.id }}</i>
     <span v-else-if="name">
       {{ name }}
     </span>
@@ -19,7 +19,7 @@ import { capitalizeString } from '~/services/base'
 export default {
   props: {
     // __typename, id is required. avatar/name optional
-    item: {
+    value: {
       type: Object,
       required: true,
     },
@@ -27,19 +27,19 @@ export default {
 
   computed: {
     recordInfo() {
-      return simpleModels[`Simple${capitalizeString(this.item.__typename)}`]
+      return simpleModels[`Simple${capitalizeString(this.value.__typename)}`]
     },
 
     name() {
       return this.recordInfo?.chipOptions?.getName
-        ? this.recordInfo.chipOptions.getName(this.item)
-        : this.item.name
+        ? this.recordInfo.chipOptions.getName(this.value)
+        : this.value.name
     },
 
     avatar() {
       return this.recordInfo?.chipOptions?.getImage
-        ? this.recordInfo.chipOptions.getImage(this.item)
-        : this.item.avatar
+        ? this.recordInfo.chipOptions.getImage(this.value)
+        : this.value.avatar
     },
 
     fallbackIcon() {

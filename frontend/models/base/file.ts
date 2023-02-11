@@ -1,7 +1,7 @@
 import type { RecordInfo } from '~/types'
 import FilesizeColumn from '~/components/table/filesizeColumn.vue'
 import FileColumn from '~/components/table/fileColumn.vue'
-import { generateBaseFields } from '~/services/recordInfo'
+import { generateBaseFields, generateSortOptions } from '~/services/recordInfo'
 import { SimpleFile } from '../simple'
 
 export const File = <RecordInfo<'file'>>{
@@ -25,7 +25,6 @@ export const File = <RecordInfo<'file'>>{
     },
   },
   paginationOptions: {
-    searchOptions: undefined,
     filterOptions: [],
     handleRowClick: (that, props) => {
       that.openEditDialog('view', props.item)
@@ -33,16 +32,7 @@ export const File = <RecordInfo<'file'>>{
     handleGridElementClick: (that, item) => {
       that.openEditDialog('view', item)
     },
-    sortOptions: [
-      {
-        field: 'updatedAt',
-        desc: true,
-      },
-      {
-        field: 'updatedAt',
-        desc: false,
-      },
-    ],
+    sortOptions: [...generateSortOptions('updatedAt')],
     headerOptions: [
       {
         field: 'nameWithId',

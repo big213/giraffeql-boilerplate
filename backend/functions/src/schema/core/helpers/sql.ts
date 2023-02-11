@@ -196,6 +196,10 @@ function handleSqlError(err: unknown) {
   let errMessage: string;
   if (err instanceof Error) {
     errMessage = isDev ? err.message : "A SQL error has occurred";
+    // if in dev mode, also log the SQL error
+    if (isDev) {
+      console.log(err);
+    }
   } else {
     console.log("Invalid error was thrown");
     errMessage = "A SQL error has occurred";
@@ -343,6 +347,8 @@ function processJoinFields(
     const typeDef = objectTypeDefs.get(table);
     if (!typeDef) throw new Error(`TypeDef for ${table} not found`);
 
+    const requiredJoinKeys: Set<string> = new Set();
+
     // loop through the fieldsObjectMap.fields
     Object.entries(fieldsObjectMap.fields).forEach(([keyName, nestedValue]) => {
       // does the field have a "/"? if so, handle differently
@@ -354,36 +360,57 @@ function processJoinFields(
           throw new Error(`Misconfigured compound (*/*) field`);
         }
 
-        const [joinTable, joinField] = fieldParts;
+        const [linkTable, linkTableField] = fieldParts;
 
         // ensure the link table exists
-        const linkService = linkDefs.get(joinTable);
+        const linkService = linkDefs.get(linkTable);
 
         if (!linkService) {
-          throw new Error(`Link type '${joinTable}' does not exist`);
+          throw new Error(`Link type '${linkTable}' does not exist`);
         }
+
+        // the actual join field is the *other* field
+        // currently works properly if there are exactly 2 fields in the link
+        const actualJoinField = Object.keys(
+          linkService.servicesObjectMap
+        ).filter((ele) => ele !== linkTableField)[0];
 
         const linkJoinTypeDef = linkService.typeDef;
 
         // find the field on the typeDef
-        const typeDefField = linkJoinTypeDef.definition.fields[joinField];
+        const typeDefField = linkJoinTypeDef.definition.fields[linkTableField];
 
         if (!typeDefField) {
           throw new Error(
-            `Field '${joinField}' does not exist on type '${linkJoinTypeDef.definition.name}'`
+            `Field '${linkTableField}' does not exist on type '${linkJoinTypeDef.definition.name}'`
           );
         }
 
         if (!typeDefField.sqlOptions) {
           throw new Error(
-            `Field '${joinField}' on type '${linkJoinTypeDef.definition.name}' is not a SQL field`
+            `Field '${linkTableField}' on type '${linkJoinTypeDef.definition.name}' is not a SQL field`
           );
+        }
+
+        // if there's no nested fields, do not apply join logic, cut short.
+        if (!Object.keys(nestedValue.fields).length) {
+          // populate the fieldDef and tableAlias
+          fieldsObjectMap.fields[keyName].fieldInfo = {
+            fieldDef: typeDefField,
+            // tableAlias should always be index 0 because only one join is allowed per link type per level
+            tableAlias: `${linkTable}0`,
+          };
+
+          // add the linkTable to check later
+          requiredJoinKeys.add(`${linkTable}/*`);
+
+          return;
         }
 
         const nestedJoinType = typeDefField.sqlOptions.joinType!;
 
         const { tableAlias: joinTableAlias } = acquireTableAlias(
-          joinTable,
+          linkTable,
           tableIndexMap
         );
 
@@ -392,21 +419,26 @@ function processJoinFields(
           tableIndexMap
         );
 
-        // add the keyname with a special name
-        joinObjectMap[`${keyName}/*`] = {
+        // add the keyname with a special name, but check to make sure it hasn't already been joined at this level
+        if (joinObjectMap[`${linkTable}/*`]) {
+          // if this link join already exists on this level, throw an error. only one join allowed per link type per level
+          throw new Error(`${linkTable} link type already joined`);
+        }
+
+        joinObjectMap[`${linkTable}/*`] = {
           normalJoin: {
-            table: joinTable,
+            table: linkTable,
             alias: joinTableAlias,
             parentTableField: "id",
-            field: joinField,
+            field: actualJoinField,
           },
           // automatically apply the nested field
           nested: {
-            [joinField]: {
+            [linkTableField]: {
               normalJoin: {
                 table: nestedJoinType,
                 alias: nestedJoinTableAlias,
-                parentTableField: joinField,
+                parentTableField: linkTableField,
                 field: "id",
               },
               nested: {},
@@ -420,11 +452,17 @@ function processJoinFields(
           nestedJoinTableAlias,
           nestedValue,
           tableIndexMap,
-          joinObjectMap[`${keyName}/*`].nested[joinField].nested
+          joinObjectMap[`${linkTable}/*`].nested[linkTableField].nested
         );
       } else {
         // get the typeDefField
         const typeDefField = typeDef.definition.fields[nestedValue.field];
+
+        if (!typeDefField) {
+          throw new Error(
+            `Field: '${nestedValue.field}' does not exist on type: '${typeDef.definition.name}'`
+          );
+        }
 
         if (!typeDefField.sqlOptions) {
           throw new Error(`Misconfigured SQL field`);
@@ -484,6 +522,12 @@ function processJoinFields(
             joinObjectMap[keyName].nested
           );
         }
+      }
+    });
+
+    requiredJoinKeys.forEach((joinKey) => {
+      if (!joinObjectMap[joinKey]) {
+        throw new Error(`Required join key not present: '${joinKey}'`);
       }
     });
   }

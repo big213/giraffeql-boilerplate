@@ -366,6 +366,7 @@
       v-else-if="item.inputType === 'combobox'"
       ref="combobox"
       v-model="item.value"
+      :search-input.sync="item.inputValue"
       :items="item.options"
       item-text="name"
       item-value="id"
@@ -379,9 +380,62 @@
       filled
       class="py-0"
       v-on="$listeners"
+      @blur="item.focused = false"
+      @focus="item.focused = true"
       @click:append="handleClear()"
       @click:append-outer="handleClose()"
-    ></v-combobox>
+    >
+      <template
+        v-if="
+          item.inputOptions &&
+          (item.inputOptions.hasAvatar || item.inputOptions.selectionComponent)
+        "
+        v-slot:item="data"
+      >
+        <component
+          v-if="item.inputOptions.selectionComponent"
+          :is="item.inputOptions.selectionComponent"
+          :value="data.item"
+        >
+        </component>
+        <v-chip v-else pill>
+          <v-avatar left>
+            <v-img
+              v-if="data.item.avatar"
+              :src="data.item.avatar"
+              contain
+            ></v-img
+            ><v-icon v-else>{{ icon }} </v-icon>
+          </v-avatar>
+          {{ data.item.name }}
+        </v-chip>
+      </template>
+      <template
+        v-if="
+          item.inputOptions &&
+          (item.inputOptions.hasAvatar || item.inputOptions.selectionComponent)
+        "
+        v-slot:selection="data"
+      >
+        <component
+          v-if="item.inputOptions.selectionComponent"
+          :is="item.inputOptions.selectionComponent"
+          :value="data.item"
+        >
+        </component>
+        <v-chip v-else v-bind="data.attrs" pill>
+          <v-avatar left>
+            <v-img
+              v-if="data.item.avatar"
+              :src="data.item.avatar"
+              contain
+            ></v-img
+            ><v-icon v-else>{{ icon }}</v-icon>
+          </v-avatar>
+          {{ standardizeComboboxName(data.item) }}
+        </v-chip>
+      </template>
+    </v-combobox>
     <v-combobox
       v-else-if="item.inputType === 'server-combobox'"
       ref="combobox"
@@ -401,8 +455,8 @@
       hide-no-data
       no-filter
       class="py-0"
-      v-on="$listeners"
       :chips="item.inputOptions && item.inputOptions.hasAvatar"
+      v-on="$listeners"
       @update:search-input="handleSearchUpdate(item)"
       @blur="item.focused = false"
       @focus="item.focused = true"
@@ -456,14 +510,18 @@
             ></v-img
             ><v-icon v-else>{{ icon }}</v-icon>
           </v-avatar>
-          {{ data.item.name }}
+          {{ standardizeComboboxName(data.item) }}
         </v-chip>
       </template>
     </v-combobox>
     <v-autocomplete
-      v-else-if="item.inputType === 'autocomplete'"
+      v-else-if="
+        item.inputType === 'autocomplete' ||
+        item.inputType === 'autocomplete-multiple'
+      "
       v-model="item.value"
       :items="item.options"
+      :multiple="item.inputType === 'autocomplete-multiple'"
       item-text="name"
       item-value="id"
       :label="item.label + (item.optional ? ' (optional)' : '')"
@@ -476,15 +534,27 @@
       filled
       return-object
       class="py-0"
+      :chips="item.inputOptions && item.inputOptions.hasAvatar"
       v-on="$listeners"
+      @blur="item.focused = false"
+      @focus="item.focused = true"
       @click:append="handleClear()"
       @click:append-outer="handleClose()"
     >
       <template
-        v-if="item.inputOptions && item.inputOptions.hasAvatar"
+        v-if="
+          item.inputOptions &&
+          (item.inputOptions.hasAvatar || item.inputOptions.selectionComponent)
+        "
         v-slot:item="data"
       >
-        <v-chip pill>
+        <component
+          v-if="item.inputOptions.selectionComponent"
+          :is="item.inputOptions.selectionComponent"
+          :value="data.item"
+        >
+        </component>
+        <v-chip v-else pill>
           <v-avatar left>
             <v-img
               v-if="data.item.avatar"
@@ -497,10 +567,19 @@
         </v-chip>
       </template>
       <template
-        v-if="item.inputOptions && item.inputOptions.hasAvatar"
+        v-if="
+          item.inputOptions &&
+          (item.inputOptions.hasAvatar || item.inputOptions.selectionComponent)
+        "
         v-slot:selection="data"
       >
-        <v-chip v-bind="data.attrs" pill>
+        <component
+          v-if="item.inputOptions.selectionComponent"
+          :is="item.inputOptions.selectionComponent"
+          :value="data.item"
+        >
+        </component>
+        <v-chip v-else v-bind="data.attrs" pill>
           <v-avatar left>
             <v-img
               v-if="data.item.avatar"
@@ -610,6 +689,7 @@
       item-text="name"
       item-value="id"
       class="py-0"
+      :chips="item.inputOptions && item.inputOptions.hasAvatar"
       v-on="$listeners"
       @click:append="handleClear()"
       @click:append-outer="handleClose()"
@@ -840,6 +920,11 @@ export default {
   },
 
   methods: {
+    standardizeComboboxName(value) {
+      // if it is not an object, will assume it is null or string
+      return isObject(value) ? value.name : value
+    },
+
     generateFileServingUrl,
     handleClear() {
       this.item.value = null

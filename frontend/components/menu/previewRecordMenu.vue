@@ -5,7 +5,7 @@
       <slot v-if="$scopedSlots.activator" name="activator" v-bind="slotData" />
       <PreviewRecordChip
         v-else
-        :item="item"
+        :value="item"
         small
         v-bind="slotData.attrs"
         v-on="slotData.on"

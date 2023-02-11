@@ -623,8 +623,11 @@ export function populateInputObject(
           // set the options
           inputObject.options = res
 
-          // if autocomplete, attempt to translate the inputObject.value based on the options
-          if (inputObject.inputType === 'autocomplete') {
+          // if autocomplete or combobox, attempt to translate the inputObject.value based on the options
+          if (
+            inputObject.inputType === 'autocomplete' ||
+            inputObject.inputType === 'combobox'
+          ) {
             inputObject.value =
               inputObject.options.find((ele) => ele.id === inputObject.value) ??
               null
@@ -844,6 +847,18 @@ export function generateFilterByObjectArray(
       ? fieldInfo.parseValue(value)
       : value
 
+    // always delete if n(in) an empty array, which would throw an API error
+    if (
+      rawFilterObject.operator === 'in' ||
+      rawFilterObject.operator === 'nin'
+    ) {
+      const finalValue = total[primaryField][rawFilterObject.operator]
+
+      if (Array.isArray(finalValue) && !finalValue.length) {
+        delete total[primaryField][rawFilterObject.operator]
+      }
+    }
+
     return total
   }, {})
 
@@ -873,7 +888,14 @@ export async function processInputObject(that, inputObject) {
         inputObject.inputType === 'server-combobox') &&
       inputObject.inputOptions?.typename
     ) {
-      if (typeof inputObject.value === 'string') {
+      // if value is string OR value is null and inputValue is string, create the object
+      // first case happens if the user clicks away from the input before submitting
+      // second case happens if the user does not click off first before submitting
+      if (
+        typeof inputObject.value === 'string' ||
+        (inputObject.value === null &&
+          typeof inputObject.inputValue === 'string')
+      ) {
         // expecting either string or obj
         // create the item, get its id.
         const results = <any>await executeGiraffeql(null, <any>{
@@ -881,7 +903,10 @@ export async function processInputObject(that, inputObject) {
             id: true,
             name: true,
             __args: {
-              name: inputObject.value,
+              name:
+                typeof inputObject.value === 'string'
+                  ? inputObject.value
+                  : inputObject.inputValue,
             },
           },
         })

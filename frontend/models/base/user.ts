@@ -6,6 +6,7 @@ import {
   generateBaseFields,
   generateClickRowToOpenOptions,
   generateIsPublicField,
+  generateSortOptions,
 } from '~/services/recordInfo'
 import { SimpleUser } from '../simple'
 
@@ -55,16 +56,7 @@ export const User = <RecordInfo<'user'>>{
       },
     ],
     ...generateClickRowToOpenOptions(),
-    sortOptions: [
-      {
-        field: 'updatedAt',
-        desc: true,
-      },
-      {
-        field: 'updatedAt',
-        desc: false,
-      },
-    ],
+    sortOptions: [...generateSortOptions('updatedAt')],
     headerOptions: [
       {
         field: 'nameWithAvatar',

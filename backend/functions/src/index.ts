@@ -89,7 +89,6 @@ app.get("/schema.ts", function (req, res, next) {
 export const api = functions
   .runWith({
     timeoutSeconds: functionTimeoutSeconds,
-    memory: "256MB",
   })
   .https.onRequest(app);
 

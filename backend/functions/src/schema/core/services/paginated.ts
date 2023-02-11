@@ -48,6 +48,7 @@ import {
 import { PaginatorService } from ".";
 import { Transaction } from "knex";
 import { Scalars } from "../..";
+import { knex } from "../../../utils/knex";
 
 export type FieldObject = {
   field?: string;
@@ -321,8 +322,11 @@ export class PaginatedService extends BaseService {
     }
   }
 
-  getSpecialParams(inputs: ServiceFunctionInputs): any {
-    return undefined;
+  // by default, load "currentUserId" with the current user, if any
+  async getSpecialParams({ req }: ServiceFunctionInputs) {
+    return {
+      currentUserId: req.user?.id ?? null,
+    };
   }
 
   sqlParamsModifier(sqlParams: Omit<SqlSelectQuery, "table" | "select">) {}
@@ -609,6 +613,14 @@ export class PaginatedService extends BaseService {
 
   async afterUpdateProcess(inputs: ServiceFunctionInputs, itemId: string) {}
 
+  // retrieves the related services that should also be deleted when this record is also delated
+  getOnDeleteEntries(): {
+    service: PaginatedService;
+    field?: string;
+  }[] {
+    return [];
+  }
+
   @permissionsCheck("delete")
   async deleteRecord({
     req,
@@ -639,11 +651,24 @@ export class PaginatedService extends BaseService {
           data,
         });
 
-    await deleteObjectType({
-      typename: this.typename,
-      id: item.id,
-      req,
-      fieldPath,
+    // delete the type and also any associated services
+    await knex.transaction(async (transaction) => {
+      await deleteObjectType({
+        typename: this.typename,
+        id: item.id,
+        req,
+        fieldPath,
+        transaction,
+      });
+
+      for (const deleteEntry of this.getOnDeleteEntries()) {
+        await deleteEntry.service.deleteSqlRecord({
+          where: {
+            [deleteEntry.field ?? this.typename]: item.id,
+          },
+          transaction,
+        });
+      }
     });
 
     return requestedResults;

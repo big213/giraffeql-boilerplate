@@ -6,6 +6,7 @@ import {
 import { userPermissionEnum } from "../../enums";
 import { GiraffeqlRootResolverType } from "giraffeql";
 import { PermissionsError } from "../helpers/error";
+import { isDev } from "../../../config";
 
 export abstract class BaseService {
   typename: string;
@@ -89,7 +90,13 @@ export abstract class BaseService {
 
       return allowed;
     } catch (err: unknown) {
-      if (err instanceof Error && !(err instanceof PermissionsError)) {
+      // if the error is an error but not a permissions error, convert it into a permissions error with the same message
+      // throw the actual error in dev mode
+      if (
+        err instanceof Error &&
+        !(err instanceof PermissionsError) &&
+        !isDev
+      ) {
         throw new PermissionsError({
           fieldPath,
           message: err.message,

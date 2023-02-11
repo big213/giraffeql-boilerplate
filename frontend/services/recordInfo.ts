@@ -23,15 +23,17 @@ export function generatePreviewableJoinableField({
   text,
   inputType = 'server-autocomplete',
   fieldOptions = {},
+  alias,
 }: {
   fieldname: string
   typename: string
   text: string
   inputType?: InputType
   fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
+  alias?: string
 }) {
   return {
-    [fieldname]: generateJoinableField({
+    [alias ?? fieldname]: generateJoinableField({
       fieldname,
       typename,
       text,
@@ -172,7 +174,7 @@ export function generateBaseFields(simpleModel: SimpleRecordInfo<any>) {
   }
 }
 
-export function generateBaseLinkFields() {
+export function generateBaseLinkFields(simpleModel: SimpleRecordInfo<any>) {
   return {
     id: {
       text: 'ID',
@@ -182,6 +184,18 @@ export function generateBaseLinkFields() {
       fieldname: 'createdBy',
       typename: 'user',
     }),
+    ...(simpleModel.hasOrganizationOwner &&
+      generatePreviewableJoinableField({
+        text: 'Organization Owner',
+        fieldname: 'organizationOwner',
+        typename: 'organization',
+      })),
+    ...(simpleModel.hasUserOwner &&
+      generatePreviewableJoinableField({
+        text: 'User Owner',
+        fieldname: 'userOwner',
+        typename: 'user',
+      })),
     createdAt: {
       text: 'Created At',
       component: TimeagoColumn,
@@ -358,12 +372,19 @@ export function generateValueArrayField({
   }
 }
 
-export function generateDualOwnerInputOptions() {
+export function generateDualOwnerInputOptions({
+  hasOrganizationOwner = true,
+  allowPublic = false,
+}: {
+  hasOrganizationOwner?: boolean
+  allowPublic?: boolean
+} = {}) {
   return {
     lookupParams: (that, _inputObjectArray) => {
       return {
         filterBy: [
-          that.$store.getters['organizationUserMemberLink/current']
+          that.$store.getters['organizationUserMemberLink/current'] &&
+          hasOrganizationOwner
             ? {
                 'organizationOwner.id': {
                   eq: that.$store.getters['organizationUserMemberLink/current']
@@ -376,6 +397,13 @@ export function generateDualOwnerInputOptions() {
               eq: that.$store.getters['auth/user'].id,
             },
           },
+          allowPublic
+            ? {
+                isPublic: {
+                  eq: true,
+                },
+              }
+            : null,
         ].filter((e) => e),
       }
     },

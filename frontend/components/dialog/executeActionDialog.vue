@@ -1,8 +1,13 @@
 <template>
-  <v-dialog v-model="status" scrollable max-width="800px" persistent>
+  <v-dialog
+    scrollable
+    max-width="800px"
+    v-bind="$attrs"
+    v-on="$listeners"
+    persistent
+  >
     <component
       :is="interfaceComponent"
-      v-if="status"
       :action-options="actionOptions"
       :item="item"
       :selected-item="selectedItem"
@@ -35,11 +40,6 @@ import ExecuteActionInterface from '~/components/interface/action/executeActionI
 
 export default {
   props: {
-    status: {
-      type: Boolean,
-      default: true,
-    },
-
     item: {
       type: Object,
     },
@@ -66,7 +66,7 @@ export default {
   },
 
   watch: {
-    status(val) {
+    '$attrs.value'(val) {
       if (val) {
         this.reset()
       }

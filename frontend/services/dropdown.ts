@@ -15,6 +15,30 @@ function memoize(memoizedFn) {
   }
 }
 
+function generateMemoizedGetter(operation: string, fields: string[]) {
+  return <any>(
+    memoize(function (
+      that,
+      _forceReload,
+      filterBy: any[] = [],
+      sortBy: any[] = []
+    ) {
+      return collectPaginatorData(
+        that,
+        operation,
+        fields.reduce((total, field) => {
+          total[field] = true
+          return total
+        }, {}),
+        {
+          filterBy,
+          sortBy,
+        }
+      )
+    })
+  )
+}
+
 export const getCurrentUser = function (that) {
   const user = that.$store.getters['auth/user']
 
@@ -31,22 +55,12 @@ export const getCurrentUser = function (that) {
   )
 }
 
-export const getUsers = <any>(
-  memoize(function (that, _forceReload = false, filterBy = []) {
-    return collectPaginatorData(
-      that,
-      'getUserPaginator',
-      {
-        id: true,
-        name: true,
-        avatar: true,
-      },
-      {
-        filterBy,
-      }
-    )
-  })
-)
+export const getUsers = generateMemoizedGetter('getUserPaginator', [
+  'id',
+  'name',
+  'avatar',
+  '__typename',
+])
 
 export const getUserRoles = memoize(async function (
   that,
