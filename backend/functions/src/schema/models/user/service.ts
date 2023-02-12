@@ -150,6 +150,7 @@ export class UserService extends PaginatedService {
           "name",
           "description",
           "isPublic",
+          "allowEmailNotifications",
         ])
       ) {
         return true;

@@ -17,6 +17,7 @@
             :record-info="recordInfo"
             mode="edit"
             :generation="generation"
+            @handle-submit="reset()"
           >
             <template v-slot:toolbar>
               <v-toolbar flat color="accent" dense>
