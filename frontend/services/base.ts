@@ -865,7 +865,7 @@ export function generateFilterByObjectArray(
   return Object.keys(filterByObject).length > 0 ? [filterByObject] : []
 }
 
-export async function processInputObject(that, inputObject) {
+export async function processInputObject(that, inputObject, inputObjectArray) {
   let value
 
   // if it is a value array, need to assemble the value as an array
@@ -876,7 +876,8 @@ export async function processInputObject(that, inputObject) {
       for (const nestedInputObject of nestedInputArray) {
         obj[nestedInputObject.nestedFieldInfo.key] = await processInputObject(
           that,
-          nestedInputObject.inputObject
+          nestedInputObject.inputObject,
+          inputObjectArray
         )
       }
       value.push(obj)
@@ -907,6 +908,8 @@ export async function processInputObject(that, inputObject) {
                 typeof inputObject.value === 'string'
                   ? inputObject.value
                   : inputObject.inputValue,
+              ...(inputObject.inputOptions.getCreateArgs &&
+                inputObject.inputOptions.getCreateArgs(that, inputObjectArray)),
             },
           },
         })

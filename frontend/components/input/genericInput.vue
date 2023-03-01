@@ -1193,6 +1193,9 @@ export default {
     },
 
     async loadSearchResults(inputObject) {
+      // if the value is empty, don't load results
+      if (!inputObject.inputValue) return
+
       inputObject.loading = true
       try {
         const results = await executeGiraffeql(this, {

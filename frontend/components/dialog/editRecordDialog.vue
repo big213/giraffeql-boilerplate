@@ -7,6 +7,7 @@
     :persistent="modeObject.persistent"
   >
     <component
+      v-if="$attrs.value"
       :is="interfaceComponent"
       :selected-item="selectedItem"
       :record-info="recordInfo"

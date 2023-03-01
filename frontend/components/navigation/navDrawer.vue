@@ -1,6 +1,6 @@
 <template>
   <v-navigation-drawer v-bind="$attrs">
-    <nuxt-link to="/" class="hidden-md-and-up">
+    <nuxt-link to="/" class="hidden-lg-and-up">
       <v-img :src="logoImageSrc" class="ma-3" contain />
     </nuxt-link>
     <v-divider></v-divider>
@@ -17,7 +17,7 @@
           <v-icon>{{ item.icon }}</v-icon>
         </v-list-item-action>
         <v-list-item-content>
-          <v-list-item-title v-text="item.title" />
+          <v-list-item-title>{{ item.title }}</v-list-item-title>
         </v-list-item-content>
       </v-list-item>
     </v-list>
@@ -36,7 +36,7 @@
           <v-icon>{{ item.icon }}</v-icon>
         </v-list-item-action>
         <v-list-item-content>
-          <v-list-item-title v-text="item.title" />
+          <v-list-item-title>{{ item.title }}</v-list-item-title>
         </v-list-item-content>
       </v-list-item>
     </v-list>
@@ -55,7 +55,7 @@
           <v-icon>{{ item.icon }}</v-icon>
         </v-list-item-action>
         <v-list-item-content>
-          <v-list-item-title v-text="item.title" />
+          <v-list-item-title>{{ item.title }}</v-list-item-title>
         </v-list-item-content>
       </v-list-item>
     </v-list>

@@ -17,6 +17,10 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@master
+      - name: Set Node Version
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
       - name: Install Dependencies
         working-directory: ./frontend
         run: npm install

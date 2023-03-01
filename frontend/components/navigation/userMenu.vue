@@ -6,8 +6,8 @@
     offset-y
     bottom
   >
-    <template v-slot:activator="{ on }">
-      <v-chip pill v-on="on">
+    <template v-slot:activator="{ on, attrs }">
+      <v-chip pill v-bind="attrs" v-on="on">
         <v-avatar left>
           <v-img
             v-if="firebaseUser.photoURL"
@@ -76,7 +76,8 @@
     </v-card>
     <SelectOptionDialog
       v-if="dialogs.selectOption"
-      :value="dialogs.selectOption.value"
+      v-model="dialogs.selectOption.status"
+      :initial-value="dialogs.selectOption.value"
       :options="dialogs.selectOption.options"
       @handle-select="dialogs.selectOption.handleSelect"
       @close="dialogs.selectOption = null"

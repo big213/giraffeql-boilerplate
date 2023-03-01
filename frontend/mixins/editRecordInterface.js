@@ -214,7 +214,8 @@ export default {
         for (const inputObject of this.inputsArray) {
           inputs[inputObject.primaryField] = await processInputObject(
             this,
-            inputObject
+            inputObject,
+            this.inputsArray
           )
         }
 

@@ -377,6 +377,9 @@ type InputOptions = {
   // params that should be passed along with the search query (i.e. search.params)
   searchParams?: (that, inputObjectArray) => any
 
+  // additional args that should be appended to the __args when creating a new record for a combobox
+  getCreateArgs?: (that, inputObjectArray) => any
+
   // only applies to value-array
   nestedFields?: {
     key: string
