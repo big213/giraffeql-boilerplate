@@ -39,6 +39,7 @@ jobs:
           SITE_GITHUB_REPOSITORY_URL: https://github.com/big213/giraffeql-boilerplate
           LOGO_HAS_LIGHT_VARIANT:
           DEFAULT_GRID_VIEW:
+          STRIPE_PUB_KEY:
       - name: Deploy to Firebase
         uses: w9jds/firebase-action@master
         with:
