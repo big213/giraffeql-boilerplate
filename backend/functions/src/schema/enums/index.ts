@@ -1,2 +1,2 @@
-export { userPermissionEnum } from "./userPermission";
-export { userRoleKenum } from "./userRole";
+export { userPermission } from "./userPermission";
+export { userRole } from "./userRole";

@@ -128,6 +128,12 @@ export type RecordInfo<T extends keyof MainTypes> = {
       component?: any
     }
 
+    // should the actions be hidden?
+    hideActions?: boolean
+
+    // should the refresh button be hidden?
+    hideRefresh?: boolean
+
     // extra sort params that are to be appended to the user-selected sort params
     additionalSortParams?: CrudRawSortObject[]
 
@@ -152,6 +158,14 @@ export type RecordInfo<T extends keyof MainTypes> = {
       // custom fields to download
       fields: ExportFieldDefinition[]
     }
+
+    // this option, if defined, will override the default grid/list option set by the user
+    overrideViewMode?: 'grid' | 'list'
+  }
+
+  dialogOptions?: {
+    // should the actions be hidden?
+    hideActions?: boolean
   }
 
   addOptions?: {
@@ -267,6 +281,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
       // custom component that should be rendered, which will override the above 2 options
       component?: any
     }
+
+    // hides the "view" button
+    hideViewButton?: boolean
   }
 
   chipOptions?: {
@@ -338,6 +355,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // number of results to show per page for this expand option. else, defaults to 12
     resultsPerPage?: number
+
+    // open the expand in the same interface instead of expanding or opening a dialog
+    breadcrumbMode?: boolean
   }[]
 
   customActions?: {
@@ -370,6 +390,15 @@ type InputOptions = {
   // nestedValueText?: string
   typename?: string
   cols?: number // defaults to 12
+
+  // for stripe-cc
+  getPrice?: (that, item) => any
+
+  // for single-file-url and avatar, use the firebase URL instead of the cdn url?
+  useFirebaseUrl?: boolean
+
+  // for single-file-url, restrict the content type
+  contentType?: string
 
   // params that should be applied when looking up results (server-X input type) -- namely filterBy, sortBy
   lookupParams?: (that, inputObjectArray) => any
@@ -426,11 +455,13 @@ export type InputType =
   | 'multiple-image'
   | 'multiple-media'
   | 'multiple-file'
+  | 'single-file-url'
   | 'value-array'
   | 'avatar'
   | 'datepicker'
   | 'datetimepicker'
   | 'switch'
+  | 'stripe-cc'
   | 'textarea'
   | 'combobox' // combobox allows the user to add new inputs on the fly (will change to autocomplete in filter interfaces)
   | 'server-combobox' // server-combobox allows the user to add new inputs on the fly with getOptions optional, and fetching results from server (will change to autocomplete in filter interfaces)
@@ -467,7 +498,7 @@ export type ActionOptions = {
       inputRules?: any[]
       default?: (that) => unknown
     }
-    hideIf?: (that, inputsArray) => boolean
+    hideIf?: (that, item, inputsArray) => boolean
   }[]
 
   // function that will use the selectedItem (if any) to modify the args fed into the operation

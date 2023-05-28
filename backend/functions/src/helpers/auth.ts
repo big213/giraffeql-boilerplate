@@ -1,6 +1,6 @@
 import { ApiKey, User } from "../schema/services";
 import * as admin from "firebase-admin";
-import { userRoleKenum, userPermissionEnum } from "../schema/enums";
+import { userRole, userPermission } from "../schema/enums";
 import { userRoleToPermissionsMap } from "../schema/helpers/permissions";
 import type { ContextUser } from "../types";
 import { AuthenticationError } from "../schema/core/helpers/error";
@@ -25,7 +25,7 @@ export async function validateToken(bearerToken: string): Promise<ContextUser> {
       },
     });
 
-    const permissions: userPermissionEnum[] = [];
+    const permissions: userPermission[] = [];
 
     // user not exists in db
     if (!userRecord) {
@@ -64,7 +64,7 @@ export async function validateToken(bearerToken: string): Promise<ContextUser> {
     }
 
     const id = userRecord.id;
-    const role = userRoleKenum.fromUnknown(userRecord.role);
+    const role = userRole.fromUnknown(userRecord.role);
 
     if (userRoleToPermissionsMap[role.name]) {
       permissions.push(...userRoleToPermissionsMap[role.name]);
@@ -77,7 +77,7 @@ export async function validateToken(bearerToken: string): Promise<ContextUser> {
 
     // convert permissions to enums
     parsedPermissions = parsedPermissions.map((ele) =>
-      userPermissionEnum.fromName(ele)
+      userPermission.fromName(ele)
     );
     permissions.push(...parsedPermissions);
 
@@ -110,10 +110,10 @@ export async function validateApiKey(code: string): Promise<ContextUser> {
 
     // convert permissions to enums
     parsedPermissions = parsedPermissions.map((ele) =>
-      userPermissionEnum.fromName(ele)
+      userPermission.fromName(ele)
     );
 
-    const role = userRoleKenum.fromUnknown(apiKey["createdBy.role"]);
+    const role = userRole.fromUnknown(apiKey["createdBy.role"]);
 
     return {
       id: apiKey["createdBy.id"],

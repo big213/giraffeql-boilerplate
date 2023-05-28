@@ -28,6 +28,7 @@ export class FileService extends PaginatedService {
   sortFieldsMap = {
     id: {},
     createdAt: {},
+    updatedAt: {},
   };
 
   searchFieldsMap = {

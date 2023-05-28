@@ -178,10 +178,21 @@ export default {
 
     /*
      ** Expecting actionOptions, item, selectedItem?
+     ** if actionOptions.selectedItemModifier is set, use that to generate the selectedItem
      */
     this.$root.$on('openExecuteActionDialog', (params) => {
       this.$set(params, 'status', true)
-      this.dialogs.executeAction = params
+      if (params.actionOptions.selectedItemModifier) {
+        this.dialogs.executeAction = {
+          ...params,
+          selectedItem: params.actionOptions.selectedItemModifier(
+            this,
+            params.item
+          ),
+        }
+      } else {
+        this.dialogs.executeAction = params
+      }
     })
   },
 }

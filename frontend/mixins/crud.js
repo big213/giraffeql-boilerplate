@@ -2,6 +2,7 @@ import EditRecordDialog from '~/components/dialog/editRecordDialog.vue'
 import SearchDialog from '~/components/dialog/searchDialog.vue'
 import RecordActionMenu from '~/components/menu/recordActionMenu.vue'
 import GenericInput from '~/components/input/genericInput.vue'
+import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 import {
   getNestedProperty,
   generateTimeAgoString,
@@ -32,6 +33,7 @@ export default {
     SearchDialog,
     RecordActionMenu,
     GenericInput,
+    PreviewRecordChip,
   },
 
   props: {
@@ -104,6 +106,16 @@ export default {
       type: Boolean,
       default: false,
     },
+
+    breadcrumbMode: {
+      type: Boolean,
+      default: false,
+    },
+
+    breadcrumbItems: {
+      type: Array,
+      default: () => [],
+    },
   },
 
   data() {
@@ -156,6 +168,7 @@ export default {
       expandedItems: [],
       expandedItem: null,
       subPageOptions: null,
+      subBreadcrumbItems: [],
       expandTypeObject: null,
     }
   },
@@ -247,7 +260,7 @@ export default {
           }
         })
         .concat(
-          this.isGrid
+          this.isGrid || this.recordInfo.paginationOptions.hideActions
             ? []
             : {
                 text: 'Actions',
@@ -259,7 +272,10 @@ export default {
         )
 
       // if no headerOption has null width, set the first one to null width
-      if (!headerOptions.some((headerInfo) => !headerInfo.width)) {
+      if (
+        headerOptions.length &&
+        !headerOptions.some((headerInfo) => !headerInfo.width)
+      ) {
         headerOptions[0].width = null
       }
 
@@ -316,7 +332,7 @@ export default {
 
     // expanded
     lockedSubFilters() {
-      if (!this.expandedItem) return []
+      if (!this.expandTypeObject) return []
 
       // is there a lockedFilters generator on the expandTypeObject? if so, use that
       if (this.expandTypeObject.lockedFilters) {
@@ -393,6 +409,7 @@ export default {
         initFilters: true,
         resetSort: true,
         resetCursor: true,
+        syncGridOptions: true,
       })
     },
 
@@ -413,7 +430,12 @@ export default {
 
     // this triggers when pageOptions get updated on parent element
     // this also triggers when parent element switches to a different item
-    pageOptions() {
+    pageOptions(val, prev) {
+      // if pageOptions is effectively unchanged, do nothing
+      if (JSON.stringify(prev) === JSON.stringify(val)) {
+        return
+      }
+
       // if this was triggered due to a recordInfo change, do nothing and revert recordInfoChange on next tick
       if (this.cancelPageOptionsReset) {
         this.$nextTick(() => {
@@ -434,16 +456,9 @@ export default {
       this.isPolling = true
     }
 
-    if (!this.isChildComponent && !this.isDialog) {
-      if (localStorage.getItem('viewMode')) {
-        this.isGrid = localStorage.getItem('viewMode') === 'grid'
-      } else {
-        this.isGrid = !!defaultGridView
-      }
-    }
-
     this.reset({
       initFilters: true,
+      syncGridOptions: true,
     })
 
     document.addEventListener(
@@ -580,12 +595,60 @@ export default {
       this.subPageOptions = pageOptions
     },
 
+    handleExpandTypeUpdated(item, expandTypeObject) {
+      // add to breadcrumbs
+      this.subBreadcrumbItems.push({
+        expandTypeObject,
+        item,
+        isRoot: false,
+      })
+
+      this.currentParentItem = item
+      this.expandTypeObject = expandTypeObject
+    },
+
     // toggle the expand state. if it is mobile view (or forceDialog), use dialog
     toggleItemExpanded(props, expandTypeObject) {
+      // if this item is already expanded, close it
+      if (
+        this.expandTypeObject === expandTypeObject &&
+        props.item === this.expandedItem
+      ) {
+        this.closeExpandedItems()
+        return
+      }
+
+      // if breadcrumb mode, open the expand in the same interface
+      if (expandTypeObject.breadcrumbMode) {
+        this.expandTypeObject = expandTypeObject
+        this.expandedItem = props.item
+
+        this.$emit('expand-type-updated', props.item, expandTypeObject)
+
+        // update the pageOptions
+        this.$emit('pageOptions-updated', {
+          search: null,
+          filters: expandTypeObject.initialFilters ?? [],
+          sort: expandTypeObject.initialSortOptions ?? null,
+        })
+        this.filterChanged = false
+
+        return
+      }
+
       if (props.isMobile || expandTypeObject.forceDialog) {
         this.openExpandDialog(props.item, expandTypeObject)
       } else {
         this.openExpandContainer(props, expandTypeObject)
+      }
+    },
+
+    toggleGridExpand(item, expandTypeObject) {
+      // if breadcrumb mode, open the expand in the same interface
+      if (expandTypeObject.breadcrumbMode) {
+        this.$emit('expand-type-updated', item, expandTypeObject)
+      } else {
+        this.openExpandDialog(item, expandTypeObject)
       }
     },
 
@@ -625,6 +688,8 @@ export default {
     },
 
     closeExpandedItems() {
+      this.expandTypeObject = null
+      this.expandedItem = null
       this.expandedItems.pop()
     },
 
@@ -1004,6 +1069,7 @@ export default {
       // resetPolling = true,
       showLoader = true,
       clearRecords = true,
+      syncGridOptions = false,
     } = {}) {
       // if reset was already called on this tick, stop execution
       if (this.resetCalledOnTick) return
@@ -1092,6 +1158,25 @@ export default {
         this.syncPageOptions(false)
       } else {
         this.syncPageOptions(true)
+      }
+
+      // sync the grid options
+      if (
+        syncGridOptions &&
+        (this.breadcrumbMode || !this.isChildComponent) &&
+        !this.isDialog
+      ) {
+        // if overrideViewMode is set on the recordInfo, use that
+        if (this.recordInfo.paginationOptions.overrideViewMode) {
+          this.isGrid =
+            this.recordInfo.paginationOptions.overrideViewMode === 'grid'
+        } else {
+          if (localStorage.getItem('viewMode')) {
+            this.isGrid = localStorage.getItem('viewMode') === 'grid'
+          } else {
+            this.isGrid = !!defaultGridView
+          }
+        }
       }
 
       this.reloadGeneration++

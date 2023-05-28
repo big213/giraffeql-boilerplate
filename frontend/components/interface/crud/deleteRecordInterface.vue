@@ -79,7 +79,7 @@ export default {
         const onSuccess = this.recordInfo.deleteOptions.onSuccess
 
         if (onSuccess) {
-          onSuccess(this)
+          onSuccess(this, this.selectedItem)
         } else {
           // else emit the generic refresh-interface event
           this.$root.$emit('refresh-interface', this.recordInfo.typename)

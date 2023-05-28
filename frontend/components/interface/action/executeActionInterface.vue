@@ -16,6 +16,7 @@
           >
             <GenericInput
               :item="inputObject"
+              :parent-item="item"
               :all-items="inputsArray"
               @handle-submit="handleSubmit()"
             ></GenericInput>
@@ -48,6 +49,7 @@ import {
   populateInputObject,
   addNestedInputObject,
   processInputObject,
+  timeout,
 } from '~/services/base'
 
 export default {
@@ -98,7 +100,8 @@ export default {
     visibleInputsArray() {
       return this.inputsArray.filter(
         (inputObject) =>
-          !inputObject.hideIf || !inputObject.hideIf(this, this.inputsArray)
+          !inputObject.hideIf ||
+          !inputObject.hideIf(this, this.item, this.inputsArray)
       )
     },
   },
@@ -108,33 +111,19 @@ export default {
   },
 
   methods: {
-    handleSubmit() {
-      // if any comboboxes, wait for 500 ms before doing submit to let the value sync
-      let sleep = false
-      if (
-        this.inputsArray.some((ele) => {
-          return (
-            ele.inputType === 'combobox' || ele.inputType === 'server-combobox'
-          )
-        })
-      ) {
-        sleep = true
-      }
-
-      // if any inputs are loading, hold
-      if (
-        this.inputsArray.some((inputObject) => inputObject.loading === true)
-      ) {
-        this.$notifier.showSnackbar({
-          message: 'Some inputs are not finished loading',
-          variant: 'error',
-        })
-        return
-      }
+    async handleSubmit() {
       // set executeAction loading to true to prevent clicking multiple times
       this.loading.executeAction = true
 
-      setTimeout(this.submit, sleep ? 500 : 0)
+      // if any inputs are loading, wait 500 ms and check again before proceeding
+      while (
+        this.inputsArray.some((inputObject) => inputObject.loading === true)
+      ) {
+        // sleep 500 ms before checking again
+        await timeout(500)
+      }
+
+      this.submit()
     },
 
     async submit() {

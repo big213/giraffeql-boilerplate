@@ -10,6 +10,14 @@ export function getIcon(typename: string | undefined) {
   return typename ? models[capitalizeString(typename)]?.icon ?? null : null
 }
 
+export function formatAsCurrency(input: number | null) {
+  return `$${(input ?? 0).toFixed(2)}`
+}
+
+export function timeout(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 export function generateTimeAgoString(unixTimestamp: number | null) {
   if (!unixTimestamp) return null
 
@@ -387,6 +395,43 @@ export function generateLoginError(setRedirect = true) {
     )
 
   return new Error('Login required')
+}
+
+export function generateNavRouteObject(
+  that,
+  {
+    recordInfo,
+    routeType,
+    path,
+    pageOptions,
+  }: {
+    recordInfo: any
+    routeType?: 'i' | 'a' | 'my' | 's'
+    path?: string
+    pageOptions?: any
+  }
+) {
+  return {
+    icon: recordInfo.icon,
+    title: recordInfo.title ?? recordInfo.pluralName,
+    to: generateCrudRecordRoute(that, {
+      path,
+      typename: recordInfo.typename,
+      routeType,
+      pageOptions:
+        pageOptions === null
+          ? null
+          : {
+              search: '',
+              filters: [],
+              sort: {
+                field: 'updatedAt',
+                desc: true,
+              },
+              ...pageOptions,
+            },
+    }),
+  }
 }
 
 export function generateCrudRecordRoute(
@@ -868,8 +913,8 @@ export function generateFilterByObjectArray(
 export async function processInputObject(that, inputObject, inputObjectArray) {
   let value
 
-  // if it is a value array, need to assemble the value as an array
   if (inputObject.inputType === 'value-array') {
+    // if it is a value array, need to assemble the value as an array
     value = []
     for (const nestedInputArray of inputObject.nestedInputsArray) {
       const obj = {}
@@ -963,4 +1008,42 @@ export function retryize(retryizedFn, maxAttempts = 3) {
       }
     }
   }
+}
+
+export function memoize(memoizedFn) {
+  const cache = {}
+
+  return function () {
+    // first arg is always gonna be that, so we will exclude it
+    const [that, forceReload, ...otherArgs] = arguments
+    const args = JSON.stringify(otherArgs)
+    cache[args] = forceReload
+      ? memoizedFn(that, false, ...otherArgs)
+      : cache[args] || memoizedFn(that, false, ...otherArgs)
+    return cache[args]
+  }
+}
+
+export function generateMemoizedGetter(operation: string, fields: string[]) {
+  return <any>(
+    memoize(function (
+      that,
+      _forceReload,
+      filterBy: any[] = [],
+      sortBy: any[] = []
+    ) {
+      return collectPaginatorData(
+        that,
+        operation,
+        fields.reduce((total, field) => {
+          total[field] = true
+          return total
+        }, {}),
+        {
+          filterBy,
+          sortBy,
+        }
+      )
+    })
+  )
 }

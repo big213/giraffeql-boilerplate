@@ -5,18 +5,37 @@
         <v-col cols="12">
           <component
             :is="paginationComponent"
-            :record-info="recordInfo"
-            :page-options="pageOptions"
-            :locked-filters="lockedFilters"
+            :record-info="
+              expandTypeObject ? expandTypeObject.recordInfo : recordInfo
+            "
+            :page-options="isChildComponent ? subPageOptions : pageOptions"
+            :locked-filters="
+              isChildComponent ? lockedSubFilters : lockedFilters
+            "
             :hidden-filters="hiddenFilters"
-            :hidden-headers="hiddenHeaders"
-            :title="title"
-            :icon="icon"
+            :hidden-headers="
+              expandTypeObject ? expandTypeObject.excludeHeaders : hiddenHeaders
+            "
+            :title="expandTypeObject ? expandTypeObject.name : title"
+            :icon="expandTypeObject ? expandTypeObject.icon : icon"
             :poll-interval="pollInterval"
+            :parent-item="currentParentItem"
+            :breadcrumb-mode="
+              expandTypeObject ? !!expandTypeObject.breadcrumbMode : false
+            "
+            :breadcrumb-items="breadcrumbItems"
+            :is-child-component="isChildComponent"
             dense
             @pageOptions-updated="handlePageOptionsUpdated"
             @record-changed="$emit('record-changed', $event)"
-          ></component>
+            @expand-type-updated="handleExpandTypeUpdated"
+          >
+            <template v-if="isChildComponent" v-slot:header-action>
+              <v-btn icon @click="closeExpand()">
+                <v-icon>mdi-close</v-icon>
+              </v-btn>
+            </template>
+          </component>
         </v-col>
       </v-row>
     </v-layout>
@@ -25,10 +44,24 @@
 
 <script>
 import CrudRecordInterface from '~/components/interface/crud/crudRecordInterface.vue'
+import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 import { capitalizeString, generateCrudRecordRoute } from '~/services/base'
 import { mapGetters } from 'vuex'
 
 export default {
+  components: {
+    PreviewRecordChip,
+  },
+
+  data() {
+    return {
+      currentParentItem: null,
+      expandTypeObject: null,
+      subPageOptions: null,
+      breadcrumbItems: [],
+    }
+  },
+
   props: {
     title: {
       type: String,
@@ -67,6 +100,29 @@ export default {
       newUnreadNotifications: 'user/newUnreadNotifications',
     }),
 
+    isChildComponent() {
+      return this.breadcrumbItems.length > 0
+    },
+
+    lockedSubFilters() {
+      if (!this.expandTypeObject) {
+        return []
+      }
+
+      // is there a lockedFilters generator on the expandTypeObject? if so, use that
+      if (this.expandTypeObject.lockedFilters) {
+        return this.expandTypeObject.lockedFilters(this, this.currentParentItem)
+      }
+
+      return [
+        {
+          field: this.recordInfo.typename.toLowerCase() + '.id',
+          operator: 'eq',
+          value: this.currentParentItem.id,
+        },
+      ]
+    },
+
     paginationComponent() {
       return this.recordInfo.paginationOptions.component || CrudRecordInterface
     },
@@ -101,6 +157,54 @@ export default {
   },
 
   methods: {
+    closeExpand() {
+      if (!this.breadcrumbItems.length) return
+
+      // if there are breadcrumb items, go back
+      this.breadcrumbItems.pop()
+
+      const latestItem = this.breadcrumbItems[this.breadcrumbItems.length - 1]
+
+      this.currentParentItem =
+        this.breadcrumbItems.length > 1 ? latestItem.item : null
+
+      // if 1 remaining, set expandTypeObject to null
+      this.expandTypeObject =
+        this.breadcrumbItems.length > 1 ? latestItem.expandTypeObject : null
+
+      // set the pageOptions override
+      this.subPageOptions =
+        this.breadcrumbItems.length > 1
+          ? {
+              search: null,
+              filters: this.expandTypeObject.initialFilters ?? [],
+              sort: this.expandTypeObject.initialSortOptions ?? null,
+            }
+          : null
+
+      return
+    },
+
+    handleExpandTypeUpdated(item, expandTypeObject) {
+      // add to breadcrumbs
+
+      this.breadcrumbItems.push({
+        expandTypeObject,
+        item,
+        isRoot: false,
+      })
+
+      this.currentParentItem = item
+      this.expandTypeObject = expandTypeObject
+
+      // set the pageOptions override
+      this.subPageOptions = {
+        search: null,
+        filters: expandTypeObject.initialFilters ?? [],
+        sort: expandTypeObject.initialSortOptions ?? null,
+      }
+    },
+
     navigateToDefaultRoute() {
       if (!this.recordInfo.paginationOptions.defaultPageOptions) return
 
@@ -114,6 +218,12 @@ export default {
     },
 
     handlePageOptionsUpdated(pageOptions) {
+      // if it's a child component, set the subPageOptions
+      if (this.isChildComponent) {
+        this.subPageOptions = pageOptions
+        return
+      }
+
       const query = {
         ...this.$route.query,
       }

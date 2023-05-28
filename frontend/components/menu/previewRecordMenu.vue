@@ -38,12 +38,14 @@
             </v-row>
           </template>
 
-          <v-card-title class="subheading font-weight-bold"
-            >{{
-              recordInfo.previewOptions.heroOptions.getPreviewName
-                ? recordInfo.previewOptions.heroOptions.getPreviewName(item)
-                : item.name
-            }}
+          <v-card-title class="subheading font-weight-bold">
+            <span class="break-word">
+              {{
+                recordInfo.previewOptions.heroOptions.getPreviewName
+                  ? recordInfo.previewOptions.heroOptions.getPreviewName(item)
+                  : item.name
+              }}</span
+            >
           </v-card-title>
         </v-img>
       </div>
@@ -89,7 +91,7 @@
           :follow-link-model="recordInfo.followLinkModel"
         ></FollowButton>
         <v-spacer></v-spacer>
-        <v-btn color="primary" @click="openPage()">
+        <v-btn v-if="!isViewButtonHidden" color="primary" @click="openPage()">
           <v-icon v-if="openMode === 'openInNew'" left>mdi-open-in-new</v-icon>
           View
         </v-btn>
@@ -175,6 +177,9 @@ export default {
     },
     hasLineItems() {
       return this.fields.length > 0 || !this.hasHeroOptions
+    },
+    isViewButtonHidden() {
+      return !!this.recordInfo.previewOptions?.hideViewButton
     },
   },
 

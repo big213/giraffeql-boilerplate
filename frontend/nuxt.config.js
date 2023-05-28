@@ -19,6 +19,7 @@ export default {
     siteGithubRepositoryUrl: process.env.SITE_GITHUB_REPOSITORY_URL,
     logoHasLightVariant: !!process.env.LOGO_HAS_LIGHT_VARIANT,
     defaultGridView: !!process.env.DEFAULT_GRID_VIEW,
+    stripePubKey: process.env.STRIPE_PUB_KEY,
   },
 
   // Target (https://go.nuxtjs.dev/config-target)
@@ -76,6 +77,11 @@ export default {
       {
         property: 'og:site_name',
         content: process.env.SITE_NAME,
+      },
+    ],
+    script: [
+      {
+        src: 'https://js.stripe.com/v3/',
       },
     ],
     link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],

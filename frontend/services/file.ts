@@ -20,6 +20,7 @@ type FileUploadObject = {
 export function uploadFile(
   that,
   file,
+  fetchFirebaseUrl: boolean,
   onFinishedUploading?: (file, fileRecord) => any
 ) {
   const subPath =
@@ -78,9 +79,15 @@ export function uploadFile(
         })
 
         fileUploadObject.servingUrl = generateFileServingUrl(subPath)
-        // const downloadURL = await uploadTask.snapshot.ref.getDownloadURL()
-        // changes the spaces to url safe
-        // fileUploadObject.url = encodeURI(downloadURL)
+
+        if (fetchFirebaseUrl) {
+          const downloadURL = await storageRef
+            .child('source/' + subPath)
+            .getDownloadURL()
+
+          fileUploadObject.url = downloadURL
+        }
+
         fileUploadObject.fileRecord = fileRecord
 
         onFinishedUploading && onFinishedUploading(file, fileRecord)

@@ -1,43 +1,5 @@
 import { executeGiraffeql } from '~/services/giraffeql'
-import { collectPaginatorData } from '~/services/base'
-
-function memoize(memoizedFn) {
-  const cache = {}
-
-  return function () {
-    // first arg is always gonna be that, so we will exclude it
-    const [that, forceReload, ...otherArgs] = arguments
-    const args = JSON.stringify(otherArgs)
-    cache[args] = forceReload
-      ? memoizedFn(that, false, ...otherArgs)
-      : cache[args] || memoizedFn(that, false, ...otherArgs)
-    return cache[args]
-  }
-}
-
-function generateMemoizedGetter(operation: string, fields: string[]) {
-  return <any>(
-    memoize(function (
-      that,
-      _forceReload,
-      filterBy: any[] = [],
-      sortBy: any[] = []
-    ) {
-      return collectPaginatorData(
-        that,
-        operation,
-        fields.reduce((total, field) => {
-          total[field] = true
-          return total
-        }, {}),
-        {
-          filterBy,
-          sortBy,
-        }
-      )
-    })
-  )
-}
+import { generateMemoizedGetter, memoize } from '~/services/base'
 
 export const getCurrentUser = function (that) {
   const user = that.$store.getters['auth/user']

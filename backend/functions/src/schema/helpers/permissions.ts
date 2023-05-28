@@ -1,4 +1,4 @@
-import { userRoleKenum, userPermissionEnum } from "../enums";
+import { userRole, userPermission } from "../enums";
 import { Request } from "express";
 import { PaginatedService } from "../core/services";
 import { AccessControlFunction } from "../../types";
@@ -6,8 +6,8 @@ import { isObject } from "giraffeql/lib/helpers/base";
 import { objectOnlyHasFields } from "../core/helpers/shared";
 
 export const userRoleToPermissionsMap = {
-  [userRoleKenum.ADMIN.name]: [userPermissionEnum.A_A],
-  [userRoleKenum.NORMAL.name]: [],
+  [userRole.ADMIN.name]: [userPermission.A_A],
+  [userRole.NORMAL.name]: [],
 };
 
 export function generateItemCreatedByUserGuard(
@@ -36,11 +36,11 @@ export function generateItemCreatedByUserGuard(
 }
 
 export function generateUserAdminGuard(): AccessControlFunction {
-  return generateUserRoleGuard([userRoleKenum.ADMIN]);
+  return generateUserRoleGuard([userRole.ADMIN]);
 }
 
 export function generateUserRoleGuard(
-  allowedRoles: userRoleKenum[]
+  allowedRoles: userRole[]
 ): AccessControlFunction {
   return async function ({ req }) {
     //check if logged in

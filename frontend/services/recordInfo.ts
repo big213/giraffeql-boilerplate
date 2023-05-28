@@ -292,6 +292,21 @@ export function generateClickRowToOpenOptions() {
   }
 }
 
+export function generateClickRowToExpandOptions() {
+  return {
+    handleRowClick: (that, props) => {
+      if (that.recordInfo.expandTypes[0]) {
+        that.toggleItemExpanded(props, that.recordInfo.expandTypes[0])
+      }
+    },
+    handleGridElementClick: (that, item) => {
+      if (that.recordInfo.expandTypes[0]) {
+        that.toggleGridExpand(item, that.recordInfo.expandTypes[0])
+      }
+    },
+  }
+}
+
 export function generateKeyValueArrayField({
   fieldname,
   text,

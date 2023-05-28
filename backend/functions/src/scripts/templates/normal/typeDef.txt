@@ -9,6 +9,7 @@ import {
   generateTypenameField,
   processTypeDef
 } from "../../core/helpers/typeDef";
+import * as Scalars from "../../scalars";
 
 export default new GiraffeqlObjectType(<ObjectTypeDefinition>processTypeDef({
   name: {{ capitalizedTypename }}.typename,
@@ -17,7 +18,7 @@ export default new GiraffeqlObjectType(<ObjectTypeDefinition>processTypeDef({
     ...generateIdField({{ capitalizedTypename }}),
     ...generateTypenameField({{ capitalizedTypename }}),
     name: generateStringField({ allowNull: false }),
-    avatar: generateStringField({ allowNull: true }),
+    avatar: generateStringField({ allowNull: true, type: Scalars.url }),
     description: generateTextField({
       allowNull: true,
     }),

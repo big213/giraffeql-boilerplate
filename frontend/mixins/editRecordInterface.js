@@ -13,6 +13,7 @@ import {
   addNestedInputObject,
   processInputObject,
   processQuery,
+  timeout,
 } from '~/services/base'
 import GenericInput from '~/components/input/genericInput.vue'
 
@@ -178,19 +179,17 @@ export default {
       return getInputObject(this.inputsArray, key)
     },
 
-    handleSubmit() {
-      // if any inputs are loading, hold
-      if (
-        this.inputsArray.some((inputObject) => inputObject.loading === true)
-      ) {
-        this.$notifier.showSnackbar({
-          message: 'Some inputs are not finished loading',
-          variant: 'error',
-        })
-        return
-      }
+    async handleSubmit() {
       // set editRecord loading to true to prevent clicking multiple times
       this.loading.editRecord = true
+
+      // if any inputs are loading, wait 500 ms and check again before proceeding
+      while (
+        this.inputsArray.some((inputObject) => inputObject.loading === true)
+      ) {
+        // sleep 500 ms before checking again
+        await timeout(500)
+      }
 
       this.submit()
     },

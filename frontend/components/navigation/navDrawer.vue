@@ -4,131 +4,43 @@
       <v-img :src="logoImageSrc" class="ma-3" contain />
     </nuxt-link>
     <v-divider></v-divider>
-    <v-list dense>
-      <v-list-item
-        v-for="(item, i) in mainItems"
-        :key="i"
-        :to="item.to"
-        nuxt
-        router
-        exact-path
-      >
-        <v-list-item-action>
-          <v-icon>{{ item.icon }}</v-icon>
-        </v-list-item-action>
-        <v-list-item-content>
-          <v-list-item-title>{{ item.title }}</v-list-item-title>
-        </v-list-item-content>
-      </v-list-item>
-    </v-list>
-    <v-divider></v-divider>
-    <v-list dense>
-      <v-subheader>Explore</v-subheader>
-      <v-list-item
-        v-for="(item, i) in navItems"
-        :key="i"
-        :to="item.to"
-        nuxt
-        router
-        exact-path
-      >
-        <v-list-item-action>
-          <v-icon>{{ item.icon }}</v-icon>
-        </v-list-item-action>
-        <v-list-item-content>
-          <v-list-item-title>{{ item.title }}</v-list-item-title>
-        </v-list-item-content>
-      </v-list-item>
-    </v-list>
-    <v-divider></v-divider>
-    <v-list v-if="user" dense>
-      <v-subheader>My Account</v-subheader>
-      <v-list-item
-        v-for="(item, i) in userItems"
-        :key="i"
-        :to="item.to"
-        nuxt
-        router
-        exact-path
-      >
-        <v-list-item-action>
-          <v-icon>{{ item.icon }}</v-icon>
-        </v-list-item-action>
-        <v-list-item-content>
-          <v-list-item-title>{{ item.title }}</v-list-item-title>
-        </v-list-item-content>
-      </v-list-item>
-    </v-list>
-    <v-divider></v-divider>
-    <AdminNavRoutes v-if="isAdmin"></AdminNavRoutes>
+
+    <div v-for="(drawerItem, i) in navDrawerItems" :key="i">
+      <v-list dense>
+        <v-subheader v-if="drawerItem.title">{{
+          drawerItem.title
+        }}</v-subheader>
+        <v-list-item
+          v-for="(item, j) in drawerItem.items"
+          :key="j"
+          :to="item.to"
+          nuxt
+          router
+          exact-path
+        >
+          <v-list-item-action>
+            <v-icon>{{ item.icon }}</v-icon>
+          </v-list-item-action>
+          <v-list-item-content>
+            <v-list-item-title>{{ item.title }}</v-list-item-title>
+          </v-list-item-content>
+        </v-list-item>
+      </v-list>
+      <v-divider></v-divider>
+    </div>
+
+    <div v-if="isAdmin">
+      <v-divider></v-divider>
+      <AdminNavRoutes></AdminNavRoutes>
+    </div>
   </v-navigation-drawer>
 </template>
 
 <script>
 import { mapGetters } from 'vuex'
-import { generateCrudRecordRoute } from '~/services/base'
 import AdminNavRoutes from '~/components/navigation/adminNavRoutes.vue'
 import { logoHasLightVariant } from '~/services/config'
-import * as myModels from '~/models/my'
-import * as publicModels from '~/models/public'
-
-function generateUserRouteObject(
-  that,
-  recordInfo,
-  customPath,
-  customPageOptions
-) {
-  return {
-    icon: recordInfo.icon,
-    title: recordInfo.title ?? recordInfo.pluralName,
-    to: generateCrudRecordRoute(that, {
-      path: customPath,
-      typename: recordInfo.typename,
-      routeType: 'my',
-      pageOptions:
-        customPageOptions === null
-          ? null
-          : {
-              search: '',
-              filters: [],
-              sort: {
-                field: 'createdAt',
-                desc: true,
-              },
-              ...customPageOptions,
-            },
-    }),
-  }
-}
-
-function generatePublicRouteObject(
-  that,
-  recordInfo,
-  customPath,
-  customPageOptions
-) {
-  return {
-    icon: recordInfo.icon,
-    title: recordInfo.title ?? recordInfo.pluralName,
-    to: generateCrudRecordRoute(that, {
-      path: customPath,
-      typename: recordInfo.typename,
-      routeType: 'i',
-      pageOptions:
-        customPageOptions === null
-          ? null
-          : {
-              search: '',
-              filters: [],
-              sort: {
-                field: 'createdAt',
-                desc: true,
-              },
-              ...customPageOptions,
-            },
-    }),
-  }
-}
+import { generateNavDrawerItems } from '~/services/navigation'
 
 export default {
   components: {
@@ -136,26 +48,9 @@ export default {
   },
 
   data() {
-    return {
-      mainItems: [
-        {
-          icon: 'mdi-home',
-          title: 'Home',
-          to: '/',
-        },
-      ],
-      navItems: [generatePublicRouteObject(this, publicModels.PublicUser)],
-      userItems: [
-        generateUserRouteObject(this, myModels.MyApiKey),
-        generateUserRouteObject(this, myModels.MyFile),
-        {
-          icon: 'mdi-account',
-          title: 'My Profile',
-          to: '/my-profile',
-        },
-      ],
-    }
+    return {}
   },
+
   computed: {
     ...mapGetters({
       user: 'auth/user',
@@ -171,6 +66,10 @@ export default {
             this.$vuetify.theme.dark ? '' : '-light'
           }.png`)
         : require('~/static/logo-horizontal.png')
+    },
+
+    navDrawerItems() {
+      return generateNavDrawerItems(this)
     },
   },
 }

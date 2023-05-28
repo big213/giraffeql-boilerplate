@@ -39,6 +39,10 @@
   white-space: break-spaces;
 }
 
+.break-word {
+  word-break: break-word;
+}
+
 .dialog-max-height {
   max-height: 600px;
 }

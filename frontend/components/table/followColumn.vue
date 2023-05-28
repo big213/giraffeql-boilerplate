@@ -1,6 +1,7 @@
 <template>
   <div>
     <FollowButton
+      v-if="followLinkModel"
       color="primary"
       small
       :follow-link-model="followLinkModel"

@@ -1,13 +1,13 @@
 import { Enum } from "../core/helpers/enum";
 
-export class userPermissionEnum extends Enum {
-  static readonly A_A = new userPermissionEnum("A_A");
-  static readonly user_x = new userPermissionEnum("user_x");
-  static readonly user_get = new userPermissionEnum("user_get");
-  static readonly user_getMultiple = new userPermissionEnum("user_getMultiple");
-  static readonly user_update = new userPermissionEnum("user_update");
-  static readonly user_create = new userPermissionEnum("user_create");
-  static readonly user_delete = new userPermissionEnum("user_delete");
+export class userPermission extends Enum {
+  static readonly A_A = new userPermission("A_A");
+  static readonly user_x = new userPermission("user_x");
+  static readonly user_get = new userPermission("user_get");
+  static readonly user_getMultiple = new userPermission("user_getMultiple");
+  static readonly user_update = new userPermission("user_update");
+  static readonly user_create = new userPermission("user_create");
+  static readonly user_delete = new userPermission("user_delete");
 
-  static readonly file_getMultiple = new userPermissionEnum("file_getMultiple");
+  static readonly file_getMultiple = new userPermission("file_getMultiple");
 }

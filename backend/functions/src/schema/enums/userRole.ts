@@ -1,9 +1,9 @@
 import { Kenum } from "../core/helpers/enum";
 
-export class userRoleKenum extends Kenum {
-  static readonly NONE = new userRoleKenum("NONE", 1);
-  static readonly NORMAL = new userRoleKenum("NORMAL", 2);
-  static readonly ADMIN = new userRoleKenum("ADMIN", 3);
-  static readonly CUSTOM = new userRoleKenum("CUSTOM", 4);
-  static readonly MODERATOR = new userRoleKenum("MODERATOR", 5);
+export class userRole extends Kenum {
+  static readonly NONE = new userRole("NONE", 1);
+  static readonly NORMAL = new userRole("NORMAL", 2);
+  static readonly ADMIN = new userRole("ADMIN", 3);
+  static readonly CUSTOM = new userRole("CUSTOM", 4);
+  static readonly MODERATOR = new userRole("MODERATOR", 5);
 }

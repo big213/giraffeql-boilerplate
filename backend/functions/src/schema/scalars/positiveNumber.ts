@@ -7,13 +7,15 @@ function validate(value: unknown) {
 
   const parsedValue = Number(value);
 
+  if (parsedValue < 0) throw true;
+
   return parsedValue;
 }
 
-export const number = new GiraffeqlScalarType({
-  name: "number",
+export const positiveNumber = new GiraffeqlScalarType({
+  name: "positiveNumber",
   types: ["number"],
-  description: "Numeric value",
+  description: "Numeric value greater than equal to 0",
   parseValue: validate,
   serialize: validate,
 });

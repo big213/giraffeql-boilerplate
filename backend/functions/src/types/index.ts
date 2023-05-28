@@ -1,7 +1,7 @@
 import type { Request } from "express";
 import Knex = require("knex");
 import { SpecialJoinDefinition } from "../schema/core/helpers/sql";
-import { userPermissionEnum, userRoleKenum } from "../schema/enums";
+import { userPermission, userRole } from "../schema/enums";
 
 export type StringKeyObject = Record<string, unknown>;
 
@@ -74,8 +74,8 @@ export type ServiceFunctionInputs = {
 
 export type ContextUser = {
   id: string;
-  role: userRoleKenum | null;
-  permissions: userPermissionEnum[];
+  role: userRole | null;
+  permissions: userPermission[];
   isApiKey: boolean; // was the context created using an API Key?
 };
 

@@ -232,6 +232,57 @@
       </div>
     </div>
     <div
+      v-else-if="item.inputType === 'single-file-url'"
+      class="mb-4 highlighted-bg"
+      :class="isReadonly ? 'text-center' : 'd-flex text-left'"
+      v-cloak
+      @drop.prevent="handleDropEvent"
+      @dragover.prevent
+    >
+      <label
+        v-if="!item.loading"
+        for="file-upload-2"
+        class="custom-file-upload pt-5 text-center"
+        style="width: 100px"
+      >
+        <v-icon>mdi-upload</v-icon>
+        Upload
+      </label>
+      <label
+        v-else
+        class="custom-file-upload pt-5 text-center"
+        style="width: 100px"
+      >
+        <v-progress-circular indeterminate></v-progress-circular>
+      </label>
+      <input
+        id="file-upload-2"
+        type="file"
+        style="display: none"
+        :accept="getAcceptedFiles()"
+        @change="handleSingleFileInputChange"
+      />
+      <v-text-field
+        v-model="item.value"
+        :label="item.label + (item.optional ? ' (optional)' : '')"
+        :readonly="isReadonly"
+        :rules="item.inputRules"
+        :hint="item.hint"
+        :disabled="item.loading"
+        :loading="item.loading"
+        :append-icon="appendIcon"
+        :append-outer-icon="item.closeable ? 'mdi-close' : null"
+        persistent-hint
+        filled
+        dense
+        class="pl-2 py-0"
+        v-on="$listeners"
+        @click:append="handleClear()"
+        @click:append-outer="handleClose()"
+        @input="triggerInput()"
+      ></v-text-field>
+    </div>
+    <div
       v-else-if="item.inputType === 'avatar'"
       class="mb-4 highlighted-bg"
       :class="isReadonly ? 'text-center' : 'd-flex text-left'"
@@ -251,6 +302,7 @@
         id="file-upload"
         type="file"
         style="display: none"
+        accept="image/*"
         @change="handleSingleFileInputChange"
       />
       <v-text-field
@@ -807,6 +859,46 @@
         </v-row>
       </v-container>
     </div>
+    <div v-else-if="item.inputType === 'stripe-cc'" class="pb-5 rounded-sm">
+      <v-container class="highlighted-bg">
+        <v-row>
+          <v-col cols="12">
+            <div class="subtitle-1">
+              {{
+                item.inputOptions && item.inputOptions.getPrice
+                  ? `Charge ${getStripeCcPrice()}`
+                  : item.label + (item.optional ? ' (optional)' : '')
+              }}
+            </div>
+            <div v-if="item.hint">{{ item.hint }}</div>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col cols="12">
+            <StripeElements
+              :stripe-key="stripeKey"
+              :instance-options="instanceOptions"
+              :elements-options="elementsOptions"
+              #default="{ elements }"
+              ref="elms"
+              class="accent"
+            >
+              <StripeElement
+                type="card"
+                :elements="elements"
+                :options="cardOptions"
+                ref="card"
+                @blur="processStripeElement"
+              />
+            </StripeElements>
+            <v-progress-linear
+              v-if="item.loading"
+              indeterminate
+            ></v-progress-linear>
+          </v-col>
+        </v-row>
+      </v-container>
+    </div>
     <v-text-field
       v-else
       v-model="item.value"
@@ -842,10 +934,12 @@ import {
   addNestedInputObject,
   populateInputObject,
   generateDateLocaleString,
+  formatAsCurrency,
 } from '~/services/base'
 import { executeGiraffeql } from '~/services/giraffeql'
 import FileChip from '~/components/chip/fileChip.vue'
 import MediaChip from '~/components/chip/mediaChip.vue'
+import { StripeElements, StripeElement } from 'vue-stripe-elements-plus'
 
 export default {
   name: 'GenericInput',
@@ -853,6 +947,8 @@ export default {
     Draggable,
     FileChip,
     MediaChip,
+    StripeElements,
+    StripeElement,
   },
   props: {
     // type: CrudInputObject
@@ -882,6 +978,23 @@ export default {
 
         timeInput: null,
         timeMenu: null,
+      },
+
+      stripeKey: process.env.stripePubKey, // test key, don't hardcode
+      instanceOptions: {
+        // https://stripe.com/docs/js/initializing#init_stripe_js-options
+      },
+      elementsOptions: {
+        // https://stripe.com/docs/js/elements_object/create#stripe_elements-options
+      },
+      cardOptions: {
+        // reactive
+        // remember about Vue 2 reactivity limitations when dealing with options
+        value: {
+          postalCode: '',
+        },
+        mode: 'payment',
+        // https://stripe.com/docs/stripe.js#element-options
       },
     }
   },
@@ -920,6 +1033,18 @@ export default {
   },
 
   methods: {
+    getStripeCcPrice() {
+      if (this.item.inputOptions?.getPrice) {
+        return formatAsCurrency(
+          this.item.inputOptions.getPrice(this, this.parentItem)
+        )
+      }
+    },
+
+    getAcceptedFiles() {
+      return this.item.inputOptions?.contentType
+    },
+
     standardizeComboboxName(value) {
       // if it is not an object, will assume it is null or string
       return isObject(value) ? value.name : value
@@ -1074,6 +1199,11 @@ export default {
 
     handleDropEvent(e) {
       try {
+        // if still loading, prevent
+        if (this.item.loading) {
+          throw new Error(`File upload already in progress`)
+        }
+
         const files = Array.from(e.dataTransfer.files)
 
         // only 1 file allowed
@@ -1106,7 +1236,7 @@ export default {
 
         this.filesProcessingQueue.set(currentFile, true)
 
-        uploadFile(this, currentFile, (file, fileRecord) => {
+        uploadFile(this, currentFile, false, (file, fileRecord) => {
           // add finished fileRecord to filesData
           this.filesData.push(file.fileUploadObject.fileRecord)
 
@@ -1174,22 +1304,32 @@ export default {
       inputObject.filesQueue = [inputObject.inputValue]
 
       // upload the file(s) to CDN, then load them into value on finish
-      uploadFile(this, inputObject.inputValue, (file, fileRecord) => {
-        inputObject.value = file.fileUploadObject.servingUrl
-        inputObject.loading = false
+      uploadFile(
+        this,
+        inputObject.inputValue,
+        inputObject.inputOptions?.useFirebaseUrl === true,
+        (file, fileRecord) => {
+          if (inputObject.inputOptions?.useFirebaseUrl) {
+            inputObject.value = file.fileUploadObject.url
+          } else {
+            inputObject.value = file.fileUploadObject.servingUrl
+          }
 
-        // remove from filesQueue
-        const index = inputObject.filesQueue.indexOf(file)
-        if (index !== -1) inputObject.filesQueue.splice(index, 1)
+          inputObject.loading = false
 
-        // emit the file to parent (in case it is needed)
-        this.$emit('file-added', inputObject, fileRecord)
+          // remove from filesQueue
+          const index = inputObject.filesQueue.indexOf(file)
+          if (index !== -1) inputObject.filesQueue.splice(index, 1)
 
-        this.$notifier.showSnackbar({
-          message: 'File Uploaded',
-          variant: 'success',
-        })
-      })
+          // emit the file to parent (in case it is needed)
+          this.$emit('file-added', inputObject, fileRecord)
+
+          this.$notifier.showSnackbar({
+            message: 'File Uploaded',
+            variant: 'success',
+          })
+        }
+      )
     },
 
     async loadSearchResults(inputObject) {
@@ -1284,6 +1424,28 @@ export default {
         handleError(this, err)
       }
       inputObject.loading = false
+    },
+    async processStripeElement() {
+      this.item.loading = true
+      try {
+        // ref in template
+        const groupComponent = this.$refs.elms
+        const cardComponent = this.$refs.card
+        // Get stripe element
+        const cardElement = cardComponent.stripeElement
+
+        // Access instance methods, e.g. createToken()
+
+        const result = await groupComponent.instance.createToken(cardElement)
+        if (result.token) {
+          this.item.value = result.token.id
+        } else if (result.error) {
+          throw new Error(result.error.message)
+        }
+      } catch (err) {
+        // handleError(this, err)
+      }
+      this.item.loading = false
     },
 
     reset() {

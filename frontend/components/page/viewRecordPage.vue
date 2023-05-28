@@ -15,7 +15,7 @@
   <v-container v-else fluid>
     <v-layout justify-center align-center column d-block>
       <v-row>
-        <v-col v-if="isRecordMinimized" cols="12">
+        <v-col v-if="recordMode === 'minimized'" cols="12">
           <PreviewRecordChip :value="selectedItem">
             <template v-slot:rightIcon>
               <RecordActionMenu
@@ -38,11 +38,14 @@
               <v-icon right @click="toggleRecordMinimized(false)"
                 >mdi-arrow-expand</v-icon
               >
+              <v-icon right @click="openViewRecordDialog()"
+                >mdi-information</v-icon
+              >
             </template>
           </PreviewRecordChip>
         </v-col>
         <v-col
-          v-else
+          v-else-if="recordMode === 'show'"
           cols="12"
           :md="isExpanded ? 4 : 6"
           class="text-center"
@@ -87,7 +90,7 @@
             </component>
           </v-card>
         </v-col>
-        <v-col v-if="isExpanded" cols="12" :md="isRecordMinimized ? 12 : 8">
+        <v-col v-if="isExpanded" cols="12" :md="recordMode === 'show' ? 8 : 12">
           <v-card class="elevation-12">
             <component
               :is="paginationComponent"
@@ -96,14 +99,22 @@
               :icon="expandTypeObject.icon"
               :hidden-headers="expandTypeObject.excludeHeaders"
               :locked-filters="lockedSubFilters"
-              :page-options="pageOptions"
+              :page-options="isChildComponent ? subPageOptions : pageOptions"
               :hidden-filters="hiddenSubFilters"
-              :parent-item="selectedItem"
+              :parent-item="parentItem"
+              :breadcrumb-mode="!!expandTypeObject.breadcrumbMode"
+              :breadcrumb-items="breadcrumbItems"
+              :is-child-component="isChildComponent"
               dense
               @pageOptions-updated="handleSubPageOptionsUpdated"
               @reload-parent-item="handleReloadParentItem()"
+              @expand-type-updated="handleExpandTypeUpdated"
+              @breadcrumb-item-click="handleBreadcrumbItemClick"
             >
-              <template v-slot:header-action>
+              <template
+                v-slot:header-action
+                v-if="recordMode !== 'hidden' || isChildComponent"
+              >
                 <v-btn icon @click="toggleExpand(null)">
                   <v-icon>mdi-close</v-icon>
                 </v-btn>
@@ -114,7 +125,7 @@
       </v-row>
     </v-layout>
     <EditRecordDialog
-      :status="dialogs.editRecord"
+      v-model="dialogs.editRecord"
       :record-info="recordInfo"
       :selected-item="selectedItem"
       :mode="dialogs.editMode"
@@ -165,10 +176,9 @@ export default {
   data() {
     return {
       selectedItem: null,
+      currentParentItem: null,
       expandTypeObject: null,
       subPageOptions: null,
-
-      isRecordMinimized: false,
 
       generation: 0,
 
@@ -184,6 +194,8 @@ export default {
       },
 
       recordInfoChanged: false,
+
+      breadcrumbItems: [],
     }
   },
 
@@ -191,6 +203,22 @@ export default {
     ...mapGetters({
       newUnreadNotifications: 'user/newUnreadNotifications',
     }),
+
+    isChildComponent() {
+      return this.breadcrumbItems.length > 1
+    },
+
+    recordMode() {
+      return this.$route.query.m === '2'
+        ? 'hidden'
+        : this.$route.query.m === '1'
+        ? 'minimized'
+        : 'show'
+    },
+
+    parentItem() {
+      return this.currentParentItem || this.selectedItem
+    },
 
     isExpanded() {
       return !!this.expandTypeObject
@@ -211,14 +239,14 @@ export default {
 
       // is there a lockedFilters generator on the expandTypeObject? if so, use that
       if (this.expandTypeObject.lockedFilters) {
-        return this.expandTypeObject.lockedFilters(this, this.selectedItem)
+        return this.expandTypeObject.lockedFilters(this, this.parentItem)
       }
 
       return [
         {
           field: this.recordInfo.typename.toLowerCase() + '.id',
           operator: 'eq',
-          value: this.selectedItem.id,
+          value: this.parentItem.id,
         },
       ]
     },
@@ -245,12 +273,6 @@ export default {
   watch: {
     '$route.query.e'(val) {
       this.setExpandTypeObject(val)
-    },
-
-    '$route.query.m'(val) {
-      if (val) {
-        this.isRecordMinimized = true
-      }
     },
 
     recordInfo() {
@@ -295,6 +317,47 @@ export default {
       this.recordResetInstruction = { showLoader: false }
     },
 
+    handleExpandTypeUpdated(item, expandTypeObject) {
+      // add to breadcrumbs
+
+      this.breadcrumbItems.push({
+        expandTypeObject,
+        item,
+        isRoot: false,
+      })
+
+      this.currentParentItem = item
+      this.expandTypeObject = expandTypeObject
+
+      // set the pageOptions override
+      this.subPageOptions = {
+        search: null,
+        filters: expandTypeObject.initialFilters ?? [],
+        sort: expandTypeObject.initialSortOptions ?? null,
+      }
+    },
+
+    handleBreadcrumbItemClick(breadcrumbItem) {
+      const index = this.breadcrumbItems.indexOf(breadcrumbItem)
+
+      if (index !== -1) {
+        // apply the breadcrumb item and truncate the breadcrumb array at that index
+        this.breadcrumbItems.splice(index + 1)
+
+        const { item, expandTypeObject } = breadcrumbItem
+
+        this.currentParentItem = item
+        this.expandTypeObject = expandTypeObject
+
+        // set the pageOptions override
+        this.subPageOptions = {
+          search: null,
+          filters: expandTypeObject.initialFilters ?? [],
+          sort: expandTypeObject.initialSortOptions ?? null,
+        }
+      }
+    },
+
     getChipName(item) {
       return this.recordInfo?.chipOptions?.getName
         ? this.recordInfo?.chipOptions?.getName(item)
@@ -333,11 +396,37 @@ export default {
           query,
         })
         .catch((e) => e)
+    },
 
-      this.isRecordMinimized = state
+    openViewRecordDialog() {
+      this.$root.$emit('openEditRecordDialog', {
+        recordInfo: this.recordInfo,
+        selectedItem: {
+          id: this.selectedItem.id,
+        },
+        mode: 'view',
+      })
     },
 
     toggleExpand(expandKey) {
+      // if there are breadcrumb items, go back
+      if (this.breadcrumbItems.length > 1 && !expandKey) {
+        this.breadcrumbItems.pop()
+
+        const latestItem = this.breadcrumbItems[this.breadcrumbItems.length - 1]
+
+        this.currentParentItem = latestItem.item
+        this.expandTypeObject = latestItem.expandTypeObject
+
+        this.handleSubPageOptionsUpdated({
+          search: null,
+          filters: this.expandTypeObject.initialFilters ?? [],
+          sort: this.expandTypeObject.initialSortOptions ?? null,
+        })
+
+        return
+      }
+
       const query = {
         ...this.$route.query,
       }
@@ -382,6 +471,15 @@ export default {
 
         this.expandTypeObject = expandTypeObject
 
+        // if breadcrumb mode and init, also set the initial item
+        if (init && this.expandTypeObject.breadcrumbMode) {
+          this.breadcrumbItems.push({
+            expandTypeObject: this.expandTypeObject,
+            item: this.selectedItem,
+            isRoot: true,
+          })
+        }
+
         // when item expanded, initialize the filters if not init, or if init and pageOptions not defined
         if (!init || (init && !this.$route.query.pageOptions)) {
           this.handleSubPageOptionsUpdated({
@@ -394,6 +492,12 @@ export default {
     },
 
     handleSubPageOptionsUpdated(pageOptions) {
+      // if it's a child component, set the subPageOptions
+      if (this.isChildComponent) {
+        this.subPageOptions = pageOptions
+        return
+      }
+
       const query = {
         ...this.$route.query,
       }
@@ -477,10 +581,6 @@ export default {
 
     reset(hardReset = false) {
       if (hardReset) {
-        // if minimize query param set, set the initial isRecordMinimized
-        if (this.$route.query.m !== undefined) {
-          this.isRecordMinimized = true
-        }
         // must independently verify existence of item
         this.loadRecord().then(() => {
           // if expand query param set, set the initial expandTypeObject

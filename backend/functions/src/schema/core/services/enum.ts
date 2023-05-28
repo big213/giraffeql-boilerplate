@@ -8,8 +8,8 @@ export class EnumService extends BaseService {
   paginator: EnumPaginatorService;
   rootResolvers: { [x: string]: GiraffeqlRootResolverType };
 
-  constructor(enumName: string, currentEnum: any) {
-    super(enumName);
+  constructor(currentEnum: any) {
+    super(currentEnum.getName());
 
     this.enum = currentEnum;
     this.paginator = new EnumPaginatorService(this);

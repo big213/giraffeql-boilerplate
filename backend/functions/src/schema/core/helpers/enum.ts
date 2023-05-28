@@ -1,3 +1,5 @@
+import { GiraffeqlScalarType } from "giraffeql";
+
 export abstract class Kenum {
   static get values(): Kenum[] {
     return Object.values(this);
@@ -39,8 +41,21 @@ export abstract class Kenum {
     );
   }
 
-  public get parsed(): number {
-    return this.index;
+  // returns the name of the kenum (minus the kenum part)
+  static getName(): string {
+    return (this as any).prototype.constructor.name;
+  }
+
+  static generateScalarType() {
+    return new GiraffeqlScalarType({
+      name: this.getName(),
+      types: this.values.map((ele: any) => `"${ele.name}"`),
+      description: `Enum stored as a separate key value`,
+      serialize: (value: unknown) => this.fromUnknown(value).name, // convert from index to name
+      parseValue: (value: unknown) => {
+        return this.fromUnknown(value).index;
+      }, // convert from NAME to index
+    });
   }
 
   constructor(
@@ -49,16 +64,16 @@ export abstract class Kenum {
     public readonly description: string = ""
   ) {}
 
+  public get parsed(): number {
+    return this.index;
+  }
+
   public toJSON(): string {
     return this.name;
   }
 }
 
 export abstract class Enum {
-  static get values(): Enum[] {
-    return Object.values(this);
-  }
-
   static fromName(name: string): Enum {
     const value = (this as any)[name];
     if (value) {
@@ -72,14 +87,41 @@ export abstract class Enum {
     );
   }
 
-  public get parsed(): string {
-    return this.name;
+  static fromUnknown(key: unknown): Enum {
+    if (typeof key === "string") return this.fromName(key);
+
+    throw new Error("Invalid key type for enum. Only String allowed");
+  }
+
+  static get values(): Enum[] {
+    return Object.values(this);
+  }
+
+  // returns the name of the enum (minus the enum part)
+  static getName(): string {
+    return (this as any).prototype.constructor.name;
+  }
+
+  static generateScalarType() {
+    return new GiraffeqlScalarType({
+      name: this.getName(),
+      types: this.values.map((ele: any) => `"${ele.name}"`),
+      description: `Enum stored as is`,
+      serialize: (value: unknown) => this.fromUnknown(value).name, // convert from index to name
+      parseValue: (value: unknown) => {
+        return this.fromUnknown(value).name;
+      }, // convert from NAME to index
+    });
   }
 
   constructor(
     public readonly name: string,
     public readonly description: string = ""
   ) {}
+
+  public get parsed(): string {
+    return this.name;
+  }
 
   public toJSON(): string {
     return this.name;

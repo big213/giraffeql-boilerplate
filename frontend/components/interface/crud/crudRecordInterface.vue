@@ -1,5 +1,5 @@
 <template>
-  <div :class="{ 'expanded-table-bg': isChildComponent }">
+  <div>
     <v-container
       v-if="!hidePresets && hasPresetFilters"
       fluid
@@ -49,7 +49,22 @@
         </v-btn>
       </v-toolbar>
     </v-container>
-
+    <v-container v-if="breadcrumbItems.length" fluid class="px-0">
+      <v-row>
+        <v-breadcrumbs :items="breadcrumbItems">
+          <template v-slot:item="{ item }">
+            <v-breadcrumbs-item>
+              <PreviewRecordChip
+                :value="item.item"
+                class="pointer-cursor"
+                @click="$emit('breadcrumb-item-click', item)"
+              >
+              </PreviewRecordChip>
+            </v-breadcrumbs-item>
+          </template>
+        </v-breadcrumbs>
+      </v-row>
+    </v-container>
     <v-card flat>
       <v-toolbar flat color="accent" dense>
         <v-icon left>{{ icon || recordInfo.icon || 'mdi-domain' }}</v-icon>
@@ -97,9 +112,9 @@
               v-on="on"
             >
               <v-icon :left="!isXsViewport">mdi-sort</v-icon>
-              <span v-if="!isXsViewport"
-                >Sort By: {{ currentSort ? currentSort.text : 'None' }}</span
-              ></v-btn
+              <span v-if="!isXsViewport">{{
+                currentSort ? currentSort.text : 'None'
+              }}</span></v-btn
             >
           </template>
           <v-list dense>
@@ -153,6 +168,7 @@
           <v-icon>mdi-download</v-icon>
         </v-btn>
         <v-btn
+          v-if="!recordInfo.paginationOptions.hideRefresh"
           :loading="loading.loadData || loading.syncData"
           icon
           @click="reset()"
@@ -280,7 +296,7 @@
                           </v-row>
                         </template>
                         <v-card-title class="subheading font-weight-bold"
-                          ><span
+                          ><span class="break-word"
                             >{{
                               recordInfo.paginationOptions.heroOptions
                                 .getPreviewName
@@ -317,8 +333,12 @@
                         </v-list-item-content>
                       </v-list-item>
                     </v-list>
-                    <v-divider />
-                    <div class="text-center" style="width: 100%">
+                    <div
+                      v-if="!recordInfo.paginationOptions.hideActions"
+                      class="text-center"
+                      style="width: 100%"
+                    >
+                      <v-divider />
                       <RecordActionMenu
                         :record-info="recordInfo"
                         :item="item"
@@ -326,7 +346,7 @@
                         bottom
                         offset-y
                         @handle-action-click="openEditDialog"
-                        @handle-expand-click="openExpandDialog(item, ...$event)"
+                        @handle-expand-click="toggleGridExpand(item, ...$event)"
                         @handle-custom-action-click="handleCustomActionClick"
                       >
                         <template v-slot:activator="{ on, attrs }">
@@ -392,7 +412,10 @@
                 class="v-data-table__mobile-row"
               >
                 <div
-                  v-if="headerItem.value === null"
+                  v-if="
+                    headerItem.value === null &&
+                    !recordInfo.paginationOptions.hideActions
+                  "
                   class="text-center"
                   style="width: 100%"
                 >
@@ -507,7 +530,7 @@
             <td :colspan="headers.length" class="pr-0">
               <component
                 :is="childInterfaceComponent"
-                class="mb-2"
+                class="mb-2 expanded-table-bg"
                 :record-info="expandTypeObject.recordInfo"
                 :icon="expandTypeObject.icon"
                 :title="expandTypeObject.name"
@@ -518,10 +541,12 @@
                 is-child-component
                 :parent-item="expandedItem"
                 :dense="dense"
+                :breadcrumb-items="subBreadcrumbItems"
                 :results-per-page="expandTypeObject.resultsPerPage"
                 :hide-presets="!expandTypeObject.showPresets"
                 @pageOptions-updated="handleSubPageOptionsUpdated"
                 @reload-parent-item="handleReloadParentItem"
+                @expand-type-updated="handleExpandTypeUpdated"
               >
                 <template v-slot:header-action>
                   <v-btn icon @click="closeExpandedItems()">
@@ -542,6 +567,7 @@
         :record-info="recordInfo"
         :selected-item="dialogs.selectedItem"
         :mode="dialogs.editMode"
+        @reload-parent="reset({ resetExpanded: true })"
         @close="dialogs.editRecord = false"
       ></EditRecordDialog>
       <v-dialog
@@ -552,6 +578,7 @@
           <component
             :is="childInterfaceComponent"
             v-if="dialogs.expandRecord && expandTypeObject"
+            class="expanded-table-bg"
             :record-info="expandTypeObject.recordInfo"
             :icon="expandTypeObject.icon"
             :title="expandTypeObject.name"
@@ -560,10 +587,13 @@
             :page-options="subPageOptions"
             :hidden-filters="hiddenSubFilters"
             is-child-component
+            :parent-item="expandedItem"
             :dense="dense"
+            :breadcrumb-items="subBreadcrumbItems"
             :results-per-page="expandTypeObject.resultsPerPage"
             @pageOptions-updated="handleSubPageOptionsUpdated"
             @reload-parent-item="handleReloadParentItem"
+            @expand-type-updated="handleExpandTypeUpdated"
           >
             <template v-slot:header-action>
               <v-btn icon @click="dialogs.expandRecord = false">

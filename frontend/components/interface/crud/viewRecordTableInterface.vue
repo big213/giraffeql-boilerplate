@@ -35,14 +35,16 @@
               </v-row>
             </template>
 
-            <v-card-title class="subheading font-weight-bold"
-              >{{
-                recordInfo.viewOptions.heroOptions.getPreviewName
-                  ? recordInfo.viewOptions.heroOptions.getPreviewName(
-                      currentItem
-                    )
-                  : currentItem.name
-              }}
+            <v-card-title class="subheading font-weight-bold">
+              <span class="break-word">
+                {{
+                  recordInfo.viewOptions.heroOptions.getPreviewName
+                    ? recordInfo.viewOptions.heroOptions.getPreviewName(
+                        currentItem
+                      )
+                    : currentItem.name
+                }}</span
+              >
             </v-card-title>
           </v-img>
         </div>

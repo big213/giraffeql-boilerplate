@@ -15,7 +15,7 @@ import {
   generateTextField,
 } from "../../core/helpers/typeDef";
 import * as Scalars from "../../scalars";
-import { userRoleKenum } from "../../enums";
+import { userRole } from "../../enums";
 import { userRoleToPermissionsMap } from "../../helpers/permissions";
 
 export default new GiraffeqlObjectType(
@@ -51,16 +51,14 @@ export default new GiraffeqlObjectType(
           updateable: true,
         },
       }),
-      avatar: generateStringField({
-        allowNull: true,
-      }),
+      avatar: generateStringField({ allowNull: true, type: Scalars.url }),
       description: generateTextField({
         allowNull: true,
       }),
       role: generateEnumField({
         scalarDefinition: Scalars.userRole,
         allowNull: false,
-        defaultValue: userRoleKenum.NORMAL.parsed,
+        defaultValue: userRole.NORMAL.parsed,
         isKenum: true,
         nestHidden: true,
       }),
@@ -84,7 +82,7 @@ export default new GiraffeqlObjectType(
           const allPermissions: string[] = [];
 
           if (role) {
-            const roleName = userRoleKenum.fromUnknown(role).name;
+            const roleName = userRole.fromUnknown(role).name;
             if (roleName in userRoleToPermissionsMap) {
               allPermissions.push(
                 ...userRoleToPermissionsMap[roleName].map((ele) => ele.name)

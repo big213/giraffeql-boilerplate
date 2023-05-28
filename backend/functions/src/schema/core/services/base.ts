@@ -3,7 +3,7 @@ import {
   AccessControlMap,
   ExternalQuery,
 } from "../../../types";
-import { userPermissionEnum } from "../../enums";
+import { userPermission } from "../../enums";
 import { GiraffeqlRootResolverType } from "giraffeql";
 import { PermissionsError } from "../helpers/error";
 import { isDev } from "../../../config";
@@ -51,9 +51,9 @@ export abstract class BaseService {
       if (req.user) {
         // check against permissions array first. allow if found.
         const passablePermissionsArray = [
-          userPermissionEnum.A_A,
-          userPermissionEnum[this.typename + "_x"],
-          userPermissionEnum[this.typename + "_" + operation],
+          userPermission.A_A,
+          userPermission[this.typename + "_x"],
+          userPermission[this.typename + "_" + operation],
         ];
 
         if (

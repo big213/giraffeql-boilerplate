@@ -18,6 +18,7 @@
       @handle-submit="handleSubmit"
       @close="close()"
       @item-updated="$emit('item-updated')"
+      @reload-parent="$emit('reload-parent')"
     >
       <template v-slot:toolbar>
         <v-toolbar flat color="accent">
@@ -30,10 +31,14 @@
             <v-icon>mdi-refresh</v-icon>
           </v-btn>
           <RecordActionMenu
-            v-if="computedMode !== 'add' && computedMode !== 'import'"
+            v-if="
+              computedMode !== 'add' &&
+              computedMode !== 'import' &&
+              !hideActionsMode
+            "
             :record-info="recordInfo"
             :item="selectedItem"
-            expand-mode="openInNew"
+            expand-mode="openInDialog"
             left
             offset-x
             @handle-action-click="openEditDialog"
@@ -156,6 +161,10 @@ export default {
   computed: {
     computedMode() {
       return this.overrideMode ?? this.mode
+    },
+
+    hideActionsMode() {
+      return !!this.recordInfo.dialogOptions?.hideActions
     },
 
     modeObject() {

@@ -266,6 +266,7 @@ export const Event = {
   expandTypes: [
     /*
     {
+      key: "tasktemplates",
       recordInfo: TaskTemplate,
       name: 'Task Templates',
       excludeHeaders: ['taskTemplateCollectionRecord'],
