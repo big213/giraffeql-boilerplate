@@ -12,6 +12,7 @@ import { SimpleUser } from '../simple'
 
 export const User = <RecordInfo<'user'>>{
   ...SimpleUser,
+  routeType: 'a',
   requiredFields: ['avatar', 'name'],
   fields: {
     ...generateBaseFields(SimpleUser),

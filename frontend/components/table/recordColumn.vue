@@ -1,17 +1,24 @@
 <template>
-  <div>
-    <PreviewRecordMenu
-      v-if="currentValue"
-      :item="currentValue"
-      :typename="currentValue.__typename"
-      :close-on-content-click="false"
-      :min-width="300"
-      :max-width="300"
-      offset-y
-      top
-      open-mode="openInDialog"
-    ></PreviewRecordMenu>
-    <v-chip v-else small><i>None</i></v-chip>
+  <div style="white-space: initial">
+    <span
+      v-for="(record, index) in records"
+      :class="records.length > 1 ? 'mr-2' : null"
+      :key="index"
+    >
+      <PreviewRecordMenu
+        v-if="record"
+        :item="record"
+        :typename="record.__typename"
+        :close-on-content-click="false"
+        :min-width="300"
+        :max-width="300"
+        offset-y
+        top
+        open-mode="openInDialog"
+      ></PreviewRecordMenu>
+      <v-chip v-else small><i>None</i></v-chip>
+    </span>
+    <i v-if="!records.length">None</i>
   </div>
 </template>
 
@@ -26,6 +33,12 @@ export default {
 
   mixins: [columnMixin],
 
-  computed: {},
+  computed: {
+    records() {
+      return Array.isArray(this.currentValue)
+        ? this.currentValue
+        : [this.currentValue]
+    },
+  },
 }
 </script>

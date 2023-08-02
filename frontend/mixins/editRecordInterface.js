@@ -89,6 +89,8 @@ export default {
       },
 
       resetCalledOnTick: false,
+
+      submitGeneration: 0,
     }
   },
 
@@ -151,7 +153,6 @@ export default {
 
   created() {
     this.reset()
-
     this.$root.$on('refresh-interface', this.refreshCb)
   },
 
@@ -160,9 +161,14 @@ export default {
   },
 
   methods: {
-    refreshCb(typename) {
+    refreshCb(typename, { refreshType } = {}) {
       // only allow refresh on view mode
-      if (this.recordInfo.typename === typename && this.mode === 'view') {
+      // if type of refresh is not defined or 'edit', refresh
+      if (
+        this.recordInfo.typename === typename &&
+        this.mode === 'view' &&
+        (!refreshType || refreshType === 'edit')
+      ) {
         this.reset()
       }
     },
@@ -179,21 +185,6 @@ export default {
       return getInputObject(this.inputsArray, key)
     },
 
-    async handleSubmit() {
-      // set editRecord loading to true to prevent clicking multiple times
-      this.loading.editRecord = true
-
-      // if any inputs are loading, wait 500 ms and check again before proceeding
-      while (
-        this.inputsArray.some((inputObject) => inputObject.loading === true)
-      ) {
-        // sleep 500 ms before checking again
-        await timeout(500)
-      }
-
-      this.submit()
-    },
-
     handleFileAdded(inputObject, fileRecord) {
       if (inputObject.handleFileAdded) {
         inputObject.handleFileAdded(
@@ -205,9 +196,22 @@ export default {
       }
     },
 
-    async submit() {
+    async handleSubmit() {
       this.loading.editRecord = true
       try {
+        // trigger beforeSubmit logic on genericInputs
+        for (const input of this.$refs.inputs) {
+          await input.beforeSubmit()
+        }
+
+        // if any inputs are loading, wait 500 ms and check again before proceeding
+        while (
+          this.inputsArray.some((inputObject) => inputObject.loading === true)
+        ) {
+          // sleep 500 ms before checking again
+          await timeout(500)
+        }
+
         const inputs = {}
 
         for (const inputObject of this.inputsArray) {
@@ -374,6 +378,7 @@ export default {
               generation: 0,
               parentInput: null,
               nestedInputsArray: [],
+              inputData: null,
             }
 
             // if copy mode and fieldKey not in original fields, use default
@@ -397,7 +402,12 @@ export default {
             }
 
             // populate inputObjects if we need to translate any IDs to objects, and also populate any options
-            dropdownPromises.push(...populateInputObject(this, inputObject))
+            dropdownPromises.push(
+              ...populateInputObject(this, {
+                inputObject,
+                selectedItem: this.selectedItem,
+              })
+            )
 
             return inputObject
           })
@@ -500,6 +510,7 @@ export default {
               generation: 0,
               parentInput: null,
               nestedInputsArray: [],
+              inputData: null,
             }
 
             // is the field in selectedItem? if so, use that and set field to readonly
@@ -528,15 +539,23 @@ export default {
             }
 
             // populate inputObjects if we need to translate any IDs to objects, and also populate any options
-            await Promise.all(populateInputObject(this, inputObject))
+            await Promise.all(
+              populateInputObject(this, {
+                inputObject,
+                selectedItem: this.selectedItem,
+              })
+            )
 
             return inputObject
           })
         )
+        this.loading.initInputs = false
       } catch (err) {
+        // if there is an error, keep the loading state
         handleError(this, err)
       }
-      this.loading.initInputs = false
+
+      // this.loading.initInputs = false
     },
 
     // function to be called after inputs are initialized

@@ -19,7 +19,6 @@ export function generateNavDrawerItems(that) {
       items: [
         generateNavRouteObject(that, {
           recordInfo: publicModels.PublicUser,
-          routeType: 'i',
           pageOptions: {
             sort: {
               field: 'createdAt',
@@ -34,7 +33,6 @@ export function generateNavDrawerItems(that) {
       items: [
         generateNavRouteObject(that, {
           recordInfo: myModels.MyApiKey,
-          routeType: 'my',
           pageOptions: {
             sort: {
               field: 'createdAt',
@@ -44,7 +42,6 @@ export function generateNavDrawerItems(that) {
         }),
         generateNavRouteObject(that, {
           recordInfo: myModels.MyFile,
-          routeType: 'my',
           pageOptions: {
             sort: {
               field: 'createdAt',

@@ -10,7 +10,7 @@
     <span style="max-width: 120px" class="truncate">
       {{ file.name }}
     </span>
-    <span> ({{ formatBytes(file.size) }})</span>
+    <span>&nbsp;({{ formatBytes(file.size) }})</span>
     <v-icon v-if="downloadable" small class="ml-2" @click="downloadFile()"
       >mdi-download</v-icon
     >
@@ -65,6 +65,11 @@ export default {
     async downloadFile() {
       this.loading.downloadFile = true
       try {
+        this.$notifier.showSnackbar({
+          message: `Download started`,
+          variant: 'success',
+        })
+
         const data = await executeGiraffeql(this, {
           getFile: {
             signedUrl: true,
@@ -75,11 +80,6 @@ export default {
         })
 
         downloadFile(this, data.signedUrl, this.file.name)
-
-        this.$notifier.showSnackbar({
-          message: `Download started`,
-          variant: 'success',
-        })
       } catch (err) {
         handleError(this, err)
       }

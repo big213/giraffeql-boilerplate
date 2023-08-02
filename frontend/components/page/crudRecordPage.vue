@@ -80,7 +80,6 @@ export default {
     },
     lockedFilters: {
       type: Array,
-      default: () => [],
     },
     hiddenFilters: {
       type: Array,
@@ -208,7 +207,7 @@ export default {
     navigateToDefaultRoute() {
       if (!this.recordInfo.paginationOptions.defaultPageOptions) return
 
-      this.$router.push(
+      this.$router.replace(
         generateCrudRecordRoute(this, {
           path: this.$route.path,
           pageOptions:

@@ -6,11 +6,11 @@ import {
   ServiceFunctionInputs,
 } from "../../../types";
 import { permissionsCheck } from "../../core/helpers/permissions";
-import { isObject } from "giraffeql/lib/helpers/base";
 import {
   filterPassesTest,
   isCurrentUser,
   isUserLoggedIn,
+  queryOnlyHasFields,
 } from "../../helpers/permissions";
 import { objectOnlyHasFields } from "../../core/helpers/shared";
 import {
@@ -19,6 +19,7 @@ import {
   updateObjectType,
 } from "../../core/helpers/resolver";
 import { lookupSymbol } from "giraffeql";
+import { knex } from "../../../utils/knex";
 
 export class UserService extends PaginatedService {
   defaultTypename = "user";
@@ -52,26 +53,27 @@ export class UserService extends PaginatedService {
   };
 
   accessControl: AccessControlMap = {
+    // create: only admins
+
     /*
     Allow if:
-    - item was created by currentUser
+    - item.id is currentUser
     - item isPublic === true AND requested fields has fields id, name, avatar, email, isPublic, currentUserFollowLink ONLY
     - OR, if requested fields are id, name, avatar, isPublic, currentUserFollowLink  ONLY
     */
     get: async ({ req, args, query }) => {
       const record = await this.getFirstSqlRecord(
         {
-          select: ["createdBy.id", "isPublic"],
+          select: ["id", "isPublic"],
           where: args,
         },
         true
       );
 
-      if (isCurrentUser(req, record["createdBy.id"])) return true;
+      if (isCurrentUser(req, record.id)) return true;
 
       if (
-        isObject(query) &&
-        objectOnlyHasFields(query, [
+        queryOnlyHasFields(query, [
           "id",
           "__typename",
           "name",
@@ -87,8 +89,7 @@ export class UserService extends PaginatedService {
       }
 
       if (
-        isObject(query) &&
-        objectOnlyHasFields(query, [
+        queryOnlyHasFields(query, [
           "id",
           "__typename",
           "name",
@@ -111,17 +112,16 @@ export class UserService extends PaginatedService {
     */
     getMultiple: async ({ args, query }) => {
       if (
-        (isObject(query) &&
-          objectOnlyHasFields(query, [
-            "id",
-            "__typename",
-            "name",
-            "avatar",
-            "description",
-            "isPublic",
-            "currentUserFollowLink",
-          ])) ||
-        !query
+        !query ||
+        queryOnlyHasFields(query, [
+          "id",
+          "__typename",
+          "name",
+          "avatar",
+          "description",
+          "isPublic",
+          "currentUserFollowLink",
+        ])
       ) {
         return true;
       }
@@ -158,6 +158,8 @@ export class UserService extends PaginatedService {
 
       return false;
     },
+
+    // delete: only admin allowed to delete
   };
 
   async getSpecialParams({ req }: ServiceFunctionInputs) {
@@ -350,11 +352,24 @@ export class UserService extends PaginatedService {
           data,
         });
 
-    await deleteObjectType({
-      typename: this.typename,
-      id: item.id,
-      req,
-      fieldPath,
+    // delete the type and also any associated services
+    await knex.transaction(async (transaction) => {
+      await deleteObjectType({
+        typename: this.typename,
+        id: item.id,
+        req,
+        fieldPath,
+        transaction,
+      });
+
+      for (const deleteEntry of this.getOnDeleteEntries()) {
+        await deleteEntry.service.deleteSqlRecord({
+          where: {
+            [deleteEntry.field ?? this.typename]: item.id,
+          },
+          transaction,
+        });
+      }
     });
 
     // remove firebase auth user

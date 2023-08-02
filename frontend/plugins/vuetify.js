@@ -1,5 +1,13 @@
+import { defaultLightMode } from '~/services/config'
+
 export default (context) => {
   if (process.client) {
-    context.$vuetify.theme.dark = localStorage.getItem('theme') !== 'light'
+    const savedTheme = localStorage.getItem('theme')
+
+    if (savedTheme) {
+      context.$vuetify.theme.dark = savedTheme === 'dark'
+    } else {
+      context.$vuetify.theme.dark = defaultLightMode ? false : true
+    }
   }
 }

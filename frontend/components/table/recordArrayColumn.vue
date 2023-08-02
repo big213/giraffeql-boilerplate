@@ -1,6 +1,6 @@
 <template>
   <div v-if="currentValue">
-    <span v-for="(record, index) in currentValue" class="pr-2" :key="index">
+    <span v-for="(record, index) in currentValue" class="mr-2" :key="index">
       <PreviewRecordMenu
         :item="record"
         :typename="record.__typename"

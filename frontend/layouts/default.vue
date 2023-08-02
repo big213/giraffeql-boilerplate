@@ -25,7 +25,7 @@
       <UserMenu v-else-if="user"></UserMenu>
       <v-btn v-else text nuxt to="/login" exact>
         <v-icon left>mdi-login</v-icon>
-        Login
+        Login/Register
       </v-btn>
     </v-app-bar>
     <v-main>
@@ -52,6 +52,8 @@
       :hidden-filters="dialogs.crudRecord.hiddenFilters"
       :initial-page-options="dialogs.crudRecord.pageOptions"
       :max-width="dialogs.crudRecord.maxWidth"
+      :parent-item="dialogs.crudRecord.parentItem"
+      :hide-presets="dialogs.crudRecord.hidePresets"
       @close="dialogs.crudRecord = null"
     ></CrudRecordDialog>
     <ExecuteActionDialog
@@ -152,7 +154,7 @@ export default {
     })
 
     /*
-     ** Expecting recordInfo, lockedFilters?, title?, icon?, hiddenHeaders?, hiddenFilters?, pageOptions?, maxWidth?
+     ** Expecting recordInfo, lockedFilters?, title?, icon?, hiddenHeaders?, hiddenFilters?, pageOptions?, maxWidth?, parentItem?, hidePresets?
      */
     this.$root.$on('openCrudRecordDialog', (params) => {
       const model =

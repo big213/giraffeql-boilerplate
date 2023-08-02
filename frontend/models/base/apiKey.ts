@@ -9,6 +9,7 @@ import { SimpleApiKey } from '../simple'
 
 export const ApiKey = <RecordInfo<'apiKey'>>{
   ...SimpleApiKey,
+  routeType: 'a',
   fields: {
     ...generateBaseFields(SimpleApiKey),
     code: {

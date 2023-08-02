@@ -4,8 +4,9 @@ import { User } from '../base/user'
 export const MyProfile = {
   ...User,
   title: 'My Profile',
+  routeType: 'my',
   paginationOptions: {
-    ...(!!User.paginationOptions && User.paginationOptions),
+    ...User.paginationOptions,
     filterOptions: [],
     headerOptions: [
       {

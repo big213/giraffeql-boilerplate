@@ -3,6 +3,7 @@ import { MyProfile } from '../special/myProfile'
 export const PublicUser = {
   ...MyProfile,
   title: `Public ${MyProfile.pluralName}`,
+  routeType: 'i',
   paginationOptions: {
     ...MyProfile.paginationOptions,
     defaultLockedFilters: (_that) => {

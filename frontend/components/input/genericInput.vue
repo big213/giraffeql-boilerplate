@@ -29,11 +29,12 @@
       </v-container>
       <div v-cloak @drop.prevent="handleMultipleDropFile" @dragover.prevent>
         <v-file-input
-          v-model="item.inputValue"
+          v-model="tempInput"
           :label="
             item.label +
             ' (Drag and Drop)' +
-            (item.optional ? ' (optional)' : '')
+            (item.optional ? ' (optional)' : '') +
+            (limit ? ` (Limit ${limit})` : '')
           "
           multiple
           :hint="item.hint"
@@ -51,12 +52,7 @@
               close-icon="mdi-close-outline"
               @click:close="handleMultipleFileInputClear(item, file)"
             >
-              {{ text }} -
-              {{
-                file.fileUploadObject
-                  ? file.fileUploadObject.progress.toFixed(1)
-                  : ''
-              }}%
+              {{ text }} - {{ renderFileUploadProgress(file) }}%
             </v-chip>
           </template>
         </v-file-input>
@@ -250,10 +246,12 @@
       </label>
       <label
         v-else
-        class="custom-file-upload pt-5 text-center"
+        class="custom-file-upload pt-3 text-center"
         style="width: 100px"
       >
-        <v-progress-circular indeterminate></v-progress-circular>
+        <v-progress-circular :value="item.inputValue.progress" size="48"
+          >{{ item.inputValue.progress.toFixed(0) }}%</v-progress-circular
+        >
       </label>
       <input
         id="file-upload-2"
@@ -292,7 +290,7 @@
     >
       <v-avatar size="64">
         <v-img v-if="item.value" :src="item.value"></v-img>
-        <v-icon v-else>{{ recordIcon }}</v-icon>
+        <v-icon v-else>{{ fallbackIcon }}</v-icon>
       </v-avatar>
       <label for="file-upload" class="custom-file-upload pt-5">
         <v-icon>mdi-upload</v-icon>
@@ -859,7 +857,12 @@
         </v-row>
       </v-container>
     </div>
-    <div v-else-if="item.inputType === 'stripe-cc'" class="pb-5 rounded-sm">
+    <div
+      v-else-if="
+        item.inputType === 'stripe-cc' || item.inputType === 'stripe-pi'
+      "
+      class="pb-5 rounded-sm"
+    >
       <v-container class="highlighted-bg">
         <v-row>
           <v-col cols="12">
@@ -871,30 +874,90 @@
               }}
             </div>
             <div v-if="item.hint">{{ item.hint }}</div>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col cols="12">
             <StripeElements
+              v-if="item.inputType === 'stripe-cc'"
               :stripe-key="stripeKey"
               :instance-options="instanceOptions"
               :elements-options="elementsOptions"
               #default="{ elements }"
               ref="elms"
-              class="accent"
             >
               <StripeElement
                 type="card"
                 :elements="elements"
                 :options="cardOptions"
                 ref="card"
-                @blur="processStripeElement"
+              />
+            </StripeElements>
+            <StripeElements
+              v-if="item.inputType === 'stripe-pi'"
+              :stripe-key="stripeKey"
+              :instance-options="instanceOptionsComputed"
+              :elements-options="elementsOptionsComputed"
+              #default="{ elements }"
+              ref="elms"
+            >
+              <StripeElement
+                type="payment"
+                :elements="elements"
+                :options="cardOptions"
+                ref="card"
+                @ready="stripePiReady = true"
               />
             </StripeElements>
             <v-progress-linear
               v-if="item.loading"
               indeterminate
             ></v-progress-linear>
+          </v-col>
+        </v-row>
+      </v-container>
+    </div>
+    <div
+      v-else-if="item.inputType === 'stripe-pi-editable'"
+      class="pb-5 rounded-sm"
+    >
+      <v-container class="highlighted-bg">
+        <v-row>
+          <v-col cols="12">
+            <v-text-field
+              v-model="tempInput"
+              :label="item.label + (item.optional ? ' (optional)' : '')"
+              filled
+              dense
+              class="py-0"
+              :append-icon="tempInput ? 'mdi-close' : null"
+              @click:append="clearStripePiEditable()"
+              @blur="handleStripePiEditableUpdate()"
+              @keyup.enter="handleStripePiEditableUpdate()"
+            ></v-text-field>
+            <div class="subtitle-1" v-if="item.inputValue">
+              {{ `Charge ${formatAsCurrency(item.inputValue)}` }}
+              <span v-if="item.inputValue < 0.5" class="red--text"
+                >(Invalid Amount)</span
+              >
+            </div>
+            <div v-if="item.hint">{{ item.hint }}</div>
+            <v-progress-linear
+              v-if="item.loading"
+              indeterminate
+            ></v-progress-linear>
+            <StripeElements
+              v-else-if="item.inputValue > 0 && item.inputData"
+              :stripe-key="stripeKey"
+              :instance-options="instanceOptionsComputed"
+              :elements-options="elementsOptionsComputed"
+              #default="{ elements }"
+              ref="elms"
+            >
+              <StripeElement
+                type="payment"
+                :elements="elements"
+                :options="cardOptions"
+                ref="card"
+                @ready="stripePiReady = true"
+              />
+            </StripeElements>
           </v-col>
         </v-row>
       </v-container>
@@ -924,7 +987,11 @@
 
 <script>
 import Draggable from 'vuedraggable'
-import { uploadFile, generateFileServingUrl } from '~/services/file'
+import {
+  uploadFile,
+  generateFileServingUrl,
+  initializeFileUploadObject,
+} from '~/services/file'
 import {
   capitalizeString,
   isObject,
@@ -964,12 +1031,15 @@ export default {
     parentItem: {
       type: Object,
     },
+    selectedItem: {
+      type: Object,
+    },
   },
 
   data() {
     return {
       tempInput: null,
-      filesData: [],
+      filesData: [], // fileRecords
       filesProcessingQueue: null,
 
       dateTime: {
@@ -980,7 +1050,9 @@ export default {
         timeMenu: null,
       },
 
-      stripeKey: process.env.stripePubKey, // test key, don't hardcode
+      stripePiReady: false,
+
+      stripeKey: process.env.stripePubKey,
       instanceOptions: {
         // https://stripe.com/docs/js/initializing#init_stripe_js-options
       },
@@ -988,11 +1060,13 @@ export default {
         // https://stripe.com/docs/js/elements_object/create#stripe_elements-options
       },
       cardOptions: {
+        layout: {
+          type: 'tabs',
+          defaultCollapsed: false,
+        },
+
         // reactive
         // remember about Vue 2 reactivity limitations when dealing with options
-        value: {
-          postalCode: '',
-        },
         mode: 'payment',
         // https://stripe.com/docs/stripe.js#element-options
       },
@@ -1000,6 +1074,28 @@ export default {
   },
 
   computed: {
+    instanceOptionsComputed() {
+      return this.item.inputData?.stripeAccount
+        ? {
+            ...this.instanceOptions,
+            stripeAccount: this.item.inputData.stripeAccount,
+          }
+        : this.instanceOptions
+    },
+
+    elementsOptionsComputed() {
+      // if inputData.clientSecret, merge it into the elementsOptions
+      return this.item.inputData
+        ? {
+            ...this.elementsOptions,
+            clientSecret: this.item.inputData.clientSecret,
+            appearance: {
+              theme: this.$vuetify.theme.dark ? 'night' : 'stripe',
+            },
+          }
+        : this.elementsOptions
+    },
+
     isReadonly() {
       return this.item.readonly
     },
@@ -1007,8 +1103,12 @@ export default {
       return getIcon(this.item.inputOptions?.typename)
     },
 
-    recordIcon() {
-      return this.item.recordInfo?.icon
+    fallbackIcon() {
+      return this.item.inputOptions?.fallbackIcon
+    },
+
+    limit() {
+      return this.item.inputOptions?.limit
     },
 
     appendIcon() {
@@ -1033,6 +1133,7 @@ export default {
   },
 
   methods: {
+    formatAsCurrency,
     getStripeCcPrice() {
       if (this.item.inputOptions?.getPrice) {
         return formatAsCurrency(
@@ -1126,7 +1227,12 @@ export default {
       addNestedInputObject(this.item)
 
       // need to load the options
-      populateInputObject(this, this.item, true)
+      populateInputObject(this, {
+        inputObject: this.item,
+        selectedItem: this.selectedItem,
+        item: this.parentItem,
+        loadOptions: true,
+      })
     },
 
     removeRow(index) {
@@ -1164,23 +1270,14 @@ export default {
       this.item.value = this.filesData.map((ele) => ele.id)
     },
 
-    handleFileRemove(inputObject, file) {
-      // cancel the uploadTask, if there is one
-      file.fileUploadObject?.uploadTask.cancel()
-
-      // remove the file from the inputObject files queue
-      const index = inputObject.files.indexOf(file)
-      if (index !== -1) inputObject.files.splice(index, 1)
-
-      // if no files left, set loading to false
-      if (inputObject.files.length < 1) inputObject.loading = false
-    },
-
     handleMultipleFileInputClear(inputObject, file) {
-      const index = inputObject.inputValue.indexOf(file)
+      const fileUploadObject =
+        this.filesProcessingQueue.get(file).fileUploadObject
+
+      const index = inputObject.inputValue.indexOf(fileUploadObject)
 
       if (index !== -1) {
-        inputObject.inputValue[index].fileUploadObject?.uploadTask.cancel()
+        inputObject.inputValue[index].uploadTask.cancel()
         inputObject.inputValue.splice(index, 1)
       }
 
@@ -1191,8 +1288,9 @@ export default {
     },
 
     handleMultipleDropFile(e) {
-      if (!this.item.inputValue) this.item.inputValue = []
-      this.item.inputValue.push(...Array.from(e.dataTransfer.files))
+      if (!this.tempInput) this.tempInput = []
+
+      this.tempInput.push(...Array.from(e.dataTransfer.files))
 
       this.handleMultipleFileInputChange(this.item)
     },
@@ -1211,7 +1309,9 @@ export default {
           throw new Error('Only 1 filed allowed to be dropped')
         }
 
-        this.item.inputValue = files[0]
+        const firstFile = files[0]
+
+        this.item.inputValue = initializeFileUploadObject(firstFile)
 
         this.handleSingleFileInputChange()
       } catch (err) {
@@ -1221,84 +1321,108 @@ export default {
 
     handleMultipleFileInputChange(inputObject, removeFromInput = true) {
       this.$set(inputObject, 'loading', true)
-
-      // inputObject.inputValue expected to be array
-      inputObject.inputValue.forEach((currentFile) => {
-        // add each file to the processing queue if the file is not already in there
-        if (!this.filesProcessingQueue.has(currentFile)) {
-          this.filesProcessingQueue.set(currentFile, false)
+      try {
+        // if the files processing + the files already uploaded >= limit, throw err and clear
+        if (
+          this.limit &&
+          this.filesProcessingQueue.size + this.filesData.length >= this.limit
+        ) {
+          // also clear the files
+          this.tempInput = []
+          inputObject.loading = false
+          throw new Error(`Adding these files would exceed the file limit`)
         }
-      })
-
-      // process each file in the processing queue if not already processing
-      this.filesProcessingQueue.forEach((processed, currentFile) => {
-        if (processed) return
-
-        this.filesProcessingQueue.set(currentFile, true)
-
-        uploadFile(this, currentFile, false, (file, fileRecord) => {
-          // add finished fileRecord to filesData
-          this.filesData.push(file.fileUploadObject.fileRecord)
-
-          // remove file from input
-          if (removeFromInput) {
-            const index = inputObject.inputValue.indexOf(file)
-            if (index !== -1) inputObject.inputValue.splice(index, 1)
-          }
-
-          // remove file from the queue by the key (filename)
-          this.filesProcessingQueue.delete(currentFile)
-
-          // emit the file to parent (in case it is needed)
-          this.$emit('file-added', inputObject, fileRecord)
-
-          // if no files left, finish up
-          if (inputObject.inputValue.length < 1) {
-            inputObject.loading = false
-            this.handleFilesDataUpdate()
-            this.$notifier.showSnackbar({
-              message: 'File Uploaded',
-              variant: 'success',
+        // tempInput expected to be array of Files
+        this.tempInput.forEach((file) => {
+          // add each file to the processing queue if the file is not already in there
+          if (!this.filesProcessingQueue.has(file)) {
+            this.filesProcessingQueue.set(file, {
+              processed: false,
+              fileUploadObject: initializeFileUploadObject(file),
             })
           }
         })
-      })
+
+        // process each file in the processing queue if not already processing
+        this.filesProcessingQueue.forEach((fileProcessObject, file) => {
+          if (fileProcessObject.processed) return
+
+          fileProcessObject.processed = true
+
+          uploadFile(
+            this,
+            fileProcessObject.fileUploadObject,
+            false,
+            (fileUploadObject) => {
+              // add finished fileRecord to filesData
+              this.filesData.push(fileUploadObject.fileRecord)
+
+              // remove file from input
+              if (removeFromInput) {
+                const index = this.tempInput.indexOf(file)
+                if (index !== -1) this.tempInput.splice(index, 1)
+              }
+
+              // remove file from the queue by the key (filename)
+              this.filesProcessingQueue.delete(file)
+
+              // emit the file to parent (in case it is needed)
+              this.$emit(
+                'file-added',
+                inputObject,
+                fileProcessObject.fileUploadObject.fileRecord
+              )
+
+              // if no files left, finish up
+              if (this.tempInput.length < 1) {
+                inputObject.loading = false
+                this.handleFilesDataUpdate()
+                this.$notifier.showSnackbar({
+                  message: 'File Uploaded',
+                  variant: 'success',
+                })
+              }
+            }
+          )
+        })
+      } catch (err) {
+        handleError(this, err)
+      }
     },
 
     handleSingleFileInputClear(inputObject) {
       inputObject.value = null
-      if (inputObject.filesQueue) {
-        inputObject.filesQueue.forEach((file) => {
-          file.fileUploadObject?.uploadTask.cancel()
-        })
-      }
+
+      this.clearFileUploadQueue()
+
       inputObject.filesQueue = []
       inputObject.inputValue = null
       inputObject.loading = false
     },
 
     handleSingleFileInputChange(event = null) {
-      // if no file, do nothing
-      if (event && !event.target.files[0]) return
+      const inputObject = this.item
 
+      // if event, user clicked the upload button and the file will be extracted from the event object
       if (event) {
-        this.item.inputValue = event.target.files[0]
+        const firstFile = event.target.files[0]
+
+        // if no file, do nothing
+        if (!firstFile) return
+
+        inputObject.inputValue = initializeFileUploadObject(firstFile)
       }
 
-      const inputObject = this.item
+      // if event is null, fileUploadObject should already be initialized
 
       if (!inputObject.inputValue) {
         this.handleSingleFileInputClear(inputObject)
         return
       }
+
       this.$set(inputObject, 'loading', true)
 
-      if (inputObject.filesQueue) {
-        // cancel any existing file uploads, clear out file queue
-        inputObject.filesQueue.forEach((file) => {
-          file.fileUploadObject?.uploadTask.cancel()
-        })
-      }
+      this.clearFileUploadQueue()
 
       // reset the filesQueue
       inputObject.filesQueue = [inputObject.inputValue]
@@ -1308,21 +1432,21 @@ export default {
         this,
         inputObject.inputValue,
         inputObject.inputOptions?.useFirebaseUrl === true,
-        (file, fileRecord) => {
+        (fileUploadObject) => {
           if (inputObject.inputOptions?.useFirebaseUrl) {
-            inputObject.value = file.fileUploadObject.url
+            inputObject.value = fileUploadObject.url
           } else {
-            inputObject.value = file.fileUploadObject.servingUrl
+            inputObject.value = fileUploadObject.servingUrl
           }
 
           inputObject.loading = false
 
           // remove from filesQueue
-          const index = inputObject.filesQueue.indexOf(file)
+          const index = inputObject.filesQueue.indexOf(fileUploadObject)
           if (index !== -1) inputObject.filesQueue.splice(index, 1)
 
           // emit the file to parent (in case it is needed)
-          this.$emit('file-added', inputObject, fileRecord)
+          this.$emit('file-added', inputObject, fileUploadObject.fileRecord)
 
           this.$notifier.showSnackbar({
             message: 'File Uploaded',
@@ -1425,10 +1549,82 @@ export default {
       }
       inputObject.loading = false
     },
-    async processStripeElement() {
+
+    async handleStripePiEditableUpdate() {
       this.item.loading = true
+      this.stripePiReady = false
       try {
-        // ref in template
+        // parse the tempInput into item.inputValue
+        this.item.inputValue = Number(this.tempInput) || 0
+
+        // min supported payment is $0.50
+        if (this.item.inputValue < 0.5 && this.item.inputValue !== 0) {
+          throw new Error(`Minimum payment amount is $0.50`)
+        }
+
+        // load the updated inputData (paymentIntent)
+        this.item.inputData = await this.item.inputOptions.getPaymentIntent(
+          this,
+          this.item,
+          this.selectedItem,
+          this.item.inputValue
+        )
+      } catch (err) {
+        handleError(this, err)
+        // if there is an error, set the inputData to null
+        this.item.inputData = null
+      }
+      this.item.loading = false
+    },
+
+    clearStripePiEditable() {
+      this.tempInput = null
+      this.handleStripePiEditableUpdate()
+    },
+
+    // logic to handle before submitting
+    async beforeSubmit() {
+      // if inputType is stripe-pi or stripe-pi-editable, process the payment at this point
+      if (
+        this.item.inputType === 'stripe-pi' ||
+        this.item.inputType === 'stripe-pi-editable'
+      ) {
+        // for stripe-pi-editable, if amount is <= 0, don't process
+        if (
+          this.item.inputType === 'stripe-pi-editable' &&
+          this.item.inputValue <= 0
+        ) {
+          this.item.value = null
+          return
+        }
+
+        const groupComponent = this.$refs.elms
+
+        // if the stripeElement has not finished loading yet, throw err
+        if (!groupComponent || !this.stripePiReady) {
+          throw new Error(`Card component not finished loading`)
+        }
+
+        // Trigger form validation and wallet collection
+        const { error: submitError } = await groupComponent.elements.submit()
+
+        if (submitError) {
+          throw new Error(submitError.message)
+        }
+
+        const res = await groupComponent.instance.confirmPayment({
+          elements: groupComponent.elements,
+          clientSecret: this.item.inputData.clientSecret,
+          confirmParams: {
+            return_url: window.location.href,
+          },
+
+          // Uncomment below if you only want redirect for redirect-based payments
+          redirect: 'if_required',
+        })
+
+        this.item.value = res.paymentIntent.id
+      } else if (this.item.inputType === 'stripe-cc') {
         const groupComponent = this.$refs.elms
         const cardComponent = this.$refs.card
         // Get stripe element
@@ -1437,15 +1633,30 @@ export default {
         // Access instance methods, e.g. createToken()
 
         const result = await groupComponent.instance.createToken(cardElement)
+
         if (result.token) {
           this.item.value = result.token.id
         } else if (result.error) {
           throw new Error(result.error.message)
         }
-      } catch (err) {
-        // handleError(this, err)
       }
-      this.item.loading = false
+    },
+
+    clearFileUploadQueue() {
+      if (this.item.filesQueue) {
+        // cancel any existing file uploads, clear out file queue
+        this.item.filesQueue.forEach((fileUploadObject) => {
+          fileUploadObject.uploadTask?.cancel()
+        })
+      }
+    },
+
+    renderFileUploadProgress(file) {
+      return (
+        this.filesProcessingQueue
+          .get(file)
+          ?.fileUploadObject.progress.toFixed(1) ?? null
+      )
     },
 
     reset() {
@@ -1467,8 +1678,16 @@ export default {
           // this.item.value is expected to be a unixTimestamp or null
           this.syncDateTimePickerInput(this.item.value)
           break
+        case 'stripe-pi-editable':
+          this.tempInput = this.item.inputValue
+          break
       }
     },
+  },
+
+  beforeDestroy() {
+    // before destroy, need to terminate any file upload tasks, if any
+    this.clearFileUploadQueue()
   },
 }
 </script>

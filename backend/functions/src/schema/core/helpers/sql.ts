@@ -263,7 +263,7 @@ function standardizeWhereInput(
 
 export function standardizeSelectInput(
   selectInput: SqlSelectQueryObject | (SqlSimpleSelectObject | string)[]
-) {
+): SqlSelectQueryObject {
   if (Array.isArray(selectInput)) {
     // is array, need to process
     // standardize all to SqlSimpleSelectObject

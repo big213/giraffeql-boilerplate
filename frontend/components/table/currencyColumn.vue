@@ -11,7 +11,9 @@ export default {
   mixins: [columnMixin],
   computed: {
     displayStr() {
-      return this.currentValue ? formatAsCurrency(this.currentValue) : 'N/A'
+      return this.currentValue !== null
+        ? formatAsCurrency(this.currentValue)
+        : this.options?.nullText ?? 'N/A'
     },
   },
 }

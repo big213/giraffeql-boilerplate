@@ -14,6 +14,8 @@
       :page-options="pageOptions || initialPageOptions"
       :title="title"
       :icon="icon"
+      :parent-item="parentItem"
+      :hide-presets="hidePresets"
       is-dialog
       dense
       @pageOptions-updated="handlePageOptionsUpdated"
@@ -52,7 +54,6 @@ export default {
     },
     hiddenHeaders: {
       type: Array,
-      default: () => [],
     },
     lockedFilters: {
       type: Array,
@@ -62,12 +63,21 @@ export default {
       type: Array,
       default: () => [],
     },
+    // if it is a child component, the parent component with at least id
+    parentItem: {
+      type: Object,
+    },
     initialPageOptions: {
       type: Object,
       default: null,
     },
     maxWidth: {
       type: String,
+    },
+    // should the preset filters be hidden?
+    hidePresets: {
+      type: Boolean,
+      default: false,
     },
   },
   data() {

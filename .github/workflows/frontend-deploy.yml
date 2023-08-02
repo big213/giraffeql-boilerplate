@@ -38,7 +38,10 @@ jobs:
           SITE_DISCORD_LINK: https://discord.gg/CpSWfub9y6
           SITE_GITHUB_REPOSITORY_URL: https://github.com/big213/giraffeql-boilerplate
           LOGO_HAS_LIGHT_VARIANT:
+          DEFAULT_LIGHT_MODE: true
           DEFAULT_GRID_VIEW:
+          SOCIAL_LOGIN_ENABLED:
+          TEMP_STORAGE_PATH: temp
           STRIPE_PUB_KEY:
       - name: Deploy to Firebase
         uses: w9jds/firebase-action@master

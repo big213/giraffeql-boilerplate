@@ -63,11 +63,13 @@ export type RecordInfo<T extends keyof MainTypes> = {
   name: string
   pluralName: string
   icon?: string
+  routeType: string
   hasName?: boolean
   hasAvatar?: boolean
   hasDescription?: boolean
   hasOrganizationOwner?: boolean
   hasUserOwner?: boolean
+
   // how to render the item as a string. by default, it is usually rendered as name || id
   renderItem?: (item) => string
 
@@ -161,11 +163,31 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // this option, if defined, will override the default grid/list option set by the user
     overrideViewMode?: 'grid' | 'list'
+
+    // should the grid/list toggle button be hidden?
+    hideViewModeToggle?: boolean
+
+    // should the sortBy feature be hidden?
+    hideSortOptions?: boolean
+
+    limitOptions?: {
+      maxRecords: number
+      // what should clicking the view all button do? (if undefined, button will be left out)
+      handleViewAllButtonClick?: (that) => void
+    }
+
+    // the min height of the pagination container, if any
+    minHeight?: string
+
+    // loader will be linear by default
+    loaderStyle?: 'circular' | 'linear'
   }
 
   dialogOptions?: {
     // should the actions be hidden?
     hideActions?: boolean
+    // should the refresh button be hidden?
+    hideRefresh?: boolean
   }
 
   addOptions?: {
@@ -263,6 +285,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
       // custom component that should be rendered, which will override the above 2 options
       component?: any
+
+      // additional fields required as a result of rendering the hero preview
+      requiredFields?: string[]
     }
   }
 
@@ -358,6 +383,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // open the expand in the same interface instead of expanding or opening a dialog
     breadcrumbMode?: boolean
+
+    // show this option as its own block/row if it is rendered as a grid
+    showRowIfGrid?: boolean
   }[]
 
   customActions?: {
@@ -408,6 +436,15 @@ type InputOptions = {
 
   // additional args that should be appended to the __args when creating a new record for a combobox
   getCreateArgs?: (that, inputObjectArray) => any
+
+  // for stripe-pi and stripe-pi-editable input types, function that returns the instanceOptions (in the genericInput)
+  getPaymentIntent?: (that, inputObject, selectedItem, item, amount) => any
+
+  // for multiple-file input, maximum number of files
+  limit?: number
+
+  // for avatar, the fallback icon
+  fallbackIcon?: string
 
   // only applies to value-array
   nestedFields?: {
@@ -462,6 +499,8 @@ export type InputType =
   | 'datetimepicker'
   | 'switch'
   | 'stripe-cc'
+  | 'stripe-pi'
+  | 'stripe-pi-editable'
   | 'textarea'
   | 'combobox' // combobox allows the user to add new inputs on the fly (will change to autocomplete in filter interfaces)
   | 'server-combobox' // server-combobox allows the user to add new inputs on the fly with getOptions optional, and fetching results from server (will change to autocomplete in filter interfaces)
@@ -488,7 +527,7 @@ export type ActionOptions = {
   inputs: {
     field: string
     definition: {
-      text: string
+      text?: string
       inputType?: InputType
       hint?: string
       getOptions?: (that) => Promise<any[]>
@@ -498,7 +537,11 @@ export type ActionOptions = {
       inputRules?: any[]
       default?: (that) => unknown
     }
+    // do not render the input, but otherwise load it
     hideIf?: (that, item, inputsArray) => boolean
+
+    // exclude the input entirely at initialization based on the snapshot
+    excludeIf?: (that, item, selectedItem) => boolean
   }[]
 
   // function that will use the selectedItem (if any) to modify the args fed into the operation

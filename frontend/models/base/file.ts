@@ -6,6 +6,7 @@ import { SimpleFile } from '../simple'
 
 export const File = <RecordInfo<'file'>>{
   ...SimpleFile,
+  routeType: 'a',
   fields: {
     ...generateBaseFields(SimpleFile),
     nameWithId: {

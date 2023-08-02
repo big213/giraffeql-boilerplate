@@ -5,6 +5,7 @@ import { handleError } from '~/services/base'
 import firebase from '~/services/fireinit'
 import 'firebase/storage'
 import { executeGiraffeql } from '~/services/giraffeql'
+import { isDev, tempStoragePath } from './config'
 
 type FileUploadObject = {
   name: string
@@ -14,32 +15,12 @@ type FileUploadObject = {
   bytesSent: number
   servingUrl: string | null
   fileRecord: any
-  uploadTask: firebase.storage.UploadTask
+  uploadTask: firebase.storage.UploadTask | null
+  file: File
 }
 
-export function uploadFile(
-  that,
-  file,
-  fetchFirebaseUrl: boolean,
-  onFinishedUploading?: (file, fileRecord) => any
-) {
-  const subPath =
-    that.$store.getters['auth/firebaseUser'].uid +
-    '/' +
-    nanoid() +
-    '/' +
-    file.name
-  const path = 'temp/' + subPath
-
-  const storageRef = firebase.storage().ref()
-
-  const metadata = {}
-
-  // create the upload task
-  const uploadTask = storageRef.child(path).put(file, metadata)
-
-  // create new fileObject with relevant listing info
-  const fileUploadObject: FileUploadObject = {
+export function initializeFileUploadObject(file: File): FileUploadObject {
+  return {
     name: file.name,
     url: null,
     progress: 0,
@@ -47,15 +28,37 @@ export function uploadFile(
     bytesSent: 0,
     servingUrl: null,
     fileRecord: null,
-    uploadTask,
+    uploadTask: null,
+    file,
   }
+}
 
-  that.$set(file, 'fileUploadObject', fileUploadObject)
+export function uploadFile(
+  that,
+  fileUploadObject: FileUploadObject,
+  fetchFirebaseUrl: boolean,
+  onFinishedUploading?: (fileUploadObject) => any
+) {
+  // if dev mode, add a prefix
+  const subPath = `${isDev ? 'dev/' : ''}${
+    that.$store.getters['auth/firebaseUser'].uid
+  }/${nanoid()}/${fileUploadObject.file.name}`
+
+  const path = `${tempStoragePath}/${subPath}`
+
+  const storageRef = firebase.storage().ref()
+
+  const metadata = {}
+
+  // create the upload task
+  const uploadTask = storageRef.child(path).put(fileUploadObject.file, metadata)
+
+  fileUploadObject.uploadTask = uploadTask
 
   // handle upload events
   uploadTask.on(
     firebase.storage.TaskEvent.STATE_CHANGED,
-    function (snapshot) {
+    (snapshot) => {
       fileUploadObject.progress =
         (snapshot.bytesTransferred / snapshot.totalBytes) * 100
       fileUploadObject.bytesSent = snapshot.bytesTransferred
@@ -71,8 +74,11 @@ export function uploadFile(
             size: true,
             location: true,
             contentType: true,
+            ...(fetchFirebaseUrl && {
+              downloadUrl: true,
+            }),
             __args: {
-              name: file.name,
+              name: fileUploadObject.name,
               location: subPath,
             },
           },
@@ -80,6 +86,11 @@ export function uploadFile(
 
         fileUploadObject.servingUrl = generateFileServingUrl(subPath)
 
+        if (fileRecord.downloadUrl) {
+          fileUploadObject.url = fileRecord.downloadUrl
+        }
+
+        /* 
         if (fetchFirebaseUrl) {
           const downloadURL = await storageRef
             .child('source/' + subPath)
@@ -87,10 +98,11 @@ export function uploadFile(
 
           fileUploadObject.url = downloadURL
         }
+        */
 
         fileUploadObject.fileRecord = fileRecord
 
-        onFinishedUploading && onFinishedUploading(file, fileRecord)
+        onFinishedUploading && onFinishedUploading(fileUploadObject)
       } catch (err) {
         handleError(that, err)
       }

@@ -11,6 +11,8 @@ import {
 } from "../../core/helpers/typeDef";
 import * as Scalars from "../../scalars";
 import * as admin from "firebase-admin";
+import { env } from "../../../config";
+import { getDownloadURL } from "firebase-admin/storage";
 
 export default new GiraffeqlObjectType(
   <ObjectTypeDefinition>processTypeDef({
@@ -32,13 +34,31 @@ export default new GiraffeqlObjectType(
         allowNull: false,
         typeDefOptions: { addable: false, updateable: false },
       }),
+      downloadUrl: {
+        type: Scalars.url,
+        allowNull: false,
+        requiredSqlFields: ["location"],
+        resolver: async ({ parentValue }) => {
+          const bucket = admin.storage().bucket();
+
+          const file = bucket.file(
+            `${env.serve_image.source_path}/${parentValue.location}`
+          );
+
+          const downloadUrl = await getDownloadURL(file);
+
+          return downloadUrl;
+        },
+      },
       signedUrl: {
-        type: Scalars.string,
+        type: Scalars.url,
         allowNull: false,
         requiredSqlFields: ["location"],
         resolver({ parentValue }) {
           const bucket = admin.storage().bucket();
-          const file = bucket.file("source/" + parentValue.location);
+          const file = bucket.file(
+            `${env.serve_image.source_path}/${parentValue.location}`
+          );
 
           return file
             .getSignedUrl({

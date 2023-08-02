@@ -1,7 +1,7 @@
 import { userRole, userPermission } from "../enums";
 import { Request } from "express";
 import { PaginatedService } from "../core/services";
-import { AccessControlFunction } from "../../types";
+import { AccessControlFunction, StringKeyObject } from "../../types";
 import { isObject } from "giraffeql/lib/helpers/base";
 import { objectOnlyHasFields } from "../core/helpers/shared";
 
@@ -102,4 +102,71 @@ export function validateQueryFields(query: any, allowedFields: string[]) {
   }
 
   return false;
+}
+
+export function queryOnlyHasFields(
+  query: StringKeyObject | null | undefined,
+  fields: string[],
+  allFieldsRequired = false
+) {
+  // if query is falsey, return false
+  if (!query) {
+    return false;
+  }
+
+  return objectOnlyHasFields(query, fields, allFieldsRequired);
+}
+
+export function allowIfRecordFieldIsCurrentUserFn(
+  service: PaginatedService,
+  fieldPath: string
+) {
+  return async function ({ req, args }) {
+    const record = await service.getFirstSqlRecord({
+      select: [fieldPath],
+      where: args,
+    });
+
+    if (isCurrentUser(req, record[fieldPath])) {
+      return true;
+    }
+
+    return false;
+  };
+}
+
+export function allowIfFilteringByCurrentUserFn(fieldPath: string) {
+  return async function ({ req, args }) {
+    if (
+      await filterPassesTest(args.filterBy, (filterObject) => {
+        return isCurrentUser(req, filterObject[fieldPath]?.eq);
+      })
+    ) {
+      return true;
+    }
+
+    return false;
+  };
+}
+
+export function allowIfLoggedInFn() {
+  return async function ({ req }) {
+    if (!isUserLoggedIn(req)) return false;
+
+    return true;
+  };
+}
+
+export function allowIfArgsFieldIsCurrentUserFn(
+  service: PaginatedService,
+  field: string
+) {
+  return async function ({ req, args }) {
+    // handle lookupArgs, convert lookups into ids
+    await service.handleLookupArgs(args);
+
+    if (isCurrentUser(req, args[field])) return true;
+
+    return false;
+  };
 }

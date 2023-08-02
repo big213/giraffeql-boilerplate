@@ -8,7 +8,7 @@
         v-for="(file, index) in filesData"
         :key="index"
         :file="file"
-        downloadable
+        :downloadable="isDownloadable"
         small
         label
         :close="false"
@@ -38,6 +38,13 @@ export default {
       },
     }
   },
+
+  computed: {
+    isDownloadable() {
+      return !this.options?.hideDownload
+    },
+  },
+
   created() {
     this.reset()
   },

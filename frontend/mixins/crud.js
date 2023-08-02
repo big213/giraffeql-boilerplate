@@ -3,6 +3,7 @@ import SearchDialog from '~/components/dialog/searchDialog.vue'
 import RecordActionMenu from '~/components/menu/recordActionMenu.vue'
 import GenericInput from '~/components/input/genericInput.vue'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
+import CircularLoader from '~/components/common/circularLoader.vue'
 import {
   getNestedProperty,
   generateTimeAgoString,
@@ -21,6 +22,7 @@ import {
   processQuery,
   generateFilterByObjectArray,
   collapseObject,
+  generateCrudRecordRoute,
 } from '~/services/base'
 import { defaultGridView } from '~/services/config'
 import { executeGiraffeql } from '~/services/giraffeql'
@@ -34,6 +36,7 @@ export default {
     RecordActionMenu,
     GenericInput,
     PreviewRecordChip,
+    CircularLoader,
   },
 
   props: {
@@ -52,10 +55,9 @@ export default {
     hiddenHeaders: {
       type: Array,
     },
-    // type: CrudPageOptions | null
+    // type: CrudPageOptions | null | undefined
     pageOptions: {
       type: Object,
-      default: null,
     },
     /** raw filters must also be in recordInfo.filters. appended directly to the filterBy params. also applied to addRecordDialog
     {
@@ -66,7 +68,6 @@ export default {
     */
     lockedFilters: {
       type: Array,
-      default: () => [],
     },
     // array of filter keys (recordInfo.filters) that should be hidden
     // string[]
@@ -207,6 +208,13 @@ export default {
       )
     },
 
+    // on grid modes, the list of actions/expandTypes to be rendered as their own block buttons
+    renderedExpandItems() {
+      if (!this.isGrid) return []
+
+      return this.recordInfo.expandTypes.filter((e) => e.showRowIfGrid)
+    },
+
     // type: recordInfo.paginationOptions.headers to CrudHeaderObject[]
     headerOptions() {
       const headerOptions = this.recordInfo.paginationOptions.headerOptions
@@ -288,7 +296,17 @@ export default {
     },
 
     allFilters() {
-      return this.rawFilters.concat(this.lockedFilters)
+      return this.rawFilters.concat(this.lockedFiltersComputed)
+    },
+
+    lockedFiltersComputed() {
+      // if lockedFilters is undefined, attempt to fetch defaultLockedFilters
+      if (this.lockedFilters) return this.lockedFilters
+
+      if (this.recordInfo.paginationOptions.defaultLockedFilters)
+        return this.recordInfo.paginationOptions.defaultLockedFilters(this)
+
+      return []
     },
 
     search() {
@@ -449,6 +467,11 @@ export default {
         resetSort: true,
       })
     },
+
+    // if the dialog to expand record is closed, also unset the expandTypeObject
+    'dialogs.expandRecord'(val) {
+      if (!val) this.expandTypeObject = null
+    },
   },
 
   created() {
@@ -492,8 +515,12 @@ export default {
     getIcon,
     getNestedProperty,
 
-    refreshCb(typename, { refreshParent = false, id } = {}) {
-      if (this.recordInfo.typename === typename) {
+    refreshCb(typename, { refreshParent = false, id, refreshType } = {}) {
+      // if type of refresh is not defined or 'crud', refresh
+      if (
+        this.recordInfo.typename === typename &&
+        (!refreshType || refreshType === 'crud')
+      ) {
         // if ID is provided, only reload that specific record
         if (id) {
           this.reloadRecord(id)
@@ -513,10 +540,6 @@ export default {
 
     toggleGridMode() {
       this.isGrid = !this.isGrid
-      // only save the state if not child component and not dialog
-      if (!this.isChildComponent && !this.isDialog) {
-        localStorage.setItem('viewMode', this.isGrid ? 'grid' : 'list')
-      }
     },
 
     handleClearSearch() {
@@ -730,7 +753,9 @@ export default {
 
       return {
         ...(pagination && {
-          first: this.resultsPerPage,
+          first:
+            this.recordInfo.paginationOptions.limitOptions?.maxRecords ??
+            this.resultsPerPage,
           after: this.endCursor ?? undefined,
         }),
         sortBy,
@@ -856,7 +881,7 @@ export default {
     },
 
     openAddRecordDialog() {
-      const initializedRecord = this.lockedFilters.reduce(
+      const initializedRecord = this.lockedFiltersComputed.reduce(
         (total, crudFilterObject) => {
           total[crudFilterObject.field] = crudFilterObject.value
           return total
@@ -868,7 +893,7 @@ export default {
     },
 
     openImportRecordDialog() {
-      const initializedRecord = this.lockedFilters.reduce(
+      const initializedRecord = this.lockedFiltersComputed.reduce(
         (total, crudFilterObject) => {
           total[crudFilterObject.field] = crudFilterObject.value
           return total
@@ -888,6 +913,26 @@ export default {
       if (dialogName in this.dialogs) {
         this.dialogs[dialogName] = true
         this.dialogs.selectedItem = item
+      }
+    },
+
+    handleViewAllButtonClick() {
+      // if limitOptions.handleViewAllButtonClick not set, automatically use the recordInfo.paginationOptions
+      if (
+        !this.recordInfo.paginationOptions.limitOptions.handleViewAllButtonClick
+      ) {
+        this.$router.push(
+          generateCrudRecordRoute(this, {
+            routeType: this.recordInfo.routeType,
+            typename: this.recordInfo.typename,
+            pageOptions:
+              this.recordInfo.paginationOptions.defaultPageOptions?.(this),
+          })
+        )
+      } else {
+        this.recordInfo.paginationOptions.limitOptions.handleViewAllButtonClick?.(
+          this
+        )
       }
     },
 
@@ -1033,11 +1078,11 @@ export default {
                     : rawFilterObject.value
 
                 // populate inputObjects if we need to translate any IDs to objects. Do NOT populate the options
-                await populateInputObject(
-                  this,
-                  matchingFilterObject.inputObject,
-                  false
-                )
+                await populateInputObject(this, {
+                  inputObject: matchingFilterObject.inputObject,
+                  loadOptions: false,
+                  selectedItem: this.parentItem,
+                })
 
                 // remove from set
                 inputFieldsSet.delete(matchingFilterObject)
@@ -1142,10 +1187,14 @@ export default {
                 generation: 0,
                 parentInput: null,
                 nestedInputsArray: [],
+                inputData: null,
               }
 
               // populate inputObjects if we need to translate any IDs to objects, and also populate any options
-              await populateInputObject(this, inputObject)
+              await populateInputObject(this, {
+                inputObject,
+                selectedItem: this.parentItem,
+              })
 
               return {
                 filterObject,
@@ -1155,27 +1204,30 @@ export default {
           )
         )
 
+        // if pageOptions is undefined, use the defaultPageOptions fn if any
+        if (
+          this.pageOptions === undefined &&
+          this.recordInfo.paginationOptions.defaultPageOptions
+        ) {
+          this.$emit(
+            'pageOptions-updated',
+            this.recordInfo.paginationOptions.defaultPageOptions(this)
+          )
+        }
+
         this.syncPageOptions(false)
       } else {
         this.syncPageOptions(true)
       }
 
       // sync the grid options
-      if (
-        syncGridOptions &&
-        (this.breadcrumbMode || !this.isChildComponent) &&
-        !this.isDialog
-      ) {
-        // if overrideViewMode is set on the recordInfo, use that
+      if (syncGridOptions) {
         if (this.recordInfo.paginationOptions.overrideViewMode) {
+          // if overrideViewMode is set on the recordInfo, use that
           this.isGrid =
             this.recordInfo.paginationOptions.overrideViewMode === 'grid'
         } else {
-          if (localStorage.getItem('viewMode')) {
-            this.isGrid = localStorage.getItem('viewMode') === 'grid'
-          } else {
-            this.isGrid = !!defaultGridView
-          }
+          this.isGrid = !!defaultGridView
         }
       }
 

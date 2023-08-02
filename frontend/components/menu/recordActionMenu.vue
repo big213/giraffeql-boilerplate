@@ -204,11 +204,13 @@ export default {
           icon: expandTypeObject.icon,
           hiddenHeaders: expandTypeObject.excludeHeaders,
           excludeFilters: expandTypeObject.excludeFilters,
+          hidePresets: true,
           pageOptions: {
             search: null,
             filters: expandTypeObject.initialFilters ?? [],
             sort: expandTypeObject.initialSortOptions ?? undefined,
           },
+          parentItem: this.item,
         })
       else {
         this.goToRecordPage(openInNew, expandTypeObject)

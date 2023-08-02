@@ -2,6 +2,7 @@ import { ApiKey } from '../base'
 
 export const MyApiKey = {
   ...ApiKey,
+  routeType: 'my',
   title: `My ${ApiKey.pluralName}`,
   paginationOptions: {
     ...ApiKey.paginationOptions,

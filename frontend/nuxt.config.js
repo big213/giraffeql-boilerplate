@@ -6,7 +6,7 @@ export default {
   ssr: false,
 
   env: {
-    DEV: process.env.DEV,
+    isDev: !!process.env.DEV,
     VER: process.env.VER,
     apiUrl: process.env.API_URL,
     imageServingUrl: process.env.IMAGE_SERVING_URL,
@@ -19,7 +19,10 @@ export default {
     siteGithubRepositoryUrl: process.env.SITE_GITHUB_REPOSITORY_URL,
     logoHasLightVariant: !!process.env.LOGO_HAS_LIGHT_VARIANT,
     defaultGridView: !!process.env.DEFAULT_GRID_VIEW,
+    defaultLightMode: !!process.env.DEFAULT_LIGHT_MODE,
     stripePubKey: process.env.STRIPE_PUB_KEY,
+    socialLoginEnabled: !!process.env.SOCIAL_LOGIN_ENABLED,
+    tempStoragePath: process.env.TEMP_STORAGE_PATH,
   },
 
   // Target (https://go.nuxtjs.dev/config-target)

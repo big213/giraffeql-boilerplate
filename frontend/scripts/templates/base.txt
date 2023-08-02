@@ -4,6 +4,7 @@ import { Simple{{ capitalizedTypename }} } from '../simple'
 
 export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
   ...Simple{{ capitalizedTypename }},
+  routeType: 'a',
   fields: {
     ...generateBaseFields(Simple{{ capitalizedTypename }}),
   },

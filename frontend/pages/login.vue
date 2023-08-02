@@ -6,7 +6,7 @@
         <v-spacer></v-spacer>
         <v-btn text nuxt to="/register">Register</v-btn>
       </v-toolbar>
-      <SocialLoginInterface></SocialLoginInterface>
+      <SocialLoginInterface v-if="socialLoginEnabled"></SocialLoginInterface>
       <LoginInterface></LoginInterface>
     </v-container>
   </v-layout>
@@ -15,9 +15,11 @@
 <script>
 import LoginInterface from '~/components/interface/auth/loginInterface.vue'
 import SocialLoginInterface from '~/components/interface/auth/socialLoginInterface.vue'
+import { socialLoginEnabled } from '~/services/config'
 
 export default {
   middleware: 'router-auth',
+
   components: {
     LoginInterface,
     SocialLoginInterface,
@@ -26,6 +28,12 @@ export default {
   head() {
     return {
       title: 'Login',
+    }
+  },
+
+  data() {
+    return {
+      socialLoginEnabled,
     }
   },
 }

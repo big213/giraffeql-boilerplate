@@ -8,6 +8,7 @@ import { SimpleUserUserFollowLink } from '../simple'
 
 export const UserUserFollowLink = <RecordInfo<'userUserFollowLink'>>{
   ...SimpleUserUserFollowLink,
+  routeType: 'a',
   fields: {
     ...generateBaseLinkFields(SimpleUserUserFollowLink),
     ...generatePreviewableJoinableField({

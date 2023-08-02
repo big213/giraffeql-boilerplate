@@ -260,8 +260,12 @@ export default {
   methods: {
     getNestedProperty,
 
-    refreshCb(typename) {
-      if (this.recordInfo.typename === typename) {
+    refreshCb(typename, { refreshType } = {}) {
+      // if type of refresh is not defined or 'edit', refresh
+      if (
+        this.recordInfo.typename === typename &&
+        (!refreshType || refreshType === 'edit')
+      ) {
         this.reset({
           resetPosts: true,
         })
@@ -302,7 +306,11 @@ export default {
         const { query, serializeMap } = processQuery(
           this,
           this.recordInfo,
-          fields.concat(this.recordInfo.requiredFields ?? [])
+          fields
+            .concat(this.recordInfo.requiredFields ?? [])
+            .concat(
+              this.recordInfo.viewOptions.heroOptions?.requiredFields ?? []
+            )
         )
         const data = await executeGiraffeql(this, {
           ['get' + this.capitalizedType]: {

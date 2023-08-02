@@ -27,7 +27,11 @@
             <span class="headline">{{ title }}</span>
           </v-toolbar-title>
           <v-spacer></v-spacer>
-          <v-btn v-if="computedMode === 'view'" icon @click="reset()">
+          <v-btn
+            v-if="computedMode === 'view' && !hideRefreshMode"
+            icon
+            @click="reset()"
+          >
             <v-icon>mdi-refresh</v-icon>
           </v-btn>
           <RecordActionMenu
@@ -165,6 +169,10 @@ export default {
 
     hideActionsMode() {
       return !!this.recordInfo.dialogOptions?.hideActions
+    },
+
+    hideRefreshMode() {
+      return !!this.recordInfo.dialogOptions?.hideRefresh
     },
 
     modeObject() {

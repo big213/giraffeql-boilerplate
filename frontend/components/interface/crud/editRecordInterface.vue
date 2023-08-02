@@ -6,7 +6,7 @@
         v-if="isLoading"
         style="min-height: 250px"
       ></CircularLoader>
-      <v-container v-else class="px-0">
+      <v-container v-show="!isLoading" class="px-0">
         <v-row>
           <v-col
             v-for="(inputObject, i) in visibleInputsArray"
@@ -15,10 +15,12 @@
             class="py-0"
           >
             <GenericInput
-              v-if="!inputObject.hidden"
+              v-show="!inputObject.hidden"
               :item="inputObject"
               :parent-item="currentItem"
               :all-items="inputsArray"
+              :selected-item="selectedItem"
+              ref="inputs"
               @handle-submit="handleSubmit()"
               @file-added="handleFileAdded"
             ></GenericInput>

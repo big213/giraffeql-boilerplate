@@ -3,7 +3,11 @@ import { permissionsCheck } from "../../core/helpers/permissions";
 import { ServiceFunctionInputs, AccessControlMap } from "../../../types";
 import { nanoid } from "nanoid";
 import { createObjectType } from "../../core/helpers/resolver";
-import { filterPassesTest, isCurrentUser } from "../../helpers/permissions";
+import {
+  allowIfArgsFieldIsCurrentUserFn,
+  allowIfRecordFieldIsCurrentUserFn,
+  allowIfFilteringByCurrentUserFn,
+} from "../../helpers/permissions";
 
 export class ApiKeyService extends PaginatedService {
   defaultTypename = "apiKey";
@@ -32,91 +36,33 @@ export class ApiKeyService extends PaginatedService {
   accessControl: AccessControlMap = {
     /*
     Allow if:
+    - args.user is currentUser
+    */
+    create: allowIfArgsFieldIsCurrentUserFn(this, "user"),
+
+    /*
+    Allow if:
     - user.id is currentUser
     */
-    get: async ({ req, args }) => {
-      const record = await this.getFirstSqlRecord(
-        {
-          select: ["user.id"],
-          where: args,
-        },
-        true
-      );
-
-      if (isCurrentUser(req, record["user.id"])) {
-        return true;
-      }
-
-      return false;
-    },
+    get: allowIfRecordFieldIsCurrentUserFn(this, "user.id"),
 
     /*
     Allow if:
     - filtering by user.id is currentUser
     */
-    getMultiple: async ({ req, args }) => {
-      if (
-        await filterPassesTest(args.filterBy, (filterObject) => {
-          return isCurrentUser(req, filterObject["user.id"]?.eq);
-        })
-      ) {
-        return true;
-      }
-
-      return false;
-    },
+    getMultiple: allowIfFilteringByCurrentUserFn("user.id"),
 
     /*
     Allow if:
     - user.id is currentUser
     */
-    update: async ({ req, args }) => {
-      const record = await this.getFirstSqlRecord(
-        {
-          select: ["user.id"],
-          where: args.item,
-        },
-        true
-      );
-
-      if (isCurrentUser(req, record["user.id"])) {
-        return true;
-      }
-
-      return false;
-    },
+    update: allowIfRecordFieldIsCurrentUserFn(this, "user.id"),
 
     /*
     Allow if:
     - user.id is currentUser
     */
-    delete: async ({ req, args }) => {
-      const record = await this.getFirstSqlRecord(
-        {
-          select: ["user.id"],
-          where: args,
-        },
-        true
-      );
-      if (isCurrentUser(req, record["user.id"])) {
-        return true;
-      }
-
-      return false;
-    },
-
-    /*
-    Allow if:
-    - args.user is currentUser
-    */
-    create: async ({ req, args }) => {
-      // handle lookupArgs, convert lookups into ids
-      await this.handleLookupArgs(args);
-
-      if (isCurrentUser(req, args.user)) return true;
-
-      return false;
-    },
+    delete: allowIfRecordFieldIsCurrentUserFn(this, "user.id"),
   };
 
   @permissionsCheck("create")

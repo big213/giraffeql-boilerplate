@@ -27,7 +27,7 @@ export function generateTimeAgoString(unixTimestamp: number | null) {
 // unix timestamp (seconds) to YYYY-MM-DD HH:MM:SS
 export function generateDateLocaleString(
   unixTimestamp: number | null,
-  truncuateSeconds = false
+  truncateSeconds = false
 ) {
   if (!unixTimestamp) return null
 
@@ -38,7 +38,7 @@ export function generateDateLocaleString(
   return `${dateObject.getFullYear()}-${String(
     dateObject.getMonth() + 1
   ).padStart(2, '0')}-${String(dateObject.getDate()).padStart(2, '0')} ${
-    truncuateSeconds
+    truncateSeconds
       ? `${String(hours > 12 ? hours - 12 : hours === 0 ? 12 : hours)}:${String(
           dateObject.getMinutes()
         ).padStart(2, '0')} ${hours > 11 ? 'PM' : 'AM'}`
@@ -123,7 +123,7 @@ export function generateParseDateTimeStringFn(
       seconds
     ).getTime()
 
-    // date cannot be to far in the future
+    // date cannot be too far in the future
     /*   if (msTimestamp > new Date().getTime() + 1000 * 60 * 60 * 24) {
       throw new Error(`Date Happened cannot be in the future`)
     } */
@@ -224,7 +224,10 @@ export function serializeNestedProperty(
     }
     currentValue = currentValue[prop]
   }
-  currentValue[finalField] = serializeFn(currentValue[finalField])
+
+  if (currentValue) {
+    currentValue[finalField] = serializeFn(currentValue[finalField])
+  }
 }
 
 export function getNestedProperty(obj: StringKeyObject, path: string) {
@@ -307,8 +310,8 @@ export function collapseObjectArray(objArray: StringKeyObject[]) {
   return objArray.map((obj) => collapseObject(obj))
 }
 
-export function openLink(url: string): void {
-  window.open(url)
+export function openLink(url: string, newWindow = true): void {
+  newWindow ? window.open(url) : (window.location.href = url)
 }
 
 // returns date in YYYY-MM-DD format
@@ -401,12 +404,10 @@ export function generateNavRouteObject(
   that,
   {
     recordInfo,
-    routeType,
     path,
     pageOptions,
   }: {
     recordInfo: any
-    routeType?: 'i' | 'a' | 'my' | 's'
     path?: string
     pageOptions?: any
   }
@@ -417,7 +418,7 @@ export function generateNavRouteObject(
     to: generateCrudRecordRoute(that, {
       path,
       typename: recordInfo.typename,
-      routeType,
+      routeType: recordInfo.routeType,
       pageOptions:
         pageOptions === null
           ? null
@@ -445,7 +446,7 @@ export function generateCrudRecordRoute(
   }: {
     path?: string
     typename?: string
-    routeType?: 'i' | 'a' | 'my' | 's'
+    routeType?: string
     queryParams?: any
     pageOptions?: any
   }
@@ -647,8 +648,17 @@ export function lookupFieldInfo(recordInfo, field: string) {
 
 export function populateInputObject(
   that,
-  inputObject: CrudInputObject,
-  loadOptions = true
+  {
+    inputObject,
+    selectedItem,
+    item,
+    loadOptions = true,
+  }: {
+    inputObject: CrudInputObject
+    selectedItem: any | undefined
+    item: any | undefined
+    loadOptions?: boolean
+  }
 ) {
   const promisesArray: Promise<any>[] = []
   if (inputObject.inputType === 'value-array') {
@@ -656,11 +666,37 @@ export function populateInputObject(
     inputObject.nestedInputsArray.forEach((nestedInputArray) => {
       nestedInputArray.forEach((nestedInputObject) => {
         promisesArray.push(
-          ...populateInputObject(that, nestedInputObject.inputObject)
+          ...populateInputObject(that, {
+            inputObject: nestedInputObject.inputObject,
+            selectedItem,
+            item,
+            loadOptions,
+          })
         )
       })
     })
   } else {
+    // for stripe-pi, need to fetch the stripeAccount and clientSecret
+    if (
+      inputObject.inputType === 'stripe-pi' ||
+      inputObject.inputType === 'stripe-pi-editable'
+    ) {
+      if (!inputObject.inputOptions?.getPaymentIntent) {
+        throw new Error(`Stripe payments misconfigured`)
+      }
+
+      const initialPrice = inputObject.inputOptions.getPrice?.(that, item)
+
+      promisesArray.push(
+        inputObject.inputOptions
+          .getPaymentIntent(that, inputObject, selectedItem, initialPrice)
+          .then((res) => (inputObject.inputData = res))
+      )
+
+      // also set the initial value
+      inputObject.inputValue = initialPrice
+    }
+
     if (loadOptions && inputObject.getOptions) {
       inputObject.loading = true
       promisesArray.push(
@@ -1025,25 +1061,42 @@ export function memoize(memoizedFn) {
 }
 
 export function generateMemoizedGetter(operation: string, fields: string[]) {
-  return <any>(
-    memoize(function (
+  return <any>memoize(function (
+    that,
+    _forceReload,
+    {
+      filterBy = [],
+      sortBy = [],
+    }: {
+      filterBy?: any[]
+      sortBy?: any[]
+    } = {}
+  ) {
+    return collectPaginatorData(
       that,
-      _forceReload,
-      filterBy: any[] = [],
-      sortBy: any[] = []
-    ) {
-      return collectPaginatorData(
-        that,
-        operation,
-        fields.reduce((total, field) => {
-          total[field] = true
-          return total
-        }, {}),
-        {
-          filterBy,
-          sortBy,
-        }
-      )
-    })
+      operation,
+      fields.reduce((total, field) => {
+        total[field] = true
+        return total
+      }, {}),
+      {
+        filterBy,
+        sortBy,
+      }
+    )
+  })
+}
+
+export function userHasPermissions(that, requiredPermissions: string[]) {
+  if (!that.$store.getters['auth/user']) {
+    return false
+  }
+
+  // if user has A_A permissions, automatically allow
+  if (that.$store.getters['auth/user'].allPermissions.includes('A_A'))
+    return true
+
+  return requiredPermissions.every((permission) =>
+    that.$store.getters['auth/user'].allPermissions.includes(permission)
   )
 }

@@ -6,6 +6,10 @@ export const siteDiscordLink = process.env.siteDiscordLink
 export const siteGithubRepositoryUrl = process.env.siteGithubRepositoryUrl
 export const logoHasLightVariant = process.env.logoHasLightVariant
 export const defaultGridView = process.env.defaultGridView
+export const defaultLightMode = process.env.defaultLightMode
+export const socialLoginEnabled = process.env.socialLoginEnabled
+export const tempStoragePath = process.env.tempStoragePath
+export const isDev = process.env.isDev
 
 export const firebaseConfig = {
   apiKey: 'AIzaSyDMuwUROWZQyG93I21ofU7Cx52q42_XZ0Q',

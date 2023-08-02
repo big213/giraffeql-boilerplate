@@ -4,7 +4,7 @@ import TimeagoColumn from '~/components/table/timeagoColumn.vue'
 import AvatarColumn from '~/components/table/avatarColumn.vue'
 import NameAvatarColumn from '~/components/table/nameAvatarColumn.vue'
 import BooleanColumn from '~/components/table/booleanColumn.vue'
-import PreviewableFilesColumn from '~/components/table/previewableFilesColumn.vue'
+import FilesColumn from '~/components/table/filesColumn.vue'
 import * as SimpleModels from '../models/simple'
 import { capitalizeString } from './base'
 import OwnerColumn from '~/components/table/ownerColumn.vue'
@@ -123,6 +123,9 @@ export function generateBaseFields(simpleModel: SimpleRecordInfo<any>) {
         text: 'Avatar',
         inputType: 'avatar',
         component: AvatarColumn,
+        inputOptions: {
+          fallbackIcon: simpleModel.icon,
+        },
       },
     }),
     ...(simpleModel.hasDescription && {
@@ -251,10 +254,19 @@ export function generatePreviewableFilesColumn({
   fieldname,
   text,
   inputType = 'multiple-media',
+  limit,
+  // solo mode essentially grabs the first file in the array, if any.
+  soloMode = false,
+  hideDownload = false,
+  fieldOptions,
 }: {
   fieldname: string
   text: string
   inputType?: InputType
+  limit?: number
+  soloMode?: boolean
+  hideDownload?: boolean
+  fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
 }) {
   return {
     [fieldname]: {
@@ -273,9 +285,24 @@ export function generatePreviewableFilesColumn({
       parseValue: (val) => {
         if (!Array.isArray(val)) return []
 
-        return val.map((id) => ({ id }))
+        const mappedValues = val.map((id) => ({ id }))
+
+        // if solo mode, get the first array element
+        return soloMode ? mappedValues[0] ?? null : mappedValues
       },
-      component: PreviewableFilesColumn,
+      serialize: (val) => {
+        // if solo mode, need to convert to array
+        return soloMode ? [val].filter((e) => e) : val
+      },
+      columnOptions: {
+        hideDownload,
+      },
+      component: FilesColumn,
+      ...fieldOptions,
+      inputOptions: {
+        ...fieldOptions?.inputOptions,
+        limit,
+      },
     },
   }
 }

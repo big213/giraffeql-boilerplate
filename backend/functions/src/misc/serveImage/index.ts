@@ -5,7 +5,7 @@ const { createHandler } = require("image-resizing");
 
 export const serveImage = functions.https.onRequest(
   createHandler({
-    sourceBucket: env.serve_image.source_bucket,
-    cacheBucket: env.serve_image.cache_bucket,
+    sourceBucket: `${env.serve_image.bucket}/${env.serve_image.source_path}`,
+    cacheBucket: `${env.serve_image.bucket}/${env.serve_image.cache_path}`,
   })
 );

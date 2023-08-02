@@ -101,6 +101,7 @@
               :locked-filters="lockedSubFilters"
               :page-options="isChildComponent ? subPageOptions : pageOptions"
               :hidden-filters="hiddenSubFilters"
+              :hide-presets="!expandTypeObject.showPresets"
               :parent-item="parentItem"
               :breadcrumb-mode="!!expandTypeObject.breadcrumbMode"
               :breadcrumb-items="breadcrumbItems"

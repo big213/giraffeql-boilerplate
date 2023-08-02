@@ -6,7 +6,7 @@
         v-if="isLoading"
         style="min-height: 250px"
       ></CircularLoader>
-      <v-container v-else class="px-0">
+      <v-container v-show="!isLoading" class="px-0">
         <v-row>
           <v-col
             v-for="(inputObject, i) in visibleInputsArray"
@@ -18,6 +18,8 @@
               :item="inputObject"
               :parent-item="item"
               :all-items="inputsArray"
+              :selected-item="selectedItem"
+              ref="inputs"
               @handle-submit="handleSubmit()"
             ></GenericInput>
           </v-col>
@@ -112,23 +114,22 @@ export default {
 
   methods: {
     async handleSubmit() {
-      // set executeAction loading to true to prevent clicking multiple times
-      this.loading.executeAction = true
-
-      // if any inputs are loading, wait 500 ms and check again before proceeding
-      while (
-        this.inputsArray.some((inputObject) => inputObject.loading === true)
-      ) {
-        // sleep 500 ms before checking again
-        await timeout(500)
-      }
-
-      this.submit()
-    },
-
-    async submit() {
       this.loading.executeAction = true
       try {
+        // trigger beforeSubmit logic on genericInputs
+        const inputs = [...this.$refs.inputs]
+        for (const input of inputs) {
+          await input.beforeSubmit()
+        }
+
+        // if any inputs are loading, wait 500 ms and check again before proceeding
+        while (
+          this.inputsArray.some((inputObject) => inputObject.loading === true)
+        ) {
+          // sleep 500 ms before checking again
+          await timeout(500)
+        }
+
         const args = {}
 
         for (const inputObject of this.inputsArray) {
@@ -188,66 +189,86 @@ export default {
     async initializeInputs() {
       // set loading state until all inputs are done loading
       this.loading.initInputs = true
-      this.inputsArray = await Promise.all(
-        this.actionOptions.inputs.map(async (inputDef) => {
-          const inputObject = {
-            fieldKey: inputDef.field,
-            primaryField: inputDef.field,
-            fieldInfo: inputDef.definition,
-            recordInfo: null,
-            inputType: inputDef.definition.inputType,
-            label: inputDef.definition.text ?? inputDef.field,
-            hint: inputDef.definition.hint,
-            clearable: true,
-            closeable: false,
-            optional: inputDef.definition.optional,
-            inputRules: inputDef.definition.inputRules,
-            inputOptions: inputDef.definition.inputOptions,
-            value: null,
-            inputValue: null,
-            getOptions: inputDef.definition.getOptions,
-            options: [],
-            readonly: false,
-            hidden: false,
-            loading: false,
-            focused: false,
-            cols: inputDef.definition.inputOptions?.cols,
-            generation: 0,
-            parentInput: null,
-            nestedInputsArray: [],
-            hideIf: inputDef.hideIf,
-          }
+      try {
+        this.inputsArray = await Promise.all(
+          this.actionOptions.inputs
+            .filter((input) =>
+              input.excludeIf
+                ? !input.excludeIf(this, this.item, this.selectedItem)
+                : true
+            )
+            .map(async (inputDef) => {
+              const inputObject = {
+                fieldKey: inputDef.field,
+                primaryField: inputDef.field,
+                fieldInfo: inputDef.definition,
+                recordInfo: null,
+                inputType: inputDef.definition.inputType,
+                label: inputDef.definition.text ?? inputDef.field,
+                hint: inputDef.definition.hint,
+                clearable: true,
+                closeable: false,
+                optional: inputDef.definition.optional,
+                inputRules: inputDef.definition.inputRules,
+                inputOptions: inputDef.definition.inputOptions,
+                value: null,
+                inputValue: null,
+                getOptions: inputDef.definition.getOptions,
+                options: [],
+                readonly: false,
+                hidden: false,
+                loading: false,
+                focused: false,
+                cols: inputDef.definition.inputOptions?.cols,
+                generation: 0,
+                parentInput: null,
+                nestedInputsArray: [],
+                hideIf: inputDef.hideIf,
+                inputData: null,
+              }
 
-          // is the field in selectedItem? if so, use that and set field to readonly
-          if (
-            this.selectedItem &&
-            inputDef.field in this.selectedItem &&
-            this.selectedItem[inputDef.field] !== undefined
-          ) {
-            inputObject.value = this.selectedItem[inputDef.field]
-            inputObject.readonly = true
-          } else {
-            inputObject.value = inputDef.definition.default
-              ? await inputDef.definition.default(this)
-              : null
-          }
+              // is the field in selectedItem? if so, use that and set field to readonly
+              if (
+                this.selectedItem &&
+                inputDef.field in this.selectedItem &&
+                this.selectedItem[inputDef.field] !== undefined
+              ) {
+                inputObject.value = this.selectedItem[inputDef.field]
+                inputObject.readonly = true
+              } else {
+                inputObject.value = inputDef.definition.default
+                  ? await inputDef.definition.default(this)
+                  : null
+              }
 
-          // if it is an array, populate the nestedInputsArray
-          if (inputObject.inputType === 'value-array') {
-            if (Array.isArray(inputObject.value)) {
-              inputObject.value.forEach((ele) =>
-                addNestedInputObject(inputObject, ele)
+              // if it is an array, populate the nestedInputsArray
+              if (inputObject.inputType === 'value-array') {
+                if (Array.isArray(inputObject.value)) {
+                  inputObject.value.forEach((ele) =>
+                    addNestedInputObject(inputObject, ele)
+                  )
+                }
+              }
+
+              // populate inputObjects if we need to translate any IDs to objects, and also populate any options
+              await Promise.all(
+                populateInputObject(this, {
+                  inputObject,
+                  selectedItem: this.selectedItem,
+                  item: this.item,
+                })
               )
-            }
-          }
 
-          // populate inputObjects if we need to translate any IDs to objects, and also populate any options
-          await Promise.all(populateInputObject(this, inputObject))
+              return inputObject
+            })
+        )
+        this.loading.initInputs = false
+      } catch (err) {
+        // if there is an error, keep the loading state
+        handleError(this, err)
+      }
 
-          return inputObject
-        })
-      )
-      this.loading.initInputs = false
+      // this.loading.initInputs = false
     },
 
     reset() {

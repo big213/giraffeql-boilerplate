@@ -7,10 +7,11 @@ import {
   deleteObjectType,
 } from "../../core/helpers/resolver";
 import {
-  filterPassesTest,
-  isCurrentUser,
-  isUserLoggedIn,
+  allowIfRecordFieldIsCurrentUserFn,
+  allowIfFilteringByCurrentUserFn,
+  allowIfLoggedInFn,
 } from "../../helpers/permissions";
+import { env } from "../../../config";
 
 export class FileService extends PaginatedService {
   defaultTypename = "file";
@@ -40,87 +41,33 @@ export class FileService extends PaginatedService {
   accessControl: AccessControlMap = {
     /*
     Allow if:
+    - is logged in
+    */
+    create: allowIfLoggedInFn(),
+
+    /*
+    Allow if:
     - createdBy.id is currentUser
     */
-    get: async ({ req, args }) => {
-      const record = await this.getFirstSqlRecord({
-        select: ["createdBy.id"],
-        where: args,
-      });
-      if (isCurrentUser(req, record["createdBy.id"])) {
-        return true;
-      }
-
-      return false;
-    },
+    get: allowIfRecordFieldIsCurrentUserFn(this, "createdBy.id"),
 
     /*
     Allow if:
     - filtering by createdBy.id is currentUser,
-    - OR, temporarily allowing all (would normally need to check the parentKey)
     */
-    getMultiple: async ({ req, args }) => {
-      if (
-        await filterPassesTest(args.filterBy, (filterObject) => {
-          return isCurrentUser(req, filterObject["createdBy.id"]?.eq);
-        })
-      ) {
-        return true;
-      }
-
-      return true;
-      // return false;
-    },
-
-    /*
-    Allow if:
-    - is logged in
-    */
-    create: async ({ req }) => {
-      if (!isUserLoggedIn(req)) return false;
-
-      return true;
-    },
+    getMultiple: allowIfFilteringByCurrentUserFn("createdBy.id"),
 
     /*
     Allow if:
     - user created the item
     */
-    update: async ({ req, args }) => {
-      if (!isUserLoggedIn(req)) return false;
-
-      const record = await this.getFirstSqlRecord(
-        {
-          select: ["createdBy.id"],
-          where: args.item,
-        },
-        true
-      );
-
-      if (isCurrentUser(req, record["createdBy.id"])) return true;
-
-      return false;
-    },
+    update: allowIfRecordFieldIsCurrentUserFn(this, "createdBy.id"),
 
     /*
     Allow if:
     - user created the item
     */
-    delete: async ({ req, args }) => {
-      if (!isUserLoggedIn(req)) return false;
-
-      const record = await this.getFirstSqlRecord(
-        {
-          select: ["createdBy.id"],
-          where: args,
-        },
-        true
-      );
-
-      if (isCurrentUser(req, record["createdBy.id"])) return true;
-
-      return false;
-    },
+    delete: allowIfRecordFieldIsCurrentUserFn(this, "createdBy.id"),
   };
 
   async updateFileParentKeys(
@@ -171,10 +118,10 @@ export class FileService extends PaginatedService {
 
     // verify location exists and move it into /source folder
     const bucket = admin.storage().bucket();
-    const file = bucket.file("temp/" + args.location);
+    const file = bucket.file(`${env.serve_image.temp_path}/${args.location}`);
     const [metadata] = await file.getMetadata();
 
-    await file.move("source/" + args.location);
+    await file.move(`${env.serve_image.source_path}/${args.location}`);
 
     const addResults = await createObjectType({
       typename: this.typename,
@@ -221,7 +168,7 @@ export class FileService extends PaginatedService {
 
     // verify location exists and delete it
     const bucket = admin.storage().bucket();
-    const file = bucket.file("source/" + item.location);
+    const file = bucket.file(`${env.serve_image.source_path}/${item.location}`);
 
     await file.delete();
 

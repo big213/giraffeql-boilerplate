@@ -246,7 +246,11 @@ export function generateTextField(params: GenerateFieldParams) {
   });
 }
 
-export function generateIntegerField(params: GenerateFieldParams) {
+export function generateIntegerField(
+  params: GenerateFieldParams & {
+    type?: GiraffeqlScalarType;
+  }
+) {
   const {
     description,
     allowNull = true,
@@ -256,6 +260,7 @@ export function generateIntegerField(params: GenerateFieldParams) {
     nestHidden,
     sqlOptions,
     typeDefOptions,
+    type = Scalars.number,
   } = params;
   return generateStandardField({
     description,
@@ -265,13 +270,17 @@ export function generateIntegerField(params: GenerateFieldParams) {
     hidden,
     nestHidden,
     sqlType: "integer",
-    type: Scalars.number,
+    type,
     sqlOptions,
     typeDefOptions,
   });
 }
 
-export function generateFloatField(params: GenerateFieldParams) {
+export function generateFloatField(
+  params: GenerateFieldParams & {
+    type?: GiraffeqlScalarType;
+  }
+) {
   const {
     description,
     allowNull = true,
@@ -281,6 +290,7 @@ export function generateFloatField(params: GenerateFieldParams) {
     nestHidden,
     sqlOptions,
     typeDefOptions,
+    type = Scalars.number,
   } = params;
   return generateStandardField({
     description,
@@ -290,13 +300,17 @@ export function generateFloatField(params: GenerateFieldParams) {
     hidden,
     nestHidden,
     sqlType: "float",
-    type: Scalars.number,
+    type,
     sqlOptions,
     typeDefOptions,
   });
 }
 
-export function generateDecimalField(params: GenerateFieldParams) {
+export function generateDecimalField(
+  params: GenerateFieldParams & {
+    type?: GiraffeqlScalarType;
+  }
+) {
   const {
     description,
     allowNull = true,
@@ -306,6 +320,7 @@ export function generateDecimalField(params: GenerateFieldParams) {
     nestHidden,
     sqlOptions,
     typeDefOptions,
+    type = Scalars.number,
   } = params;
   return generateStandardField({
     description,
@@ -315,7 +330,7 @@ export function generateDecimalField(params: GenerateFieldParams) {
     hidden,
     nestHidden,
     sqlType: "decimal",
-    type: Scalars.number,
+    type,
     sqlOptions,
     typeDefOptions,
   });

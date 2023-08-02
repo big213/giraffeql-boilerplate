@@ -1,72 +1,85 @@
 <template>
   <div>
-    <v-container
-      v-if="!hidePresets && hasPresetFilters"
-      fluid
-      class="px-0 text-center"
-    >
-      <v-row justify="center" class="mt-3">
-        <v-col
-          v-if="
-            recordInfo.paginationOptions.searchOptions &&
-            recordInfo.paginationOptions.searchOptions.preset
-          "
-          :key="-1"
-          cols="12"
-          lg="3"
-          class="py-0"
-        >
-          <v-text-field
-            v-model="searchInput"
-            label="Search"
-            placeholder="Type to search"
-            outlined
-            prepend-icon="mdi-magnify"
-            clearable
-            @click:clear="handleClearSearch()"
-            @keyup.enter="updatePageOptions()"
-          ></v-text-field>
-        </v-col>
-        <v-col
-          v-for="(crudFilterObject, i) in visiblePresetFiltersArray"
-          :key="i"
-          cols="12"
-          lg="3"
-          class="py-0"
-        >
-          <GenericInput
-            :item="crudFilterObject.inputObject"
-            @change="updatePageOptions"
-            @handle-input="filterChanged = true"
-          ></GenericInput>
-        </v-col>
-      </v-row>
-      <v-toolbar v-if="filterChanged" dense flat color="transparent">
-        <v-spacer></v-spacer>
-        <v-btn color="primary" class="mb-2" @click="updatePageOptions()">
-          <v-icon left>mdi-filter</v-icon>
-          Update Filters
-        </v-btn>
-      </v-toolbar>
-    </v-container>
-    <v-container v-if="breadcrumbItems.length" fluid class="px-0">
-      <v-row>
-        <v-breadcrumbs :items="breadcrumbItems">
-          <template v-slot:item="{ item }">
-            <v-breadcrumbs-item>
-              <PreviewRecordChip
-                :value="item.item"
-                class="pointer-cursor"
-                @click="$emit('breadcrumb-item-click', item)"
-              >
-              </PreviewRecordChip>
-            </v-breadcrumbs-item>
-          </template>
-        </v-breadcrumbs>
-      </v-row>
-    </v-container>
     <v-card flat>
+      <v-container
+        v-if="!hidePresets && hasPresetFilters"
+        fluid
+        class="mx-0 text-center"
+      >
+        <v-row justify="center" class="mt-3">
+          <v-col
+            v-if="
+              recordInfo.paginationOptions.searchOptions &&
+              recordInfo.paginationOptions.searchOptions.preset
+            "
+            :key="-1"
+            cols="12"
+            lg="3"
+            class="py-0"
+          >
+            <v-text-field
+              v-model="searchInput"
+              label="Search"
+              placeholder="Type to search"
+              outlined
+              prepend-icon="mdi-magnify"
+              clearable
+              @click:clear="handleClearSearch()"
+              @keyup.enter="updatePageOptions()"
+            ></v-text-field>
+          </v-col>
+          <v-col
+            v-for="(crudFilterObject, i) in visiblePresetFiltersArray"
+            :key="i"
+            cols="12"
+            lg="3"
+            class="py-0"
+          >
+            <GenericInput
+              :item="crudFilterObject.inputObject"
+              @change="updatePageOptions"
+              @handle-input="filterChanged = true"
+            ></GenericInput>
+          </v-col>
+        </v-row>
+        <v-toolbar v-if="filterChanged" dense flat color="transparent">
+          <v-spacer></v-spacer>
+          <v-btn color="primary" class="mb-2" @click="updatePageOptions()">
+            <v-icon left>mdi-filter</v-icon>
+            Update Filters
+          </v-btn>
+        </v-toolbar>
+      </v-container>
+      <v-container v-if="breadcrumbItems.length" fluid class="px-0">
+        <v-row>
+          <v-breadcrumbs :items="breadcrumbItems">
+            <template v-slot:item="{ item }">
+              <v-breadcrumbs-item>
+                <PreviewRecordChip
+                  :value="item.item"
+                  class="pointer-cursor"
+                  @click="$emit('breadcrumb-item-click', item)"
+                >
+                </PreviewRecordChip>
+              </v-breadcrumbs-item>
+            </template>
+          </v-breadcrumbs>
+        </v-row>
+      </v-container>
+
       <v-toolbar flat color="accent" dense>
+        <PreviewRecordChip
+          v-if="parentItem && isDialog"
+          :value="parentItem"
+          class="pointer-cursor"
+        >
+        </PreviewRecordChip>
+        <v-divider
+          v-if="parentItem && isDialog"
+          class="mx-4"
+          inset
+          vertical
+        ></v-divider>
         <v-icon left>{{ icon || recordInfo.icon || 'mdi-domain' }}</v-icon>
         <v-toolbar-title>{{
           title || recordInfo.title || recordInfo.pluralName
@@ -97,13 +110,27 @@
           @handleSubmit="handleSearchDialogSubmit"
         >
           <template slot="icon">
-            <v-badge :value="!!search" dot color="secondary">
+            <v-badge :value="!!search" dot color="secondary" title="Search">
               <v-icon>mdi-magnify</v-icon>
             </v-badge>
           </template>
         </SearchDialog>
         <v-spacer></v-spacer>
-        <v-menu v-if="sortOptions.length > 0" offset-y left>
+        <v-btn
+          v-if="recordInfo.paginationOptions.limitOptions"
+          text
+          @click="handleViewAllButtonClick"
+        >
+          View All
+        </v-btn>
+        <v-menu
+          v-if="
+            sortOptions.length > 0 &&
+            !recordInfo.paginationOptions.hideSortOptions
+          "
+          offset-y
+          left
+        >
           <template v-slot:activator="{ on, attrs }">
             <v-btn
               :text="!isXsViewport"
@@ -139,6 +166,7 @@
         <v-btn
           v-if="hasFilters"
           icon
+          title="Filter"
           @click="showFilterInterface = !showFilterInterface"
         >
           <v-badge
@@ -149,12 +177,18 @@
             <v-icon>mdi-filter-menu</v-icon>
           </v-badge>
         </v-btn>
-        <v-btn icon @click="toggleGridMode()">
+        <v-btn
+          v-if="!recordInfo.paginationOptions.hideViewModeToggle"
+          icon
+          title="Toggle Grid/List Mode"
+          @click="toggleGridMode()"
+        >
           <v-icon>{{ isGrid ? 'mdi-view-list' : 'mdi-view-grid' }}</v-icon>
         </v-btn>
         <v-btn
           v-if="recordInfo.importOptions"
           icon
+          title="Import Records"
           @click="openImportRecordDialog()"
         >
           <v-icon>mdi-upload</v-icon>
@@ -162,6 +196,7 @@
         <v-btn
           v-if="recordInfo.paginationOptions.downloadOptions"
           icon
+          title="Download Records"
           :loading="loading.exportData"
           @click="exportData()"
         >
@@ -171,6 +206,7 @@
           v-if="!recordInfo.paginationOptions.hideRefresh"
           :loading="loading.loadData || loading.syncData"
           icon
+          title="Refresh"
           @click="reset()"
         >
           <v-icon>mdi-refresh</v-icon>
@@ -225,7 +261,15 @@
         }"
         class="pa-0"
       >
-        <v-card class="text-center">
+        <v-card
+          v-if="!recordInfo.paginationOptions.limitOptions"
+          :style="
+            recordInfo.paginationOptions.minHeight
+              ? `min-height: ${recordInfo.paginationOptions.minHeight}`
+              : null
+          "
+          class="text-center"
+        >
           <span v-if="isDataLoading">...</span>
           <span v-else-if="!totalRecords">---</span>
           <span v-else class="noselect">
@@ -244,7 +288,15 @@
           :loading="loading.loadData"
         >
           <template v-slot:loading>
-            <v-progress-linear indeterminate></v-progress-linear>
+            <CircularLoader
+              v-if="recordInfo.paginationOptions.loaderStyle === 'circular'"
+              :style="
+                recordInfo.paginationOptions.minHeight
+                  ? `min-height: ${recordInfo.paginationOptions.minHeight}`
+                  : null
+              "
+            ></CircularLoader>
+            <v-progress-linear v-else indeterminate></v-progress-linear>
           </template>
           <template v-slot:default="props">
             <v-container fluid>
@@ -333,6 +385,18 @@
                         </v-list-item-content>
                       </v-list-item>
                     </v-list>
+                    <v-btn
+                      v-for="(expandObject, i) in renderedExpandItems"
+                      block
+                      :key="i"
+                      class="mt-1"
+                      @click.stop="toggleGridExpand(item, expandObject)"
+                    >
+                      <v-icon left>{{
+                        expandObject.icon || expandObject.recordInfo.icon
+                      }}</v-icon>
+                      {{ expandObject.name || expandObject.recordInfo.name }}
+                    </v-btn>
                     <div
                       v-if="!recordInfo.paginationOptions.hideActions"
                       class="text-center"
@@ -358,7 +422,10 @@
                     </div>
                   </v-card>
                 </v-col>
-                <v-col cols="12">
+                <v-col
+                  v-if="!recordInfo.paginationOptions.limitOptions"
+                  cols="12"
+                >
                   <div class="text-center">
                     <v-divider></v-divider>
                     <v-btn
@@ -507,7 +574,10 @@
             </tr>
           </template>
           <template v-slot:footer>
-            <div class="text-center">
+            <div
+              v-if="!recordInfo.paginationOptions.limitOptions"
+              class="text-center"
+            >
               <v-divider></v-divider>
               <v-btn
                 v-if="records.length < totalRecords"
@@ -572,36 +642,45 @@
       ></EditRecordDialog>
       <v-dialog
         v-model="dialogs.expandRecord"
+        scrollable
         :max-width="$vuetify.breakpoint.name === 'xs' ? '100%' : '75%'"
       >
-        <v-card flat>
-          <component
-            :is="childInterfaceComponent"
-            v-if="dialogs.expandRecord && expandTypeObject"
-            class="expanded-table-bg"
-            :record-info="expandTypeObject.recordInfo"
-            :icon="expandTypeObject.icon"
-            :title="expandTypeObject.name"
-            :hidden-headers="expandTypeObject.excludeHeaders"
-            :locked-filters="lockedSubFilters"
-            :page-options="subPageOptions"
-            :hidden-filters="hiddenSubFilters"
-            is-child-component
-            :parent-item="expandedItem"
-            :dense="dense"
-            :breadcrumb-items="subBreadcrumbItems"
-            :results-per-page="expandTypeObject.resultsPerPage"
-            @pageOptions-updated="handleSubPageOptionsUpdated"
-            @reload-parent-item="handleReloadParentItem"
-            @expand-type-updated="handleExpandTypeUpdated"
-          >
-            <template v-slot:header-action>
-              <v-btn icon @click="dialogs.expandRecord = false">
-                <v-icon>mdi-close</v-icon>
-              </v-btn>
-            </template>
-          </component>
-        </v-card>
+        <component
+          :is="childInterfaceComponent"
+          v-if="dialogs.expandRecord && expandTypeObject"
+          :record-info="expandTypeObject.recordInfo"
+          :icon="expandTypeObject.icon"
+          :title="expandTypeObject.name"
+          :hidden-headers="expandTypeObject.excludeHeaders"
+          :locked-filters="lockedSubFilters"
+          :page-options="subPageOptions"
+          :hidden-filters="hiddenSubFilters"
+          is-child-component
+          is-dialog
+          :parent-item="expandedItem"
+          :dense="dense"
+          :breadcrumb-items="subBreadcrumbItems"
+          :results-per-page="expandTypeObject.resultsPerPage"
+          :hide-presets="!expandTypeObject.showPresets"
+          @pageOptions-updated="handleSubPageOptionsUpdated"
+          @reload-parent-item="handleReloadParentItem"
+          @expand-type-updated="handleExpandTypeUpdated"
+        >
+          <template v-slot:header-action>
+            <v-btn icon @click="dialogs.expandRecord = false">
+              <v-icon>mdi-close</v-icon>
+            </v-btn>
+          </template>
+          <template v-slot:footer-action>
+            <v-spacer></v-spacer>
+            <v-btn
+              color="blue darken-1"
+              text
+              @click="dialogs.expandRecord = false"
+              >Close</v-btn
+            >
+          </template>
+        </component>
       </v-dialog>
     </v-card>
   </div>
