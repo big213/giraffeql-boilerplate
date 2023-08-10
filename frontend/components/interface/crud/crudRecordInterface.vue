@@ -68,6 +68,15 @@
       </v-container>
 
       <v-toolbar flat color="accent" dense>
+        <v-btn
+          v-if="breadcrumbItems.length - 1 > 0"
+          icon
+          title="Up one level"
+          @click="goUpOneLevel()"
+        >
+          <v-icon>mdi-arrow-left</v-icon>
+        </v-btn>
+
         <PreviewRecordChip
           v-if="parentItem && isDialog"
           :value="parentItem"

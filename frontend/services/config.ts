@@ -21,8 +21,16 @@ export const firebaseConfig = {
 }
 
 export const routesMap = {
-  a: ['apiKey', 'file', 'user', 'userUserFollowLink'],
-  i: ['user'],
-  my: ['apiKey', 'file'],
-  s: [],
+  view: {
+    a: ['apiKey', 'file', 'user', 'userUserFollowLink'],
+    i: ['user'],
+    my: ['apiKey', 'file'],
+    s: [],
+  },
+  crud: {
+    a: ['apiKey', 'file', 'user', 'userUserFollowLink'],
+    i: ['user'],
+    my: ['apiKey', 'file'],
+    s: [],
+  },
 }

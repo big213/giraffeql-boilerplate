@@ -29,35 +29,48 @@
       <v-divider></v-divider>
     </div>
 
-    <div v-if="isAdmin">
-      <v-divider></v-divider>
-      <AdminNavRoutes></AdminNavRoutes>
+    <div v-if="hasAdminPermissions">
+      <v-list dense>
+        <v-list-group
+          v-for="item in adminItems"
+          :key="item.title"
+          v-model="item.active"
+          :prepend-icon="item.action"
+          no-action
+        >
+          <template v-slot:activator>
+            <v-list-item-content>
+              <v-list-item-title>{{ item.title }}</v-list-item-title>
+            </v-list-item-content>
+          </template>
+          <template v-for="(child, j) in item.items">
+            <v-list-item :key="j" :to="child.to" nuxt router exact-path>
+              <v-list-item-content>
+                <v-list-item-title>{{ child.title }}</v-list-item-title>
+              </v-list-item-content>
+            </v-list-item>
+          </template>
+        </v-list-group>
+      </v-list>
     </div>
   </v-navigation-drawer>
 </template>
 
 <script>
 import { mapGetters } from 'vuex'
-import AdminNavRoutes from '~/components/navigation/adminNavRoutes.vue'
+import { generateNavRouteObject, userHasPermissions } from '~/services/base'
 import { logoHasLightVariant } from '~/services/config'
 import { generateNavDrawerItems } from '~/services/navigation'
+import * as baseModels from '~/models/base'
 
 export default {
-  components: {
-    AdminNavRoutes,
-  },
-
-  data() {
-    return {}
-  },
-
   computed: {
     ...mapGetters({
       user: 'auth/user',
     }),
 
-    isAdmin() {
-      return this.$store.getters['auth/user']?.role === 'ADMIN'
+    hasAdminPermissions() {
+      return userHasPermissions(this, ['A_A'])
     },
 
     logoImageSrc() {
@@ -70,6 +83,27 @@ export default {
 
     navDrawerItems() {
       return generateNavDrawerItems(this)
+    },
+
+    adminItems() {
+      return [
+        {
+          action: 'mdi-star',
+          active: false,
+          title: 'Administration',
+          items: Object.values(baseModels).map((recordInfo) =>
+            generateNavRouteObject(this, {
+              recordInfo,
+              pageOptions: {
+                sort: {
+                  field: 'createdAt',
+                  desc: true,
+                },
+              },
+            })
+          ),
+        },
+      ]
     },
   },
 }

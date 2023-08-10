@@ -710,6 +710,16 @@ export default {
       }
     },
 
+    goUpOneLevel() {
+      // if only 1 element remaining, do nothing
+      if (this.breadcrumbItems.length < 2) return
+
+      this.$emit(
+        'breadcrumb-item-click',
+        this.breadcrumbItems[this.breadcrumbItems.length - 2]
+      )
+    },
+
     closeExpandedItems() {
       this.expandTypeObject = null
       this.expandedItem = null

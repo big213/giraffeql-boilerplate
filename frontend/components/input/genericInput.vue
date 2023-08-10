@@ -797,7 +797,7 @@
     </v-select>
     <div
       v-else-if="item.inputType === 'value-array'"
-      class="accent rounded-sm mb-4"
+      class="rounded-sm mb-4"
     >
       <v-container class="highlighted-bg">
         <v-row>

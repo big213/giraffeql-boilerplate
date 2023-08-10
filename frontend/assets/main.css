@@ -49,4 +49,5 @@
 
 .highlighted-bg {
   border: 1px solid rgb(122, 122, 122);
+  border-radius: 5px;
 }

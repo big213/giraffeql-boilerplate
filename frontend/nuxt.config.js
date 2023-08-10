@@ -41,13 +41,20 @@ export default {
           .join('')
       }
 
-      return Object.entries(routesMap).reduce((total, [key, val]) => {
-        total.push(...val.map((type) => `/${key}/${camelToKebabCase(type)}`))
-        total.push(
-          ...val.map((type) => `/${key}/view/${camelToKebabCase(type)}`)
-        )
-        return total
-      }, [])
+      const routes = new Set()
+
+      Object.entries(routesMap.view).forEach(([key, val]) => {
+        val.forEach((type) => {
+          routes.add(`/${key}/view/${camelToKebabCase(type)}`)
+        })
+      })
+
+      Object.entries(routesMap.crud).forEach(([key, val]) => {
+        val.forEach((type) => {
+          routes.add(`/${key}/${camelToKebabCase(type)}`)
+        })
+      })
+      return [...routes]
     },
   },
 
