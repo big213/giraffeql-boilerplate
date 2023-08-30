@@ -17,7 +17,5 @@ export const MyApiKey = {
     },
     downloadOptions: undefined,
   },
-  enterOptions: {
-    routeType: 'my',
-  },
+  enterOptions: {},
 }

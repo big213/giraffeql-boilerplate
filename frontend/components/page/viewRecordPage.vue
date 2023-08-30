@@ -47,9 +47,9 @@
         <v-col
           v-else-if="recordMode === 'show'"
           cols="12"
-          :md="isExpanded ? 4 : 6"
+          :md="fullPageMode ? 12 : isExpanded && !showComments ? 4 : 6"
           class="text-center"
-          :offset-md="isExpanded ? 0 : 3"
+          :offset-md="fullPageMode ? 0 : isExpandOrCommentsOpened ? 0 : 3"
         >
           <v-card class="elevation-12">
             <component
@@ -67,6 +67,13 @@
                     {{ recordInfo.name }}
                   </v-toolbar-title>
                   <v-spacer></v-spacer>
+                  <v-btn
+                    v-if="!showComments && hasComments"
+                    icon
+                    @click="toggleComments()"
+                  >
+                    <v-icon>mdi-comment</v-icon>
+                  </v-btn>
                   <v-btn icon @click="reset()">
                     <v-icon>mdi-refresh</v-icon>
                   </v-btn>
@@ -90,7 +97,35 @@
             </component>
           </v-card>
         </v-col>
-        <v-col v-if="isExpanded" cols="12" :md="recordMode === 'show' ? 8 : 12">
+        <v-col
+          v-if="hasComments && showComments"
+          cols="12"
+          :md="fullPageMode ? 12 : isExpanded && !showComments ? 12 : 6"
+          class="text-center"
+        >
+          <component
+            class="mx-auto elevation-6"
+            style="max-width: 800px"
+            :is="postInterface"
+            :locked-filters="postLockedFilters"
+            :hidden-fields="recordInfo.postOptions.hiddenFields"
+            :record-info="recordInfo.postOptions.recordInfo"
+            :initial-sort-options="recordInfo.postOptions.initialSortOptions"
+          >
+            <template v-slot:header-action>
+              <v-btn icon @click="toggleComments(false)">
+                <v-icon>mdi-close</v-icon>
+              </v-btn>
+            </template>
+          </component>
+        </v-col>
+        <v-col
+          v-if="isExpanded"
+          cols="12"
+          :md="
+            fullPageMode ? 12 : recordMode === 'show' && !showComments ? 8 : 12
+          "
+        >
           <v-card class="elevation-12">
             <component
               :is="paginationComponent"
@@ -124,6 +159,26 @@
           </v-card>
         </v-col>
       </v-row>
+      <v-row v-for="(item, i) in previewExpandTypes" :key="i">
+        <v-col cols="12">
+          <component
+            :is="getExpandTypeComponent(item.expandTypeObject)"
+            :record-info="item.expandTypeObject.recordInfo"
+            :icon="item.expandTypeObject.icon"
+            :hidden-headers="item.expandTypeObject.excludeHeaders"
+            :locked-filters="getExpandTypeSubFilters(item.expandTypeObject)"
+            :page-options="item.pageOptions"
+            :hidden-filters="
+              getExpandTypeHiddenSubFilters(item.expandTypeObject)
+            "
+            :hide-presets="!item.expandTypeObject.showPresets"
+            :parent-item="parentItem"
+            dense
+            @pageOptions-updated="item.pageOptions = $event"
+          >
+          </component>
+        </v-col>
+      </v-row>
     </v-layout>
     <EditRecordDialog
       v-model="dialogs.editRecord"
@@ -137,10 +192,11 @@
 </template>
 
 <script>
-import ViewRecordTableInterface from '~/components/interface/crud/viewRecordTableInterface.vue'
+import ViewRecordInterface from '~/components/interface/crud/viewRecordInterface.vue'
 import EditRecordDialog from '~/components/dialog/editRecordDialog.vue'
 import RecordActionMenu from '~/components/menu/recordActionMenu.vue'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
+import CrudPostInterface from '~/components/interface/crud/crudPostInterface.vue'
 import { executeGiraffeql } from '~/services/giraffeql'
 import {
   capitalizeString,
@@ -148,12 +204,13 @@ import {
   serializeNestedProperty,
   processQuery,
 } from '~/services/base'
+import { generatePreviewRecordInfo } from '~/services/recordInfo'
 import CrudRecordInterface from '~/components/interface/crud/crudRecordInterface.vue'
 import { mapGetters } from 'vuex'
 
 export default {
   components: {
-    ViewRecordTableInterface,
+    ViewRecordInterface,
     EditRecordDialog,
     RecordActionMenu,
     PreviewRecordChip,
@@ -197,6 +254,8 @@ export default {
       recordInfoChanged: false,
 
       breadcrumbItems: [],
+
+      previewExpandTypes: [],
     }
   },
 
@@ -209,12 +268,30 @@ export default {
       return this.breadcrumbItems.length > 1
     },
 
+    postInterface() {
+      return this.recordInfo.postOptions?.component ?? CrudPostInterface
+    },
+
+    postLockedFilters() {
+      return [
+        {
+          field: this.recordInfo.typename,
+          operator: 'eq',
+          value: this.selectedItem.id,
+        },
+      ]
+    },
+
     recordMode() {
       return this.$route.query.m === '2'
         ? 'hidden'
         : this.$route.query.m === '1'
         ? 'minimized'
         : 'show'
+    },
+
+    fullPageMode() {
+      return !!this.recordInfo.pageOptions?.fullPageMode
     },
 
     parentItem() {
@@ -224,32 +301,31 @@ export default {
     isExpanded() {
       return !!this.expandTypeObject
     },
+
+    hasComments() {
+      return !!this.recordInfo.postOptions
+    },
+
+    isExpandOrCommentsOpened() {
+      return !!this.expandTypeObject || (this.showComments && this.hasComments)
+    },
+
+    showComments() {
+      return this.$route.query.c !== undefined && this.hasComments
+    },
+
     currentInterface() {
-      return this.recordInfo.viewOptions.component || ViewRecordTableInterface
+      return this.recordInfo.viewOptions.component || ViewRecordInterface
     },
     hiddenSubFilters() {
       if (!this.isExpanded) return []
 
-      // is there an excludeFilters array on the expandTypeObject? if so, use that
-      return [this.recordInfo.typename.toLowerCase() + '.id'].concat(
-        this.expandTypeObject.excludeFilters ?? []
-      )
+      return this.getExpandTypeHiddenSubFilters(this.expandTypeObject)
     },
     lockedSubFilters() {
       if (!this.isExpanded) return []
 
-      // is there a lockedFilters generator on the expandTypeObject? if so, use that
-      if (this.expandTypeObject.lockedFilters) {
-        return this.expandTypeObject.lockedFilters(this, this.parentItem)
-      }
-
-      return [
-        {
-          field: this.recordInfo.typename.toLowerCase() + '.id',
-          operator: 'eq',
-          value: this.parentItem.id,
-        },
-      ]
+      return this.getExpandTypeSubFilters(this.expandTypeObject)
     },
     capitalizedTypename() {
       return capitalizeString(this.recordInfo.typename)
@@ -289,7 +365,6 @@ export default {
         })
         return
       }
-
       this.reset(true)
     },
 
@@ -306,6 +381,36 @@ export default {
   },
 
   methods: {
+    getExpandTypeComponent(expandTypeObject) {
+      return (
+        expandTypeObject.component ||
+        expandTypeObject.recordInfo.paginationOptions.component ||
+        CrudRecordInterface
+      )
+    },
+
+    getExpandTypeSubFilters(expandTypeObject) {
+      // is there a lockedFilters generator on the expandTypeObject? if so, use that
+      if (expandTypeObject.lockedFilters) {
+        return expandTypeObject.lockedFilters(this, this.parentItem)
+      }
+
+      return [
+        {
+          field: this.recordInfo.typename.toLowerCase() + '.id',
+          operator: 'eq',
+          value: this.parentItem.id,
+        },
+      ]
+    },
+
+    getExpandTypeHiddenSubFilters(expandTypeObject) {
+      // is there an excludeFilters array on the expandTypeObject? if so, use that
+      return [this.recordInfo.typename.toLowerCase() + '.id'].concat(
+        expandTypeObject.excludeFilters ?? []
+      )
+    },
+
     handleSubmit() {
       this.loadRecord()
       this.$emit('handle-submit')
@@ -375,6 +480,25 @@ export default {
       this.toggleExpand(expandTypeObject.key)
     },
 
+    toggleComments(state = true) {
+      const query = {
+        ...this.$route.query,
+      }
+
+      if (state) {
+        query.c = null
+      } else {
+        delete query.c
+      }
+
+      this.$router
+        .replace({
+          path: this.$route.path,
+          query,
+        })
+        .catch((e) => e)
+    },
+
     handleCustomActionClick(actionObject, item) {
       actionObject.handleClick(this, item)
     },
@@ -386,6 +510,9 @@ export default {
 
       if (state) {
         query.m = '1'
+
+        // if minimizing, also hide any comments
+        delete query.c
       } else {
         delete query.m
       }
@@ -544,7 +671,7 @@ export default {
 
         // if the record type has name/avatar, also fetch those
         if (this.recordInfo.hasName) fields.push('name')
-        if (this.recordInfo.hasAvatar) fields.push('avatar')
+        if (this.recordInfo.hasAvatar) fields.push('avatarUrl')
 
         const { serializeMap, query } = processQuery(
           this,
@@ -588,6 +715,31 @@ export default {
           if (this.$route.query.e !== undefined) {
             this.setExpandTypeObject(this.$route.query.e, true)
           }
+
+          const previewExpandTypes =
+            this.recordInfo.pageOptions?.previewExpandTypes
+
+          if (previewExpandTypes) {
+            this.previewExpandTypes = previewExpandTypes
+              .map((ele) =>
+                this.recordInfo.expandTypes.find(
+                  (expandTypeObject) => expandTypeObject.key === ele
+                )
+              )
+              .map((expandTypeObject) => {
+                // replace each recordInfo with the previewRecordInfo
+                return {
+                  expandTypeObject: {
+                    ...expandTypeObject,
+                    recordInfo: generatePreviewRecordInfo({
+                      recordInfo: expandTypeObject.recordInfo,
+                      title: `Latest ${expandTypeObject.recordInfo.pluralName}`,
+                    }),
+                  },
+                  pageOptions: undefined,
+                }
+              })
+          }
         })
       }
 
@@ -598,7 +750,7 @@ export default {
   head() {
     return (
       this.head ?? {
-        title: 'View ' + this.recordInfo.name,
+        title: `View ${this.recordInfo.name}`,
       }
     )
   },

@@ -8,7 +8,7 @@
         v-for="(file, index) in rawFiles"
         :key="index"
         :file="file"
-        downloadable
+        :downloadable="isDownloadable"
         openable
         small
         label
@@ -21,7 +21,7 @@
             v-for="(file, index) in previewableFiles"
             :key="index"
             :file="file"
-            downloadable
+            :downloadable="isDownloadable"
             openable
             class="md4 sm6 xs12"
           ></MediaChip>
@@ -64,6 +64,9 @@ export default {
       return this.filesData.filter(
         (file) => !file.contentType.startsWith('image')
       )
+    },
+    isDownloadable() {
+      return !this.options?.hideDownload
     },
   },
 

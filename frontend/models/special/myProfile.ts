@@ -21,7 +21,7 @@ export const MyProfile = {
     downloadOptions: undefined,
   },
   editOptions: {
-    fields: ['avatar', 'name', 'description', 'isPublic'],
+    fields: ['avatarUrl', 'name', 'description', 'isPublic'],
     onSuccess: (that) => {
       // refresh the store entry after editing profile
       handleUserRefreshed(that)

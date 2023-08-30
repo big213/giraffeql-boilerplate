@@ -35,14 +35,12 @@
 
 <script>
 import CircularLoader from '~/components/common/circularLoader.vue'
-import GenericInput from '~/components/input/genericInput.vue'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 import { getIcon } from '~/services/base'
 
 export default {
   components: {
     CircularLoader,
-    GenericInput,
     PreviewRecordChip,
   },
 

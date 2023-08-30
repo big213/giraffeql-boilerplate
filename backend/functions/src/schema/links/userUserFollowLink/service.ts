@@ -3,7 +3,6 @@ import { AccessControlMap } from "../../../types";
 import {
   allowIfArgsFieldIsCurrentUserFn,
   allowIfRecordFieldIsCurrentUserFn,
-  isCurrentUser,
 } from "../../helpers/permissions";
 
 export class UserUserFollowLinkService extends LinkService {

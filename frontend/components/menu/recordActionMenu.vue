@@ -269,8 +269,9 @@ export default {
         this,
         generateViewRecordRoute(this, {
           typename: this.recordInfo.typename,
-          routeType: this.recordInfo.enterOptions.routeType,
+          routeType: this.recordInfo.routeType,
           id: this.item.id,
+          showComments: true,
         }),
         openInNew
       )

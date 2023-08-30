@@ -20,7 +20,5 @@ export const PublicUser = {
   editOptions: undefined,
   deleteOptions: undefined,
   importOptions: undefined,
-  enterOptions: {
-    routeType: 'i',
-  },
+  enterOptions: {},
 }

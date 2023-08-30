@@ -13,7 +13,7 @@ import { SimpleUser } from '../simple'
 export const User = <RecordInfo<'user'>>{
   ...SimpleUser,
   routeType: 'a',
-  requiredFields: ['avatar', 'name'],
+  requiredFields: ['avatarUrl', 'name'],
   fields: {
     ...generateBaseFields(SimpleUser),
     email: {
@@ -80,7 +80,7 @@ export const User = <RecordInfo<'user'>>{
 
   addOptions: {
     fields: [
-      'avatar',
+      'avatarUrl',
       'name',
       'description',
       'email',
@@ -92,7 +92,7 @@ export const User = <RecordInfo<'user'>>{
   },
   editOptions: {
     fields: [
-      'avatar',
+      'avatarUrl',
       'name',
       'description',
       'email',
@@ -103,7 +103,7 @@ export const User = <RecordInfo<'user'>>{
   },
   viewOptions: {
     fields: [
-      'avatar',
+      'avatarUrl',
       'name',
       'description',
       'email',
@@ -114,9 +114,7 @@ export const User = <RecordInfo<'user'>>{
     ],
     heroOptions: {},
   },
-  enterOptions: {
-    routeType: 'a',
-  },
+  enterOptions: {},
   deleteOptions: {},
   shareOptions: {},
   expandTypes: [],

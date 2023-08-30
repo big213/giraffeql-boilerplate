@@ -476,14 +476,16 @@ export function generateViewRecordRoute(
     routeType,
     queryParams,
     id,
-    expandKey = null,
+    expandKey,
+    showComments = false,
   }: {
     path?: string
     typename?: string
-    routeType?: 'i' | 'a' | 'my' | 's'
+    routeType?: string
     queryParams?: any
     id: string
     expandKey?: string | null
+    showComments?: boolean
   }
 ) {
   // either path or typename/routeType required
@@ -496,6 +498,7 @@ export function generateViewRecordRoute(
     query: {
       id,
       e: expandKey,
+      c: showComments ? null : undefined,
       ...queryParams,
     },
   }).href
@@ -737,7 +740,7 @@ export function populateInputObject(
                 id: true,
                 name: true,
                 ...(inputObject.inputOptions?.hasAvatar && {
-                  avatar: true,
+                  avatarUrl: true,
                 }),
                 __args: {
                   id: originalFieldValue,

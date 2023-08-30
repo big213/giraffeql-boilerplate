@@ -19,6 +19,7 @@
               :parent-item="item"
               :all-items="inputsArray"
               :selected-item="selectedItem"
+              :key="i"
               ref="inputs"
               @handle-submit="handleSubmit()"
             ></GenericInput>
@@ -219,7 +220,7 @@ export default {
                 hidden: false,
                 loading: false,
                 focused: false,
-                cols: inputDef.definition.inputOptions?.cols,
+                cols: inputDef.cols,
                 generation: 0,
                 parentInput: null,
                 nestedInputsArray: [],

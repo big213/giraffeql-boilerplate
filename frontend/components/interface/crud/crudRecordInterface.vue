@@ -37,6 +37,7 @@
           >
             <GenericInput
               :item="crudFilterObject.inputObject"
+              :key="i"
               @change="updatePageOptions"
               @handle-input="filterChanged = true"
             ></GenericInput>
@@ -126,7 +127,7 @@
         </SearchDialog>
         <v-spacer></v-spacer>
         <v-btn
-          v-if="recordInfo.paginationOptions.limitOptions"
+          v-if="recordInfo.paginationOptions.showViewAll"
           text
           @click="handleViewAllButtonClick"
         >
@@ -251,6 +252,7 @@
           >
             <GenericInput
               :item="crudFilterObject.inputObject"
+              :key="i"
               @change="updatePageOptions"
               @handle-input="filterChanged = true"
             ></GenericInput>
@@ -271,12 +273,7 @@
         class="pa-0"
       >
         <v-card
-          v-if="!recordInfo.paginationOptions.limitOptions"
-          :style="
-            recordInfo.paginationOptions.minHeight
-              ? `min-height: ${recordInfo.paginationOptions.minHeight}`
-              : null
-          "
+          v-if="!recordInfo.paginationOptions.hideViewMore"
           class="text-center"
         >
           <span v-if="isDataLoading">...</span>
@@ -294,6 +291,11 @@
           disable-pagination
           hide-default-footer
           class="pt-5 elevation-1"
+          :style="
+            recordInfo.paginationOptions.minHeight
+              ? `min-height: ${recordInfo.paginationOptions.minHeight}`
+              : null
+          "
           :loading="loading.loadData"
         >
           <template v-slot:loading>
@@ -339,7 +341,7 @@
                             ? recordInfo.paginationOptions.heroOptions.getPreviewImage(
                                 item
                               )
-                            : item.avatar
+                            : item.avatarUrl
                         "
                         class="white--text align-end"
                         gradient="to bottom, rgba(0,0,0,.1), rgba(0,0,0,.5)"
@@ -432,7 +434,7 @@
                   </v-card>
                 </v-col>
                 <v-col
-                  v-if="!recordInfo.paginationOptions.limitOptions"
+                  v-if="!recordInfo.paginationOptions.hideViewMore"
                   cols="12"
                 >
                   <div class="text-center">
@@ -584,7 +586,7 @@
           </template>
           <template v-slot:footer>
             <div
-              v-if="!recordInfo.paginationOptions.limitOptions"
+              v-if="!recordInfo.paginationOptions.hideViewMore"
               class="text-center"
             >
               <v-divider></v-divider>

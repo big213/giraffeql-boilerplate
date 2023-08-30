@@ -16,7 +16,7 @@ export const Event = {
   name: 'Event',
   pluralName: 'Events',
   icon: 'mdi-calendar',
-  requiredFields: ['name', 'avatar', 'isActive'],
+  requiredFields: ['name', 'avatarUrl', 'isActive'],
   fields: {
     ...generateBaseFields({
       hasName: true,
@@ -155,7 +155,7 @@ export const Event = {
   addOptions: {
     fields: [
       'locale',
-      'avatar',
+      'avatarUrl',
       'name',
       'description',
       'files',
@@ -176,7 +176,7 @@ export const Event = {
   copyOptions: {
     fields: [
       'locale',
-      'avatar',
+      'avatarUrl',
       'name',
       'description',
       'files',
@@ -192,7 +192,7 @@ export const Event = {
   importOptions: {
     fields: [
       'locale',
-      'avatar',
+      'avatarUrl',
       'name',
       'description',
       'files',
@@ -214,7 +214,7 @@ export const Event = {
   editOptions: {
     fields: [
       'locale',
-      'avatar',
+      'avatarUrl',
       'name',
       'description',
       'location',
@@ -258,9 +258,7 @@ export const Event = {
     heroOptions: {},
   },
   postOptions: {},
-  enterOptions: {
-    routeType: 'a',
-  },
+  enterOptions: {},
   deleteOptions: {},
   shareOptions: {},
   expandTypes: [

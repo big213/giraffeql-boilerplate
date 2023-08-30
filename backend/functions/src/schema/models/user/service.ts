@@ -27,7 +27,7 @@ export class UserService extends PaginatedService {
   defaultQuery: ExternalQuery = {
     id: lookupSymbol,
     name: lookupSymbol,
-    avatar: lookupSymbol,
+    avatarUrl: lookupSymbol,
   };
 
   filterFieldsMap = {
@@ -58,8 +58,8 @@ export class UserService extends PaginatedService {
     /*
     Allow if:
     - item.id is currentUser
-    - item isPublic === true AND requested fields has fields id, name, avatar, email, isPublic, currentUserFollowLink ONLY
-    - OR, if requested fields are id, name, avatar, isPublic, currentUserFollowLink  ONLY
+    - item isPublic === true AND requested fields has fields id, name, avatarUrl, email, isPublic, currentUserFollowLink ONLY
+    - OR, if requested fields are id, name, avatarUrl, isPublic, currentUserFollowLink  ONLY
     */
     get: async ({ req, args, query }) => {
       const record = await this.getFirstSqlRecord(
@@ -77,7 +77,7 @@ export class UserService extends PaginatedService {
           "id",
           "__typename",
           "name",
-          "avatar",
+          "avatarUrl",
           "description",
           "email",
           "isPublic",
@@ -93,7 +93,7 @@ export class UserService extends PaginatedService {
           "id",
           "__typename",
           "name",
-          "avatar",
+          "avatarUrl",
           "description",
           "isPublic",
           "currentUserFollowLink",
@@ -108,7 +108,7 @@ export class UserService extends PaginatedService {
     /*
     Allow if:
     - filtering by isPublic === true
-    - if requested fields are id, name, avatar, isPublic, currentUserFollowLink ONLY, or NO query
+    - if requested fields are id, name, avatarUrl, isPublic, currentUserFollowLink ONLY, or NO query
     */
     getMultiple: async ({ args, query }) => {
       if (
@@ -117,7 +117,7 @@ export class UserService extends PaginatedService {
           "id",
           "__typename",
           "name",
-          "avatar",
+          "avatarUrl",
           "description",
           "isPublic",
           "currentUserFollowLink",
@@ -139,14 +139,14 @@ export class UserService extends PaginatedService {
 
     /*
     Allow if:
-    - item.id is currentUser AND update fields ONLY avatar, name, isPublic
+    - item.id is currentUser AND update fields ONLY avatarUrl, name, isPublic
     */
     update: async ({ req, args }) => {
       if (
         isUserLoggedIn(req) &&
         isCurrentUser(req, args.item.id) &&
         objectOnlyHasFields(args.fields, [
-          "avatar",
+          "avatarUrl",
           "name",
           "description",
           "isPublic",
@@ -186,7 +186,7 @@ export class UserService extends PaginatedService {
       password: args.password,
       displayName: args.name,
       disabled: false,
-      photoURL: args.avatar,
+      photoURL: args.avatarUrl,
     });
 
     const addResults = await createObjectType({
@@ -295,8 +295,8 @@ export class UserService extends PaginatedService {
       ...("name" in args.fields && {
         displayName: args.fields.name,
       }),
-      ...("avatar" in args.fields && {
-        photoURL: args.fields.avatar,
+      ...("avatarUrl" in args.fields && {
+        photoURL: args.fields.avatarUrl,
       }),
       ...("email" in args.fields && {
         email: args.fields.email,

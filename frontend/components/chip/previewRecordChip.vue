@@ -1,7 +1,7 @@
 <template>
   <v-chip pill v-bind="$attrs" v-on="$listeners">
     <v-avatar left>
-      <v-img v-if="avatar" :src="avatar" contain></v-img
+      <v-img v-if="avatarUrl" :src="avatarUrl" contain></v-img
       ><v-icon v-else>{{ fallbackIcon }} </v-icon>
     </v-avatar>
     <i v-if="value.name === undefined">{{ value.id }}</i>
@@ -36,10 +36,10 @@ export default {
         : this.value.name
     },
 
-    avatar() {
+    avatarUrl() {
       return this.recordInfo?.chipOptions?.getImage
         ? this.recordInfo.chipOptions.getImage(this.value)
-        : this.value.avatar
+        : this.value.avatarUrl
     },
 
     fallbackIcon() {

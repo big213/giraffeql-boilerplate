@@ -48,9 +48,7 @@ export const UserUserFollowLink = <RecordInfo<'userUserFollowLink'>>{
   viewOptions: {
     fields: ['userRecord', 'targetRecord'],
   },
-  enterOptions: {
-    routeType: 'a',
-  },
+  enterOptions: {},
   deleteOptions: {},
   shareOptions: {},
   expandTypes: [],

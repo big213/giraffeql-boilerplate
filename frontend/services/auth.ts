@@ -17,7 +17,7 @@ export async function handleLogin(that, store, authPayload) {
         id: true,
         email: true,
         name: true,
-        avatar: true,
+        avatarUrl: true,
         role: true,
         permissions: true,
         allPermissions: true,

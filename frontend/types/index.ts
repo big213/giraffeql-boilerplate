@@ -88,6 +88,13 @@ export type RecordInfo<T extends keyof MainTypes> = {
   pageOptions?: {
     // custom function that will return the lookup params, if any
     getLookupParams?: (that) => any
+
+    // whether or not to render the record as a full page (12 cols), rather than centered with an offset
+    fullPageMode?: boolean
+
+    // the expand types to automatically render below (as previews)
+    // string corresponds to the key
+    previewExpandTypes?: string[]
   }
 
   // options related to viewing multiple, if possible
@@ -117,6 +124,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
       : []
 
     sortOptions: SortObject[]
+
+    // fields required but not shown, such as fields needed for heroOptions
+    requiredFields?: string[]
 
     // should a hero image be displayed? only applies to grid view
     heroOptions?: {
@@ -170,11 +180,22 @@ export type RecordInfo<T extends keyof MainTypes> = {
     // should the sortBy feature be hidden?
     hideSortOptions?: boolean
 
+    // override the number of records per page
+    resultsPerPage?: number
+
+    // number of records to show initially
+    maxInitialRecords?: number
+
     limitOptions?: {
-      maxRecords: number
       // what should clicking the view all button do? (if undefined, button will be left out)
       handleViewAllButtonClick?: (that) => void
     }
+
+    // hide the view more button
+    hideViewMore?: boolean
+
+    // show button to "view all" of this record
+    showViewAll?: boolean
 
     // the min height of the pagination container, if any
     minHeight?: string
@@ -269,6 +290,10 @@ export type RecordInfo<T extends keyof MainTypes> = {
   viewOptions?: {
     // required: fields that can be viewed
     fields: (string | ViewFieldDefinition)[]
+
+    // additional fields required (but not shown)
+    requiredFields?: string[]
+
     // custom component
     component?: any
 
@@ -285,9 +310,6 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
       // custom component that should be rendered, which will override the above 2 options
       component?: any
-
-      // additional fields required as a result of rendering the hero preview
-      requiredFields?: string[]
     }
   }
 
@@ -327,6 +349,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // custom component
     component?: any
+
+    // fields to hide
+    hiddenFields?: string[]
   }
 
   copyOptions?: {
@@ -344,11 +369,12 @@ export type RecordInfo<T extends keyof MainTypes> = {
   shareOptions?: {
     // custom component
     component?: any
+
+    // get a custom share URL
+    getUrl?: (that, recordInfo, id) => string
   }
 
-  enterOptions?: {
-    routeType: 'i' | 'a' | 'my' | 's'
-  }
+  enterOptions?: {}
 
   expandTypes: {
     // the key that will be associated with this in the URL
@@ -425,7 +451,7 @@ type InputOptions = {
   // for single-file-url and avatar, use the firebase URL instead of the cdn url?
   useFirebaseUrl?: boolean
 
-  // for single-file-url, restrict the content type
+  // for single-file-url, multiple-file, restrict the content type
   contentType?: string
 
   // params that should be applied when looking up results (server-X input type) -- namely filterBy, sortBy
@@ -442,9 +468,14 @@ type InputOptions = {
 
   // for multiple-file input, maximum number of files
   limit?: number
+  // for multiple-file input, whether or not to use mediaMode
+  mediaMode?: boolean
 
-  // for avatar, the fallback icon
-  fallbackIcon?: string
+  // for single-image-url
+  avatarOptions?: {
+    // the fallback icon for the avatar
+    fallbackIcon?: string
+  }
 
   // only applies to value-array
   nestedFields?: {
@@ -488,13 +519,11 @@ type HeaderObject = {
 
 export type InputType =
   | 'html'
-  | 'single-image'
+  | 'single-image-url'
   | 'multiple-image'
-  | 'multiple-media'
   | 'multiple-file'
   | 'single-file-url'
   | 'value-array'
-  | 'avatar'
   | 'datepicker'
   | 'datetimepicker'
   | 'switch'
@@ -537,6 +566,10 @@ export type ActionOptions = {
       inputRules?: any[]
       default?: (that) => unknown
     }
+
+    // number of cols the input should take. defaults to 12
+    cols?: number
+
     // do not render the input, but otherwise load it
     hideIf?: (that, item, inputsArray) => boolean
 

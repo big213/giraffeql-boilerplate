@@ -70,6 +70,35 @@ export class FileService extends PaginatedService {
     delete: allowIfRecordFieldIsCurrentUserFn(this, "createdBy.id"),
   };
 
+  async validateFileField(args: any, fieldname: string, regex: RegExp) {
+    const field = args[fieldname];
+
+    const filesToCheck = Array.isArray(field) ? field : field ? [field] : null;
+
+    if (filesToCheck && filesToCheck.length > 0) {
+      const images = await this.getAllSqlRecord({
+        select: ["contentType"],
+        where: [
+          {
+            field: "id",
+            operator: "in",
+            value: filesToCheck.map((ele) => ele.id),
+          },
+        ],
+      });
+
+      // if the image lengths do not line up, must be an invalid file in there. throw err
+      if (images.length !== filesToCheck.length) {
+        throw new Error(`Invalid file provided`);
+      }
+
+      // verify that all content types match image/*
+      if (!images.every((ele) => ele.contentType.match(regex))) {
+        throw new Error(`Invalid file provided for the '${fieldname}' field`);
+      }
+    }
+  }
+
   async updateFileParentKeys(
     userId: string,
     typename: string,

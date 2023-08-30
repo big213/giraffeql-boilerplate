@@ -10,9 +10,7 @@ export const MyFile = {
   },
   viewOptions: undefined,
   shareOptions: undefined,
-  enterOptions: {
-    routeType: 'my',
-  },
+  enterOptions: {},
   editOptions: undefined,
   addOptions: undefined,
 }

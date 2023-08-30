@@ -30,6 +30,7 @@
                 mode="add"
                 :selected-item="selectedItem"
                 hide-locked-fields
+                :hidden-fields="hiddenFields"
                 @handle-submit="handlePostSubmit()"
               ></EditRecordInterface>
             </div>

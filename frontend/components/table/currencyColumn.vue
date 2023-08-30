@@ -13,7 +13,7 @@ export default {
     displayStr() {
       return this.currentValue !== null
         ? formatAsCurrency(this.currentValue)
-        : this.options?.nullText ?? 'N/A'
+        : this.options?.emptyText ?? 'N/A'
     },
   },
 }

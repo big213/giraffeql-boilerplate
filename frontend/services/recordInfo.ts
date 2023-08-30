@@ -1,10 +1,16 @@
 import RecordColumn from '~/components/table/recordColumn.vue'
-import { FieldDefinition, InputType, SimpleRecordInfo } from '~/types'
+import {
+  FieldDefinition,
+  InputType,
+  RecordInfo,
+  SimpleRecordInfo,
+} from '~/types'
 import TimeagoColumn from '~/components/table/timeagoColumn.vue'
 import AvatarColumn from '~/components/table/avatarColumn.vue'
 import NameAvatarColumn from '~/components/table/nameAvatarColumn.vue'
 import BooleanColumn from '~/components/table/booleanColumn.vue'
 import FilesColumn from '~/components/table/filesColumn.vue'
+import PreviewableFilesColumn from '~/components/table/previewableFilesColumn.vue'
 import * as SimpleModels from '../models/simple'
 import { capitalizeString } from './base'
 import OwnerColumn from '~/components/table/ownerColumn.vue'
@@ -68,7 +74,7 @@ export function generatePreviewableRecordField({
       simpleModel.hasName ? `${fieldnamePrefix}name` : null,
       `${fieldnamePrefix}id`,
       `${fieldnamePrefix}__typename`,
-      simpleModel.hasAvatar ? `${fieldnamePrefix}avatar` : null,
+      simpleModel.hasAvatar ? `${fieldnamePrefix}avatarUrl` : null,
     ].filter((e) => e),
     pathPrefix: fieldname,
     component: RecordColumn,
@@ -119,12 +125,14 @@ export function generateBaseFields(simpleModel: SimpleRecordInfo<any>) {
       },
     }),
     ...(simpleModel.hasAvatar && {
-      avatar: {
+      avatarUrl: {
         text: 'Avatar',
-        inputType: 'avatar',
+        inputType: 'single-image-url',
         component: AvatarColumn,
         inputOptions: {
-          fallbackIcon: simpleModel.icon,
+          avatarOptions: {
+            fallbackIcon: simpleModel.icon,
+          },
         },
       },
     }),
@@ -141,7 +149,7 @@ export function generateBaseFields(simpleModel: SimpleRecordInfo<any>) {
       simpleModel.hasAvatar && {
         nameWithAvatar: {
           text: 'Name',
-          fields: ['name', 'avatar'],
+          fields: ['name', 'avatarUrl'],
           component: NameAvatarColumn,
         },
         record: generatePreviewableRecordField({
@@ -238,11 +246,11 @@ export function generateDualOwnerPreviewableRecordField({
         `${fieldnamePrefix}userOwner.id`,
         `${fieldnamePrefix}userOwner.name`,
         `${fieldnamePrefix}userOwner.__typename`,
-        `${fieldnamePrefix}userOwner.avatar`,
+        `${fieldnamePrefix}userOwner.avatarUrl`,
         `${fieldnamePrefix}organizationOwner.id`,
         `${fieldnamePrefix}organizationOwner.name`,
         `${fieldnamePrefix}organizationOwner.__typename`,
-        `${fieldnamePrefix}organizationOwner.avatar`,
+        `${fieldnamePrefix}organizationOwner.avatarUrl`,
       ],
       pathPrefix,
       component: OwnerColumn,
@@ -253,11 +261,12 @@ export function generateDualOwnerPreviewableRecordField({
 export function generatePreviewableFilesColumn({
   fieldname,
   text,
-  inputType = 'multiple-media',
+  inputType = 'multiple-file',
   limit,
   // solo mode essentially grabs the first file in the array, if any.
   soloMode = false,
   hideDownload = false,
+  mediaMode = false,
   fieldOptions,
 }: {
   fieldname: string
@@ -266,6 +275,7 @@ export function generatePreviewableFilesColumn({
   limit?: number
   soloMode?: boolean
   hideDownload?: boolean
+  mediaMode?: boolean
   fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
 }) {
   return {
@@ -297,11 +307,17 @@ export function generatePreviewableFilesColumn({
       columnOptions: {
         hideDownload,
       },
-      component: FilesColumn,
+      component: mediaMode ? PreviewableFilesColumn : FilesColumn,
       ...fieldOptions,
       inputOptions: {
         ...fieldOptions?.inputOptions,
         limit,
+        mediaMode,
+        contentType: mediaMode ? 'image/*' : null,
+      },
+      tableOptions: {
+        ...fieldOptions?.tableOptions,
+        verticalView: true,
       },
     },
   }
@@ -481,6 +497,75 @@ export function generateThingSkuLookupSearchOptions(prefix?: string) {
               dictionaryIds,
           }
         : undefined
+    },
+  }
+}
+
+export function generateHomePageRecordInfo({
+  recordInfo,
+  title,
+}: {
+  recordInfo: RecordInfo<any>
+  title?: string
+}) {
+  return {
+    ...recordInfo,
+    ...(title && { title }),
+    paginationOptions: {
+      ...recordInfo.paginationOptions,
+      searchOptions: undefined,
+      defaultLockedFilters: () => [],
+      defaultPageOptions: () => ({
+        search: null,
+        filters: [],
+        sort: {
+          field: 'createdAt',
+          desc: true,
+        },
+      }),
+      filterOptions: [],
+      hideViewModeToggle: true,
+      hideSortOptions: true,
+      minHeight: '250px',
+      loaderStyle: 'circular',
+      limitOptions: {
+        resultsPerPage: 4,
+      },
+      hideViewMore: true,
+      showViewAll: true,
+      hideRefresh: true,
+    },
+  }
+}
+
+export function generatePreviewRecordInfo({
+  recordInfo,
+  title,
+}: {
+  recordInfo: RecordInfo<any>
+  title?: string
+}) {
+  return {
+    ...recordInfo,
+    ...(title && { title }),
+    paginationOptions: {
+      ...recordInfo.paginationOptions,
+      defaultLockedFilters: () => [],
+      defaultPageOptions: () => ({
+        search: null,
+        filters: [],
+        sort: {
+          field: 'createdAt',
+          desc: true,
+        },
+      }),
+      hideViewModeToggle: true,
+      minHeight: '250px',
+      loaderStyle: 'circular',
+      limitOptions: {
+        maxInitialRecords: 4,
+      },
+      hideRefresh: true,
     },
   }
 }

@@ -133,6 +133,9 @@ export default {
 
       searchInput: '',
 
+      // have the params changed since reset?
+      isChanged: false,
+
       dialogs: {
         editRecord: false,
         expandRecord: false,
@@ -428,11 +431,17 @@ export default {
         resetSort: true,
         resetCursor: true,
         syncGridOptions: true,
+        resetChanged: true,
       })
     },
 
-    // this should trigger if the locked filters gets updated
-    lockedFilters() {
+    // this should trigger if the locked filters gets updated, but only if they are different from before
+    lockedFilters(val, prev) {
+      // if value is effectively unchanged, do nothing
+      if (JSON.stringify(prev) === JSON.stringify(val)) {
+        return
+      }
+
       this.cancelPageOptionsReset = true
 
       this.$nextTick(() => {
@@ -548,6 +557,7 @@ export default {
     },
 
     setCurrentSort(sortObject) {
+      this.isChanged = true
       this.currentSort = sortObject
       this.updatePageOptions()
     },
@@ -764,7 +774,11 @@ export default {
       return {
         ...(pagination && {
           first:
-            this.recordInfo.paginationOptions.limitOptions?.maxRecords ??
+            (this.isChanged === false
+              ? this.recordInfo.paginationOptions.limitOptions
+                  ?.maxInitialRecords
+              : null) ??
+            this.recordInfo.paginationOptions.limitOptions?.resultsPerPage ??
             this.resultsPerPage,
           after: this.endCursor ?? undefined,
         }),
@@ -859,6 +873,7 @@ export default {
     },
 
     updatePageOptions() {
+      this.isChanged = true
       this.$emit('pageOptions-updated', {
         search: this.searchInput,
         filters: this.filterInputsArray
@@ -991,6 +1006,7 @@ export default {
       const fields = this.recordInfo.paginationOptions.headerOptions
         .map((headerInfo) => headerInfo.field)
         .concat(this.recordInfo.requiredFields ?? [])
+        .concat(this.recordInfo.paginationOptions.requiredFields ?? [])
 
       const { query, serializeMap } = processQuery(
         this,
@@ -1125,6 +1141,7 @@ export default {
       showLoader = true,
       clearRecords = true,
       syncGridOptions = false,
+      resetChanged = false,
     } = {}) {
       // if reset was already called on this tick, stop execution
       if (this.resetCalledOnTick) return
@@ -1144,6 +1161,10 @@ export default {
 
       if (resetExpanded) {
         this.closeExpandedItems()
+      }
+
+      if (resetChanged) {
+        this.isChanged = true
       }
 
       if (initFilters) {

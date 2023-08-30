@@ -8,7 +8,7 @@ export class {{ capitalizedTypename }}Service extends PaginatedService {
   defaultQuery: ExternalQuery = {
     id: lookupSymbol,
     name: lookupSymbol,
-    avatar: lookupSymbol,
+    avatarUrl: lookupSymbol,
     description: lookupSymbol,
   };
 

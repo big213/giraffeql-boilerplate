@@ -37,7 +37,7 @@ export async function validateToken(bearerToken: string): Promise<ContextUser> {
       const addUserResults = await User.createSqlRecord({
         fields: {
           name: firebaseUserRecord.displayName,
-          avatar: firebaseUserRecord.photoURL,
+          avatarUrl: firebaseUserRecord.photoURL,
           email: decodedToken.email,
           firebaseUid: decodedToken.uid,
           createdBy: 0,

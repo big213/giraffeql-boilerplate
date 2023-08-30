@@ -58,6 +58,20 @@
       <template v-slot:footer-action>
         <v-btn color="blue darken-1" text @click="close()">Close</v-btn>
       </template>
+      <template v-slot:posts>
+        <v-divider class="mx-3"></v-divider>
+        <div class="mx-2">
+          <component
+            v-if="recordInfo.postOptions && selectedItem"
+            class="mt-2 mx-auto elevation-6"
+            style="max-width: 800px"
+            :is="postInterface"
+            :locked-filters="postLockedFilters"
+            :hidden-fields="recordInfo.postOptions.hiddenFields"
+            :record-info="recordInfo.postOptions.recordInfo"
+            :initial-sort-options="recordInfo.postOptions.initialSortOptions"
+          ></component></div
+      ></template>
     </component>
   </v-dialog>
 </template>
@@ -67,8 +81,9 @@ import EditRecordInterface from '~/components/interface/crud/editRecordInterface
 import ImportRecordInterface from '~/components/interface/crud/importRecordInterface.vue'
 import DeleteRecordInterface from '~/components/interface/crud/deleteRecordInterface.vue'
 import ShareRecordInterface from '~/components/interface/crud/shareRecordInterface.vue'
-import ViewRecordTableInterface from '~/components/interface/crud/viewRecordTableInterface.vue'
+import ViewRecordInterface from '~/components/interface/crud/viewRecordInterface.vue'
 import RecordActionMenu from '~/components/menu/recordActionMenu.vue'
+import CrudPostInterface from '~/components/interface/crud/crudPostInterface.vue'
 
 const modesMap = {
   add: {
@@ -99,7 +114,7 @@ const modesMap = {
     icon: 'mdi-eye',
     prefix: 'View',
     persistent: false,
-    defaultInterface: ViewRecordTableInterface,
+    defaultInterface: ViewRecordInterface,
   },
   delete: {
     icon: 'mdi-delete',
@@ -191,6 +206,22 @@ export default {
     },
     icon() {
       return this.modeObject.icon
+    },
+
+    postLockedFilters() {
+      return this.selectedItem
+        ? [
+            {
+              field: this.recordInfo.typename,
+              operator: 'eq',
+              value: this.selectedItem.id,
+            },
+          ]
+        : null
+    },
+
+    postInterface() {
+      return this.recordInfo.postOptions?.component ?? CrudPostInterface
     },
   },
 

@@ -27,18 +27,16 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
     ],
   },
   addOptions: {
-    fields: ['avatar', 'name', 'description'],
+    fields: ['avatarUrl', 'name', 'description'],
   },
   editOptions: {
-    fields: ['avatar', 'name', 'description'],
+    fields: ['avatarUrl', 'name', 'description'],
   },
   viewOptions: {
-    fields: ['avatar', 'name', 'description'],
+    fields: ['avatarUrl', 'name', 'description'],
     heroOptions: {},
   },
-  enterOptions: {
-    routeType: 'a'
-  },
+  enterOptions: {},
   deleteOptions: {},
   shareOptions: {},
   expandTypes: [],

@@ -6,7 +6,7 @@
         v-if="isLoading"
         style="min-height: 250px"
       ></CircularLoader>
-      <v-container v-show="!isLoading" class="px-0">
+      <v-container v-show="!isLoading" class="px-0" fluid>
         <v-row>
           <v-col
             v-for="(inputObject, i) in visibleInputsArray"
@@ -20,6 +20,7 @@
               :parent-item="currentItem"
               :all-items="inputsArray"
               :selected-item="selectedItem"
+              :key="i"
               ref="inputs"
               @handle-submit="handleSubmit()"
               @file-added="handleFileAdded"
@@ -46,12 +47,8 @@
 
 <script>
 import editRecordInterfaceMixin from '~/mixins/editRecordInterface'
-import CircularLoader from '~/components/common/circularLoader.vue'
 
 export default {
-  components: {
-    CircularLoader,
-  },
   mixins: [editRecordInterfaceMixin],
 }
 </script>

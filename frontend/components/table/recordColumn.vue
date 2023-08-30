@@ -16,9 +16,11 @@
         top
         open-mode="openInDialog"
       ></PreviewRecordMenu>
-      <v-chip v-else small><i>None</i></v-chip>
+      <v-chip v-else-if="emptyText" small
+        ><i>{{ emptyText }}</i></v-chip
+      >
     </span>
-    <i v-if="!records.length">None</i>
+    <i v-if="!records.length && emptyText">{{ emptyText }}</i>
   </div>
 </template>
 
@@ -38,6 +40,10 @@ export default {
       return Array.isArray(this.currentValue)
         ? this.currentValue
         : [this.currentValue]
+    },
+
+    emptyText() {
+      return this.options?.emptyText
     },
   },
 }

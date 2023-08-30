@@ -64,9 +64,7 @@ export const ApiKey = <RecordInfo<'apiKey'>>{
   viewOptions: {
     fields: ['name', 'permissions', 'code', 'userRecord'],
   },
-  enterOptions: {
-    routeType: 'a',
-  },
+  enterOptions: {},
   deleteOptions: {},
   shareOptions: undefined,
 

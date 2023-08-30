@@ -10,10 +10,24 @@
       <v-container v-if="filesData.length" fluid grid-list-xs class="px-0">
         <Draggable
           v-model="filesData"
+          class="layout row wrap"
           :disabled="item.readonly"
           @change="handleFilesDataUpdate()"
         >
+          <MediaChip
+            v-if="item.inputOptions && item.inputOptions.mediaMode"
+            v-for="(file, index) in filesData"
+            :key="index"
+            :file="file"
+            draggable
+            close
+            openable
+            :readonly="item.readonly"
+            class="xs3"
+            @handleCloseClick="removeFileByIndex(index)"
+          ></MediaChip>
           <FileChip
+            v-else
             v-for="(file, index) in filesData"
             :key="index"
             :file="file"
@@ -37,6 +51,7 @@
             (limit ? ` (Limit ${limit})` : '')
           "
           multiple
+          :accept="acceptedFiles"
           :hint="item.hint"
           :loading="item.loading"
           persistent-hint
@@ -53,66 +68,6 @@
               @click:close="handleMultipleFileInputClear(item, file)"
             >
               {{ text }} - {{ renderFileUploadProgress(file) }}%
-            </v-chip>
-          </template>
-        </v-file-input>
-      </div>
-    </div>
-    <div
-      v-else-if="item.inputType === 'multiple-media'"
-      class="mb-4 text-left highlighted-bg"
-    >
-      <v-container v-if="filesData.length" fluid grid-list-xs class="px-0">
-        <Draggable
-          v-model="filesData"
-          class="layout row wrap"
-          :disabled="item.readonly"
-          @change="handleFilesDataUpdate()"
-        >
-          <MediaChip
-            v-for="(file, index) in filesData"
-            :key="index"
-            :file="file"
-            downloadable
-            draggable
-            close
-            :readonly="item.readonly"
-            class="xs3"
-            @handleCloseClick="removeFileByIndex(index)"
-          ></MediaChip>
-        </Draggable>
-      </v-container>
-      <div v-cloak @drop.prevent="handleMultipleDropFile" @dragover.prevent>
-        <v-file-input
-          v-model="item.inputValue"
-          :label="
-            item.label +
-            ' (Drag and Drop)' +
-            (item.optional ? ' (optional)' : '')
-          "
-          multiple
-          accept="image/*"
-          :hint="item.hint"
-          :loading="item.loading"
-          persistent-hint
-          :clearable="false"
-          @change="handleMultipleFileInputChange(item)"
-        >
-          <template v-slot:selection="{ file, text }">
-            <v-chip
-              small
-              label
-              color="primary"
-              close
-              close-icon="mdi-close-outline"
-              @click:close="handleMultipleFileInputClear(item, file)"
-            >
-              {{ text }} -
-              {{
-                file.fileUploadObject
-                  ? file.fileUploadObject.progress.toFixed(1)
-                  : ''
-              }}%
             </v-chip>
           </template>
         </v-file-input>
@@ -183,50 +138,6 @@
       </div>
     </div>
     -->
-    <div v-else-if="item.inputType === 'single-image'" class="mb-4 text-center">
-      <v-img
-        v-if="item.value"
-        :src="item.value"
-        contain
-        max-height="200"
-      ></v-img>
-      <v-icon v-else>mdi-file-image</v-icon>
-      <div v-cloak @drop.prevent="handleDropEvent" @dragover.prevent>
-        <v-file-input
-          v-if="!item.readonly"
-          v-model="item.inputValue"
-          :append-icon="item.value ? 'mdi-close' : null"
-          :append-outer-icon="item.closeable ? 'mdi-close' : null"
-          :clearable="false"
-          accept="image/*"
-          :label="item.label + (item.optional ? ' (optional)' : '')"
-          :hint="item.hint"
-          :loading="item.loading"
-          persistent-hint
-          @click:append="handleSingleFileInputClear(item)"
-          @change="handleSingleFileInputChange()"
-          @click:append-outer="handleClose()"
-        >
-          <template v-slot:selection="{ file, text }">
-            <v-chip
-              small
-              label
-              color="primary"
-              close
-              close-icon="mdi-close-outline"
-              @click:close="handleSingleFileInputClear(item)"
-            >
-              {{ text }} -
-              {{
-                file.fileUploadObject
-                  ? file.fileUploadObject.progress.toFixed(1)
-                  : ''
-              }}%
-            </v-chip>
-          </template>
-        </v-file-input>
-      </div>
-    </div>
     <div
       v-else-if="item.inputType === 'single-file-url'"
       class="mb-4 highlighted-bg"
@@ -237,7 +148,7 @@
     >
       <label
         v-if="!item.loading"
-        for="file-upload-2"
+        :for="`file-upload-${$vnode.key}`"
         class="custom-file-upload pt-5 text-center"
         style="width: 100px"
       >
@@ -254,10 +165,10 @@
         >
       </label>
       <input
-        id="file-upload-2"
+        :id="`file-upload-${$vnode.key}`"
         type="file"
         style="display: none"
-        :accept="getAcceptedFiles()"
+        :accept="acceptedFiles"
         @change="handleSingleFileInputChange"
       />
       <v-text-field
@@ -281,46 +192,61 @@
       ></v-text-field>
     </div>
     <div
-      v-else-if="item.inputType === 'avatar'"
-      class="mb-4 highlighted-bg"
-      :class="isReadonly ? 'text-center' : 'd-flex text-left'"
+      v-else-if="item.inputType === 'single-image-url'"
+      class="mb-4 highlighted-bg text-center"
       v-cloak
       @drop.prevent="handleDropEvent"
       @dragover.prevent
     >
-      <v-avatar size="64">
-        <v-img v-if="item.value" :src="item.value"></v-img>
-        <v-icon v-else>{{ fallbackIcon }}</v-icon>
-      </v-avatar>
-      <label for="file-upload" class="custom-file-upload pt-5">
-        <v-icon>mdi-upload</v-icon>
-        Upload
-      </label>
-      <input
-        id="file-upload"
-        type="file"
-        style="display: none"
-        accept="image/*"
-        @change="handleSingleFileInputChange"
-      />
-      <v-text-field
-        v-model="item.value"
-        :label="item.label + (item.optional ? ' (optional)' : '')"
-        :readonly="isReadonly"
-        :rules="item.inputRules"
-        :hint="item.hint"
-        :loading="item.loading"
-        :append-icon="appendIcon"
-        :append-outer-icon="item.closeable ? 'mdi-close' : null"
-        persistent-hint
-        filled
-        dense
-        class="pl-2 py-0"
-        v-on="$listeners"
-        @click:append="handleClear()"
-        @click:append-outer="handleClose()"
-        @input="triggerInput()"
-      ></v-text-field>
+      <div
+        v-if="
+          !item.inputOptions || (!item.inputOptions.avatarOptions && item.value)
+        "
+        class="pt-2"
+      >
+        <v-img :src="item.value" contain max-height="200"></v-img>
+      </div>
+      <div class="d-flex text-left pt-2">
+        <v-avatar
+          v-if="item.inputOptions && item.inputOptions.avatarOptions"
+          size="64"
+        >
+          <v-img v-if="item.value" :src="item.value"></v-img>
+          <v-icon v-else>{{ fallbackIcon }}</v-icon>
+        </v-avatar>
+        <label
+          :for="`file-upload-${$vnode.key}`"
+          class="custom-file-upload pt-5 text-center"
+        >
+          <v-icon>mdi-upload</v-icon>
+          Upload
+        </label>
+        <input
+          :id="`file-upload-${$vnode.key}`"
+          type="file"
+          style="display: none"
+          accept="image/*"
+          @change="handleSingleFileInputChange"
+        />
+        <v-text-field
+          v-model="item.value"
+          :label="item.label + (item.optional ? ' (optional)' : '')"
+          :readonly="isReadonly"
+          :rules="item.inputRules"
+          :hint="item.hint"
+          :loading="item.loading"
+          :append-icon="appendIcon"
+          :append-outer-icon="item.closeable ? 'mdi-close' : null"
+          persistent-hint
+          filled
+          dense
+          class="pl-2 py-0"
+          v-on="$listeners"
+          @click:append="handleClear()"
+          @click:append-outer="handleClose()"
+          @input="triggerInput()"
+        ></v-text-field>
+      </div>
     </div>
     <v-textarea
       v-else-if="item.inputType === 'textarea'"
@@ -795,10 +721,7 @@
         </v-chip>
       </template>
     </v-select>
-    <div
-      v-else-if="item.inputType === 'value-array'"
-      class="rounded-sm mb-4"
-    >
+    <div v-else-if="item.inputType === 'value-array'" class="rounded-sm mb-4">
       <v-container class="highlighted-bg">
         <v-row>
           <v-col cols="12">
@@ -1104,7 +1027,11 @@ export default {
     },
 
     fallbackIcon() {
-      return this.item.inputOptions?.fallbackIcon
+      return this.item.inputOptions?.avatarOptions?.fallbackIcon
+    },
+
+    acceptedFiles() {
+      return this.item.inputOptions?.contentType
     },
 
     limit() {
@@ -1140,10 +1067,6 @@ export default {
           this.item.inputOptions.getPrice(this, this.parentItem)
         )
       }
-    },
-
-    getAcceptedFiles() {
-      return this.item.inputOptions?.contentType
     },
 
     standardizeComboboxName(value) {
@@ -1471,7 +1394,7 @@ export default {
                 id: true,
                 name: true,
                 ...(inputObject.inputOptions?.hasAvatar && {
-                  avatar: true,
+                  avatarUrl: true,
                 }),
               },
             },
@@ -1662,7 +1585,6 @@ export default {
     reset() {
       switch (this.item.inputType) {
         case 'multiple-file':
-        case 'multiple-media':
           this.filesData = []
           this.filesProcessingQueue = new Map()
           this.loadFiles(this.item)

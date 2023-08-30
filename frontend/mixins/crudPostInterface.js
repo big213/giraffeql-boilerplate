@@ -7,6 +7,7 @@ import {
   capitalizeString,
   generateTimeAgoString,
   generateFilterByObjectArray,
+  lookupFieldInfo,
 } from '~/services/base'
 import EditRecordInterface from '~/components/interface/crud/editRecordInterface.vue'
 import PreviewableFilesColumn from '~/components/table/previewableFilesColumn.vue'
@@ -39,6 +40,17 @@ export default {
     },
     */
 
+    // additional fields to hide
+    hiddenFields: {
+      type: Array,
+      default: () => [],
+    },
+
+    // the initial set of sort options
+    initialSortOptions: {
+      type: Object,
+    },
+
     generation: {
       type: Number,
       default: 0,
@@ -69,6 +81,8 @@ export default {
       knownTypesInfo: {},
 
       returnFields: {
+        id: true,
+        __typename: true,
         content: true,
         files: {
           id: true,
@@ -77,7 +91,20 @@ export default {
           contentType: true,
           location: true,
         },
+        // type: true,
+        // data: true,
+        createdAt: true,
+        updatedAt: true,
+        createdBy: {
+          id: true,
+          name: true,
+          avatarUrl: true,
+          __typename: true,
+        },
       },
+
+      // type: CrudSortObject | null
+      currentSort: null,
     }
   },
 
@@ -96,6 +123,24 @@ export default {
         return total
       }, {})
     },
+
+    // transforms SortObject[] to CrudSortObject[]
+    // type: CrudSortObject[]
+    sortOptions() {
+      return this.recordInfo.paginationOptions.sortOptions.map((sortObject) => {
+        const fieldInfo = lookupFieldInfo(this.recordInfo, sortObject.field)
+
+        return {
+          text:
+            sortObject.text ??
+            `${fieldInfo.text ?? sortObject.field} (${
+              sortObject.desc ? 'Desc' : 'Asc'
+            })`,
+          field: sortObject.field,
+          desc: sortObject.desc,
+        }
+      })
+    },
   },
 
   watch: {
@@ -105,7 +150,7 @@ export default {
   },
 
   created() {
-    this.reset()
+    this.reset({ resetSort: true })
 
     // run any onSuccess functions
     const onSuccess = this.recordInfo.paginationOptions.onSuccess
@@ -122,10 +167,42 @@ export default {
       this.reset()
     },
 
+    handleReplyClick(props) {
+      try {
+        if (!this.$store.getters['auth/user']?.id) {
+          throw new Error(`Login required`)
+        }
+
+        props.isReplying = true
+      } catch (err) {
+        handleError(this, err)
+      }
+    },
+
+    userHasEditPermissions(props) {
+      // user has edit permissions if item was created by the current user, if any
+      const userId = this.$store.getters['auth/user']?.id
+
+      return userId && userId === props.item.createdBy.id
+    },
+
     handlePostUpdate(props, updatedPost) {
       props.item.content = updatedPost.content
       props.item.files = updatedPost.files
       props.isEditing = false
+    },
+
+    handlePostReply(props, addedPost) {
+      this.records.splice(this.records.indexOf(props) + 1, 0, {
+        item: addedPost,
+        isEditing: false,
+        isReplying: false,
+      })
+
+      // keep the total number of records in sync
+      this.totalRecords++
+
+      props.isReplying = false
     },
 
     // retrieves a known type by id
@@ -182,28 +259,7 @@ export default {
             total: true,
           },
           edges: {
-            node: {
-              id: true,
-              __typename: true,
-              content: true,
-              files: {
-                id: true,
-                name: true,
-                size: true,
-                contentType: true,
-                location: true,
-              },
-              type: true,
-              data: true,
-              createdAt: true,
-              updatedAt: true,
-              createdBy: {
-                id: true,
-                name: true,
-                avatar: true,
-                __typename: true,
-              },
-            },
+            node: this.returnFields,
           },
           __args: {
             first: 10,
@@ -214,12 +270,9 @@ export default {
               this.lockedFilters,
               this.recordInfo
             ),
-            sortBy: [
-              {
-                field: 'createdAt',
-                desc: true,
-              },
-            ],
+            sortBy: this.currentSort
+              ? [{ field: this.currentSort.field, desc: this.currentSort.desc }]
+              : [],
           },
         },
       })
@@ -261,7 +314,7 @@ export default {
               'id',
               '__typename',
               'name',
-              'avatar',
+              'avatarUrl',
             ]
 
             if (typesToFetch[type].size) {
@@ -301,6 +354,7 @@ export default {
           ...data.edges.map((ele) => ({
             item: ele.node,
             isEditing: false,
+            isReplying: false,
           }))
         )
 
@@ -312,10 +366,27 @@ export default {
       this.loading.loadMore = false
     },
 
-    reset() {
+    setCurrentSort(sortObject) {
+      this.currentSort = sortObject
+      this.reset()
+    },
+
+    reset({ resetSort = false } = {}) {
       this.endCursor = null
       this.records = []
       this.totalRecords = 0
+
+      // set the currentSort to the parentRecordInfo.initialSortOptions if any
+      if (resetSort && this.initialSortOptions) {
+        this.currentSort =
+          this.sortOptions.find(
+            (ele) =>
+              ele === this.initialSortOptions ||
+              (ele.field === this.initialSortOptions.field &&
+                ele.desc === this.initialSortOptions.desc)
+          ) ?? null
+      }
+
       this.loadMorePosts()
     },
   },

@@ -47,14 +47,19 @@ export default {
 
   computed: {
     shareUrl() {
-      return this.selectedItem
-        ? window.location.origin +
+      return this.recordInfo.shareOptions.getUrl
+        ? this.recordInfo.shareOptions.getUrl(
+            this,
+            this.recordInfo,
+            this.selectedItem.id
+          )
+        : window.location.origin +
             generateViewRecordRoute(this, {
               typename: this.recordInfo.typename,
               routeType: 'i',
               id: this.selectedItem.id,
+              showComments: true,
             })
-        : ''
     },
     // default to name || id
     itemIdentifier() {

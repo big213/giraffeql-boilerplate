@@ -16,10 +16,12 @@ import {
   timeout,
 } from '~/services/base'
 import GenericInput from '~/components/input/genericInput.vue'
+import CircularLoader from '~/components/common/circularLoader.vue'
 
 export default {
   components: {
     GenericInput,
+    CircularLoader,
   },
   props: {
     // only required for edit mode
@@ -61,6 +63,12 @@ export default {
     hideLockedFields: {
       type: Boolean,
       default: false,
+    },
+
+    // additional fields to hide
+    hiddenFields: {
+      type: Array,
+      default: () => [],
     },
 
     // the fields to return with handleSubmit, if any
@@ -234,6 +242,7 @@ export default {
             [this.recordInfo.addOptions.operationName ??
             'create' + this.capitalizedType]: {
               id: true,
+              __typename: true,
               ...this.returnFields,
               __args: collapseObject(inputs),
             },
@@ -248,6 +257,7 @@ export default {
             [this.recordInfo.editOptions.operationName ??
             'update' + this.capitalizedType]: {
               id: true,
+              __typename: true,
               ...this.returnFields,
               __args: {
                 item: {
@@ -500,7 +510,7 @@ export default {
                   : fieldElement.handleFileAdded,
               options: [],
               readonly: false,
-              hidden: false,
+              hidden: this.hiddenFields.includes(fieldKey),
               loading: false,
               focused: false,
               cols:
