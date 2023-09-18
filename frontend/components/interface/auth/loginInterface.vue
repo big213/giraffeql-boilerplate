@@ -33,8 +33,9 @@
 
 <script>
 import { handleError } from '~/services/base'
-import firebase from '~/services/fireinit'
-import 'firebase/auth'
+import { auth } from '~/services/fireinit'
+import { signInWithEmailAndPassword } from 'firebase/auth'
+import { logAnalyticsEvent } from '~/services/analytics'
 
 export default {
   components: {},
@@ -56,9 +57,13 @@ export default {
     async handleSubmit() {
       this.loading.submitting = true
       try {
-        await firebase
-          .auth()
-          .signInWithEmailAndPassword(this.inputs.email, this.inputs.password)
+        await signInWithEmailAndPassword(
+          auth,
+          this.inputs.email,
+          this.inputs.password
+        )
+
+        logAnalyticsEvent('login')
 
         this.$router.push('/')
       } catch (err) {

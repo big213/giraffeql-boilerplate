@@ -2,10 +2,10 @@ import { nanoid } from 'nanoid'
 import prettyBytes from 'pretty-bytes'
 import axios from 'axios'
 import { handleError } from '~/services/base'
-import firebase from '~/services/fireinit'
-import 'firebase/storage'
 import { executeGiraffeql } from '~/services/giraffeql'
 import { isDev, tempStoragePath } from './config'
+import { UploadTask, ref, uploadBytesResumable } from 'firebase/storage'
+import { storage } from './fireinit'
 
 type FileUploadObject = {
   name: string
@@ -15,8 +15,18 @@ type FileUploadObject = {
   bytesSent: number
   servingUrl: string | null
   fileRecord: any
-  uploadTask: firebase.storage.UploadTask | null
+  uploadTask: UploadTask | null
   file: File
+}
+
+type FileDownloadObject = {
+  url: string
+  name: string
+  progress: number
+  bytesSent: number
+  bytesTotal: number | undefined
+  isDownloading: boolean
+  promise: Promise<true>
 }
 
 export function initializeFileUploadObject(file: File): FileUploadObject {
@@ -46,18 +56,20 @@ export function uploadFile(
 
   const path = `${tempStoragePath}/${subPath}`
 
-  const storageRef = firebase.storage().ref()
-
   const metadata = {}
 
   // create the upload task
-  const uploadTask = storageRef.child(path).put(fileUploadObject.file, metadata)
+  const uploadTask = uploadBytesResumable(
+    ref(storage, path),
+    fileUploadObject.file,
+    metadata
+  )
 
   fileUploadObject.uploadTask = uploadTask
 
   // handle upload events
   uploadTask.on(
-    firebase.storage.TaskEvent.STATE_CHANGED,
+    'state_changed',
     (snapshot) => {
       fileUploadObject.progress =
         (snapshot.bytesTransferred / snapshot.totalBytes) * 100
@@ -90,16 +102,6 @@ export function uploadFile(
           fileUploadObject.url = fileRecord.downloadUrl
         }
 
-        /* 
-        if (fetchFirebaseUrl) {
-          const downloadURL = await storageRef
-            .child('source/' + subPath)
-            .getDownloadURL()
-
-          fileUploadObject.url = downloadURL
-        }
-        */
-
         fileUploadObject.fileRecord = fileRecord
 
         onFinishedUploading && onFinishedUploading(fileUploadObject)
@@ -127,6 +129,7 @@ export function forceFileDownload(response, title) {
   link.setAttribute('download', title)
   document.body.appendChild(link)
   link.click()
+  document.body.removeChild(link)
 }
 
 export async function downloadFile(that, fileUrl, title) {
@@ -146,4 +149,77 @@ export async function downloadFile(that, fileUrl, title) {
 export const contentTypeIconMap = {
   'image/png': 'mdi-file-image',
   'image/jpg': 'mdi-file-image',
+}
+
+export function downloadWithProgress(that, fileUrl, name) {
+  const downloadObject: FileDownloadObject = {
+    url: fileUrl,
+    name,
+    progress: 0,
+    bytesSent: 0,
+    bytesTotal: undefined,
+    isDownloading: true, // automatically set to downloading
+    promise: new Promise((resolve, reject) => {
+      const startTime = new Date().getTime()
+
+      const request = new XMLHttpRequest()
+
+      request.responseType = 'blob'
+      request.open('get', fileUrl, true)
+      request.send()
+
+      request.onreadystatechange = function () {
+        // this means the file was not found. throw err (reject the promise)
+        if (this.status !== 200) {
+          // set the downloading state
+          downloadObject.isDownloading = false
+          reject(new Error('File not found'))
+        }
+
+        if (this.readyState === 4 && this.status === 200) {
+          const imageUrl = window.URL.createObjectURL(this.response)
+
+          const anchor = document.createElement('a')
+          anchor.href = imageUrl
+          anchor.download = name
+          document.body.appendChild(anchor)
+          anchor.click()
+
+          // done downloading
+          downloadObject.isDownloading = false
+
+          // clean up
+          document.body.removeChild(anchor)
+          window.URL.revokeObjectURL(imageUrl)
+
+          // resolve the promise
+          resolve(true)
+        }
+      }
+
+      request.onprogress = function (e) {
+        if (downloadObject.bytesTotal === undefined)
+          downloadObject.bytesTotal = e.total
+
+        downloadObject.bytesSent = e.loaded
+        downloadObject.progress =
+          (downloadObject.bytesSent / downloadObject.bytesTotal) * 100
+
+        // extra stuff
+        const percentCompleted = Math.floor((e.loaded / e.total) * 100)
+        const duration = (new Date().getTime() - startTime) / 1000
+        const bps = e.loaded / duration
+        const kbps = Math.floor(bps / 1024)
+        const time = (e.total - e.loaded) / bps
+        const seconds = Math.floor(time % 60)
+        const minutes = Math.floor(time / 60)
+
+        console.log(
+          `${percentCompleted}% - ${kbps} Kbps - ${minutes} min ${seconds} sec remaining`
+        )
+      }
+    }),
+  }
+
+  return downloadObject
 }

@@ -11,9 +11,17 @@
       {{ file.name }}
     </span>
     <span>&nbsp;({{ formatBytes(file.size) }})</span>
-    <v-icon v-if="downloadable" small class="ml-2" @click="downloadFile()"
-      >mdi-download</v-icon
-    >
+    <span v-if="downloadable">
+      <v-progress-circular
+        v-if="isDownloading"
+        class="ml-2"
+        size="12"
+        indeterminate
+      ></v-progress-circular>
+      <v-icon v-else small class="ml-2" @click="downloadFile()"
+        >mdi-download</v-icon
+      >
+    </span>
     <v-icon v-if="openable" small class="ml-2" @click="openFile()"
       >mdi-open-in-new</v-icon
     >
@@ -24,7 +32,7 @@
 import { handleError, openLink } from '~/services/base'
 import { executeGiraffeql } from '~/services/giraffeql'
 import {
-  downloadFile,
+  downloadWithProgress,
   formatBytes,
   contentTypeIconMap,
   generateFileServingUrl,
@@ -50,12 +58,18 @@ export default {
       loading: {
         downloadFile: false,
       },
+
+      downloadObject: null,
     }
   },
 
   computed: {
     icon() {
       return contentTypeIconMap[this.file.contentType] ?? 'mdi-file'
+    },
+
+    isDownloading() {
+      return this.loading.downloadFile || this.downloadObject?.isDownloading
     },
   },
 
@@ -79,7 +93,11 @@ export default {
           },
         })
 
-        downloadFile(this, data.signedUrl, this.file.name)
+        this.downloadObject = downloadWithProgress(
+          this,
+          data.signedUrl,
+          this.file.name
+        )
       } catch (err) {
         handleError(this, err)
       }

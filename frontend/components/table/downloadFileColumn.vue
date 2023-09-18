@@ -3,18 +3,22 @@
     v-if="currentFile"
     color="primary"
     small
-    :loading="loading.downloadFile"
+    :loading="isDownloading"
     @click.stop="downloadFile()"
   >
     <v-icon left>mdi-download</v-icon>
-    Download</v-btn
-  >
+    Download
+    <template v-slot:loader>
+      <v-progress-circular indeterminate size="16"></v-progress-circular>
+      <span class="ml-2">{{ downloadProgress.toFixed(0) }}%</span>
+    </template>
+  </v-btn>
 </template>
 
 <script>
 import columnMixin from '~/mixins/column'
 import { handleError } from '~/services/base'
-import { downloadFile } from '~/services/file'
+import { downloadWithProgress } from '~/services/file'
 import { executeGiraffeql } from '~/services/giraffeql'
 
 export default {
@@ -25,6 +29,8 @@ export default {
       loading: {
         downloadFile: false,
       },
+
+      downloadObject: null,
     }
   },
 
@@ -33,6 +39,14 @@ export default {
       return Array.isArray(this.currentValue)
         ? this.currentValue[0]
         : this.currentValue
+    },
+
+    isDownloading() {
+      return this.loading.downloadFile || this.downloadObject?.isDownloading
+    },
+
+    downloadProgress() {
+      return this.downloadObject?.progress ?? 0
     },
   },
 
@@ -63,7 +77,14 @@ export default {
           throw new Error(`File not found`)
         }
 
-        downloadFile(this, fileRecord.signedUrl, fileRecord.name)
+        this.downloadObject = downloadWithProgress(
+          this,
+          fileRecord.signedUrl,
+          fileRecord.name
+        )
+
+        // wait for the download to finish
+        await this.downloadObject.promise
       } catch (err) {
         handleError(this, err)
       }

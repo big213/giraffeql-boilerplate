@@ -47,8 +47,9 @@
 <script>
 import { handleError } from '~/services/base'
 import { handleUserRefreshed } from '~/services/auth'
-import firebase from '~/services/fireinit'
-import 'firebase/auth'
+import { auth } from '~/services/fireinit'
+import { createUserWithEmailAndPassword } from 'firebase/auth'
+import { logAnalyticsEvent } from '~/services/analytics'
 
 export default {
   data() {
@@ -74,12 +75,11 @@ export default {
           throw new Error('Password fields must match')
         }
 
-        const userCredential = await firebase
-          .auth()
-          .createUserWithEmailAndPassword(
-            this.inputs.email,
-            this.inputs.password
-          )
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          this.inputs.email,
+          this.inputs.password
+        )
 
         // update the displayName
         await userCredential.user.updateProfile({
@@ -88,6 +88,8 @@ export default {
 
         // refresh the store entry
         handleUserRefreshed(this)
+
+        logAnalyticsEvent('sign_up')
 
         this.$router.push('/')
       } catch (err) {

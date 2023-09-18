@@ -18,7 +18,7 @@ export default new GiraffeqlObjectType(<ObjectTypeDefinition>processTypeDef({
     ...generateIdField({{ capitalizedTypename }}),
     ...generateTypenameField({{ capitalizedTypename }}),
     name: generateStringField({ allowNull: false }),
-    avatarUrl: generateStringField({ allowNull: true, type: Scalars.url }),
+    avatarUrl: generateStringField({ allowNull: true, type: Scalars.imageUrl }),
     description: generateTextField({
       allowNull: true,
     }),

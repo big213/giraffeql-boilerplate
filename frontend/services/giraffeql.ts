@@ -1,6 +1,5 @@
 import axios from 'axios'
-import firebase from '~/services/fireinit'
-import 'firebase/auth'
+import { auth } from '~/services/fireinit'
 import { Root, GetQuery, GetResponse } from '../../schema'
 
 const prodResource = axios.create({
@@ -14,7 +13,7 @@ export async function executeGiraffeql<Key extends keyof Root>(
   attempts = 0
 ): Promise<GetResponse<Key>> {
   // fetches the idToken
-  const currentUser = firebase.auth().currentUser
+  const currentUser = auth.currentUser
   const idToken =
     currentUser && !omitIdToken ? await currentUser.getIdToken() : null
 

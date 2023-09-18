@@ -115,8 +115,7 @@
 
 <script>
 import { mapGetters } from 'vuex'
-import firebase from '~/services/fireinit'
-import 'firebase/auth'
+import { auth } from '~/services/fireinit'
 import { handleError } from '~/services/base'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 import SelectOptionDialog from '~/components/dialog/selectOptionDialog.vue'
@@ -147,9 +146,9 @@ export default {
   },
 
   methods: {
-    logout() {
+    async logout() {
       try {
-        firebase.auth().signOut()
+        await auth.signOut()
 
         this.$router.push('/')
       } catch (err) {

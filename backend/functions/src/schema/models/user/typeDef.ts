@@ -51,7 +51,10 @@ export default new GiraffeqlObjectType(
           updateable: true,
         },
       }),
-      avatarUrl: generateStringField({ allowNull: true, type: Scalars.url }),
+      avatarUrl: generateStringField({
+        allowNull: true,
+        type: Scalars.imageUrl,
+      }),
       description: generateTextField({
         allowNull: true,
       }),

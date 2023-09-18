@@ -12,6 +12,7 @@
             :is="heroComponent"
             :item="currentItem"
             :record-info="recordInfo"
+            mode="view"
           ></component>
         </div>
         <v-container class="text-left py-0">

@@ -76,8 +76,8 @@
 import { handleError } from '~/services/base'
 import { executeGiraffeql } from '~/services/giraffeql'
 import { handleUserRefreshed } from '~/services/auth'
-import firebase from '~/services/fireinit'
-import 'firebase/auth'
+import { auth } from '~/services/fireinit'
+import { EmailAuthProvider } from 'firebase/auth'
 
 export default {
   components: {},
@@ -102,12 +102,12 @@ export default {
   computed: {
     isChanged() {
       return (
-        this.inputs.newEmail !== firebase.auth().currentUser.email ||
+        this.inputs.newEmail !== auth.currentUser.email ||
         this.inputs.newPassword
       )
     },
     currentUser() {
-      return firebase.auth().currentUser
+      return auth.currentUser
     },
     userHasPassword() {
       return this.currentUser.providerData.some(
@@ -124,7 +124,7 @@ export default {
     async sendVerificationEmail() {
       this.loading.sendingVerification = true
       try {
-        const currentUser = firebase.auth().currentUser
+        const currentUser = auth.currentUser
 
         await currentUser.sendEmailVerification({
           url: window.location.href,
@@ -147,7 +147,7 @@ export default {
           throw new Error('Must provide current password')
         }
         // re-authenticate user
-        const credential = firebase.auth.EmailAuthProvider.credential(
+        const credential = EmailAuthProvider.credential(
           this.currentUser.email,
           this.inputs.password
         )
@@ -195,7 +195,7 @@ export default {
 
     reset() {
       this.inputs = { ...this.originalInputs }
-      this.inputs.newEmail = firebase.auth().currentUser.email
+      this.inputs.newEmail = auth.currentUser.email
     },
   },
 }

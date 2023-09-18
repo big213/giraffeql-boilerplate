@@ -9,6 +9,7 @@ import {
 } from '~/services/base'
 import CircularLoader from '~/components/common/circularLoader.vue'
 import Hero from '~/components/interface/crud/hero/hero.vue'
+import { logAnalyticsEvent } from '~/services/analytics'
 
 export default {
   components: {
@@ -101,7 +102,7 @@ export default {
     },
 
     heroComponent() {
-      return this.recordInfo.viewOptions.heroOptions.component ?? Hero
+      return this.recordInfo.viewOptions.heroOptions?.component ?? Hero
     },
   },
 
@@ -254,6 +255,8 @@ export default {
       })
 
       this.loadRecord(showLoader)
+
+      logAnalyticsEvent('record_viewed')
     },
   },
 }

@@ -28,33 +28,35 @@ export function generateNavDrawerItems(that) {
         }),
       ],
     },
-    {
-      title: 'My Account',
-      items: [
-        generateNavRouteObject(that, {
-          recordInfo: myModels.MyApiKey,
-          pageOptions: {
-            sort: {
-              field: 'createdAt',
-              desc: true,
+    that.$store.getters['auth/user']
+      ? {
+          title: 'My Account',
+          items: [
+            generateNavRouteObject(that, {
+              recordInfo: myModels.MyApiKey,
+              pageOptions: {
+                sort: {
+                  field: 'createdAt',
+                  desc: true,
+                },
+              },
+            }),
+            generateNavRouteObject(that, {
+              recordInfo: myModels.MyFile,
+              pageOptions: {
+                sort: {
+                  field: 'createdAt',
+                  desc: true,
+                },
+              },
+            }),
+            {
+              icon: 'mdi-account',
+              title: 'My Profile',
+              to: '/my-profile',
             },
-          },
-        }),
-        generateNavRouteObject(that, {
-          recordInfo: myModels.MyFile,
-          pageOptions: {
-            sort: {
-              field: 'createdAt',
-              desc: true,
-            },
-          },
-        }),
-        {
-          icon: 'mdi-account',
-          title: 'My Profile',
-          to: '/my-profile',
-        },
-      ],
-    },
-  ]
+          ],
+        }
+      : null,
+  ].filter((e) => e)
 }

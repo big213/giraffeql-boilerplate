@@ -175,7 +175,7 @@ export type RecordInfo<T extends keyof MainTypes> = {
     overrideViewMode?: 'grid' | 'list'
 
     // should the grid/list toggle button be hidden?
-    hideViewModeToggle?: boolean
+    hideGridModeToggle?: boolean
 
     // should the sortBy feature be hidden?
     hideSortOptions?: boolean
@@ -193,6 +193,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // hide the view more button
     hideViewMore?: boolean
+
+    // hide the total number of results (showing X of Y)
+    hideCount?: boolean
 
     // show button to "view all" of this record
     showViewAll?: boolean

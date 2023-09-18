@@ -1,7 +1,6 @@
 import { executeGiraffeql } from '~/services/giraffeql'
-import firebase from '~/services/fireinit'
-import 'firebase/auth'
 import { handleError } from './base'
+import { auth } from './fireinit'
 
 export async function handleLogin(that, store, authPayload) {
   // set loading state
@@ -31,7 +30,7 @@ export async function handleLogin(that, store, authPayload) {
     localStorage.removeItem('redirectPath')
   } catch (err) {
     handleError(that, err)
-    firebase.auth().signOut()
+    await auth.signOut()
   }
 
   // revert loading state
@@ -40,10 +39,10 @@ export async function handleLogin(that, store, authPayload) {
 
 // refreshes the store's snapshot of the firebaseUser
 export async function handleUserRefreshed(that) {
-  await firebase.auth().currentUser?.reload()
+  await auth.currentUser?.reload()
 
   // put the response in the vuex store
-  that.$store.commit('auth/setFirebaseUser', firebase.auth().currentUser)
+  that.$store.commit('auth/setFirebaseUser', auth.currentUser)
 }
 
 export function handleLogout(that, store) {

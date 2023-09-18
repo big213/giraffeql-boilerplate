@@ -4,6 +4,7 @@ import RecordActionMenu from '~/components/menu/recordActionMenu.vue'
 import GenericInput from '~/components/input/genericInput.vue'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 import CircularLoader from '~/components/common/circularLoader.vue'
+import Hero from '~/components/interface/crud/hero/hero.vue'
 import {
   getNestedProperty,
   generateTimeAgoString,
@@ -323,6 +324,11 @@ export default {
             'CrudRecordInterface'
         : null
     },
+
+    heroComponent() {
+      return this.recordInfo.paginationOptions.heroOptions?.component ?? Hero
+    },
+
     capitalizedType() {
       return capitalizeString(this.recordInfo.typename)
     },

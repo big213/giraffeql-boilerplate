@@ -8,21 +8,34 @@ export default {
     recordInfo: {
       type: Object,
     },
+
+    // must be view or pagination
+    mode: {
+      type: String,
+      validator: (value) => {
+        return ['view', 'pagination'].includes(value)
+      },
+      default: () => 'view',
+    },
   },
 
   computed: {
     previewImageUrl() {
-      return (
-        this.recordInfo.paginationOptions.heroOptions.getPreviewImage?.(item) ??
-        this.item.avatarUrl
-      )
+      const getPreviewImage =
+        this.recordInfo[
+          this.mode === 'view' ? 'viewOptions' : 'paginationOptions'
+        ].heroOptions.getPreviewImage
+
+      return getPreviewImage ? getPreviewImage(this.item) : this.item.avatarUrl
     },
 
     previewName() {
-      return (
-        this.recordInfo.paginationOptions.heroOptions.getPreviewName?.(item) ??
-        this.item.name
-      )
+      const getPreviewName =
+        this.recordInfo[
+          this.mode === 'view' ? 'viewOptions' : 'paginationOptions'
+        ].heroOptions.getPreviewName
+
+      return getPreviewName ? getPreviewName(this.item) : this.item.name
     },
   },
 }

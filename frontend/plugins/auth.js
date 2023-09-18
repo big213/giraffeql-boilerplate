@@ -1,13 +1,12 @@
 import { handleLogin, handleLogout } from '~/services/auth'
-import firebase from '~/services/fireinit'
-import 'firebase/auth'
+import { auth } from '~/services/fireinit'
 
 export default (context) => {
   const { app, store } = context
 
   return new Promise((resolve) => {
     // listen for auth state changes
-    firebase.auth().onAuthStateChanged(async (firebaseAuthPayload) => {
+    auth.onAuthStateChanged(async (firebaseAuthPayload) => {
       if (firebaseAuthPayload === null) {
         handleLogout(app, store)
       } else {

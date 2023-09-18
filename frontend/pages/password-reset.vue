@@ -32,8 +32,8 @@
 
 <script>
 import { handleError } from '~/services/base'
-import firebase from '~/services/fireinit'
-import 'firebase/auth'
+import { auth } from '~/services/fireinit'
+import { sendPasswordResetEmail } from 'firebase/auth'
 
 export default {
   components: {},
@@ -51,14 +51,14 @@ export default {
   },
 
   created() {
-    this.inputs.email = firebase.auth().currentUser?.email ?? ''
+    this.inputs.email = auth.currentUser?.email ?? ''
   },
 
   methods: {
     async handleSubmit() {
       this.loading.submitting = true
       try {
-        await firebase.auth().sendPasswordResetEmail(this.inputs.email, {
+        await sendPasswordResetEmail(auth, this.inputs.email, {
           // redirect back to login page
           url: window.location.origin + '/login',
         })

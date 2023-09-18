@@ -10,7 +10,7 @@ export const getCurrentUser = function (that) {
           {
             id: user.id,
             name: user.name,
-            avatar: user.avatar,
+            avatarUrl: user.avatarUrl,
           },
         ]
       : []
@@ -20,7 +20,7 @@ export const getCurrentUser = function (that) {
 export const getUsers = generateMemoizedGetter('getUserPaginator', [
   'id',
   'name',
-  'avatar',
+  'avatarUrl',
   '__typename',
 ])
 

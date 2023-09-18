@@ -1,8 +1,12 @@
-import firebase from 'firebase/app'
+import { initializeApp } from 'firebase/app'
+import { getAnalytics } from 'firebase/analytics'
 import { firebaseConfig } from '~/services/config'
+import { getStorage } from 'firebase/storage'
+import { getAuth } from 'firebase/auth'
 
-!firebase.apps?.length && firebase.initializeApp(firebaseConfig)
+export const app = initializeApp(firebaseConfig)
+export const analytics = getAnalytics(app)
+export const storage = getStorage(app)
+export const auth = getAuth(app)
 
-// export const DB = firebase.database()
-
-export default firebase
+auth.onAuthStateChanged

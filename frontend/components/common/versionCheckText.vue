@@ -40,8 +40,7 @@
 <script>
 import { executeGiraffeql } from '~/services/giraffeql'
 import { copyToClipboard, getBuildVersion } from '~/services/base'
-import firebase from '~/services/fireinit'
-import 'firebase/auth'
+import { auth } from '~/services/fireinit'
 
 export default {
   data() {
@@ -94,8 +93,8 @@ export default {
       location.reload()
     },
     async copyIdTokenToClipboard() {
-      if (firebase.auth().currentUser) {
-        copyToClipboard(this, await firebase.auth().currentUser.getIdToken())
+      if (auth.currentUser) {
+        copyToClipboard(this, await auth.currentUser.getIdToken())
       }
     },
   },

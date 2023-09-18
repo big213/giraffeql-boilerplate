@@ -188,7 +188,7 @@
           </v-badge>
         </v-btn>
         <v-btn
-          v-if="!recordInfo.paginationOptions.hideViewModeToggle"
+          v-if="!recordInfo.paginationOptions.hideGridModeToggle"
           icon
           title="Toggle Grid/List Mode"
           @click="toggleGridMode()"
@@ -273,7 +273,7 @@
         class="pa-0"
       >
         <v-card
-          v-if="!recordInfo.paginationOptions.hideViewMore"
+          v-if="!recordInfo.paginationOptions.hideCount"
           class="text-center"
         >
           <span v-if="isDataLoading">...</span>
@@ -326,51 +326,11 @@
                   >
                     <div v-if="recordInfo.paginationOptions.heroOptions">
                       <component
-                        v-if="
-                          recordInfo.paginationOptions.heroOptions.component
-                        "
-                        :is="recordInfo.paginationOptions.heroOptions.component"
+                        :is="heroComponent"
                         :item="item"
                         :record-info="recordInfo"
+                        mode="pagination"
                       ></component>
-                      <v-img
-                        v-else
-                        :src="
-                          recordInfo.paginationOptions.heroOptions
-                            .getPreviewImage
-                            ? recordInfo.paginationOptions.heroOptions.getPreviewImage(
-                                item
-                              )
-                            : item.avatarUrl
-                        "
-                        class="white--text align-end"
-                        gradient="to bottom, rgba(0,0,0,.1), rgba(0,0,0,.5)"
-                        height="200px"
-                      >
-                        <template v-slot:placeholder>
-                          <v-row
-                            class="fill-height ma-0"
-                            align="center"
-                            justify="center"
-                          >
-                            <v-icon size="200" color="grey darken-3">{{
-                              recordInfo.icon
-                            }}</v-icon>
-                          </v-row>
-                        </template>
-                        <v-card-title class="subheading font-weight-bold"
-                          ><span class="break-word"
-                            >{{
-                              recordInfo.paginationOptions.heroOptions
-                                .getPreviewName
-                                ? recordInfo.paginationOptions.heroOptions.getPreviewName(
-                                    item
-                                  )
-                                : item.name
-                            }}
-                          </span>
-                        </v-card-title>
-                      </v-img>
                     </div>
                     <v-list dense>
                       <v-list-item
@@ -433,10 +393,7 @@
                     </div>
                   </v-card>
                 </v-col>
-                <v-col
-                  v-if="!recordInfo.paginationOptions.hideViewMore"
-                  cols="12"
-                >
+                <v-col v-if="!recordInfo.paginationOptions.hideCount" cols="12">
                   <div class="text-center">
                     <v-divider></v-divider>
                     <v-btn
@@ -586,7 +543,7 @@
           </template>
           <template v-slot:footer>
             <div
-              v-if="!recordInfo.paginationOptions.hideViewMore"
+              v-if="!recordInfo.paginationOptions.hideCount"
               class="text-center"
             >
               <v-divider></v-divider>

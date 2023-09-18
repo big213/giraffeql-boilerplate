@@ -1,5 +1,5 @@
 <template>
-  <v-avatar size="64">
+  <v-avatar size="64" class="my-2">
     <v-img
       v-if="currentValue"
       :src="currentValue"

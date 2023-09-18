@@ -22,7 +22,11 @@
               :title="mediaTitle"
             >
               <v-container class="text-center fill-height justify-center pa-0">
-                <v-btn v-if="downloadable" icon @click.stop="downloadFile()"
+                <v-btn
+                  v-if="downloadable"
+                  icon
+                  :loading="isDownloading"
+                  @click.stop="downloadFile()"
                   ><v-icon color="black">mdi-download</v-icon></v-btn
                 >
                 <v-btn v-if="openable" icon @click.stop="openFile()"
@@ -42,7 +46,7 @@
 import { handleError, openLink } from '~/services/base'
 import { executeGiraffeql } from '~/services/giraffeql'
 import {
-  downloadFile,
+  downloadWithProgress,
   formatBytes,
   generateFileServingUrl,
 } from '~/services/file'
@@ -76,12 +80,18 @@ export default {
       loading: {
         downloadFile: false,
       },
+
+      downloadObject: null,
     }
   },
 
   computed: {
     mediaTitle() {
       return `${this.file.name} (${formatBytes(this.file.size)})`
+    },
+
+    isDownloading() {
+      return this.loading.downloadFile || this.downloadObject?.isDownloading
     },
   },
 
@@ -91,6 +101,11 @@ export default {
     async downloadFile() {
       this.loading.downloadFile = true
       try {
+        this.$notifier.showSnackbar({
+          message: `Download started`,
+          variant: 'success',
+        })
+
         const data = await executeGiraffeql(this, {
           getFile: {
             signedUrl: true,
@@ -100,12 +115,11 @@ export default {
           },
         })
 
-        downloadFile(this, data.signedUrl, this.file.name)
-
-        this.$notifier.showSnackbar({
-          message: `Download started`,
-          variant: 'success',
-        })
+        this.downloadObject = downloadWithProgress(
+          this,
+          data.signedUrl,
+          this.file.name
+        )
       } catch (err) {
         handleError(this, err)
       }

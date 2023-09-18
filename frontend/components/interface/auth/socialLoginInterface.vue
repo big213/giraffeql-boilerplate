@@ -10,14 +10,14 @@
 </template>
 
 <script>
-import firebase from '~/services/fireinit'
-import 'firebase/auth'
+import { auth } from '~/services/fireinit'
+import { signInWithRedirect, GoogleAuthProvider } from 'firebase/auth'
 
 export default {
   methods: {
     signInWithGoogle() {
-      const provider = new firebase.auth.GoogleAuthProvider()
-      firebase.auth().signInWithRedirect(provider)
+      const provider = new GoogleAuthProvider()
+      signInWithRedirect(auth, provider)
     },
   },
 }
