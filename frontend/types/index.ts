@@ -86,6 +86,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
   // options related to viewing a single record (via viewRecordPage), if any
   pageOptions?: {
+    // required fields for the page, if any
+    fields?: string[]
+
     // custom function that will return the lookup params, if any
     getLookupParams?: (that) => any
 
@@ -95,6 +98,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
     // the expand types to automatically render below (as previews)
     // string corresponds to the key
     previewExpandTypes?: string[]
+
+    // custom page component
+    component?: any
   }
 
   // options related to viewing multiple, if possible
@@ -136,9 +142,15 @@ export type RecordInfo<T extends keyof MainTypes> = {
       // function that will get the preview name from the item
       getPreviewName?: (item: any) => any
 
+      // should the v-img component be contained?
+      containMode?: boolean
+
       // custom component that should be rendered, which will override the above 2 options
       component?: any
     }
+
+    // should the entire toolbar be hidden? this will override some of the toolbar-related options below
+    hideToolbar?: boolean
 
     // should the actions be hidden?
     hideActions?: boolean
@@ -197,6 +209,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
     // hide the total number of results (showing X of Y)
     hideCount?: boolean
 
+    // hide the title
+    hideTitle?: boolean
+
     // show button to "view all" of this record
     showViewAll?: boolean
 
@@ -212,6 +227,8 @@ export type RecordInfo<T extends keyof MainTypes> = {
     hideActions?: boolean
     // should the refresh button be hidden?
     hideRefresh?: boolean
+    // should the title and icon be hidden?
+    hideTitle?: boolean
   }
 
   addOptions?: {
@@ -311,6 +328,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
       // function that will get the preview name from the item
       getPreviewName?: (item: any) => any
 
+      // should the v-img component be contained?
+      containMode?: boolean
+
       // custom component that should be rendered, which will override the above 2 options
       component?: any
     }
@@ -327,6 +347,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
       // function that will get the preview name from the item
       getPreviewName?: (item: any) => any
+
+      // should the v-img component be contained?
+      containMode?: boolean
 
       // custom component that should be rendered, which will override the above 2 options
       component?: any
@@ -410,8 +433,10 @@ export type RecordInfo<T extends keyof MainTypes> = {
     // number of results to show per page for this expand option. else, defaults to 12
     resultsPerPage?: number
 
-    // open the expand in the same interface instead of expanding or opening a dialog
-    breadcrumbMode?: boolean
+    // open the expand in the same interface instead of expanding or opening a dialog, and related options
+    breadcrumbOptions?: {
+      hideBreadcrumbs?: boolean
+    }
 
     // show this option as its own block/row if it is rendered as a grid
     showRowIfGrid?: boolean

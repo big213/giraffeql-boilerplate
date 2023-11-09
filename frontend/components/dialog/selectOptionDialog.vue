@@ -34,13 +34,11 @@
 </template>
 
 <script>
-import CircularLoader from '~/components/common/circularLoader.vue'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 import { getIcon } from '~/services/base'
 
 export default {
   components: {
-    CircularLoader,
     PreviewRecordChip,
   },
 

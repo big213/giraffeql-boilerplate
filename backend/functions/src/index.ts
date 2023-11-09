@@ -5,7 +5,12 @@ admin.initializeApp();
 
 import { initializeGiraffeql, sendErrorResponse } from "giraffeql";
 import "./schema";
-import { env, functionTimeoutSeconds, giraffeqlOptions } from "./config";
+import {
+  allowedOrigins,
+  env,
+  functionTimeoutSeconds,
+  giraffeqlOptions,
+} from "./config";
 
 import { validateToken, validateApiKey } from "./helpers/auth";
 import { CustomSchemaGenerator } from "./helpers/schema";
@@ -13,17 +18,6 @@ import { CustomSchemaGenerator } from "./helpers/schema";
 const app = express();
 
 // app.use(express.json()); -- apparently not needed on cloud functions
-
-const allowedOrigins = ["http://localhost:3000"];
-// add any additional origins
-if (env.base?.origins) {
-  allowedOrigins.push(
-    ...env.base.origins
-      .split(",")
-      .map((origin) => origin.trim())
-      .filter((origin) => origin)
-  );
-}
 
 // extract the user ID from all requests.
 app.use(async function (req, res, next) {
@@ -50,10 +44,17 @@ app.use(async function (req, res, next) {
       "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control"
     );
 
+    res.header("Access-Control-Expose-Headers", "X-Api-Version");
+
     res.header(
       "Access-Control-Allow-Methods",
       "PUT, POST, GET, DELETE, OPTIONS"
     );
+
+    // if env.base.version is set, send that as a header
+    if (env.base?.version) {
+      res.header("x-api-version", env.base.version);
+    }
 
     const apiKey = req.get("x-api-key");
 

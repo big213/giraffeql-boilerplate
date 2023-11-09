@@ -34,6 +34,14 @@ export default new GiraffeqlObjectType(
         allowNull: false,
         typeDefOptions: { addable: false, updateable: false },
       }),
+      servingUrl: {
+        type: Scalars.url,
+        allowNull: false,
+        requiredSqlFields: ["location"],
+        resolver: ({ parentValue }) => {
+          return `${env.serve_image.cdn_url}/${parentValue.location}`;
+        },
+      },
       downloadUrl: {
         type: Scalars.url,
         allowNull: false,

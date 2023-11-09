@@ -1,9 +1,10 @@
 <template>
-  <ViewRecordPage
+  <component
     v-if="currentModel"
+    :is="pageComponent"
     :record-info="currentModel"
     :lookup-params="lookupParams"
-  ></ViewRecordPage>
+  ></component>
   <v-container v-else fill-height>
     <v-layout align-center justify-center>
       <div>
@@ -26,11 +27,11 @@ export default {
 
   middleware: ['router-auth'],
 
-  components: {
-    ViewRecordPage,
-  },
-
   computed: {
+    pageComponent() {
+      return this.currentModel?.pageOptions?.component ?? ViewRecordPage
+    },
+
     currentModel() {
       return myModels[`My${capitalizeString(this.type)}`]
     },

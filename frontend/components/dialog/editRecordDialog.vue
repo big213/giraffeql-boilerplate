@@ -22,8 +22,8 @@
     >
       <template v-slot:toolbar>
         <v-toolbar flat color="accent">
-          <v-icon left>{{ icon }}</v-icon>
-          <v-toolbar-title>
+          <v-icon left v-if="!hideTitleMode">{{ icon }}</v-icon>
+          <v-toolbar-title v-if="!hideTitleMode">
             <span class="headline">{{ title }}</span>
           </v-toolbar-title>
           <v-spacer></v-spacer>
@@ -190,6 +190,10 @@ export default {
       return !!this.recordInfo.dialogOptions?.hideRefresh
     },
 
+    hideTitleMode() {
+      return !!this.recordInfo.dialogOptions?.hideTitle
+    },
+
     modeObject() {
       return this.specialMode ?? modesMap[this.computedMode]
     },
@@ -202,7 +206,7 @@ export default {
     },
 
     title() {
-      return this.modeObject.prefix + ' ' + this.recordInfo.name
+      return `${this.modeObject.prefix} ${this.recordInfo.name}`
     },
     icon() {
       return this.modeObject.icon

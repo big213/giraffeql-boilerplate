@@ -51,7 +51,11 @@
           </v-btn>
         </v-toolbar>
       </v-container>
-      <v-container v-if="breadcrumbItems.length" fluid class="px-0">
+      <v-container
+        v-if="breadcrumbMode && !hideBreadcrumbs && breadcrumbItems.length"
+        fluid
+        class="px-0"
+      >
         <v-row>
           <v-breadcrumbs :items="breadcrumbItems">
             <template v-slot:item="{ item }">
@@ -68,7 +72,12 @@
         </v-row>
       </v-container>
 
-      <v-toolbar flat color="accent" dense>
+      <v-toolbar
+        v-if="!recordInfo.paginationOptions.hideToolbar"
+        flat
+        color="accent"
+        dense
+      >
         <v-btn
           v-if="breadcrumbItems.length - 1 > 0"
           icon
@@ -90,8 +99,10 @@
           inset
           vertical
         ></v-divider>
-        <v-icon left>{{ icon || recordInfo.icon || 'mdi-domain' }}</v-icon>
-        <v-toolbar-title>{{
+        <v-icon v-if="!recordInfo.paginationOptions.hideTitle" left>{{
+          icon || recordInfo.icon || 'mdi-domain'
+        }}</v-icon>
+        <v-toolbar-title v-if="!recordInfo.paginationOptions.hideTitle">{{
           title || recordInfo.title || recordInfo.pluralName
         }}</v-toolbar-title>
         <v-divider
@@ -284,6 +295,7 @@
           </span>
         </v-card>
         <v-divider />
+        <slot name="header-text"></slot>
         <v-data-iterator
           v-if="isGrid"
           :items="records"

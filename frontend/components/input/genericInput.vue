@@ -252,8 +252,7 @@
       v-else-if="item.inputType === 'textarea'"
       v-model="item.value"
       filled
-      auto-grow
-      rows="1"
+      rows="3"
       dense
       class="py-0"
       :label="item.label + (item.optional ? ' (optional)' : '')"

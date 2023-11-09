@@ -109,9 +109,14 @@ export default {
       default: false,
     },
 
+    // use the breadcrumb mode?
     breadcrumbMode: {
       type: Boolean,
-      default: false,
+    },
+
+    // hide the breadcrumbs in breadcrumb mode?
+    hideBreadcrumbs: {
+      type: Boolean,
     },
 
     breadcrumbItems: {
@@ -658,7 +663,7 @@ export default {
       }
 
       // if breadcrumb mode, open the expand in the same interface
-      if (expandTypeObject.breadcrumbMode) {
+      if (expandTypeObject.breadcrumbOptions) {
         this.expandTypeObject = expandTypeObject
         this.expandedItem = props.item
 
@@ -684,7 +689,7 @@ export default {
 
     toggleGridExpand(item, expandTypeObject) {
       // if breadcrumb mode, open the expand in the same interface
-      if (expandTypeObject.breadcrumbMode) {
+      if (expandTypeObject.breadcrumbOptions) {
         this.$emit('expand-type-updated', item, expandTypeObject)
       } else {
         this.openExpandDialog(item, expandTypeObject)
@@ -784,7 +789,7 @@ export default {
               ? this.recordInfo.paginationOptions.limitOptions
                   ?.maxInitialRecords
               : null) ??
-            this.recordInfo.paginationOptions.limitOptions?.resultsPerPage ??
+            this.recordInfo.paginationOptions.resultsPerPage ??
             this.resultsPerPage,
           after: this.endCursor ?? undefined,
         }),

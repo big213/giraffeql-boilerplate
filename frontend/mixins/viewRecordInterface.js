@@ -14,7 +14,6 @@ import { logAnalyticsEvent } from '~/services/analytics'
 export default {
   components: {
     CircularLoader,
-    Hero,
   },
 
   data() {

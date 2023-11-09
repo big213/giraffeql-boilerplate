@@ -362,6 +362,7 @@ export function handleError(that, err) {
             ...err.response.data.error,
             payload: err.response.config.data,
             build: getBuildVersion(),
+            apiVersion: err.response.headers['x-api-version'],
           },
           null,
           2
@@ -376,6 +377,7 @@ export function handleError(that, err) {
         copyableMessage: JSON.stringify(
           {
             message: err.message,
+            type: 'clientError',
             build: getBuildVersion(),
             stack: err.stack,
           },

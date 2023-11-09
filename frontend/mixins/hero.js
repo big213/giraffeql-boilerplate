@@ -37,5 +37,11 @@ export default {
 
       return getPreviewName ? getPreviewName(this.item) : this.item.name
     },
+
+    containMode() {
+      return !!this.recordInfo[
+        this.mode === 'view' ? 'viewOptions' : 'paginationOptions'
+      ].heroOptions.containMode
+    },
   },
 }

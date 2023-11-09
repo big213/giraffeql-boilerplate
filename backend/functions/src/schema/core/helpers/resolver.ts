@@ -430,7 +430,8 @@ function retrieveAllRequiredFields(
       throw new Error(`Misconfigured giraffeql`);
     }
 
-    if (resolverNode.typeDef.requiredSqlFields) {
+    // only add the requiredSqlFields if it's not a dataloaded field
+    if (resolverNode.typeDef.requiredSqlFields && !isDataloader) {
       resolverNode.typeDef.requiredSqlFields
         .map((requiredField) =>
           fieldPath.length
@@ -443,8 +444,8 @@ function retrieveAllRequiredFields(
     }
     resolverNode.typeDef.sqlOptions?.joinType;
 
-    // if nested, traverse the tree
-    if (resolverNode.nested) {
+    // if nested and not dataloader, traverse the tree
+    if (resolverNode.nested && !isDataloader) {
       retrieveAllRequiredFields(
         resolverNode.nested,
         !!resolverNode.typeDef.sqlOptions,

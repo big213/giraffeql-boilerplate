@@ -19,6 +19,13 @@ jobs:
       - name: Install Dependencies
         working-directory: ./backend/functions
         run: npm install
+      - name: Set Commit SHA
+        uses: w9jds/firebase-action@master
+        with:
+          args: functions:config:set base.version="${{ github.sha }}"
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          PROJECT_PATH: ./backend/functions
       - name: Deploy to Firebase
         uses: w9jds/firebase-action@master
         with:

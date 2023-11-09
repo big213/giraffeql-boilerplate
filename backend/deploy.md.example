@@ -16,7 +16,7 @@ firebase functions:config:set base.origins="https://example.com" base.timeout_se
 
 # set serveImage config
 
-firebase functions:config:set serve_image.bucket="x.appspot.com" serve_image.source_path="source" serve_image.cache_path="cache" serve_image.temp_path="temp"
+firebase functions:config:set serve_image.bucket="x.appspot.com" serve_image.source_path="source" serve_image.cache_path="cache" serve_image.temp_path="temp" serve_image.cdn_url="https://cdn.giraffeql.com"
 
 # set stripe config
 

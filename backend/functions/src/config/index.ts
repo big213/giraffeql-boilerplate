@@ -2,12 +2,26 @@ import * as functions from "firebase-functions";
 
 export const isDev = !!(process.env.FUNCTIONS_EMULATOR ?? process.env.DEV);
 
+export const projectPath = process.env.PROJECT_PATH;
+
 export const env = isDev ? require("../../../env.json") : functions.config();
 
 // defaults to 60 seconds
 export const functionTimeoutSeconds = env.base?.timeout_seconds
   ? Number(env.base.timeout_seconds)
   : 60;
+
+export const allowedOrigins = ["http://localhost:3000"];
+
+// add any additional origins
+if (env.base?.origins) {
+  allowedOrigins.push(
+    ...env.base.origins
+      .split(",")
+      .map((origin) => origin.trim())
+      .filter((origin) => origin)
+  );
+}
 
 export const giraffeqlOptions = {
   debug: !!isDev,

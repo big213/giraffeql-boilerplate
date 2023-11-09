@@ -1,8 +1,10 @@
 <template>
-  <div>
-    <a @click="copyIdTokenToClipboard()"
-      ><span class="hidden-xs-only">Build </span>{{ buildVersion }}</a
-    >
+  <span :title="currentVersion">
+    <a @click="copyIdTokenToClipboard()">
+      <slot name="text">
+        <span class="hidden-xs-only">Build </span>{{ buildVersion }}
+      </slot>
+    </a>
     <v-icon
       v-if="hasNewerVersion && showNewerVersionIcon"
       title="A newer version of this site is available. Click to reload."
@@ -34,7 +36,7 @@
         </v-btn>
       </template>
     </v-snackbar>
-  </div>
+  </span>
 </template>
 
 <script>

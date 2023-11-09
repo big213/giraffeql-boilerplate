@@ -14,40 +14,11 @@
     <v-card>
       <div v-if="hasHeroOptions">
         <component
-          v-if="recordInfo.previewOptions.heroOptions.component"
-          :is="recordInfo.previewOptions.heroOptions.component"
+          :is="heroComponent"
           :item="item"
           :record-info="recordInfo"
+          mode="view"
         ></component>
-        <v-img
-          v-else
-          :src="
-            recordInfo.previewOptions.heroOptions.getPreviewImage
-              ? recordInfo.previewOptions.heroOptions.getPreviewImage(item)
-              : item.avatar
-          "
-          class="white--text align-end"
-          gradient="to bottom, rgba(0,0,0,.1), rgba(0,0,0,.5)"
-          height="100px"
-        >
-          <template v-slot:placeholder>
-            <v-row class="fill-height ma-0" align="center" justify="center">
-              <v-icon size="100" color="grey darken-3">{{
-                recordInfo.icon
-              }}</v-icon>
-            </v-row>
-          </template>
-
-          <v-card-title class="subheading font-weight-bold">
-            <span class="break-word">
-              {{
-                recordInfo.previewOptions.heroOptions.getPreviewName
-                  ? recordInfo.previewOptions.heroOptions.getPreviewName(item)
-                  : item.name
-              }}</span
-            >
-          </v-card-title>
-        </v-img>
       </div>
       <v-list v-if="hasLineItems">
         <v-list-item>
@@ -119,6 +90,7 @@ import { executeGiraffeql } from '~/services/giraffeql'
 import FollowButton from '~/components/button/followButton.vue'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 import * as simpleModels from '~/models/simple'
+import Hero from '~/components/interface/crud/hero/hero.vue'
 
 export default {
   components: {
@@ -180,6 +152,10 @@ export default {
     },
     isViewButtonHidden() {
       return !!this.recordInfo.previewOptions?.hideViewButton
+    },
+
+    heroComponent() {
+      return this.recordInfo.previewOptions?.heroOptions?.component ?? Hero
     },
   },
 

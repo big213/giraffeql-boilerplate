@@ -288,6 +288,7 @@ export function generatePreviewableFilesColumn({
         `${fieldname}.size`,
         `${fieldname}.contentType`,
         `${fieldname}.location`,
+        `${fieldname}.servingUrl`,
       ],
       pathPrefix: fieldname,
       inputType,

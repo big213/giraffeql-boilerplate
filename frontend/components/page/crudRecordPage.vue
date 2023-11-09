@@ -21,8 +21,9 @@
             :poll-interval="pollInterval"
             :parent-item="currentParentItem"
             :breadcrumb-mode="
-              expandTypeObject ? !!expandTypeObject.breadcrumbMode : false
+              expandTypeObject ? !!expandTypeObject.breadcrumbOptions : false
             "
+            :hide-breadcrumbs="hideBreadcrumbs"
             :breadcrumb-items="breadcrumbItems"
             :is-child-component="isChildComponent"
             dense
@@ -133,6 +134,10 @@ export default {
       return this.$route.query.pageOptions
         ? JSON.parse(atob(decodeURIComponent(this.$route.query.pageOptions)))
         : null
+    },
+
+    hideBreadcrumbs() {
+      return !!this.expandTypeObject?.breadcrumbOptions?.hideBreadcrumbs
     },
   },
 

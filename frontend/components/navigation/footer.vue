@@ -1,7 +1,7 @@
 <template>
   <v-footer v-bind="$attrs">
     <VersionCheckText />
-    <span>&nbsp;&copy; {{ new Date().getFullYear() }}</span>
+    <span class="ml-1">&copy; {{ new Date().getFullYear() }}</span>
     <v-spacer></v-spacer>
     <nuxt-link to="/legal/privacy" class="mr-2 hidden-xs-only">
       Privacy & Terms
