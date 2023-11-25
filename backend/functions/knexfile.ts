@@ -1,14 +1,14 @@
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-export const env = require("../env.json");
+require("dotenv").config();
 
 export const production = {
   client: "pg",
   connection: {
-    host: env.pg.host,
-    user: env.pg.user,
-    password: env.pg.password,
-    database: env.pg.database,
-    ...(env.pg.port && { port: env.pg.port }),
+    host: process.env.PG_HOST,
+    user: process.env.PG_USER,
+    password: process.env.PG_PASSWORD,
+    database: process.env.PG_DATABASE,
+    ...(process.env.PG_PORT && { port: process.env.PG_PORT }),
   },
   pool: { min: 0, max: 1 },
   migrations: {
@@ -23,11 +23,11 @@ export const production = {
 export const development = {
   client: "pg",
   connection: {
-    host: env.pg_dev.host,
-    user: env.pg_dev.user,
-    password: env.pg_dev.password,
-    database: env.pg_dev.database,
-    ...(env.pg_dev.port && { port: env.pg_dev.port }),
+    host: process.env.DEV_PG_HOST,
+    user: process.env.DEV_PG_USER,
+    password: process.env.DEV_PG_PASSWORD,
+    database: process.env.DEV_PG_DATABASE,
+    ...(process.env.DEV_PG_PORT && { port: process.env.DEV_PG_PORT }),
   },
   pool: { min: 0, max: 1 },
   migrations: {

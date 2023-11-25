@@ -1,9 +1,13 @@
 import { BaseService } from "../../core/services";
 import { permissionsCheck } from "../../core/helpers/permissions";
 import { ServiceFunctionInputs } from "../../../types";
-import { env } from "../../../config";
 import axios from "axios";
 import { GiraffeqlBaseError } from "giraffeql";
+import {
+  githubOrganization,
+  githubRepository,
+  githubToken,
+} from "../../../config";
 
 const graphqlApi = axios.create({
   baseURL: "https://api.github.com",
@@ -12,7 +16,7 @@ const graphqlApi = axios.create({
 async function sendGraphqlRequest(graphqlQuery) {
   const request = {
     headers: {
-      Authorization: "Bearer " + env.github.token,
+      Authorization: "Bearer " + githubToken.value(),
     },
   };
 
@@ -40,12 +44,12 @@ export class GithubService extends BaseService {
       // args should be validated already
       const validatedArgs = <any>args;
 
-      if (env.github.organization) {
+      if (githubOrganization.value()) {
         const response = await sendGraphqlRequest(`
 query { 
   viewer { 
-    organization(login: "${env.github.organization}") {
-      repository(name: "${env.github.repository}") {
+    organization(login: "${githubOrganization.value()}") {
+      repository(name: "${githubRepository.value()}") {
         releases(first: ${validatedArgs.first}, orderBy: {
           field: CREATED_AT,
           direction: DESC
@@ -75,7 +79,7 @@ query {
         const response = await sendGraphqlRequest(`
 query { 
   viewer { 
-    repository(name: "${env.github.repository}") {
+    repository(name: "${githubRepository.value()}") {
       releases(first: ${validatedArgs.first}, orderBy: {
         field: CREATED_AT,
         direction: DESC
@@ -121,12 +125,12 @@ query {
       // args should be validated already
       const validatedArgs = <any>args;
 
-      if (env.github.organization) {
+      if (githubOrganization.value()) {
         const response = await sendGraphqlRequest(`
 query { 
   viewer { 
-    organization(login: "${env.github.organization}") {
-      repository(name: "${env.github.repository}") {
+    organization(login: "${githubOrganization.value()}") {
+      repository(name: "${githubRepository.value()}") {
         latestRelease {
           tagName
           publishedAt
@@ -143,7 +147,7 @@ query {
         const response = await sendGraphqlRequest(`
 query { 
   viewer { 
-    repository(name: "${env.github.repository}") {
+    repository(name: "${githubRepository.value()}") {
       latestRelease {
         tagName
         publishedAt

@@ -1,11 +1,15 @@
-import * as functions from "firebase-functions";
-import { env } from "../../config";
+import { onRequest } from "firebase-functions/v2/https";
+import {
+  serveImageBucket,
+  serveImageCachePath,
+  serveImageSourcePath,
+} from "../../config";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { createHandler } = require("image-resizing");
 
-export const serveImage = functions.https.onRequest(
+export const serveimage = onRequest(
   createHandler({
-    sourceBucket: `${env.serve_image.bucket}/${env.serve_image.source_path}`,
-    cacheBucket: `${env.serve_image.bucket}/${env.serve_image.cache_path}`,
+    sourceBucket: `${serveImageBucket.value()}/${serveImageSourcePath.value()}`,
+    cacheBucket: `${serveImageBucket.value()}/${serveImageCachePath.value()}`,
   })
 );

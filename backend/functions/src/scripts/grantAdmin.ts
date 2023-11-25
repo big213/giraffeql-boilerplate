@@ -1,5 +1,5 @@
 import * as knexBuilder from "knex";
-import { getPgOptions } from "../config";
+import { pgOptions } from "../config";
 import yargs from "yargs";
 
 const argv = yargs(process.argv.slice(2))
@@ -8,8 +8,6 @@ const argv = yargs(process.argv.slice(2))
     prod: { type: "boolean", default: false },
   })
   .parseSync();
-
-const pgOptions = getPgOptions(!argv.prod);
 
 export const knex = knexBuilder({
   ...pgOptions,

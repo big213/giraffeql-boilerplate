@@ -11,8 +11,8 @@ import {
 } from "../../core/helpers/typeDef";
 import * as Scalars from "../../scalars";
 import * as admin from "firebase-admin";
-import { env } from "../../../config";
 import { getDownloadURL } from "firebase-admin/storage";
+import { serveImageCdnUrl, serveImageSourcePath } from "../../../config";
 
 export default new GiraffeqlObjectType(
   <ObjectTypeDefinition>processTypeDef({
@@ -39,7 +39,7 @@ export default new GiraffeqlObjectType(
         allowNull: false,
         requiredSqlFields: ["location"],
         resolver: ({ parentValue }) => {
-          return `${env.serve_image.cdn_url}/${parentValue.location}`;
+          return `${serveImageCdnUrl.value()}/${parentValue.location}`;
         },
       },
       downloadUrl: {
@@ -50,7 +50,7 @@ export default new GiraffeqlObjectType(
           const bucket = admin.storage().bucket();
 
           const file = bucket.file(
-            `${env.serve_image.source_path}/${parentValue.location}`
+            `${serveImageSourcePath.value()}/${parentValue.location}`
           );
 
           const downloadUrl = await getDownloadURL(file);
@@ -65,7 +65,7 @@ export default new GiraffeqlObjectType(
         resolver({ parentValue }) {
           const bucket = admin.storage().bucket();
           const file = bucket.file(
-            `${env.serve_image.source_path}/${parentValue.location}`
+            `${serveImageSourcePath.value()}/${parentValue.location}`
           );
 
           return file

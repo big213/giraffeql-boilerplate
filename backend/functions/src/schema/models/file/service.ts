@@ -11,7 +11,7 @@ import {
   allowIfFilteringByCurrentUserFn,
   allowIfLoggedInFn,
 } from "../../helpers/permissions";
-import { env } from "../../../config";
+import { serveImageSourcePath, serveImageTempPath } from "../../../config";
 
 export class FileService extends PaginatedService {
   defaultTypename = "file";
@@ -147,10 +147,10 @@ export class FileService extends PaginatedService {
 
     // verify location exists and move it into /source folder
     const bucket = admin.storage().bucket();
-    const file = bucket.file(`${env.serve_image.temp_path}/${args.location}`);
+    const file = bucket.file(`${serveImageTempPath.value()}/${args.location}`);
     const [metadata] = await file.getMetadata();
 
-    await file.move(`${env.serve_image.source_path}/${args.location}`);
+    await file.move(`${serveImageSourcePath.value()}/${args.location}`);
 
     const addResults = await createObjectType({
       typename: this.typename,
@@ -197,7 +197,9 @@ export class FileService extends PaginatedService {
 
     // verify location exists and delete it
     const bucket = admin.storage().bucket();
-    const file = bucket.file(`${env.serve_image.source_path}/${item.location}`);
+    const file = bucket.file(
+      `${serveImageSourcePath.value()}/${item.location}`
+    );
 
     await file.delete();
 

@@ -27,7 +27,7 @@
       "rewrites": [
         {
           "source": "**",
-          "function": "serveImage"
+          "function": "serveimage"
         }
       ]
     }

@@ -1,27 +1,48 @@
-import * as functions from "firebase-functions";
+import { defineInt, defineString } from "firebase-functions/params";
 
+// in dev mode, SQL errors are not masked, and SQL queries/errors are logged
 export const isDev = !!(process.env.FUNCTIONS_EMULATOR ?? process.env.DEV);
 
 export const projectPath = process.env.PROJECT_PATH;
 
-export const env = isDev ? require("../../../env.json") : functions.config();
+export const pgHost = isDev
+  ? defineString("DEV_PG_HOST")
+  : defineString("PG_HOST");
+export const pgPort = isDev ? defineInt("PG_PORT") : defineInt("DEV_PG_PORT");
+export const pgUser = isDev
+  ? defineString("PG_USER")
+  : defineString("DEV_PG_USER");
+export const pgPassword = isDev
+  ? defineString("PG_PASSWORD")
+  : defineString("DEV_PG_PASSWORD");
+export const pgDatabase = isDev
+  ? defineString("PG_DATABASE")
+  : defineString("DEV_PG_DATABASE");
 
-// defaults to 60 seconds
-export const functionTimeoutSeconds = env.base?.timeout_seconds
-  ? Number(env.base.timeout_seconds)
-  : 60;
+export const githubToken = defineString("GITHUB_TOKEN");
+export const githubRepository = defineString("GITHUB_REPOSITORY");
+export const githubOrganization = defineString("GITHUB_ORGANIZATION");
 
-export const allowedOrigins = ["http://localhost:3000"];
+export const serveImageBucket = defineString("SERVE_IMAGE_BUCKET");
+export const serveImageSourcePath = defineString("SERVE_IMAGE_SOURCE_PATH");
+export const serveImageCachePath = defineString("SERVE_IMAGE_CACHE_PATH");
+export const serveImageTempPath = defineString("SERVE_IMAGE_TEMP_PATH");
+export const serveImageCdnUrl = defineString("SERVE_IMAGE_CDN_URL");
+
+export const baseOrigins = defineString("BASE_ORIGINS");
+export const baseTimeoutSeconds = defineInt("BASE_TIMEOUT_SECONDS", {
+  default: 60,
+});
+export const baseVersion = defineString("BASE_VERSION");
 
 // add any additional origins
-if (env.base?.origins) {
-  allowedOrigins.push(
-    ...env.base.origins
+export const allowedOrigins = baseOrigins.value()
+  ? baseOrigins
+      .value()
       .split(",")
       .map((origin) => origin.trim())
       .filter((origin) => origin)
-  );
-}
+  : [];
 
 export const giraffeqlOptions = {
   debug: !!isDev,
@@ -29,19 +50,14 @@ export const giraffeqlOptions = {
   processEntireTree: false,
 };
 
-export function getPgOptions(dev: boolean) {
-  const pgEnv = dev ? env.pg_dev : env.pg;
-  return {
-    client: "pg",
-    connection: {
-      host: pgEnv.host,
-      user: pgEnv.user,
-      password: pgEnv.password,
-      database: pgEnv.database,
-      ...(pgEnv.port && { port: pgEnv.port }),
-    },
-    pool: { min: 0, max: 1 },
-  };
-}
-
-export const pgOptions = getPgOptions(!!isDev);
+export const pgOptions = {
+  client: "pg",
+  connection: {
+    host: pgHost.value(),
+    user: pgUser.value(),
+    password: pgPassword.value(),
+    database: pgDatabase.value(),
+    ...(pgPort.value() && { port: pgPort.value() }),
+  },
+  pool: { min: 0, max: 1 },
+};

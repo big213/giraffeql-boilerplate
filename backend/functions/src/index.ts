@@ -1,19 +1,31 @@
-import * as functions from "firebase-functions";
+import { onRequest } from "firebase-functions/v2/https";
 import * as express from "express";
-import * as admin from "firebase-admin";
-admin.initializeApp();
-
+import { initializeApp } from "firebase-admin/app";
 import { initializeGiraffeql, sendErrorResponse } from "giraffeql";
 import "./schema";
 import {
   allowedOrigins,
-  env,
-  functionTimeoutSeconds,
+  baseTimeoutSeconds,
+  baseVersion,
   giraffeqlOptions,
+  pgOptions,
 } from "./config";
 
 import { validateToken, validateApiKey } from "./helpers/auth";
 import { CustomSchemaGenerator } from "./helpers/schema";
+import * as knex from "knex";
+
+const conn = knex(pgOptions);
+
+export const testFunction = onRequest(async (req, res) => {
+  try {
+    const result: number = await conn("user").count();
+    res.status(200).send(result);
+  } catch (err) {
+    res.status(500).send(err);
+  }
+});
+initializeApp();
 
 const app = express();
 
@@ -52,8 +64,8 @@ app.use(async function (req, res, next) {
     );
 
     // if env.base.version is set, send that as a header
-    if (env.base?.version) {
-      res.header("x-api-version", env.base.version);
+    if (baseVersion) {
+      res.header("x-api-version", baseVersion.value());
     }
 
     const apiKey = req.get("x-api-key");
@@ -87,12 +99,13 @@ app.get("/schema.ts", function (req, res, next) {
 });
 
 // runWith does not work properly with timeoutSeconds > 60 as of Firebase Cloud Functions V1
-export const api = functions
-  .runWith({
-    timeoutSeconds: functionTimeoutSeconds,
-  })
-  .https.onRequest(app);
+export const api = onRequest(
+  {
+    timeoutSeconds: baseTimeoutSeconds,
+  },
+  app
+);
 
-export { serveImage } from "./misc/serveImage";
+export { serveimage } from "./misc/serveImage";
 
 // additional project-specific endpoints
