@@ -20,23 +20,23 @@ on:
       - name: Make envfile
         uses: SpicyPizza/create-envfile@v2.0.2
         with:
-          PG_HOST: ${{ secrets.PG_HOST }}
-          PG_PORT: ${{ secrets.PG_PORT }}
-          PG_USER: ${{ secrets.PG_USER }}
-          PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
-          PG_DATABASE: ${{ secrets.PG_DATABASE }}
-          GITHUB_TOKEN: ${{ secrets.GH_GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: giraffeql-boilerplate
-          GITHUB_ORGANIZATION:
-          SERVE_IMAGE_BUCKET: giraffeql-boilerplate.appspot.com
-          SERVE_IMAGE_SOURCE_PATH: source
-          SERVE_IMAGE_CACHE_PATH: cache
-          SERVE_IMAGE_TEMP_PATH: temp
-          SERVE_IMAGE_CDN_URL: https://cdn.giraffeql.com
-          STRIPE_SITE_URL: https://boilerplate.giraffeql.com
-          BASE_ORIGINS: http://localhost:3000,https://boilerplate.giraffeql.com
-          BASE_TIMEOUT_SECONDS: 60
-          BASE_VERSION: ${{ github.sha }}
+          envkey_PG_HOST: ${{ secrets.PG_HOST }}
+          envkey_PG_PORT: ${{ secrets.PG_PORT }}
+          envkey_PG_USER: ${{ secrets.PG_USER }}
+          envkey_PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
+          envkey_PG_DATABASE: ${{ secrets.PG_DATABASE }}
+          envkey_GITHUB_TOKEN: ${{ secrets.GH_GITHUB_TOKEN }}
+          envkey_GITHUB_REPOSITORY: giraffeql-boilerplate
+          envkey_GITHUB_ORGANIZATION:
+          envkey_SERVE_IMAGE_BUCKET: giraffeql-boilerplate.appspot.com
+          envkey_SERVE_IMAGE_SOURCE_PATH: source
+          envkey_SERVE_IMAGE_CACHE_PATH: cache
+          envkey_SERVE_IMAGE_TEMP_PATH: temp
+          envkey_SERVE_IMAGE_CDN_URL: https://cdn.giraffeql.com
+          envkey_STRIPE_SITE_URL: https://boilerplate.giraffeql.com
+          envkey_BASE_ORIGINS: http://localhost:3000,https://boilerplate.giraffeql.com
+          envkey_BASE_TIMEOUT_SECONDS: 60
+          envkey_BASE_VERSION: ${{ github.sha }}
           directory: backend/functions
           file_name: .env
       - name: Create SA key
