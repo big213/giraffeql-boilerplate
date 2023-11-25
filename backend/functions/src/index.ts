@@ -5,6 +5,7 @@ import { initializeGiraffeql, sendErrorResponse } from "giraffeql";
 import "./schema";
 import {
   allowedOrigins,
+  baseServiceAccount,
   baseTimeoutSeconds,
   baseVersion,
   giraffeqlOptions,
@@ -102,6 +103,7 @@ app.get("/schema.ts", function (req, res, next) {
 export const api = onRequest(
   {
     timeoutSeconds: baseTimeoutSeconds,
+    serviceAccount: baseServiceAccount,
   },
   app
 );

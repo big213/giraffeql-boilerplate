@@ -1,4 +1,4 @@
-import { defineInt, defineString } from "firebase-functions/params";
+import { defineInt, defineString, projectID } from "firebase-functions/params";
 
 // in dev mode, SQL errors are not masked, and SQL queries/errors are logged
 export const isDev = !!(process.env.FUNCTIONS_EMULATOR ?? process.env.DEV);
@@ -36,6 +36,10 @@ export const baseTimeoutSeconds = defineInt("BASE_TIMEOUT_SECONDS", {
   default: 60,
 });
 export const baseVersion = defineString("BASE_VERSION");
+
+export const baseServiceAccount = defineString("BASE_SERVICE_ACCOUNT", {
+  default: `${projectID.value()}@appspot.gserviceaccount.com`,
+});
 
 // add any additional origins
 export const allowedOrigins = baseOrigins.value()
