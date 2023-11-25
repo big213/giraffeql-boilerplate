@@ -63,3 +63,5 @@ export const pgOptions = {
   },
   pool: { min: 0, max: 1 },
 };
+
+console.log(process.env);
