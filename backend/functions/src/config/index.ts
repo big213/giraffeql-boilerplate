@@ -1,4 +1,4 @@
-import { defineInt, defineString, projectID } from "firebase-functions/params";
+import { defineInt, defineString } from "firebase-functions/params";
 
 // in dev mode, SQL errors are not masked, and SQL queries/errors are logged
 export const isDev = !!(process.env.FUNCTIONS_EMULATOR ?? process.env.DEV);
