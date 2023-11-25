@@ -13,10 +13,9 @@ jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
+    working-directory: ./backend
     steps:
       - name: Create SA key
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > $HOME/gcloud.json
       - name: Deploy Cloud Functions
         run: export GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud.json && npx firebase-tools deploy --only functions:api --json
-        env:
-          PROJECT_PATH: ./backend/functions
