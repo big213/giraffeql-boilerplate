@@ -37,9 +37,7 @@ export const baseTimeoutSeconds = defineInt("BASE_TIMEOUT_SECONDS", {
 });
 export const baseVersion = defineString("BASE_VERSION");
 
-export const baseServiceAccount = defineString("BASE_SERVICE_ACCOUNT", {
-  default: `${projectID.value()}@appspot.gserviceaccount.com`,
-});
+export const baseServiceAccount = defineString("BASE_SERVICE_ACCOUNT");
 
 // add any additional origins
 export const allowedOrigins = baseOrigins.value()
