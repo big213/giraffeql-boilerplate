@@ -9,6 +9,7 @@ on:
       tags:
         description: "Test scenario tags"
 
+jobs:
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
