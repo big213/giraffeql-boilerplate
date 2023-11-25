@@ -19,8 +19,7 @@ jobs:
       - name: Build Cloud Functions
         run: cd backend/functions && npm ci
       - name: "Create env file"
-        run: echo "${{ secrets.ENV_FILE }}
-        BASE_VERSION=${{ github.sha }}" > backend/functions/.env
+        run: echo "${{ secrets.ENV_FILE }}"";echo -e "BASE_VERSION=${{ github.sha }}" > backend/functions/.env
       - name: Create SA key
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > $HOME/gcloud.json
       - name: Deploy Cloud Functions
