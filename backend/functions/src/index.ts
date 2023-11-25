@@ -102,6 +102,14 @@ app.get("/schema.ts", function (req, res, next) {
 export const api = onRequest(
   {
     timeoutSeconds: baseTimeoutSeconds,
+    secrets: [
+      "PG_HOST",
+      "PG_PORT",
+      "PG_USER",
+      "PG_PASSWORD",
+      "PG_DATABASE",
+      "GITHUB_TOKEN",
+    ],
   },
   app
 );

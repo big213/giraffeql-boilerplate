@@ -12,7 +12,9 @@ export const projectPath = process.env.PROJECT_PATH;
 export const pgHost = isDev
   ? defineString("DEV_PG_HOST")
   : defineSecret("PG_HOST");
-export const pgPort = isDev ? defineString("DEV_PG_PORT") : null;
+export const pgPort = isDev
+  ? defineString("DEV_PG_PORT")
+  : defineSecret("PG_PORT");
 export const pgUser = isDev
   ? defineString("DEV_PG_USER")
   : defineSecret("PG_USER");
@@ -23,7 +25,9 @@ export const pgDatabase = isDev
   ? defineString("DEV_PG_DATABASE")
   : defineSecret("PG_DATABASE");
 
-export const githubToken = defineSecret("GITHUB_TOKEN");
+export const githubToken = isDev
+  ? defineString("GITHUB_TOKEN")
+  : defineSecret("GITHUB_TOKEN");
 export const githubRepository = defineString("GITHUB_REPOSITORY");
 export const githubOrganization = defineString("GITHUB_ORGANIZATION");
 
@@ -61,7 +65,7 @@ export const pgOptions = {
     user: pgUser.value(),
     password: pgPassword.value(),
     database: pgDatabase.value(),
-    ...(pgPort?.value() && { port: pgPort.value() }),
+    ...(pgPort.value() && { port: pgPort.value() }),
   },
   pool: { min: 0, max: 1 },
 };
