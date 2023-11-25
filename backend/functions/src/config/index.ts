@@ -1,8 +1,4 @@
-import {
-  defineInt,
-  defineSecret,
-  defineString,
-} from "firebase-functions/params";
+import { defineInt, defineString } from "firebase-functions/params";
 
 // in dev mode, SQL errors are not masked, and SQL queries/errors are logged
 export const isDev = !!(process.env.FUNCTIONS_EMULATOR ?? process.env.DEV);
@@ -11,23 +7,21 @@ export const projectPath = process.env.PROJECT_PATH;
 
 export const pgHost = isDev
   ? defineString("DEV_PG_HOST")
-  : defineSecret("PG_HOST");
+  : defineString("PG_HOST");
 export const pgPort = isDev
   ? defineString("DEV_PG_PORT")
-  : defineSecret("PG_PORT");
+  : defineString("PG_PORT");
 export const pgUser = isDev
   ? defineString("DEV_PG_USER")
-  : defineSecret("PG_USER");
+  : defineString("PG_USER");
 export const pgPassword = isDev
   ? defineString("DEV_PG_PASSWORD")
-  : defineSecret("PG_PASSWORD");
+  : defineString("PG_PASSWORD");
 export const pgDatabase = isDev
   ? defineString("DEV_PG_DATABASE")
-  : defineSecret("PG_DATABASE");
+  : defineString("PG_DATABASE");
 
-export const githubToken = isDev
-  ? defineString("GITHUB_TOKEN")
-  : defineSecret("GITHUB_TOKEN");
+export const githubToken = defineString("GITHUB_TOKEN");
 export const githubRepository = defineString("GITHUB_REPOSITORY");
 export const githubOrganization = defineString("GITHUB_ORGANIZATION");
 

@@ -23,6 +23,12 @@ jobs:
       - name: Deploy Cloud Functions
         run: export GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud.json && cd backend/functions && npx firebase-tools deploy --only functions --json
         env:
+          PG_HOST: ${{ secrets.PG_HOST }}
+          PG_PORT: ${{ secrets.PG_PORT }}
+          PG_USER: ${{ secrets.PG_USER }}
+          PG_PASSWORD: ${{ secrets.PG_PASSWORD }}
+          PG_DATABASE: ${{ secrets.PG_DATABASE }}
+          GITHUB_TOKEN: ${{ secrets.GH_GITHUB_TOKEN }}
           GITHUB_REPOSITORY: giraffeql-boilerplate
           GITHUB_ORGANIZATION:
           SERVE_IMAGE_BUCKET: giraffeql-boilerplate.appspot.com
