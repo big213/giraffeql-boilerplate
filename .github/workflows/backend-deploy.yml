@@ -23,4 +23,4 @@ jobs:
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > $HOME/gcloud.json
       - name: Deploy Cloud Functions
         working-directory: ./backend/functions
-        run: npx firebase-tools deploy --only functions:api --json
+        run: cwd && export GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcloud.json && npx firebase-tools deploy --only functions:api --json
