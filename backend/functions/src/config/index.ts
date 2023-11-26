@@ -31,6 +31,10 @@ export const serveImageCachePath = defineString("SERVE_IMAGE_CACHE_PATH");
 export const serveImageTempPath = defineString("SERVE_IMAGE_TEMP_PATH");
 export const serveImageCdnUrl = defineString("SERVE_IMAGE_CDN_URL");
 
+// payment-related (optional)
+export const stripeSecretKey = defineString("STRIPE_SECRET_KEY");
+export const stripeSiteUrl = defineString("STRIPE_SITE_URL");
+
 export const baseOrigins = defineString("BASE_ORIGINS");
 export const baseTimeoutSeconds = defineInt("BASE_TIMEOUT_SECONDS", {
   default: 60,
@@ -65,5 +69,3 @@ export const pgOptions = {
   },
   pool: { min: 0, max: 1 },
 };
-
-console.log(baseServiceAccount.value());
