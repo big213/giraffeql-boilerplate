@@ -361,6 +361,7 @@
                             :item="item"
                             :field-path="headerItem.path"
                             :options="headerItem.fieldInfo.columnOptions"
+                            display-mode="crud"
                           ></component>
                           <span v-else>
                             {{ getTableRowData(headerItem, item) }}
@@ -497,6 +498,7 @@
                       :item="props.item"
                       :field-path="headerItem.path"
                       :options="headerItem.fieldInfo.columnOptions"
+                      display-mode="crud"
                     ></component>
                     <span v-else>
                       {{ getTableRowData(headerItem, props.item) }}
@@ -545,6 +547,7 @@
                     :item="props.item"
                     :field-path="headerItem.path"
                     :options="headerItem.fieldInfo.columnOptions"
+                    display-mode="crud"
                   ></component>
                   <span v-else>
                     {{ getTableRowData(headerItem, props.item) }}

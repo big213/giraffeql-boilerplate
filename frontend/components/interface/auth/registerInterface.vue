@@ -1,5 +1,6 @@
 <template>
   <v-card>
+    <slot name="toolbar"></slot>
     <v-card-text>
       <v-text-field
         v-model="inputs.name"
@@ -12,7 +13,7 @@
         v-model="inputs.email"
         label="Email"
         name="login"
-        prepend-icon="mdi-account"
+        prepend-icon="mdi-at"
         type="text"
       ></v-text-field>
       <v-text-field
@@ -30,6 +31,7 @@
         name="passwordconfirm"
         prepend-icon="mdi-lock"
         type="password"
+        @keyup.enter="handleSubmit()"
       ></v-text-field>
     </v-card-text>
     <v-card-actions>
@@ -45,10 +47,10 @@
 </template>
 
 <script>
-import { handleError } from '~/services/base'
+import { handleError, timeout } from '~/services/base'
 import { handleUserRefreshed } from '~/services/auth'
 import { auth } from '~/services/fireinit'
-import { createUserWithEmailAndPassword } from 'firebase/auth'
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
 import { logAnalyticsEvent } from '~/services/analytics'
 
 export default {
@@ -82,7 +84,7 @@ export default {
         )
 
         // update the displayName
-        await userCredential.user.updateProfile({
+        await updateProfile(userCredential.user, {
           displayName: this.inputs.name,
         })
 
@@ -91,7 +93,14 @@ export default {
 
         logAnalyticsEvent('sign_up')
 
-        this.$router.push('/')
+        // wait for handleLogin to finish (detected when this.$store.getters['auth/user'] has been set)
+        while (true) {
+          if (this.$store.getters['auth/user']) break
+
+          await timeout(500)
+        }
+
+        this.$emit('success')
       } catch (err) {
         handleError(this, err)
       }

@@ -1,11 +1,12 @@
 <template>
   <v-card>
+    <slot name="toolbar"></slot>
     <v-card-text>
       <v-text-field
         v-model="inputs.email"
-        label="Login"
-        name="login"
-        prepend-icon="mdi-account"
+        label="Email"
+        name="email"
+        prepend-icon="mdi-at"
         type="text"
       ></v-text-field>
       <v-text-field
@@ -19,7 +20,7 @@
       ></v-text-field>
     </v-card-text>
     <v-card-actions>
-      <v-btn text nuxt to="/password-reset">Password Forgotten</v-btn>
+      <slot name="actions"></slot>
       <v-spacer></v-spacer>
       <v-btn
         color="primary"
@@ -32,7 +33,7 @@
 </template>
 
 <script>
-import { handleError } from '~/services/base'
+import { handleError, timeout } from '~/services/base'
 import { auth } from '~/services/fireinit'
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { logAnalyticsEvent } from '~/services/analytics'
@@ -53,6 +54,8 @@ export default {
     }
   },
 
+  props: {},
+
   methods: {
     async handleSubmit() {
       this.loading.submitting = true
@@ -65,7 +68,14 @@ export default {
 
         logAnalyticsEvent('login')
 
-        this.$router.push('/')
+        // wait for handleLogin to finish (detected when this.$store.getters['auth/user'] has been set)
+        while (true) {
+          if (this.$store.getters['auth/user']) break
+
+          await timeout(500)
+        }
+
+        this.$emit('success')
       } catch (err) {
         handleError(this, err)
       }

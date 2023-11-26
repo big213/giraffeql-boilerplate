@@ -1,13 +1,19 @@
 <template>
   <v-layout column justify-center align-center fill-height>
     <v-container xs12 style="max-width: 600px">
-      <v-toolbar color="accent" flat>
-        <v-toolbar-title>Login</v-toolbar-title>
-        <v-spacer></v-spacer>
-        <v-btn text nuxt to="/register">Register</v-btn>
-      </v-toolbar>
-      <SocialLoginInterface v-if="socialLoginEnabled"></SocialLoginInterface>
-      <LoginInterface></LoginInterface>
+      <LoginInterface @success="handleSuccess">
+        <template v-slot:toolbar>
+          <v-toolbar color="accent" flat>
+            <v-icon left>mdi-login</v-icon>
+            <v-toolbar-title>Login</v-toolbar-title>
+            <v-spacer></v-spacer>
+            <v-btn text nuxt to="/register">Register</v-btn>
+          </v-toolbar>
+        </template>
+        <template v-slot:actions>
+          <v-btn text nuxt to="/password-reset">Password Forgotten</v-btn>
+        </template>
+      </LoginInterface>
     </v-container>
   </v-layout>
 </template>
@@ -35,6 +41,12 @@ export default {
     return {
       socialLoginEnabled,
     }
+  },
+
+  methods: {
+    handleSuccess() {
+      this.$router.push('/')
+    },
   },
 }
 </script>

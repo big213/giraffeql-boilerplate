@@ -14,6 +14,11 @@ export default {
     options: {
       type: Object,
     },
+
+    // where is this column displayed? null | 'crud' | 'view'
+    displayMode: {
+      type: String,
+    },
   },
 
   computed: {

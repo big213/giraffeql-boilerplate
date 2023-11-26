@@ -31,6 +31,7 @@
     <v-main>
       <nuxt />
     </v-main>
+
     <Footer :absolute="!fixed" app></Footer>
     <Snackbar />
     <EditRecordDialog
@@ -64,6 +65,12 @@
       :selected-item="dialogs.executeAction.selectedItem"
       @close="dialogs.executeAction = null"
     ></ExecuteActionDialog>
+    <LoginDialog
+      v-if="dialogs.login"
+      v-model="dialogs.login.status"
+      @close="dialogs.login = null"
+      @login-success="handleLoginSuccess"
+    ></LoginDialog>
   </v-app>
 </template>
 
@@ -76,6 +83,7 @@ import Footer from '~/components/navigation/footer.vue'
 import EditRecordDialog from '~/components/dialog/editRecordDialog.vue'
 import CrudRecordDialog from '~/components/dialog/crudRecordDialog.vue'
 import ExecuteActionDialog from '~/components/dialog/executeActionDialog.vue'
+import LoginDialog from '~/components/dialog/loginDialog.vue'
 import * as allModels from '~/models'
 import { logoHasLightVariant } from '~/services/config'
 
@@ -88,6 +96,7 @@ export default {
     EditRecordDialog,
     CrudRecordDialog,
     ExecuteActionDialog,
+    LoginDialog,
   },
   data() {
     return {
@@ -100,7 +109,11 @@ export default {
         editRecord: null,
         crudRecord: null,
         executeAction: null,
+        login: null,
       },
+
+      // { type: string; params: any }
+      queuedAction: null,
     }
   },
 
@@ -132,6 +145,15 @@ export default {
             this.$vuetify.theme.dark ? '' : '-light'
           }.png`)
         : require('~/static/logo-horizontal.png')
+    },
+  },
+
+  watch: {
+    'dialogs.login.status'(val) {
+      // if the new status is false, clear the queued action
+      if (!val) {
+        return (this.queuedAction = null)
+      }
     },
   },
 
@@ -182,7 +204,21 @@ export default {
      ** Expecting actionOptions, item, selectedItem?
      ** if actionOptions.selectedItemModifier is set, use that to generate the selectedItem
      */
-    this.$root.$on('openExecuteActionDialog', (params) => {
+    this.$root.$on('openExecuteActionDialog', (params, loginDialog = false) => {
+      // if loginDialog and not logged in, trigger the login dialog instead and queue the action
+      if (loginDialog && !this.$store.getters['auth/user']) {
+        this.dialogs.login = {
+          status: true,
+        }
+
+        // save the action in the queue
+        this.queuedAction = {
+          type: 'openExecuteActionDialog',
+          params,
+        }
+        return
+      }
+
       this.$set(params, 'status', true)
       if (params.actionOptions.selectedItemModifier) {
         this.dialogs.executeAction = {
@@ -196,6 +232,18 @@ export default {
         this.dialogs.executeAction = params
       }
     })
+  },
+
+  methods: {
+    handleLoginSuccess() {
+      // check the queuedAction and execute, if any
+      if (this.queuedAction) {
+        this.$root.$emit(this.queuedAction.type, this.queuedAction.params)
+      }
+
+      // close the dialog
+      this.dialogs.login = null
+    },
   },
 }
 </script>

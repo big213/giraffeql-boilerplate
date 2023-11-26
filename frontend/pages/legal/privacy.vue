@@ -10,7 +10,7 @@
             </p>
             <p>{{ siteDescription }}.</p>
             <div class="pb-2">
-              <span class="subheader">Data</span>
+              <span class="title">Data</span>
               <ul>
                 <li>
                   By default, your profile page will be visible for others to
@@ -22,11 +22,17 @@
               </ul>
             </div>
             <div class="pb-2">
-              <span class="subheader">Security</span>
+              <span class="title">Security</span>
               <ul>
                 <li>
                   This website works strictly over HTTPS to provide you a
                   secured environment.
+                </li>
+                <li>
+                  Payment processing services are handled by
+                  <a href="https://stripe.com/" target="_blank">Stripe</a>. Any
+                  payment data is sent over an encrypted connection and is not
+                  stored on our servers.
                 </li>
                 <li>
                   Your email address is not accessible by other users on the
