@@ -1,7 +1,7 @@
 import { AccessControlMap, ServiceFunctionInputs } from "../../../types";
 import { BaseService } from "../../core/services";
 import { permissionsCheck } from "../../core/helpers/permissions";
-import * as admin from "firebase-admin";
+import { storage } from "firebase-admin";
 import { File } from "../../services";
 
 export class AdminService extends BaseService {
@@ -15,7 +15,6 @@ export class AdminService extends BaseService {
     query,
     isAdmin = false,
   }: ServiceFunctionInputs) {
-    // await this.syncFiles();
     return "done";
   }
 
@@ -36,7 +35,7 @@ export class AdminService extends BaseService {
     });
 
     // get the list of all files in the source bucket
-    const bucket = admin.storage().bucket();
+    const bucket = storage().bucket();
     const [files] = await bucket.getFiles({
       autoPaginate: true,
       matchGlob: "source/**",

@@ -1,7 +1,7 @@
 import { PaginatedService } from "../../core/services";
 import { permissionsCheck } from "../../core/helpers/permissions";
 import { ServiceFunctionInputs, AccessControlMap } from "../../../types";
-import * as admin from "firebase-admin";
+import { storage } from "firebase-admin";
 import {
   createObjectType,
   deleteObjectType,
@@ -146,7 +146,7 @@ export class FileService extends PaginatedService {
     await this.handleLookupArgs(args);
 
     // verify location exists and move it into /source folder
-    const bucket = admin.storage().bucket();
+    const bucket = storage().bucket();
     const file = bucket.file(`${serveImageTempPath.value()}/${args.location}`);
     const [metadata] = await file.getMetadata();
 
@@ -196,7 +196,7 @@ export class FileService extends PaginatedService {
     );
 
     // verify location exists and delete it
-    const bucket = admin.storage().bucket();
+    const bucket = storage().bucket();
     const file = bucket.file(
       `${serveImageSourcePath.value()}/${item.location}`
     );

@@ -1,5 +1,5 @@
 import { ApiKey, User } from "../schema/services";
-import * as admin from "firebase-admin";
+import { auth } from "firebase-admin";
 import { userRole, userPermission } from "../schema/enums";
 import { userRoleToPermissionsMap } from "../schema/helpers/permissions";
 import type { ContextUser } from "../types";
@@ -14,7 +14,7 @@ export async function validateToken(bearerToken: string): Promise<ContextUser> {
     const token = bearerToken.split(" ")[1];
 
     // const decoded: string = await jwt.verify(token, env.general.jwt_secret);
-    const decodedToken = await admin.auth().verifyIdToken(token);
+    const decodedToken = await auth().verifyIdToken(token);
 
     // check if firebase_uid exists
     // fetch role from database
@@ -32,7 +32,7 @@ export async function validateToken(bearerToken: string): Promise<ContextUser> {
       // user not exists, must create
 
       // get the displayName, photoURL from firebase
-      const firebaseUserRecord = await admin.auth().getUser(decodedToken.uid);
+      const firebaseUserRecord = await auth().getUser(decodedToken.uid);
 
       const addUserResults = await User.createSqlRecord({
         fields: {

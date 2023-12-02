@@ -1,5 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-require("dotenv").config();
+import { configDotenv } from "dotenv";
+configDotenv();
 
 export const production = {
   client: "pg",

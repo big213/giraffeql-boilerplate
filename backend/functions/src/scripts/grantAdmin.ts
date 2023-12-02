@@ -1,4 +1,6 @@
 import * as knexBuilder from "knex";
+import { configDotenv } from "dotenv";
+configDotenv();
 import { pgOptions } from "../config";
 import yargs from "yargs";
 

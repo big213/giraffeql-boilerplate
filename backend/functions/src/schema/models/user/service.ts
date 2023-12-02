@@ -1,5 +1,5 @@
 import { PaginatedService } from "../../core/services";
-import * as admin from "firebase-admin";
+import { auth } from "firebase-admin";
 import {
   AccessControlMap,
   ExternalQuery,
@@ -180,7 +180,7 @@ export class UserService extends PaginatedService {
     await this.handleLookupArgs(args);
 
     // create firebase user
-    const firebaseUser = await admin.auth().createUser({
+    const firebaseUser = await auth().createUser({
       email: args.email,
       emailVerified: false,
       password: args.password,
@@ -235,7 +235,7 @@ export class UserService extends PaginatedService {
 
     // make sure email field, if provided, matches the firebase user email
     if ("email" in args) {
-      const userRecord = await admin.auth().getUser(item.firebaseUid);
+      const userRecord = await auth().getUser(item.firebaseUid);
       args.email = userRecord.email;
     }
 
@@ -307,7 +307,7 @@ export class UserService extends PaginatedService {
     };
 
     if (Object.keys(firebaseUserFields).length > 0) {
-      await admin.auth().updateUser(item.firebaseUid, firebaseUserFields);
+      await auth().updateUser(item.firebaseUid, firebaseUserFields);
     }
 
     return this.isEmptyQuery(query)
@@ -373,7 +373,7 @@ export class UserService extends PaginatedService {
     });
 
     // remove firebase auth user
-    await admin.auth().deleteUser(item.firebaseUid);
+    await auth().deleteUser(item.firebaseUid);
 
     return requestedResults;
   }

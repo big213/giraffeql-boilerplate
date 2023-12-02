@@ -10,7 +10,7 @@ import {
   generateTimestampFields,
 } from "../../core/helpers/typeDef";
 import * as Scalars from "../../scalars";
-import * as admin from "firebase-admin";
+import { storage } from "firebase-admin";
 import { getDownloadURL } from "firebase-admin/storage";
 import { serveImageCdnUrl, serveImageSourcePath } from "../../../config";
 
@@ -47,7 +47,7 @@ export default new GiraffeqlObjectType(
         allowNull: false,
         requiredSqlFields: ["location"],
         resolver: async ({ parentValue }) => {
-          const bucket = admin.storage().bucket();
+          const bucket = storage().bucket();
 
           const file = bucket.file(
             `${serveImageSourcePath.value()}/${parentValue.location}`
@@ -63,7 +63,7 @@ export default new GiraffeqlObjectType(
         allowNull: false,
         requiredSqlFields: ["location"],
         resolver({ parentValue }) {
-          const bucket = admin.storage().bucket();
+          const bucket = storage().bucket();
           const file = bucket.file(
             `${serveImageSourcePath.value()}/${parentValue.location}`
           );

@@ -9,23 +9,11 @@ import {
   baseTimeoutSeconds,
   baseVersion,
   giraffeqlOptions,
-  pgOptions,
 } from "./config";
 
 import { validateToken, validateApiKey } from "./helpers/auth";
 import { CustomSchemaGenerator } from "./helpers/schema";
-import * as knex from "knex";
 
-const conn = knex(pgOptions);
-
-export const testFunction = onRequest(async (req, res) => {
-  try {
-    const result: number = await conn("user").count();
-    res.status(200).send(result);
-  } catch (err) {
-    res.status(500).send(err);
-  }
-});
 initializeApp();
 
 const app = express();
