@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <link
+      rel="stylesheet"
+      data-name="vs/editor/editor.main"
+      href="https://unpkg.com/monaco-editor@0.44.0/min/vs/editor/editor.main.css"
+    />
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+
+  <body>
+    <div class="m-2">
+      <div class="flex">
+        <div class="flex items-center me-4">
+          <div class="flex items-center me-4">
+            <input
+              checked
+              id="none-radio"
+              type="radio"
+              value="none"
+              name="radio-group"
+              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+            />
+            <label
+              for="none-radio"
+              class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+              >None</label
+            >
+          </div>
+          <div class="flex items-center me-4">
+            <input
+              id="bearer-token-radio"
+              type="radio"
+              value="bearer_token"
+              name="radio-group"
+              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+            />
+            <label
+              for="bearer-token-radio"
+              class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+              >Bearer Token</label
+            >
+          </div>
+          <div class="flex items-center me-4">
+            <input
+              id="api-key-radio"
+              type="radio"
+              value="api_key"
+              name="radio-group"
+              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+            />
+            <label
+              for="api-key-radio"
+              class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+              >API Key</label
+            >
+          </div>
+        </div>
+      </div>
+
+      <input
+        type="text"
+        class="p-2 text-gray-900 border border-gray-300 rounded-lg bg-gray-50 sm:text-xs focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+        id="key"
+        name="key"
+        style="width: 400px"
+        autocomplete="off"
+      />
+      <button
+        class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+        onclick="submit()"
+      >
+        Submit
+      </button>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div
+        id="container-1"
+        style="
+          height: 800px;
+          border: 1px solid grey;
+          resize: both;
+          overflow: auto;
+        "
+      ></div>
+      <div
+        id="container-2"
+        style="
+          height: 800px;
+          border: 1px solid grey;
+          resize: both;
+          overflow: auto;
+        "
+      ></div>
+    </div>
+    <script>
+      var require = {
+        paths: {
+          vs: "https://unpkg.com/monaco-editor@0.44.0/min/vs",
+        },
+      };
+    </script>
+    <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/loader.js"></script>
+    <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/editor/editor.main.nls.js"></script>
+    <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/editor/editor.main.js"></script>
+    <script>
+      async function submit() {
+        try {
+          const keyString = document.getElementById("key").value;
+          const keyType = document.querySelector(
+            'input[name="radio-group"]:checked'
+          ).value; // bearer_token | api_key | none
+
+          const apiUrl = window.location.href.replace(/\/query$/, "/giraffeql");
+
+          const headers = {
+            "Content-Type": "application/json",
+            ...(keyType !== "none" && {
+              [keyType === "api_key" ? "x-api-key" : "Authorization"]: `${
+                keyType === "bearer_token" ? "Bearer " : ""
+              }${keyString}`,
+            }),
+          };
+
+          // clear the fetch statement
+          queryEditor.setValue(
+            queryEditor.getValue().replace(
+              /\/\*\sREQUEST\sSTART\s\*\/((\n|.)*)\/\*\sREQUEST\sEND\s\*\//m,
+              `/* REQUEST START */` +
+                `
+  return fetch("${apiUrl}", {
+    method: "post",
+    headers: ${JSON.stringify(headers, null, 6).replace(
+      /\}$/,
+      "}".padStart(4)
+    )},
+    body: JSON.stringify(query)
+  }).then(res => res.json()).then(json => json.data)` +
+                `
+  /* REQUEST END */`
+            )
+          );
+
+          const queryMatches = queryEditor
+            .getValue()
+            .match(/\/\*\sQUERY\sSTART\s\*\/((\n|.)*)\/\*\sQUERY\sEND\s\*\//m);
+
+          if (!queryMatches || !queryMatches[1])
+            throw new Error(`Invalid query`);
+
+          const query = new Function(`return {${queryMatches[1]}}`)();
+
+          const response = await fetch(apiUrl, {
+            method: "post",
+            headers,
+            body: JSON.stringify(query),
+          });
+
+          const responseData = await response.json();
+
+          responseEditor.setValue(JSON.stringify(responseData, null, 2));
+        } catch (err) {
+          console.log(err);
+          // on error, display the message
+          responseEditor.setValue(err.msesage);
+        }
+      }
+
+      const queryEditor = monaco.editor.create(
+        document.getElementById("container-1"),
+        {
+          value: `{{ schemaString }}`,
+          language: "typescript",
+          automaticLayout: true,
+          wordWrap: "on",
+        }
+      );
+
+      const responseEditor = monaco.editor.create(
+        document.getElementById("container-2"),
+        {
+          language: "json",
+          automaticLayout: true,
+          wordWrap: "on",
+          readOnly: true,
+        }
+      );
+
+      monaco.editor.setTheme("vs-dark");
+    </script>
+  </body>
+</html>

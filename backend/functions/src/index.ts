@@ -12,7 +12,7 @@ import {
 } from "./config";
 
 import { validateToken, validateApiKey } from "./helpers/auth";
-import { CustomSchemaGenerator } from "./helpers/schema";
+import { CustomSchemaGenerator, generateQueryPage } from "./helpers/schema";
 
 initializeApp();
 
@@ -85,6 +85,12 @@ app.get("/schema.ts", function (req, res, next) {
   tsSchemaGenerator.buildSchema();
   tsSchemaGenerator.processSchema();
   res.send(tsSchemaGenerator.outputSchema());
+});
+
+app.get("/query", function (req, res, next) {
+  res.header("Content-Type", "text/html");
+
+  res.send(generateQueryPage(giraffeqlOptions));
 });
 
 // runWith does not work properly with timeoutSeconds > 60 as of Firebase Cloud Functions V1

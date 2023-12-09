@@ -1,4 +1,92 @@
 import { TsSchemaGenerator } from "giraffeql";
+import { readFileSync } from "fs";
+
+// parses templateString and replaces with any params
+function processTemplate(
+  templateString: string,
+  params: { [x in string]: string | null } | null | undefined
+) {
+  let templateStringModified = templateString;
+
+  // if params is provided, attempt to replace the template variables
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      // need to escape any quotes, so they don't mess up the JSON
+      // const escapedValue = value ? value.replace(/"/g, '\\"') : "";
+
+      const currentRegex = new RegExp(`{{\\s*${key}\\s*}}`, "g");
+      templateStringModified = templateStringModified.replace(
+        currentRegex,
+        value ?? ""
+      );
+    });
+  }
+
+  // replace any remaining template variables with "undefined"
+  templateStringModified = templateStringModified.replace(
+    /{{\s*([^}]*)\s*}}/g,
+    "undefined"
+  );
+
+  return templateStringModified;
+}
+
+export function generateQueryPage(giraffeqlOptions: any) {
+  const tsSchemaGenerator = new CustomSchemaGenerator({
+    lookupValue: giraffeqlOptions.lookupValue,
+    addQueryBuilder: false,
+  });
+  tsSchemaGenerator.buildSchema();
+  tsSchemaGenerator.processSchema();
+
+  const templateFile = readFileSync("src/helpers/templates/query.html", {
+    encoding: "utf-8",
+  });
+  return processTemplate(templateFile, {
+    schemaString: `// Start typing here to get hints. Ctrl + space for suggestions.
+executeGiraffeql<keyof Root>({
+  /* QUERY START */
+  getUserPaginator: {
+    edges: {
+      node: {
+        id: true,
+        name: true,
+      }
+    },
+    __args: {
+      first: 10,
+      filterBy: [
+        {
+          isPublic: {
+            eq: true
+          }
+        }
+      ]
+    }
+  }
+  /* QUERY END */  
+}).then(data => console.log(data));
+
+/* --------- Do not edit anything below this line --------- */
+
+/* Request Info */
+export function executeGiraffeql<Key extends keyof Root>(
+  query: GetQuery<Key>
+): Promise<GetResponse<Key>> {
+  /* REQUEST START */
+  // run query to populate this
+  return fetch("", {
+    method: "post",
+    headers: {},
+    body: JSON.stringify(query)
+  }).then(res => res.json()).then(json => json.data)
+  /* REQUEST END */
+}
+
+${tsSchemaGenerator.outputSchema()}`,
+  });
+}
+
 export class CustomSchemaGenerator extends TsSchemaGenerator {
   constructor(giraffeqlOptions) {
     super(giraffeqlOptions);
