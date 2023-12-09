@@ -82,7 +82,6 @@ export function executeGiraffeql<Key extends keyof Root>(
   }).then(res => res.json()).then(json => json.data)
   /* REQUEST END */
 }
-
 ${tsSchemaGenerator.outputSchema()}`,
   });
 }

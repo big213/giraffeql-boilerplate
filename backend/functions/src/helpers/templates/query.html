@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html class="h-[calc(100vh-100px)]">
   <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
     <link
@@ -15,7 +15,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
 
-  <body>
+  <body class="h-full">
     <div class="m-2">
       <div class="flex">
         <div class="flex items-center me-4">
@@ -80,24 +80,16 @@
         Submit
       </button>
     </div>
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-2 gap-4 h-full">
       <div
         id="container-1"
-        style="
-          height: 800px;
-          border: 1px solid grey;
-          resize: both;
-          overflow: auto;
-        "
+        class="h-full"
+        style="border: 1px solid grey; resize: vertical; overflow: auto"
       ></div>
       <div
         id="container-2"
-        style="
-          height: 800px;
-          border: 1px solid grey;
-          resize: both;
-          overflow: auto;
-        "
+        class="h-full"
+        style="border: 1px solid grey; resize: vertical; overflow: auto"
       ></div>
     </div>
     <script>
@@ -112,6 +104,7 @@
     <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/editor/editor.main.js"></script>
     <script>
       async function submit() {
+        responseEditor.setValue("Sending query...");
         try {
           const keyString = document.getElementById("key").value;
           const keyType = document.querySelector(
@@ -169,7 +162,7 @@
         } catch (err) {
           console.log(err);
           // on error, display the message
-          responseEditor.setValue(err.msesage);
+          responseEditor.setValue(err.message);
         }
       }
 
