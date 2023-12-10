@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html class="h-[calc(100vh-100px)]">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+    <link
+      rel="stylesheet"
+      data-name="vs/editor/editor.main"
+      href="https://unpkg.com/monaco-editor@0.44.0/min/vs/editor/editor.main.css"
+    />
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+
+  <body class="h-full">
+    <div class="m-2">
+      <div class="flex">
+        <div class="flex items-center me-4">
+          <div class="flex items-center me-4">
+            <input
+              checked
+              id="none-radio"
+              type="radio"
+              value="none"
+              name="radio-group"
+              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+            />
+            <label
+              for="none-radio"
+              class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+              >None</label
+            >
+          </div>
+          <div class="flex items-center me-4">
+            <input
+              id="bearer-token-radio"
+              type="radio"
+              value="bearer_token"
+              name="radio-group"
+              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+            />
+            <label
+              for="bearer-token-radio"
+              class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+              >Bearer Token</label
+            >
+          </div>
+          <div class="flex items-center me-4">
+            <input
+              id="api-key-radio"
+              type="radio"
+              value="api_key"
+              name="radio-group"
+              class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+            />
+            <label
+              for="api-key-radio"
+              class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+              >API Key</label
+            >
+          </div>
+        </div>
+      </div>
+
+      <input
+        type="text"
+        class="p-2 text-gray-900 border border-gray-300 rounded-lg bg-gray-50 sm:text-xs focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+        id="key"
+        name="key"
+        style="width: 400px"
+        autocomplete="off"
+      />
+      <button
+        class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+        onclick="submit()"
+      >
+        Submit
+      </button>
+      <span>(or press [Ctrl] + [Enter] inside the editor)</span>
+    </div>
+    <div class="grid grid-cols-2 gap-4 h-full">
+      <div
+        id="container-1"
+        class="h-full"
+        style="border: 1px solid grey; resize: vertical; overflow: auto"
+      ></div>
+      <div
+        id="container-2"
+        class="h-full"
+        style="border: 1px solid grey; resize: vertical; overflow: auto"
+      ></div>
+    </div>
+    <script>
+      var require = {
+        paths: {
+          vs: "https://unpkg.com/monaco-editor@0.44.0/min/vs",
+        },
+      };
+    </script>
+    <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/loader.js"></script>
+    <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/editor/editor.main.nls.js"></script>
+    <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/editor/editor.main.js"></script>
+    <script>
+      async function submit() {
+        responseEditor.setValue("Sending query...");
+        try {
+          const keyString = document.getElementById("key").value;
+          const keyType = document.querySelector(
+            'input[name="radio-group"]:checked'
+          ).value; // bearer_token | api_key | none
+
+          const apiUrl = window.location.href.replace(
+            /\/prompt$/,
+            "/giraffeql"
+          );
+
+          const headers = {
+            "Content-Type": "application/json",
+            ...(keyType !== "none" && {
+              [keyType === "api_key" ? "x-api-key" : "Authorization"]: `${
+                keyType === "bearer_token" ? "Bearer " : ""
+              }${keyString}`,
+            }),
+          };
+
+          const query = {
+            executeVertexRequest: {
+              __args: {
+                query: `Rules:
+- Strings should be enclosed in double quotes.
+                
+Response structure:
+{
+  queryType: String({ Multiple Choice: Classify what this query is about: [get] [count] [list] [delete] [update] [create] [other] }),
+  entity: String({ Multiple Choice: Classify the entity this query is about: [user] [api key] [giraffe] [other] }),
+  limit: { How many records should be returned? If not applicable, say undefined },
+  id: String({ If this is a "get" queryType, what is the ID? If not applicable, say null })
+}
+
+Query: ${queryEditor.getValue()}
+
+Answer as JSON string:
+`,
+              },
+            },
+          };
+
+          const responseData = await fetch(apiUrl, {
+            method: "post",
+            headers,
+            body: JSON.stringify(query),
+          }).then((res) => res.json());
+
+          // if the responseData.data is a string, this should be the successful JSON response, otherwise throw an error
+          if (typeof responseData.data !== "string") {
+            throw new Error(`Query failed to execute`);
+          }
+
+          // parse the AI response, which should be structured as ```json\n{obj}```
+          const jsonMatches = responseData.data.match(/```json\n((\n|.)*)```/m);
+
+          if (!jsonMatches || !jsonMatches[1]) {
+            throw new Error(`Query returned a malformed response`);
+          }
+
+          const responseObject = new Function(`return ${jsonMatches[1]}`)();
+
+          /* responseObject: { queryType, entity, id } */
+
+          // generate the entityData based on the queryType
+          let entityData;
+
+          if (responseObject.queryType === "get") {
+            const giraffeqlQuery = {
+              [`get${capitalizeString(responseObject.entity)}`]: {
+                id: true,
+                name: true,
+                description: true,
+                __args: {
+                  id: responseObject.id,
+                },
+              },
+            };
+
+            // fetch the data about the entity
+            entityData = await fetch(apiUrl, {
+              method: "post",
+              headers,
+              body: JSON.stringify(giraffeqlQuery),
+            })
+              .then((res) => res.json())
+              .then((res) => res.data);
+          } else if (responseObject.queryType === "count") {
+            const giraffeqlQuery = {
+              [`get${capitalizeString(responseObject.entity)}Paginator`]: {
+                paginatorInfo: {
+                  total: true,
+                },
+                __args: {
+                  first: 10,
+                  filterBy: [
+                    {
+                      isPublic: {
+                        eq: true,
+                      },
+                    },
+                  ],
+                },
+              },
+            };
+
+            // fetch the data about the entity
+            entityData = {
+              count: await fetch(apiUrl, {
+                method: "post",
+                headers,
+                body: JSON.stringify(giraffeqlQuery),
+              })
+                .then((res) => res.json())
+                .then((res) => res.data.paginatorInfo.total),
+            };
+          }
+
+          if (!entityData) {
+            throw new Error(`Failed -- no data returned for the entity`);
+          }
+
+          // if there is any data, send it back to AI to summarize
+          const summarizeTextQuery = `Context JSON:
+${JSON.stringify(entityData, null, 2)}
+
+Rules:
+- If the property is not in the context JSON, say the property is not specified
+- If the property is null, say the property is null
+- If the question is about the number of an entity, use the "count" property
+- If the question pertains to the name of an entity, use the "name" property
+
+Question: ${queryEditor.getValue()}
+
+Answer:`;
+
+          console.log(summarizeTextQuery);
+          const summarizeData = await fetch(apiUrl, {
+            method: "post",
+            headers,
+            body: JSON.stringify({
+              executeVertexRequest: {
+                __args: {
+                  query: summarizeTextQuery,
+                },
+              },
+            }),
+          })
+            .then((res) => res.json())
+            .then((res) => res.data);
+
+          responseEditor.setValue(summarizeData);
+          // responseEditor.setValue(JSON.stringify(responseObject, null, 2));
+        } catch (err) {
+          console.log(err);
+          // on error, display the message
+          responseEditor.setValue(err.message);
+        }
+      }
+
+      function capitalizeString(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+      }
+
+      const queryEditor = monaco.editor.create(
+        document.getElementById("container-1"),
+        {
+          value: "",
+          automaticLayout: true,
+          wordWrap: "on",
+        }
+      );
+
+      queryEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () =>
+        submit()
+      );
+
+      const responseEditor = monaco.editor.create(
+        document.getElementById("container-2"),
+        {
+          automaticLayout: true,
+          wordWrap: "on",
+          readOnly: true,
+        }
+      );
+
+      monaco.editor.setTheme("vs-dark");
+    </script>
+  </body>
+</html>

@@ -3,9 +3,12 @@ import { BaseService } from "../../core/services";
 import { permissionsCheck } from "../../core/helpers/permissions";
 import { storage } from "firebase-admin";
 import { File } from "../../services";
+import { getVertexResponse } from "../../helpers/vertex";
 
 export class AdminService extends BaseService {
-  accessControl: AccessControlMap = {};
+  accessControl: AccessControlMap = {
+    vertex: () => true,
+  };
 
   @permissionsCheck("admin")
   async executeAdminFunction({
@@ -58,5 +61,22 @@ export class AdminService extends BaseService {
     }
 
     console.log(filesDeleted);
+  }
+
+  @permissionsCheck("vertex")
+  async executeVertexRequest({
+    req,
+    fieldPath,
+    args,
+    query,
+    isAdmin = false,
+  }: ServiceFunctionInputs) {
+    try {
+      const data = await getVertexResponse(args.query);
+
+      return data;
+    } catch (err: any) {
+      return err.response.data.error;
+    }
   }
 }

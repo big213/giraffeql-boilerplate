@@ -31,15 +31,70 @@ function processTemplate(
   return templateStringModified;
 }
 
-export function generateQueryPage(giraffeqlOptions: any) {
+export function generateQueryPage(lookupValue: any) {
   const tsSchemaGenerator = new CustomSchemaGenerator({
-    lookupValue: giraffeqlOptions.lookupValue,
+    lookupValue,
     addQueryBuilder: false,
   });
   tsSchemaGenerator.buildSchema();
   tsSchemaGenerator.processSchema();
 
   const templateFile = readFileSync("src/helpers/templates/query.html", {
+    encoding: "utf-8",
+  });
+  return processTemplate(templateFile, {
+    schemaString: `// Start typing here to get hints. Ctrl + space for suggestions.
+executeGiraffeql<keyof Root>({
+  /* QUERY START */
+  getUserPaginator: {
+    edges: {
+      node: {
+        id: true,
+        name: true,
+      }
+    },
+    __args: {
+      first: 10,
+      filterBy: [
+        {
+          isPublic: {
+            eq: true
+          }
+        }
+      ]
+    }
+  }
+  /* QUERY END */  
+}).then(data => console.log(data));
+
+/* --------- Do not edit anything below this line --------- */
+
+/* Request Info */
+export function executeGiraffeql<Key extends keyof Root>(
+  query: GetQuery<Key>
+): Promise<GetResponse<Key>> {
+  /* REQUEST START */
+  // run query to populate this
+  return fetch("", {
+    method: "post",
+    headers: {},
+    body: JSON.stringify(query)
+  }).then(res => res.json()).then(json => json.data)
+  /* REQUEST END */
+}
+${tsSchemaGenerator.outputSchema()}`,
+  });
+}
+
+export function generatePromptPage(lookupValue: any) {
+  const tsSchemaGenerator = new CustomSchemaGenerator({
+    lookupValue,
+    addQueryBuilder: false,
+  });
+  tsSchemaGenerator.buildSchema();
+  tsSchemaGenerator.processSchema();
+
+  const templateFile = readFileSync("src/helpers/templates/prompt.html", {
     encoding: "utf-8",
   });
   return processTemplate(templateFile, {

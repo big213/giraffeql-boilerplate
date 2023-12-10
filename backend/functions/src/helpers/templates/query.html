@@ -79,6 +79,7 @@
       >
         Submit
       </button>
+      <span>(or press [Ctrl] + [Enter] inside the editor)</span>
     </div>
     <div class="grid grid-cols-2 gap-4 h-full">
       <div
@@ -174,6 +175,10 @@
           automaticLayout: true,
           wordWrap: "on",
         }
+      );
+
+      queryEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () =>
+        submit()
       );
 
       const responseEditor = monaco.editor.create(

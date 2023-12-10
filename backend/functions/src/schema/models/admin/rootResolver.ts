@@ -1,6 +1,10 @@
 import { Admin } from "../../services";
 import * as Scalars from "../../scalars";
-import { GiraffeqlInputFieldType, GiraffeqlRootResolverType } from "giraffeql";
+import {
+  GiraffeqlInputFieldType,
+  GiraffeqlInputType,
+  GiraffeqlRootResolverType,
+} from "giraffeql";
 
 export default {
   executeAdminFunction: new GiraffeqlRootResolverType({
@@ -16,5 +20,28 @@ export default {
       type: Scalars.string,
     }),
     resolver: (inputs) => Admin.executeAdminFunction(inputs),
+  }),
+  executeVertexRequest: new GiraffeqlRootResolverType({
+    name: "executeVertexRequest",
+    restOptions: {
+      method: "post",
+      route: "/executeVertexRequest",
+      argsTransformer: (req) => req.body,
+    },
+    type: Scalars.unknown,
+    allowNull: true,
+    args: new GiraffeqlInputFieldType({
+      required: true,
+      type: new GiraffeqlInputType({
+        name: "executeVertexRequestInput",
+        fields: {
+          query: new GiraffeqlInputFieldType({
+            required: true,
+            type: Scalars.string,
+          }),
+        },
+      }),
+    }),
+    resolver: (inputs) => Admin.executeVertexRequest(inputs),
   }),
 };
