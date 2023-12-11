@@ -44,8 +44,8 @@ export function generateQueryPage(lookupValue: any) {
   });
   return processTemplate(templateFile, {
     schemaString: `// Start typing here to get hints. Ctrl + space for suggestions.
-executeGiraffeql<keyof Root>({
-  /* QUERY START */
+/* QUERY START */
+const query: GetQuery<keyof Root> = {
   getUserPaginator: {
     edges: {
       node: {
@@ -64,81 +64,39 @@ executeGiraffeql<keyof Root>({
       ]
     }
   }
-  /* QUERY END */  
-}).then(data => console.log(data));
+}
+/* QUERY END */
 
+executeGiraffeql<keyof Root>(query).then(data => data);
+${"\n".repeat(10)}
 /* --------- Do not edit anything below this line --------- */
 
-/* Request Info */
 export function executeGiraffeql<Key extends keyof Root>(
   query: GetQuery<Key>
 ): Promise<GetResponse<Key>> {
-  /* REQUEST START */
-  // run query to populate this
-  return fetch("", {
+  // these are placeholder values. For a working fetch statement, see the editor below after submitting a request
+  return fetch("/giraffeql", {
     method: "post",
     headers: {},
     body: JSON.stringify(query)
   }).then(res => res.json()).then(json => json.data)
-  /* REQUEST END */
 }
 ${tsSchemaGenerator.outputSchema()}`,
   });
 }
 
 export function generatePromptPage(lookupValue: any) {
-  const tsSchemaGenerator = new CustomSchemaGenerator({
-    lookupValue,
-    addQueryBuilder: false,
-  });
-  tsSchemaGenerator.buildSchema();
-  tsSchemaGenerator.processSchema();
-
   const templateFile = readFileSync("src/helpers/templates/prompt.html", {
     encoding: "utf-8",
   });
-  return processTemplate(templateFile, {
-    schemaString: `// Start typing here to get hints. Ctrl + space for suggestions.
-executeGiraffeql<keyof Root>({
-  /* QUERY START */
-  getUserPaginator: {
-    edges: {
-      node: {
-        id: true,
-        name: true,
-      }
-    },
-    __args: {
-      first: 10,
-      filterBy: [
-        {
-          isPublic: {
-            eq: true
-          }
-        }
-      ]
-    }
-  }
-  /* QUERY END */  
-}).then(data => console.log(data));
-
-/* --------- Do not edit anything below this line --------- */
-
-/* Request Info */
-export function executeGiraffeql<Key extends keyof Root>(
-  query: GetQuery<Key>
-): Promise<GetResponse<Key>> {
-  /* REQUEST START */
-  // run query to populate this
-  return fetch("", {
-    method: "post",
-    headers: {},
-    body: JSON.stringify(query)
-  }).then(res => res.json()).then(json => json.data)
-  /* REQUEST END */
+  return processTemplate(templateFile, {});
 }
-${tsSchemaGenerator.outputSchema()}`,
+
+export function generatePromptEmptyPage() {
+  const templateFile = readFileSync("src/helpers/templates/promptEmpty.html", {
+    encoding: "utf-8",
   });
+  return processTemplate(templateFile, {});
 }
 
 export class CustomSchemaGenerator extends TsSchemaGenerator {

@@ -138,7 +138,10 @@
     <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/editor/editor.main.nls.js"></script>
     <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/editor/editor.main.js"></script>
     <script>
-      const apiUrl = window.location.href.replace(/\/prompt$/, "/giraffeql");
+      const apiUrl = window.location.href.replace(
+        /\/prompt-empty$/,
+        "/giraffeql"
+      );
 
       async function executeVertexRequest({ query, headers, aiModel }) {
         const giraffeqlQuery = {
@@ -182,127 +185,6 @@
         return responseData.data.predictions[0].content;
       }
 
-      async function executeGiraffeqlRequest({ query, headers }) {
-        const responseData = await fetch(apiUrl, {
-          method: "post",
-          headers,
-          body: JSON.stringify(query),
-        }).then((res) => res.json());
-
-        return responseData.data;
-      }
-
-      // fetches the context queries necessary to retrieve the data to answer the question
-      async function fetchContextData({ query, headers }) {
-        const contextResponse = await executeVertexRequest({
-          query: `Context:
-The entities are [User], [File], [API Key], [Other], and the following actions are available for all of these entities: [Create], [Get], [Update], [Delete], [List], [Count]
-
-Other actions are: [Execute a Vertex Request]
-
-For the [Get] action, the response structure is:
-{
-  queryType: "get",
-  entity: String({ entity }),
-  id: String({ the ID of the entity })
-}
-
-For the [Count] action, the response structure is:
-{
-  queryType: "count",
-  entity: String({ entity }),
-}
-
-For the [List] action, the response structure is:
-{
-  queryType: "list",
-  entity: String({ entity }),
-  limit: { How many records should be returned? If not applicable, say undefined },
-}
-
-For the [Update] action, the response structure is:
-{
-  queryType: "update",
-  entity: String({ entity }),
-  fields: { Which fields should be updated, and to what? As a nested object},
-  id: String({ the ID of the entity })
-}
-
-For the [Delete] action, the response structure is:
-{
-  queryType: "delete",
-  entity: String({ entity }),
-  id: String({ the ID of the entity })
-}
-
-For the [Execute a Vertex Request] action, the response structure is:
-{
-  queryType: "other",
-  action: "executeVertexRequest",
-  query: String({ the query })
-}
-
-Rules:
-- type JsonRequests = JsonRequest[]
-- If the entity attribute is not in: [user] [api key] [giraffe], set it to "other"
-- If the response structure cannot be determined, or the entity is "other", return null
-
-Query: What are the necessary JsonRequests to answer the question: [${queryEditor.getValue()}]?
-
-JsonRequests:`,
-          headers,
-          aiModel: "code",
-        });
-
-        // if the contextResponse is a string, this should be the successful JSON response, otherwise throw an error
-        if (typeof contextResponse !== "string") {
-          throw new Error(`Query failed to execute`);
-        }
-
-        // parse the AI response, which should be structured as ```json\n{obj}```
-        const jsonMatches = contextResponse.match(/```json\n((\n|.)*)```/m);
-
-        if (!jsonMatches || !jsonMatches[1]) {
-          throw new Error(`Query returned a malformed response`);
-        }
-
-        const queriesArray = new Function(`return ${jsonMatches[1]}`)();
-
-        const resultsArray = [];
-        for (const query of queriesArray) {
-          if (!query) continue;
-
-          switch (query.queryType) {
-            case "count":
-              /* Expected properties: queryType, entity */
-              if (query.entity !== "other") {
-                resultsArray.push({
-                  ...query,
-                  data: await executeGiraffeqlRequest({
-                    query: {
-                      [`get${capitalizeString(query.entity)}Stats`]: {
-                        count: true,
-                        __args: {},
-                      },
-                    },
-                    headers,
-                  }),
-                });
-              }
-              break;
-            default:
-              break;
-          }
-        }
-
-        // if no results, throw an error
-        if (resultsArray.length < 1) {
-          throw new Error(`Unable to process query`);
-        }
-
-        return resultsArray;
-      }
-
       async function submit() {
         responseEditor.setValue("Sending query...");
         try {
@@ -323,18 +205,8 @@ JsonRequests:`,
             }),
           };
 
-          const contextData = await fetchContextData({
-            query: queryEditor.getValue(),
-            headers,
-          });
-
           const responseData = await executeVertexRequest({
-            query: `Context Data:
-${JSON.stringify(contextData, null, 2)}
-
-Question: ${queryEditor.getValue()}
-
-Answer:`,
+            query: queryEditor.getValue(),
             headers,
             aiModel,
           });

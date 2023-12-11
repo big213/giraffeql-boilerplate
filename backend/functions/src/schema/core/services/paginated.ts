@@ -14,6 +14,7 @@ import {
   SqlSelectQuery,
   SqlSumQuery,
   SqlUpdateQuery,
+  SqlWhereFieldOperator,
   SqlWhereInput,
   SqlWhereObject,
   sumTableRows,
@@ -38,8 +39,9 @@ import {
 
 import { ExternalQuery, ServiceFunctionInputs } from "../../../types";
 
-import { generateId, isObject } from "../helpers/shared";
+import { escapeRegExp, generateId, isObject } from "../helpers/shared";
 import {
+  countObjectType,
   createObjectType,
   deleteObjectType,
   getObjectType,
@@ -49,6 +51,7 @@ import { PaginatorService } from ".";
 import { Transaction } from "knex";
 import { Scalars } from "../..";
 import { knex } from "../../../utils/knex";
+import { generateSqlSingleFieldObject } from "../helpers/sqlHelper";
 
 export type FieldObject = {
   field?: string;
@@ -320,6 +323,103 @@ export class PaginatedService extends BaseService {
         args[key] = results[0].id;
       }
     }
+  }
+
+  @permissionsCheck("getMultiple")
+  async getRecordStats({
+    req,
+    fieldPath,
+    args,
+    query,
+    data = {},
+    isAdmin = false,
+  }: ServiceFunctionInputs) {
+    const whereObject: SqlWhereObject = {
+      connective: "AND",
+      fields: [],
+    };
+
+    if (Array.isArray(args.filterBy)) {
+      const filterByOrObject: SqlWhereObject = {
+        connective: "OR",
+        fields: [],
+      };
+      whereObject.fields.push(filterByOrObject);
+
+      args.filterBy.forEach((filterByObject) => {
+        const filterByAndObject: SqlWhereObject = {
+          connective: "AND",
+          fields: [],
+        };
+        filterByOrObject.fields.push(filterByAndObject);
+        Object.entries(filterByObject).forEach(
+          ([filterKey, filterKeyObject]) => {
+            Object.entries(<any>filterKeyObject).forEach(
+              ([operationKey, operationValue]: [string, any]) => {
+                filterByAndObject.fields.push({
+                  field: generateSqlSingleFieldObject(
+                    this.filterFieldsMap[filterKey].field ?? filterKey
+                  ),
+                  operator: <SqlWhereFieldOperator>operationKey,
+                  value: operationValue,
+                });
+              }
+            );
+          }
+        );
+      });
+    }
+
+    // handle search fields
+    if (args.search) {
+      const whereSubObject: SqlWhereObject = {
+        connective: "OR",
+        fields: [],
+      };
+
+      for (const field in this.searchFieldsMap) {
+        const fieldPath = this.searchFieldsMap[field].field ?? field;
+
+        // if there is a custom handler on the options, use that
+        const customProcessor = this.searchFieldsMap[field].customProcessor;
+        if (customProcessor) {
+          customProcessor(
+            whereSubObject,
+            args.search,
+            this.searchFieldsMap[field],
+            fieldPath
+          );
+        } else {
+          // if field options has exact, ony allow eq
+          if (this.searchFieldsMap[field].exact) {
+            whereSubObject.fields.push({
+              field: fieldPath,
+              value: args.search.query,
+              operator: "eq",
+            });
+          } else {
+            whereSubObject.fields.push({
+              field: fieldPath,
+              value: new RegExp(escapeRegExp(args.search.query), "i"),
+              operator: "regex",
+            });
+          }
+        }
+      }
+
+      whereObject.fields.push(whereSubObject);
+    }
+
+    return {
+      ...(query?.count !== undefined && {
+        count: await countObjectType(
+          this.typename,
+          fieldPath,
+          [whereObject],
+          true
+        ),
+      }),
+    };
   }
 
   // by default, load "currentUserId" with the current user, if any

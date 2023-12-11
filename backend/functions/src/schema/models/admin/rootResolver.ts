@@ -39,6 +39,14 @@ export default {
             required: true,
             type: Scalars.string,
           }),
+          url: new GiraffeqlInputFieldType({
+            required: true,
+            type: Scalars.url,
+          }),
+          data: new GiraffeqlInputFieldType({
+            allowNull: true,
+            type: Scalars.unknown,
+          }),
         },
       }),
     }),

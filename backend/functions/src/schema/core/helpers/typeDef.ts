@@ -661,11 +661,6 @@ export function generateTypenameField(service: BaseService) {
       type: Scalars.string,
       typeDefOptions: {
         resolver: () => service.typename,
-        args: new GiraffeqlInputFieldType({
-          required: false,
-          allowNull: false,
-          type: Scalars.number,
-        }),
         addable: false,
         updateable: false, // not addable or updateable
       },
@@ -1271,6 +1266,139 @@ export function generatePaginatorPivotResolverObject({
                   fieldPath,
                 });
               }
+            }
+
+            // if args.filterBy is provided, all of its objects must be non-empty
+            if (
+              validatedArgs.filterBy &&
+              validatedArgs.filterBy.some(
+                (filterObject) => Object.keys(filterObject).length < 1
+              )
+            ) {
+              throw new GiraffeqlArgsError({
+                message: `All filterBy objects must have at least one filter parameter specified`,
+                fieldPath,
+              });
+            }
+          },
+        },
+        true
+      ),
+    }),
+    ...(rootResolverFunction
+      ? {
+          resolver: rootResolverFunction,
+        }
+      : {
+          resolver: resolverFunction,
+          requiredSqlFields: ["id"],
+        }),
+  };
+}
+
+export function generateStatsResolverObject({
+  pivotService,
+  filterByField,
+}: {
+  pivotService: PaginatedService;
+  filterByField?: string;
+}) {
+  // if filterByField, ensure that filterByField is a valid filterField on pivotService
+  if (filterByField && !pivotService.filterFieldsMap[filterByField]) {
+    throw new GiraffeqlInitializationError({
+      message: `Filter Key '${filterByField}' does not exist on type '${pivotService.typename}'`,
+    });
+  }
+
+  let rootResolverFunction: RootResolverFunction | undefined;
+  let resolverFunction: ResolverFunction | undefined;
+
+  if (filterByField) {
+    resolverFunction = async ({
+      req,
+      args,
+      fieldPath,
+      query,
+      parentValue,
+      data,
+    }) => {
+      // args should be validated already
+      const validatedArgs = <any>args;
+
+      // parentValue.id should be requested (via requiredSqlFields)
+      const parentItemId = parentValue.id;
+
+      // apply the filterByField as an arg to each filterObject
+      const filterObjectArray = validatedArgs.filterBy ?? [{}];
+      filterObjectArray.forEach((filterObject) => {
+        filterObject[filterByField] = { eq: parentItemId };
+      });
+
+      return pivotService.getRecordStats({
+        req,
+        fieldPath,
+        args: {
+          ...validatedArgs,
+          filterBy: filterObjectArray,
+        },
+        query,
+        data,
+      });
+    };
+  } else {
+    rootResolverFunction = (inputs) => pivotService.getRecordStats(inputs);
+  }
+
+  const hasSearchFields =
+    pivotService.searchFieldsMap &&
+    Object.keys(pivotService.searchFieldsMap).length > 0;
+
+  return <ObjectTypeDefinitionField>{
+    type: new GiraffeqlObjectType(
+      {
+        name: `StatsResponse`,
+        fields: {
+          count: {
+            type: Scalars.number,
+            allowNull: false,
+          },
+        },
+      },
+      true
+    ),
+    allowNull: false,
+    args: new GiraffeqlInputFieldType({
+      required: true,
+      type: new GiraffeqlInputType(
+        {
+          name: `${pivotService.typename}StatsInput`,
+          fields: {
+            filterBy: new GiraffeqlInputFieldType({
+              arrayOptions: {
+                allowNullElement: false,
+              },
+              type: new GiraffeqlInputTypeLookup(
+                `${pivotService.typename}FilterByObject`
+              ),
+            }),
+            ...(hasSearchFields && {
+              search: new GiraffeqlInputFieldType({
+                type: new GiraffeqlInputTypeLookup(
+                  `${pivotService.typename}SearchObject`
+                ),
+              }),
+            }),
+          },
+          inputsValidator: (args, fieldPath) => {
+            // check for invalid first/last, before/after combos
+            const validatedArgs = <any>args;
+
+            // after
+            if (!isObject(args)) {
+              throw new GiraffeqlArgsError({
+                message: `Args required`,
+                fieldPath,
+              });
             }
 
             // if args.filterBy is provided, all of its objects must be non-empty

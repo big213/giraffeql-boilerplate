@@ -70,7 +70,7 @@ export default {
 
   ...generateBaseRootResolvers({
     service: User,
-    methods: ["get", "getMultiple", "delete", "create", "update"],
+    methods: ["get", "getMultiple", "stats", "delete", "create", "update"],
     restMethods: ["get", "getMultiple"],
   }),
 };

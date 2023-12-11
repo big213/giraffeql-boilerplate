@@ -99,12 +99,15 @@ export async function validateToken(bearerToken: string): Promise<ContextUser> {
 export async function validateApiKey(code: string): Promise<ContextUser> {
   try {
     // lookup user by API key
-    const apiKey = await ApiKey.getFirstSqlRecord({
-      select: ["createdBy.id", "createdBy.role", "createdBy.permissions"],
-      where: {
-        code,
+    const apiKey = await ApiKey.getFirstSqlRecord(
+      {
+        select: ["createdBy.id", "createdBy.role", "createdBy.permissions"],
+        where: {
+          code,
+        },
       },
-    });
+      true
+    );
 
     let parsedPermissions = apiKey["createdBy.permissions"] ?? [];
 

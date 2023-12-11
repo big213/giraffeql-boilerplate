@@ -11,12 +11,16 @@ import {
   lookupSymbol,
 } from "giraffeql";
 import { PaginatedService, EnumService } from "../services";
-import { generatePaginatorPivotResolverObject } from "../helpers/typeDef";
+import {
+  generatePaginatorPivotResolverObject,
+  generateStatsResolverObject,
+} from "../helpers/typeDef";
 import { capitalizeString, isObject } from "../helpers/shared";
 import { Request } from "express";
 type BaseRootResolverTypes =
   | "get"
   | "getMultiple"
+  | "stats"
   | "delete"
   | "create"
   | "update"
@@ -173,6 +177,31 @@ export function generateBaseRootResolvers({
               },
             }),
             ...generatePaginatorPivotResolverObject({
+              pivotService: service,
+            }),
+          });
+        }
+        break;
+      }
+      case "stats": {
+        if (service instanceof PaginatedService) {
+          const methodName = `get${capitalizeString(service.typename)}Stats`;
+          rootResolvers[methodName] = new GiraffeqlRootResolverType(<
+            RootResolverDefinition
+          >{
+            name: methodName,
+            ...(restMethodsArray.includes(method) && {
+              restOptions: {
+                method: "get",
+                route: `/${service.typename}:count`,
+                query: {
+                  count: lookupSymbol,
+                },
+                // argsTransformer: transformGetMultipleRestArgs,
+                ...restMethods[method],
+              },
+            }),
+            ...generateStatsResolverObject({
               pivotService: service,
             }),
           });

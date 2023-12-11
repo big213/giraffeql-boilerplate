@@ -72,7 +72,11 @@ export class AdminService extends BaseService {
     isAdmin = false,
   }: ServiceFunctionInputs) {
     try {
-      const data = await getVertexResponse(args.query);
+      const data = await getVertexResponse({
+        query: args.query,
+        url: args.url,
+        data: args.data,
+      });
 
       return data;
     } catch (err: any) {

@@ -14,6 +14,7 @@ import {
 import { validateToken, validateApiKey } from "./helpers/auth";
 import {
   CustomSchemaGenerator,
+  generatePromptEmptyPage,
   generatePromptPage,
   generateQueryPage,
 } from "./helpers/schema";
@@ -101,6 +102,12 @@ app.get("/prompt", function (req, res, next) {
   res.header("Content-Type", "text/html");
 
   res.send(generatePromptPage(giraffeqlOptions.lookupValue));
+});
+
+app.get("/prompt-empty", function (req, res, next) {
+  res.header("Content-Type", "text/html");
+
+  res.send(generatePromptEmptyPage());
 });
 
 // runWith does not work properly with timeoutSeconds > 60 as of Firebase Cloud Functions V1
