@@ -1102,6 +1102,9 @@ export default {
         return
       }
 
+      // always set the input to the start of the day
+      this.tempInput = val.replace(/T(\d{2}):(\d{2})$/, 'T00:00')
+
       const dateTimeMatch = this.tempInput.match(
         /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/
       )

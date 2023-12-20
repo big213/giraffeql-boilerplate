@@ -5,7 +5,7 @@
     <link
       rel="stylesheet"
       data-name="vs/editor/editor.main"
-      href="https://unpkg.com/monaco-editor@0.44.0/min/vs/editor/editor.main.css"
+      href="https://unpkg.com/monaco-editor/min/vs/editor/editor.main.css"
     />
     <style>
       body {
@@ -98,17 +98,61 @@
         style="border: 1px solid grey; resize: vertical; overflow: auto"
       ></div>
     </div>
+
     <script>
       var require = {
         paths: {
-          vs: "https://unpkg.com/monaco-editor@0.44.0/min/vs",
+          vs: "https://unpkg.com/monaco-editor/min/vs",
         },
       };
-    </script>
-    <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/loader.js"></script>
-    <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/editor/editor.main.nls.js"></script>
-    <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/editor/editor.main.js"></script>
-    <script>
+
+      let queryEditor, requestEditor, responseEditorm;
+
+      function loadScript(src, async = true, type = "text/javascript") {
+        return new Promise((resolve, reject) => {
+          try {
+            const tag = document.createElement("script");
+            const container = document.head || document.body;
+
+            tag.type = type;
+            tag.async = async;
+            tag.src = src;
+
+            tag.addEventListener("load", () => {
+              resolve({ loaded: true, error: false });
+            });
+
+            tag.addEventListener("error", () => {
+              reject({
+                loaded: false,
+                error: true,
+                message: `Failed to load script with src ${src}`,
+              });
+            });
+
+            container.appendChild(tag);
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }
+
+      // load loader first, then 2 other scripts, and then initializeEditors once all done
+      loadScript("https://unpkg.com/monaco-editor/min/vs/loader.js").then(
+        () => {
+          Promise.all([
+            loadScript(
+              "https://unpkg.com/monaco-editor/min/vs/editor/editor.main.nls.js"
+            ),
+            loadScript(
+              "https://unpkg.com/monaco-editor/min/vs/editor/editor.main.js"
+            ),
+          ]).then(() => {
+            initializeEditors();
+          });
+        }
+      );
+
       const apiUrl = window.location.href.replace(/\/query$/, "/giraffeql");
 
       function getHeaders() {
@@ -172,44 +216,47 @@
         }
       }
 
-      const queryEditor = monaco.editor.create(
-        document.getElementById("container-1"),
-        {
-          value: `{{ schemaString }}`,
-          language: "typescript",
-          automaticLayout: true,
-          wordWrap: "on",
-        }
-      );
+      function initializeEditors() {
+        queryEditor = monaco.editor.create(
+          document.getElementById("container-1"),
+          {
+            value: `{{ schemaString }}`,
+            language: "typescript",
+            automaticLayout: true,
+            wordWrap: "on",
+          }
+        );
 
-      const requestEditor = monaco.editor.create(
-        document.getElementById("container-2"),
-        {
-          value: ``,
-          language: "typescript",
-          automaticLayout: true,
-          wordWrap: "on",
-          readOnly: true,
-        }
-      );
+        requestEditor = monaco.editor.create(
+          document.getElementById("container-2"),
+          {
+            value: ``,
+            language: "typescript",
+            automaticLayout: true,
+            wordWrap: "on",
+            readOnly: true,
+          }
+        );
 
-      setRequestEditorString();
+        setRequestEditorString();
 
-      queryEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () =>
-        submit()
-      );
+        queryEditor.addCommand(
+          monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
+          () => submit()
+        );
 
-      const responseEditor = monaco.editor.create(
-        document.getElementById("container-3"),
-        {
-          language: "json",
-          automaticLayout: true,
-          wordWrap: "on",
-          readOnly: true,
-        }
-      );
+        responseEditor = monaco.editor.create(
+          document.getElementById("container-3"),
+          {
+            language: "json",
+            automaticLayout: true,
+            wordWrap: "on",
+            readOnly: true,
+          }
+        );
 
-      monaco.editor.setTheme("vs-dark");
+        monaco.editor.setTheme("vs-dark");
+      }
     </script>
   </body>
 </html>

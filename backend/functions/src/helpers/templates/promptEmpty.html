@@ -130,51 +130,115 @@
     <script>
       var require = {
         paths: {
-          vs: "https://unpkg.com/monaco-editor@0.44.0/min/vs",
+          vs: "https://unpkg.com/monaco-editor/min/vs",
         },
       };
-    </script>
-    <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/loader.js"></script>
-    <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/editor/editor.main.nls.js"></script>
-    <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/editor/editor.main.js"></script>
-    <script>
+
+      let queryEditor, responseEditor;
+
+      function loadScript(src, async = true, type = "text/javascript") {
+        return new Promise((resolve, reject) => {
+          try {
+            const tag = document.createElement("script");
+            const container = document.head || document.body;
+
+            tag.type = type;
+            tag.async = async;
+            tag.src = src;
+
+            tag.addEventListener("load", () => {
+              resolve({ loaded: true, error: false });
+            });
+
+            tag.addEventListener("error", () => {
+              reject({
+                loaded: false,
+                error: true,
+                message: `Failed to load script with src ${src}`,
+              });
+            });
+
+            container.appendChild(tag);
+          } catch (error) {
+            reject(error);
+          }
+        });
+      }
+
+      // load loader first, then 2 other scripts, and then initializeEditors once all done
+      loadScript("https://unpkg.com/monaco-editor/min/vs/loader.js").then(
+        () => {
+          Promise.all([
+            loadScript(
+              "https://unpkg.com/monaco-editor/min/vs/editor/editor.main.nls.js"
+            ),
+            loadScript(
+              "https://unpkg.com/monaco-editor/min/vs/editor/editor.main.js"
+            ),
+          ]).then(() => {
+            initializeEditors();
+          });
+        }
+      );
+
       const apiUrl = window.location.href.replace(
         /\/prompt-empty$/,
         "/giraffeql"
       );
 
+      const projectId = `{{ projectId }}`;
+
       async function executeVertexRequest({ query, headers, aiModel }) {
-        const giraffeqlQuery = {
-          executeVertexRequest: {
-            __args: {
-              query,
-              url: `https://us-central1-aiplatform.googleapis.com/v1/projects/giraffeql-boilerplate/locations/us-central1/publishers/google/models/${
-                aiModel === "code" ? "code-bison" : "text-bison"
-              }:predict`,
-              data: {
-                instances: [
-                  {
-                    [aiModel === "code" ? "prefix" : "content"]: query,
+        let giraffeqlQuery;
+
+        if (aiModel === "code") {
+          giraffeqlQuery = {
+            executeVertexRequest: {
+              __args: {
+                query,
+                url: `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/code-bison:predict`,
+                data: {
+                  instances: [
+                    {
+                      prefix: query,
+                    },
+                  ],
+                  parameters: {
+                    candidateCount: 1,
+                    maxOutputTokens: 1024,
+                    temperature: 0.2,
                   },
-                ],
-                parameters:
-                  aiModel === "code"
-                    ? {
-                        candidateCount: 1,
-                        maxOutputTokens: 1024,
-                        temperature: 0.2,
-                      }
-                    : {
-                        candidateCount: 1,
-                        maxOutputTokens: 1024,
-                        temperature: 0.2,
-                        topP: 0.8,
-                        topK: 40,
-                      },
+                },
               },
             },
-          },
-        };
+          };
+        } else {
+          giraffeqlQuery = {
+            executeVertexRequest: {
+              __args: {
+                query,
+                url: `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/gemini-pro:streamGenerateContent`,
+                data: {
+                  contents: [
+                    {
+                      role: "user",
+                      parts: [
+                        {
+                          text: query,
+                        },
+                      ],
+                    },
+                  ],
+                  generation_config: {
+                    maxOutputTokens: 2048,
+                    temperature: 0.9,
+                    topP: 1,
+                  },
+                },
+              },
+            },
+          };
+        }
 
         const responseData = await fetch(apiUrl, {
           method: "post",
@@ -182,7 +246,11 @@
           body: JSON.stringify(giraffeqlQuery),
         }).then((res) => res.json());
 
-        return responseData.data.predictions[0].content;
+        return aiModel === "code"
+          ? responseData.data.predictions[0].content
+          : responseData.data
+              .map((ele) => ele.candidates[0].content.parts[0].text)
+              .join("");
       }
 
       async function submit() {
@@ -228,29 +296,32 @@
         return str.charAt(0).toUpperCase() + str.slice(1);
       }
 
-      const queryEditor = monaco.editor.create(
-        document.getElementById("container-1"),
-        {
-          value: "",
-          automaticLayout: true,
-          wordWrap: "on",
-        }
-      );
+      function initializeEditors() {
+        queryEditor = monaco.editor.create(
+          document.getElementById("container-1"),
+          {
+            value: "",
+            automaticLayout: true,
+            wordWrap: "on",
+          }
+        );
 
-      queryEditor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () =>
-        submit()
-      );
+        queryEditor.addCommand(
+          monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter,
+          () => submit()
+        );
 
-      const responseEditor = monaco.editor.create(
-        document.getElementById("container-2"),
-        {
-          automaticLayout: true,
-          wordWrap: "on",
-          readOnly: true,
-        }
-      );
+        responseEditor = monaco.editor.create(
+          document.getElementById("container-2"),
+          {
+            automaticLayout: true,
+            wordWrap: "on",
+            readOnly: true,
+          }
+        );
 
-      monaco.editor.setTheme("vs-dark");
+        monaco.editor.setTheme("vs-dark");
+      }
     </script>
   </body>
 </html>

@@ -1,5 +1,6 @@
 import { TsSchemaGenerator } from "giraffeql";
 import { readFileSync } from "fs";
+import { projectID } from "firebase-functions/params";
 
 // parses templateString and replaces with any params
 function processTemplate(
@@ -96,7 +97,9 @@ export function generatePromptEmptyPage() {
   const templateFile = readFileSync("src/helpers/templates/promptEmpty.html", {
     encoding: "utf-8",
   });
-  return processTemplate(templateFile, {});
+  return processTemplate(templateFile, {
+    projectId: projectID.value(),
+  });
 }
 
 export class CustomSchemaGenerator extends TsSchemaGenerator {
