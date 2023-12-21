@@ -165,21 +165,29 @@
         });
       }
 
-      // load loader first, then 2 other scripts, and then initializeEditors once all done
-      loadScript("https://unpkg.com/monaco-editor/min/vs/loader.js").then(
-        () => {
-          Promise.all([
+      (async function init() {
+        try {
+          // load loader first
+          await loadScript("https://unpkg.com/monaco-editor/min/vs/loader.js");
+
+          // then load these 2
+          await Promise.all([
             loadScript(
               "https://unpkg.com/monaco-editor/min/vs/editor/editor.main.nls.js"
             ),
             loadScript(
               "https://unpkg.com/monaco-editor/min/vs/editor/editor.main.js"
             ),
-          ]).then(() => {
-            initializeEditors();
-          });
+          ]);
+
+          // then initialize editors
+          initializeEditors();
+        } catch (err) {
+          window.alert(
+            `An error has occurred during initialization. Try refreshing the page, or try again later.`
+          );
         }
-      );
+      })();
 
       const apiUrl = window.location.href.replace(
         /\/prompt-empty$/,
