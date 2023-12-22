@@ -77,7 +77,7 @@ import { handleError } from '~/services/base'
 import { executeGiraffeql } from '~/services/giraffeql'
 import { handleUserRefreshed } from '~/services/auth'
 import { auth } from '~/services/fireinit'
-import { EmailAuthProvider } from 'firebase/auth'
+import { EmailAuthProvider, sendEmailVerification } from 'firebase/auth'
 
 export default {
   components: {},
@@ -126,9 +126,7 @@ export default {
       try {
         const currentUser = auth.currentUser
 
-        await currentUser.sendEmailVerification({
-          url: window.location.href,
-        })
+        await sendEmailVerification(currentUser)
 
         this.$notifier.showSnackbar({
           message: 'Verification email sent',

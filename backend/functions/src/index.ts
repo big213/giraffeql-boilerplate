@@ -17,6 +17,7 @@ import {
   generatePromptEmptyPage,
   generatePromptPage,
   generateQueryPage,
+  generateSchema,
 } from "./helpers/schema";
 
 initializeApp();
@@ -86,10 +87,7 @@ initializeGiraffeql(app, giraffeqlOptions);
 
 app.get("/schema.ts", function (req, res, next) {
   res.header("Content-Type", "text/plain");
-  const tsSchemaGenerator = new CustomSchemaGenerator(giraffeqlOptions);
-  tsSchemaGenerator.buildSchema();
-  tsSchemaGenerator.processSchema();
-  res.send(tsSchemaGenerator.outputSchema());
+  res.send(generateSchema(giraffeqlOptions));
 });
 
 app.get("/query", function (req, res, next) {

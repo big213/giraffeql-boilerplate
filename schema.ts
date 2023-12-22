@@ -1,17 +1,4 @@
-// Query builder (Typescript version >= 4.1.3 required)
-const queryResult = executeGiraffeql({
-  // Start typing here to get hints
-  /* QUERY START */
-  /* QUERY END */
-});
-
-export function executeGiraffeql<Key extends keyof Root>(
-  query: GetQuery<Key>
-): GetResponse<Key> {
-  let data: any;
-  return data;
-}
-// scaffolding
+/* Start Scaffolding */
 export type GetQuery<K extends keyof Root> = K extends never
   ? Partial<Record<K, Queryize<Root[keyof Root]>>>
   : Record<K, Queryize<Root[K]>>;
@@ -56,7 +43,6 @@ type Queryize<T> = T extends Field<infer Type, infer Args>
   : never;
 
 type LookupValue = true;
-
 type Edge<T> = {
   __typename: Field<string, undefined>;
   node: Field<T, undefined>;
@@ -77,7 +63,9 @@ export type SortByField<T> = {
   field: T;
   desc: boolean;
 };
+/* End Scaffolding */
 
+/* Start Types */
 /**All Scalar values*/ export type Scalars = {
   /**String value*/ string: string;
   /**True or False*/ boolean: boolean;
@@ -504,3 +492,5 @@ export type StatsResponse = {
     Args: InputTypes["updateUserUserFollowLink"];
   };
 };
+
+/* End Types */

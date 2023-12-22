@@ -33,13 +33,6 @@ function processTemplate(
 }
 
 export function generateQueryPage(lookupValue: any) {
-  const tsSchemaGenerator = new CustomSchemaGenerator({
-    lookupValue,
-    addQueryBuilder: false,
-  });
-  tsSchemaGenerator.buildSchema();
-  tsSchemaGenerator.processSchema();
-
   const templateFile = readFileSync("src/helpers/templates/query.html", {
     encoding: "utf-8",
   });
@@ -81,8 +74,7 @@ export function executeGiraffeql<Key extends keyof Root>(
     headers: {},
     body: JSON.stringify(query)
   }).then(res => res.json()).then(json => json.data)
-}
-${tsSchemaGenerator.outputSchema()}`,
+}\n\n${generateSchema({ lookupValue })}`,
   });
 }
 
@@ -100,6 +92,14 @@ export function generatePromptEmptyPage() {
   return processTemplate(templateFile, {
     projectId: projectID.value(),
   });
+}
+
+export function generateSchema({ lookupValue }: { lookupValue: any }) {
+  const tsSchemaGenerator = new CustomSchemaGenerator({ lookupValue });
+  tsSchemaGenerator.buildSchema();
+
+  tsSchemaGenerator.processSchema();
+  return tsSchemaGenerator.outputSchema();
 }
 
 export class CustomSchemaGenerator extends TsSchemaGenerator {
@@ -125,7 +125,7 @@ export type FilterByField<T> = {
 export type SortByField<T> = {
   field: T
   desc: boolean
-}\n\n`;
+}`;
   }
 
   // additional post-processing of the schema
