@@ -18,7 +18,7 @@
     "core-js": "^3.6.5",
     "firebase": "^10.3.1",
     "nanoid": "^3.1.22",
-    "nuxt": "^2.15.8",
+    "nuxt": "^2.17.2",
     "pretty-bytes": "^5.4.1",
     "timeago.js": "^4.0.2",
     "vue": "^2.6.14",
@@ -26,7 +26,7 @@
     "vuedraggable": "^2.24.3"
   },
   "devDependencies": {
-    "@nuxt/types": "^2.14.6",
+    "@nuxt/types": "^2.17.2",
     "@nuxt/typescript-build": "^2.0.3",
     "@nuxtjs/dotenv": "^1.4.1",
     "@nuxtjs/eslint-config": "^3.1.0",
@@ -40,7 +40,7 @@
     "eslint-plugin-nuxt": "^1.0.0",
     "eslint-plugin-prettier": "^3.1.4",
     "fs": "^0.0.1-security",
-    "node": "^16.19.1",
+    "postcss": "^8.4.32",
     "prettier": "^2.1.2",
     "ts-node": "^10.4.0",
     "typescript": "^4.5.4",
