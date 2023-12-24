@@ -23,14 +23,6 @@
         name="password"
         prepend-icon="mdi-lock"
         type="password"
-      ></v-text-field>
-      <v-text-field
-        id="passwordconfirm"
-        v-model="inputs.passwordConfirmation"
-        label="Password Confirmation"
-        name="passwordconfirm"
-        prepend-icon="mdi-lock"
-        type="password"
         @keyup.enter="handleSubmit()"
       ></v-text-field>
     </v-card-text>
@@ -60,7 +52,6 @@ export default {
         name: '',
         email: '',
         password: '',
-        passwordConfirmation: '',
       },
 
       loading: {
@@ -73,10 +64,6 @@ export default {
     async handleSubmit() {
       this.loading.submitting = true
       try {
-        if (this.inputs.password !== this.inputs.passwordConfirmation) {
-          throw new Error('Password fields must match')
-        }
-
         const userCredential = await createUserWithEmailAndPassword(
           auth,
           this.inputs.email,

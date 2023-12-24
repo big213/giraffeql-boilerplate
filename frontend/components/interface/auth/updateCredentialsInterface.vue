@@ -37,12 +37,6 @@
           type="password"
         ></v-text-field>
         <v-text-field
-          v-model="inputs.newPasswordConfirmation"
-          label="New Password Confirmation"
-          prepend-icon="mdi-lock"
-          type="password"
-        ></v-text-field>
-        <v-text-field
           v-model="inputs.password"
           label="Current Password"
           prepend-icon="mdi-lock"
@@ -88,7 +82,6 @@ export default {
       originalInputs: {
         newEmail: '',
         newPassword: '',
-        newPasswordConfirmation: '',
         password: '',
       },
 
@@ -172,10 +165,6 @@ export default {
 
         // update password if different and provided
         if (this.inputs.newPassword) {
-          if (this.inputs.newPassword !== this.inputs.newPasswordConfirmation) {
-            throw new Error('Password fields must match')
-          }
-
           await this.currentUser.updatePassword(this.inputs.newPassword)
         }
 
