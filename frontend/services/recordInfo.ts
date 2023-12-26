@@ -505,16 +505,19 @@ export function generateThingSkuLookupSearchOptions(prefix?: string) {
 export function generateHomePageRecordInfo({
   recordInfo,
   title,
+  columnMode = false,
+  limit = 4,
 }: {
   recordInfo: RecordInfo<any>
   title?: string
+  columnMode?: boolean
+  limit?: number
 }) {
   return {
     ...recordInfo,
     ...(title && { title }),
     paginationOptions: {
-      ...recordInfo.paginationOptions,
-      searchOptions: undefined,
+      // dont override existing configuration for these
       defaultLockedFilters: () => [],
       defaultPageOptions: () => ({
         search: null,
@@ -524,18 +527,30 @@ export function generateHomePageRecordInfo({
           desc: true,
         },
       }),
+      ...recordInfo.paginationOptions,
+      // override existing configuration for these
+      searchOptions: undefined,
       filterOptions: [],
       hideGridModeToggle: true,
       hideSortOptions: true,
       minHeight: '250px',
       loaderStyle: 'circular',
       limitOptions: {
-        resultsPerPage: 4,
+        maxInitialRecords: limit,
       },
       hideViewMore: true,
       hideCount: true,
       showViewAll: true,
       hideRefresh: true,
+      overrideViewMode: 'grid',
+      ...(columnMode && {
+        gridOptions: {
+          justify: 'center',
+          colsObject: {
+            sm: 6,
+          },
+        },
+      }),
     },
   }
 }

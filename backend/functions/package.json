@@ -10,7 +10,7 @@
     "generate:model": "set DEV=1 && ts-node src/scripts/generateModel.ts",
     "grantDBPermissions": "set DEV=1 && ts-node src/scripts/grantSchemaPermissions.ts",
     "executeAdminScript": "set DEV=1 && ts-node src/scripts/executeAdminScript.ts",
-    "grantAdmin": "set DEV=1 && ts-node src/scripts/grantAdmin.ts",
+    "grantAdmin": "ts-node src/scripts/grantAdmin.ts",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",

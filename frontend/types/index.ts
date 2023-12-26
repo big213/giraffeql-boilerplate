@@ -175,6 +175,18 @@ export type RecordInfo<T extends keyof MainTypes> = {
     handleRowClick?: (that, props) => void
     handleGridElementClick?: (that, item) => void
 
+    // options relating to the grid interface
+    gridOptions?: {
+      justify?: 'center' | 'left'
+      colsObject?: {
+        // cols, out of 12
+        xs?: number
+        sm?: number
+        md?: number
+        lg?: number
+      }
+    }
+
     // custom component
     component?: any
     // can the results be downloaded?

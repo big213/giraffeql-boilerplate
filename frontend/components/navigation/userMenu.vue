@@ -59,15 +59,21 @@
           v-for="(item, i) in accountItems"
           :key="i"
           :to="item.to"
-          exact
+          exact-path
           nuxt
         >
+          <v-list-item-action>
+            <v-icon>{{ item.icon }}</v-icon>
+          </v-list-item-action>
           <v-list-item-content>
             <v-list-item-title>{{ item.title }}</v-list-item-title>
           </v-list-item-content>
         </v-list-item>
         <v-divider></v-divider>
         <v-list-item @click="logout()">
+          <v-list-item-action>
+            <v-icon>mdi-logout</v-icon>
+          </v-list-item-action>
           <v-list-item-content>
             <v-list-item-title>Logout</v-list-item-title>
           </v-list-item-content>
@@ -117,6 +123,7 @@
 import { mapGetters } from 'vuex'
 import { auth } from '~/services/fireinit'
 import { handleError } from '~/services/base'
+import { generateUserMenuItems } from '~/services/navigation'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 import SelectOptionDialog from '~/components/dialog/selectOptionDialog.vue'
 
@@ -127,11 +134,6 @@ export default {
   },
   data() {
     return {
-      accountItems: [
-        { title: 'My Profile', to: '/my-profile', exact: false },
-        { title: 'Settings', to: '/settings', exact: false },
-      ],
-
       dialogs: {
         selectOption: null,
       },
@@ -143,6 +145,10 @@ export default {
       user: 'auth/user',
       firebaseUser: 'auth/firebaseUser',
     }),
+
+    accountItems() {
+      return generateUserMenuItems(this)
+    },
   },
 
   methods: {

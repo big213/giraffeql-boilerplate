@@ -3,7 +3,8 @@
     <v-container xs12 style="max-width: 600px">
       <v-col>
         <v-card class="elevation-12">
-          <v-toolbar color="accent" flat>
+          <v-toolbar color="accent" flat dense>
+            <v-icon left>mdi-account-key</v-icon>
             <v-toolbar-title>Login Credentials</v-toolbar-title>
             <v-spacer></v-spacer>
           </v-toolbar>

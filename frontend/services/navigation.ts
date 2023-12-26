@@ -60,3 +60,10 @@ export function generateNavDrawerItems(that) {
       : null,
   ].filter((e) => e)
 }
+
+export function generateUserMenuItems(that) {
+  return [
+    { icon: 'mdi-account', title: 'My Profile', to: '/my-profile' },
+    { icon: 'mdi-cog', title: 'Settings', to: '/settings' },
+  ]
+}

@@ -323,14 +323,17 @@
           </template>
           <template v-slot:default="props">
             <v-container fluid>
-              <v-row>
+              <v-row
+                :justify="
+                  recordInfo.paginationOptions.gridOptions &&
+                  recordInfo.paginationOptions.gridOptions.justify
+                "
+              >
                 <v-col
                   v-for="item in props.items"
                   :key="item.id"
+                  v-bind="gridColsObject"
                   cols="12"
-                  sm="6"
-                  md="4"
-                  lg="3"
                 >
                   <v-card
                     class="noselect elevation-6"
@@ -406,24 +409,35 @@
                     </div>
                   </v-card>
                 </v-col>
-                <v-col v-if="!recordInfo.paginationOptions.hideCount" cols="12">
-                  <div class="text-center">
-                    <v-divider></v-divider>
-                    <v-btn
-                      v-if="records.length < totalRecords"
-                      text
-                      block
-                      :loading="loading.loadMore"
-                      @click="loadMore()"
-                      >View More</v-btn
-                    >
-                    <span v-if="isDataLoading">...</span>
-                    <span v-else-if="!totalRecords">---</span>
-                    <span v-else class="noselect">
-                      (Showing {{ records.length }} of {{ totalRecords }}
-                      {{ recordInfo.pluralName }})
-                    </span>
-                  </div>
+                <v-col
+                  v-if="
+                    !recordInfo.paginationOptions.hideViewMore &&
+                    records.length < totalRecords
+                  "
+                  cols="12"
+                  class="text-center pa-0"
+                >
+                  <v-divider></v-divider>
+                  <v-btn
+                    text
+                    block
+                    :loading="loading.loadMore"
+                    @click="loadMore()"
+                    >View More</v-btn
+                  >
+                </v-col>
+                <v-col
+                  v-if="!recordInfo.paginationOptions.hideCount"
+                  cols="12"
+                  class="text-center pa-0"
+                >
+                  <v-divider></v-divider>
+                  <span v-if="isDataLoading">...</span>
+                  <span v-else-if="!totalRecords">---</span>
+                  <span v-else class="noselect">
+                    (Showing {{ records.length }} of {{ totalRecords }}
+                    {{ recordInfo.pluralName }})
+                  </span>
                 </v-col>
               </v-row>
             </v-container>
@@ -558,18 +572,22 @@
           </template>
           <template v-slot:footer>
             <div
+              v-if="
+                !recordInfo.paginationOptions.hideViewMore &&
+                records.length < totalRecords
+              "
+              class="text-center"
+            >
+              <v-divider></v-divider>
+              <v-btn text block :loading="loading.loadMore" @click="loadMore()"
+                >View More</v-btn
+              >
+            </div>
+            <div
               v-if="!recordInfo.paginationOptions.hideCount"
               class="text-center"
             >
               <v-divider></v-divider>
-              <v-btn
-                v-if="records.length < totalRecords"
-                text
-                block
-                :loading="loading.loadMore"
-                @click="loadMore()"
-                >View More</v-btn
-              >
               <span v-if="isDataLoading">...</span>
               <span v-else-if="!totalRecords">---</span>
               <span v-else class="noselect">

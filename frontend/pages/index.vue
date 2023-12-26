@@ -1,7 +1,9 @@
 <template>
-  <v-layout column justify-center align-center>
-    <CircularLoader v-if="redirectPath"></CircularLoader>
-    <v-container v-else xs12 style="max-width: 600px">
+  <v-layout v-if="redirectPath" column justify-center align-center>
+    <CircularLoader></CircularLoader>
+  </v-layout>
+  <div v-else>
+    <v-container style="max-width: 600px">
       <div class="text-center">
         <img :src="logoImageSrc" alt="" style="width: 60%" />
       </div>
@@ -35,15 +37,35 @@
           >
         </v-card-actions>
       </v-card>
-      <ReleaseHistory class="mt-3" />
     </v-container>
-  </v-layout>
+    <v-container style="max-width: 600px">
+      <ReleaseHistory />
+    </v-container>
+    <v-container fluid style="max-width: 600px">
+      <v-layout column justify-left align-left>
+        <v-row>
+          <v-col cols="12">
+            <CrudRecordInterface
+              :record-info="homeModels.user.recordInfo"
+              :page-options="homeModels.user.pageOptions"
+              hide-presets
+              dense
+              @pageOptions-updated="homeModels.user.pageOptions = $event"
+            >
+            </CrudRecordInterface>
+          </v-col>
+        </v-row>
+      </v-layout>
+    </v-container>
+  </div>
 </template>
 
 <script>
 import { mapGetters } from 'vuex'
 import CircularLoader from '~/components/common/circularLoader.vue'
-import ReleaseHistory from '~/components/common/releaseHistory.vue'
+import CrudRecordInterface from '~/components/interface/crud/crudRecordInterface.vue'
+import { generateHomePageRecordInfo } from '~/services/recordInfo'
+import * as publicModels from '~/models/public'
 import {
   siteName,
   siteDescription,
@@ -51,11 +73,20 @@ import {
   siteDiscordLink,
   logoHasLightVariant,
 } from '~/services/config'
+import ReleaseHistory from '~/components/common/releaseHistory.vue'
+
+function generateHomeModelObject(recordInfo) {
+  return {
+    recordInfo,
+    pageOptions: undefined,
+  }
+}
 
 export default {
   components: {
-    ReleaseHistory,
     CircularLoader,
+    CrudRecordInterface,
+    ReleaseHistory,
   },
   data() {
     return {
@@ -64,6 +95,16 @@ export default {
       siteContactEmail,
       siteDiscordLink,
       redirectPath: null,
+      homeModels: {
+        user: generateHomeModelObject(
+          generateHomePageRecordInfo({
+            recordInfo: publicModels.PublicUser,
+            title: 'Latest Users',
+            columnMode: true,
+            limit: 2,
+          })
+        ),
+      },
     }
   },
   head() {
@@ -86,7 +127,6 @@ export default {
     ...mapGetters({
       user: 'auth/user',
     }),
-
     logoImageSrc() {
       return logoHasLightVariant
         ? require(`~/static/logo-vertical${

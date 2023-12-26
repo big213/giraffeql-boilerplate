@@ -1,8 +1,8 @@
 import * as knexBuilder from "knex";
 import { configDotenv } from "dotenv";
 configDotenv();
-import { pgOptions } from "../config";
 import yargs from "yargs";
+import { userRole } from "../schema/enums";
 
 const argv = yargs(process.argv.slice(2))
   .options({
@@ -11,11 +11,16 @@ const argv = yargs(process.argv.slice(2))
   })
   .parseSync();
 
+// set the DEV state based on the args provided
+process.env.DEV = argv.prod ? undefined : "1";
+
+import { pgOptions } from "../config";
+
 export const knex = knexBuilder({
   ...pgOptions,
 });
 
-// grant the admin role to the usuer with that email
+// grant the admin role to the user with that email
 (async () => {
   const [user] = await knex("user").select(["id", "role"]).where({
     email: argv.email,
@@ -25,13 +30,17 @@ export const knex = knexBuilder({
 
   await knex("user")
     .update({
-      role: 3, // ADMIN enum index
+      role: userRole.ADMIN.parsed, // ADMIN enum index
     })
     .where({
       id: user.id,
     });
 
-  console.log(`Done granting ADMIN role to '${argv.email}'`);
+  console.log(
+    `Done granting ADMIN role to '${argv.email}' on ${
+      argv.prod ? "prod" : "dev"
+    }`
+  );
 
   // done, clean up by destroying the connection pool.
   await knex.destroy();

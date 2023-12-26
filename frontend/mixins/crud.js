@@ -410,6 +410,16 @@ export default {
     isXsViewport() {
       return this.$vuetify.breakpoint.name === 'xs'
     },
+
+    gridColsObject() {
+      return (
+        this.recordInfo.paginationOptions.gridOptions?.colsObject ?? {
+          sm: 6,
+          md: 4,
+          lg: 3,
+        }
+      )
+    },
   },
 
   watch: {
@@ -1178,6 +1188,8 @@ export default {
         this.isChanged = true
       }
 
+      let pageOptionsUpdated = false
+
       if (initFilters) {
         // initialize filter inputs
         this.filterInputsArray = await Promise.all(
@@ -1255,6 +1267,8 @@ export default {
             'pageOptions-updated',
             this.recordInfo.paginationOptions.defaultPageOptions(this)
           )
+
+          pageOptionsUpdated = true
         }
 
         this.syncPageOptions(false)
@@ -1273,9 +1287,12 @@ export default {
         }
       }
 
-      this.reloadGeneration++
+      // if the pageOptions have been updated, don't load the data, as the pageOptions-updated event will trigger the update after this (with the updated page options)
+      if (!pageOptionsUpdated) {
+        this.reloadGeneration++
 
-      this.loadInitialData(showLoader, this.reloadGeneration)
+        this.loadInitialData(showLoader, this.reloadGeneration)
+      }
     },
   },
 }
