@@ -132,7 +132,11 @@
 </template>
 
 <script>
-import { enterRoute, generateViewRecordRoute } from '~/services/base'
+import {
+  enterRoute,
+  generateViewRecordRoute,
+  handleError,
+} from '~/services/base'
 
 export default {
   props: {
@@ -225,41 +229,45 @@ export default {
       // if the action is already in a loading state, do nothing
       if (actionWrapper.isLoading) return
 
-      // if the action has actionOptions, open the dialog
-      if (actionWrapper.actionObject.actionOptions) {
-        this.$root.$emit('openExecuteActionDialog', {
-          actionOptions: actionWrapper.actionObject.actionOptions,
-          selectedItem: actionWrapper.actionObject.actionOptions
-            .selectedItemModifier
-            ? actionWrapper.actionObject.actionOptions.selectedItemModifier(
-                this,
-                this.item
-              )
-            : null,
-          item: this.item,
-        })
-        return
+      try {
+        // if the action has actionOptions, open the dialog
+        if (actionWrapper.actionObject.actionOptions) {
+          this.$root.$emit('openExecuteActionDialog', {
+            actionOptions: actionWrapper.actionObject.actionOptions,
+            selectedItem: actionWrapper.actionObject.actionOptions
+              .selectedItemModifier
+              ? actionWrapper.actionObject.actionOptions.selectedItemModifier(
+                  this,
+                  this.item
+                )
+              : null,
+            item: this.item,
+          })
+          return
+        }
+
+        // if the actionWrapper is already loading and it is asynchronous, prevent the action
+        if (
+          actionWrapper.actionObject.simpleActionOptions.isAsync &&
+          actionWrapper.isLoading
+        ) {
+          this.$notifier.showSnackbar({
+            message: 'Action currently in progress',
+            variant: 'warning',
+          })
+          return
+        }
+
+        if (actionWrapper.actionObject.simpleActionOptions.isAsync)
+          actionWrapper.isLoading = true
+
+        await actionWrapper.actionObject.simpleActionOptions.handleClick(
+          this,
+          this.item
+        )
+      } catch (err) {
+        handleError(this, err)
       }
-
-      // if the actionWrapper is already loading and it is asynchronous, prevent the action
-      if (
-        actionWrapper.actionObject.simpleActionOptions.isAsync &&
-        actionWrapper.isLoading
-      ) {
-        this.$notifier.showSnackbar({
-          message: 'Action currently in progress',
-          variant: 'warning',
-        })
-        return
-      }
-
-      if (actionWrapper.actionObject.simpleActionOptions.isAsync)
-        actionWrapper.isLoading = true
-
-      await actionWrapper.actionObject.simpleActionOptions.handleClick(
-        this,
-        this.item
-      )
 
       actionWrapper.isLoading = false
     },
