@@ -147,6 +147,7 @@
               @reload-parent-item="handleReloadParentItem()"
               @expand-type-updated="handleExpandTypeUpdated"
               @breadcrumb-item-click="handleBreadcrumbItemClick"
+              @replace-breadcrumb-item="replaceBreadcrumbItem"
             >
               <template
                 v-slot:header-action

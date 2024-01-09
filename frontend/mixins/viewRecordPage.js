@@ -274,6 +274,28 @@ export default {
       }
     },
 
+    // replaces the breadcrumb item at index
+    replaceBreadcrumbItem({ item, index }) {
+      // get the expandTypeObject from the existing item at that index
+      const { expandTypeObject } = this.breadcrumbItems[index]
+
+      this.breadcrumbItems.splice(index)
+      this.breadcrumbItems.push({
+        expandTypeObject,
+        item,
+        isRoot: false,
+      })
+      this.currentParentItem = item
+      this.expandTypeObject = expandTypeObject
+
+      // set the pageOptions override
+      this.subPageOptions = {
+        search: null,
+        filters: expandTypeObject.initialFilters ?? [],
+        sort: expandTypeObject.initialSortOptions ?? null,
+      }
+    },
+
     handleExpandClick(expandTypeObject) {
       this.toggleExpand(expandTypeObject.key)
     },
