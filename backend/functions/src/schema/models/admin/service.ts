@@ -3,11 +3,12 @@ import { BaseService } from "../../core/services";
 import { permissionsCheck } from "../../core/helpers/permissions";
 import { storage } from "firebase-admin";
 import { File } from "../../services";
-import { getVertexResponse } from "../../helpers/vertex";
+import { getGoogleApiResponse } from "../../helpers/google";
 
 export class AdminService extends BaseService {
   accessControl: AccessControlMap = {
-    vertex: () => true,
+    google: () => true,
+    validateAddress: () => true,
   };
 
   @permissionsCheck("admin")
@@ -63,8 +64,8 @@ export class AdminService extends BaseService {
     console.log(filesDeleted);
   }
 
-  @permissionsCheck("vertex")
-  async executeVertexRequest({
+  @permissionsCheck("google")
+  async executeGoogleApiRequest({
     req,
     fieldPath,
     args,
@@ -72,8 +73,8 @@ export class AdminService extends BaseService {
     isAdmin = false,
   }: ServiceFunctionInputs) {
     try {
-      const data = await getVertexResponse({
-        query: args.query,
+      const data = await getGoogleApiResponse({
+        method: args.method,
         url: args.url,
         data: args.data,
       });

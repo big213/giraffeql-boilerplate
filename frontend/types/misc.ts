@@ -66,6 +66,7 @@ export type CrudHeaderObject = {
 export type CrudPageOptions = {
   search: string | null
   filters: CrudRawFilterObject[]
+  distance?: CrudRawDistanceObject[]
   sort: CrudRawSortObject | null
 }
 
@@ -74,6 +75,14 @@ export type CrudRawFilterObject = {
   field: string
   operator: string
   value: any
+}
+
+export type CrudRawDistanceObject = {
+  key: string
+  latitude: number
+  longitude: number
+  gt?: number | null
+  lt?: number | null
 }
 
 export type CrudRawSortObject = {

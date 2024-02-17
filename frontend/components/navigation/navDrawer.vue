@@ -7,9 +7,11 @@
 
     <div v-for="(drawerItem, i) in navDrawerItems" :key="i">
       <v-list dense>
-        <v-subheader v-if="drawerItem.title">{{
-          drawerItem.title
-        }}</v-subheader>
+        <v-list-item v-if="drawerItem.title">
+          <v-list-item-content>
+            <v-list-item-subtitle>{{ drawerItem.title }} </v-list-item-subtitle>
+          </v-list-item-content>
+        </v-list-item>
         <v-list-item
           v-for="(item, j) in drawerItem.items"
           :key="j"

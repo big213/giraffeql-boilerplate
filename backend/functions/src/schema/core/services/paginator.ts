@@ -12,12 +12,16 @@ import {
 import {
   SqlSelectQuery,
   SqlSimpleOrderByObject,
+  SqlSimpleRawSelectObject,
   SqlSimpleSelectObject,
   SqlWhereFieldOperator,
   SqlWhereObject,
+  isKnexRawStatement,
 } from "../helpers/sql";
 import { countObjectType, getObjectType } from "../helpers/resolver";
 import { generateSqlSingleFieldObject } from "../helpers/sqlHelper";
+import { knex } from "../../../utils/knex";
+import Knex = require("knex");
 
 export class PaginatorService extends SimpleService {
   service: PaginatedService;
@@ -123,95 +127,48 @@ export class PaginatorService extends SimpleService {
       fields: [],
     };
 
-    if (Array.isArray(args.filterBy)) {
-      const filterByOrObject: SqlWhereObject = {
-        connective: "OR",
-        fields: [],
-      };
-      whereObject.fields.push(filterByOrObject);
+    // raw select statements (i.e. Knex.Raw)
+    const rawSelect: SqlSimpleRawSelectObject[] = [];
 
-      args.filterBy.forEach((filterByObject) => {
-        const filterByAndObject: SqlWhereObject = {
-          connective: "AND",
-          fields: [],
-        };
-        filterByOrObject.fields.push(filterByAndObject);
-        Object.entries(filterByObject).forEach(
-          ([filterKey, filterKeyObject]) => {
-            Object.entries(<any>filterKeyObject).forEach(
-              ([operationKey, operationValue]: [string, any]) => {
-                filterByAndObject.fields.push({
-                  field: generateSqlSingleFieldObject(
-                    this.service.filterFieldsMap[filterKey].field ?? filterKey
-                  ),
-                  operator: <SqlWhereFieldOperator>operationKey,
-                  value: operationValue,
-                });
-              }
-            );
-          }
-        );
-      });
-    }
+    // additional select statements that should be added for scaffolding
+    const additionalSelect: SqlSimpleSelectObject[] = [];
 
-    // handle search fields
-    if (args.search) {
-      const whereSubObject: SqlWhereObject = {
-        connective: "OR",
-        fields: [],
-      };
-
-      for (const field in this.service.searchFieldsMap) {
-        const fieldPath = this.service.searchFieldsMap[field].field ?? field;
-
-        // if there is a custom handler on the options, use that
-        const customProcessor =
-          this.service.searchFieldsMap[field].customProcessor;
-        if (customProcessor) {
-          customProcessor(
-            whereSubObject,
-            args.search,
-            this.service.searchFieldsMap[field],
-            fieldPath
-          );
-        } else {
-          // if field options has exact, ony allow eq
-          if (this.service.searchFieldsMap[field].exact) {
-            whereSubObject.fields.push({
-              field: fieldPath,
-              value: args.search.query,
-              operator: "eq",
-            });
-          } else {
-            whereSubObject.fields.push({
-              field: fieldPath,
-              value: new RegExp(escapeRegExp(args.search.query), "i"),
-              operator: "regex",
-            });
-          }
-        }
-      }
-
-      whereObject.fields.push(whereSubObject);
-    }
+    // this helper function processes the args.filterBy, args.search, and args.distance
+    this.processArgs(args, whereObject, rawSelect)
 
     // process sort fields
     const orderBy: SqlSimpleOrderByObject[] = [];
-    const rawSelect: SqlSimpleSelectObject[] = [
-      { field: "id", as: "$last_id" },
-    ];
 
     // add secondary, etc. sort parameters
     if (Array.isArray(args.sortBy)) {
-      orderBy.push(...args.sortBy);
+      orderBy.push(
+        ...args.sortBy.map((sortByObject) => {
+          if (this.service.distanceFieldsMap[sortByObject.field]) {
+            // if it is a distanceField, confirm that the distance field was specified
+            if (!args.distance?.[sortByObject.field]) {
+              throw new Error(
+                `If sorting by '${sortByObject.field}', distance parameters must be provided for this field`
+              );
+            }
+            return {
+              ...sortByObject,
+              field: knex.raw(sortByObject.field),
+            };
+          } else {
+            return sortByObject;
+          }
+        })
+      );
     }
 
-    // for each sort param, add it to the rawSelect
+    // for each sort param, add it to the rawSelect (if it is not a knex.raw type
     orderBy.forEach((orderByObject, index) => {
-      rawSelect.push({
-        field: orderByObject.field,
-        as: `$last_value_${index}`,
-      });
+      if (!isKnexRawStatement(orderByObject.field)) {
+        additionalSelect.push({
+          field: orderByObject.field,
+          as: `$last_value_${index}`,
+        });
+      }
     });
 
     // always add id asc sort as final sort param
@@ -233,6 +190,9 @@ export class PaginatorService extends SimpleService {
 
       // for each orderBy statement, need to generate the required where constraints
       orderBy.forEach((orderByObject, index) => {
+        // if it is a raw filter field, skip
+        if (isKnexRawStatement(orderByObject.field)) return;
+
         const operator = (
           args.before ? !orderByObject.desc : orderByObject.desc
         )
@@ -258,6 +218,9 @@ export class PaginatorService extends SimpleService {
 
         // build additional cascading whereAndObjects
         orderBy.slice(0, index).forEach((orderByObject, index) => {
+          // if it is a raw filter field, skip
+          if (isKnexRawStatement(orderByObject.field)) return;
+
           const lastValue = parsedCursor.lastValues[index];
           whereAndObject.fields.push({
             field: orderByObject.field,
@@ -278,6 +241,7 @@ export class PaginatorService extends SimpleService {
 
     const sqlParams: Omit<SqlSelectQuery, "table" | "select"> = {
       where: [whereObject],
+      rawSelect,
       orderBy,
       limit,
       specialParams: await this.service.getSpecialParams({
@@ -304,14 +268,17 @@ export class PaginatorService extends SimpleService {
     this.service.sqlParamsModifier && this.service.sqlParamsModifier(sqlParams);
 
     // populate the distinctOn, in case the sqlParamsModifier modified the orderBy
-    sqlParams.distinctOn = orderBy.map((ele) => ele.field).concat("id");
+    sqlParams.distinctOn = orderBy.reduce((total, ele) => {
+      total.push(ele.field);
+      return total;
+    }, <(string | Knex.Raw)[]>[]);
 
     const results = await getObjectType({
       typename: this.service.typename,
+      additionalSelect,
       req,
       fieldPath,
       externalQuery: query,
-      rawSelect,
       sqlParams,
       data,
     });
@@ -337,6 +304,21 @@ export class PaginatorService extends SimpleService {
       connective: "AND",
       fields: [],
     };
+
+    // this helper function processes the args.filterBy, args.search, and args.distance
+    this.processArgs(args, whereObject)
+
+    const resultsCount = await countObjectType(
+      this.service.typename,
+      fieldPath,
+      [whereObject],
+      true
+    );
+
+    return resultsCount;
+  }
+
+  processArgs(args: any, whereObject:SqlWhereObject, rawSelect?: SqlSimpleRawSelectObject[]) {
 
     if (Array.isArray(args.filterBy)) {
       const filterByOrObject: SqlWhereObject = {
@@ -410,13 +392,69 @@ export class PaginatorService extends SimpleService {
       whereObject.fields.push(whereSubObject);
     }
 
-    const resultsCount = await countObjectType(
-      this.service.typename,
-      fieldPath,
-      [whereObject],
-      true
-    );
+    // handle distance fields
+    if (args.distance) {
+      const whereSubObject: SqlWhereObject = {
+        connective: "AND",
+        fields: [],
+      };
 
-    return resultsCount;
+      Object.entries(args.distance).forEach(([key, val]) => {
+        const latitudeField = this.service.distanceFieldsMap[key].latitude;
+        const longitudeField = this.service.distanceFieldsMap[key].longitude;
+
+        const latitude = (val as any).from.latitude;
+        const longitude = (val as any).from.longitude;
+
+        const ltDistance = (val as any).lt;
+        const gtDistance = (val as any).gt;
+
+        if (ltDistance === undefined && gtDistance === undefined) {
+          throw new Error(
+            `At least one of lt or gt required for distance operations`
+          );
+        }
+
+        if (ltDistance !== undefined) {
+          whereSubObject.fields.push({
+            statement: `earth_box(ll_to_earth (${latitude}, ${longitude}), ${ltDistance}) @> ll_to_earth (${latitudeField}, ${longitudeField})`,
+            fields: [latitudeField, longitudeField],
+          });
+
+          whereSubObject.fields.push({
+            statement: `earth_distance(ll_to_earth (${latitude}, ${longitude}), ll_to_earth (${latitudeField}, ${longitudeField})) < ${ltDistance}`,
+            fields: [latitudeField, longitudeField],
+          });
+        }
+
+        // this approach does not appear to be indexed and may be slow
+        if (gtDistance !== undefined) {
+          whereSubObject.fields.push({
+            statement: `earth_distance(ll_to_earth(${latitude}, ${longitude}), ll_to_earth(${latitudeField}, ${longitudeField})) > ${gtDistance}`,
+            fields: [latitudeField, longitudeField],
+          });
+        }
+
+        // if also sorting by this distance field, need to add it to the raw selects
+        if(rawSelect) {
+        if (
+          args.sortBy &&
+          args.sortBy.some((sortByObject) => sortByObject.field === key)
+        ) {
+          rawSelect.push({
+            statement: knex.raw(
+              `earth_distance(ll_to_earth(${latitude}, ${longitude}), ll_to_earth(${latitudeField}, ${longitudeField}))`
+            ),
+            as: key,
+          });
+        }
+        }
+
+      });
+
+      whereObject.fields.push(whereSubObject);
+    }
+
+
   }
 }

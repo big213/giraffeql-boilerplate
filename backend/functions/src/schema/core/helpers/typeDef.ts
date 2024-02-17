@@ -37,7 +37,7 @@ type GenerateFieldParams = {
   hidden?: boolean;
   nestHidden?: boolean;
   defaultValue?: unknown;
-  sqlOptions?: Partial<ObjectTypeDefSqlOptions>;
+  sqlOptions?: Partial<ObjectTypeDefSqlOptions> | null;
   typeDefOptions?: Partial<ObjectTypeDefinitionField>;
 };
 
@@ -74,13 +74,14 @@ export function generateStandardField(
     allowNull: allowNullOutput,
     allowNullInput: allowNull,
     required: defaultValue === undefined && !allowNull,
-    sqlOptions: sqlType
-      ? {
-          type: sqlType,
-          ...(defaultValue !== undefined && { defaultValue: defaultValue }),
-          ...sqlOptions,
-        }
-      : undefined,
+    sqlOptions:
+      sqlOptions !== null && sqlType
+        ? {
+            type: sqlType,
+            ...(defaultValue !== undefined && { defaultValue: defaultValue }),
+            ...sqlOptions,
+          }
+        : undefined,
     hidden,
     nestHidden,
     addable: true, // default addable and updateable
@@ -419,11 +420,13 @@ export function generateArrayField(
     sqlType: "jsonb",
     type,
     ...(!allowNull && { defaultValue: [] }),
-    sqlOptions: {
-      // necessary for inserting JSON into DB properly
-      parseValue: (val) => JSON.stringify(val),
-      ...sqlOptions,
-    },
+    sqlOptions: sqlOptions
+      ? {
+          // necessary for inserting JSON into DB properly
+          parseValue: (val) => JSON.stringify(val),
+          ...sqlOptions,
+        }
+      : sqlOptions,
     typeDefOptions: {
       ...typeDefOptions,
     },
@@ -933,8 +936,11 @@ export function generatePaginatorPivotResolverObject({
     sortByScalarDefinition.types = Object.entries(
       pivotService.sortFieldsMap
     ).map(([key, value]) => {
-      // ensure the path exists
-      validateFieldPath(pivotService.getTypeDef(), value.field ?? key);
+      // ensure the path exists, or is in the distanceFieldsMap
+      const valueField = value.field ?? key;
+      if (!(valueField in pivotService.distanceFieldsMap)) {
+        validateFieldPath(pivotService.getTypeDef(), valueField);
+      }
 
       return `"${key}"`;
     });
@@ -1100,6 +1106,74 @@ export function generatePaginatorPivotResolverObject({
     pivotService.searchFieldsMap &&
     Object.keys(pivotService.searchFieldsMap).length > 0;
 
+  const hasDistanceFields =
+    pivotService.distanceFieldsMap &&
+    Object.keys(pivotService.distanceFieldsMap).length > 0;
+
+  if (hasDistanceFields) {
+    // validate the field paths for distance lat + long (to ensure existence, and that they are numbers)
+    Object.entries(pivotService.distanceFieldsMap).forEach(
+      ([key, distanceFieldObject]) => {
+        Object.values(distanceFieldObject).forEach((field) => {
+          const { currentType } = validateFieldPath(
+            pivotService.getTypeDef(),
+            field
+          );
+
+          if (currentType !== Scalars.number) {
+            throw new Error(
+              `Non-number latitude or longitude field specified for ${pivotService.typename} distanceFieldsMap`
+            );
+          }
+        });
+      }
+    );
+
+    // if any distance fields, register the distance-related input objects (if not already registered)
+    if (!inputTypeDefs.has("distanceParamsObject")) {
+      new GiraffeqlInputFieldType({
+        type: new GiraffeqlInputType(
+          {
+            name: `distanceParamsObject`,
+            fields: {
+              gt: new GiraffeqlInputFieldType({
+                type: Scalars.number,
+                required: false,
+                allowNull: false,
+              }),
+              lt: new GiraffeqlInputFieldType({
+                type: Scalars.number,
+                required: false,
+                allowNull: false,
+              }),
+              from: new GiraffeqlInputFieldType({
+                type: new GiraffeqlInputType({
+                  name: "distanceFromObject",
+                  fields: {
+                    // lat + long must always be numbers
+                    latitude: new GiraffeqlInputFieldType({
+                      type: Scalars.number,
+                      required: true,
+                      allowNull: false,
+                    }),
+                    longitude: new GiraffeqlInputFieldType({
+                      type: Scalars.number,
+                      required: true,
+                      allowNull: false,
+                    }),
+                  },
+                }),
+                required: true,
+                allowNull: false,
+              }),
+            },
+          },
+          true
+        ),
+      });
+    }
+  }
+
   return <ObjectTypeDefinitionField>{
     type: new GiraffeqlObjectTypeLookup(pivotService.paginator.typename),
     allowNull: false,
@@ -1183,6 +1257,27 @@ export function generatePaginatorPivotResolverObject({
                         }),
                       }),
                     },
+                  },
+                  true
+                ),
+              }),
+            }),
+            ...(hasDistanceFields && {
+              distance: new GiraffeqlInputFieldType({
+                type: new GiraffeqlInputType(
+                  {
+                    name: `${pivotService.typename}DistanceObject`,
+                    fields: Object.keys(pivotService.distanceFieldsMap).reduce(
+                      (total, val) => {
+                        total[val] = new GiraffeqlInputFieldType({
+                          type: new GiraffeqlInputTypeLookup(
+                            "distanceParamsObject"
+                          ),
+                        });
+                        return total;
+                      },
+                      {}
+                    ),
                   },
                   true
                 ),
@@ -1353,6 +1448,10 @@ export function generateStatsResolverObject({
     pivotService.searchFieldsMap &&
     Object.keys(pivotService.searchFieldsMap).length > 0;
 
+  const hasDistanceFields =
+    pivotService.distanceFieldsMap &&
+    Object.keys(pivotService.distanceFieldsMap).length > 0;
+
   return <ObjectTypeDefinitionField>{
     type: new GiraffeqlObjectType(
       {
@@ -1385,6 +1484,13 @@ export function generateStatsResolverObject({
               search: new GiraffeqlInputFieldType({
                 type: new GiraffeqlInputTypeLookup(
                   `${pivotService.typename}SearchObject`
+                ),
+              }),
+            }),
+            ...(hasDistanceFields && {
+              distance: new GiraffeqlInputFieldType({
+                type: new GiraffeqlInputTypeLookup(
+                  `${pivotService.typename}DistanceObject`
                 ),
               }),
             }),

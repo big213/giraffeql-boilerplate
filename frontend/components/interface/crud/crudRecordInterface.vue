@@ -268,6 +268,57 @@
               @handle-input="filterChanged = true"
             ></GenericInput>
           </v-col>
+          <v-col
+            v-for="(distanceFilterObject, i) in distanceFilterOptions"
+            :key="`${i}-d`"
+            cols="12"
+            class="py-0"
+          >
+            <v-container fluid>
+              <v-row>
+                <v-col cols="3" class="py-0">
+                  <v-text-field
+                    v-model="distanceFilterObject.ltValue"
+                    :label="`Distance Less Than - ${distanceFilterObject.definition.text}`"
+                    outlined
+                    clearable
+                    @keyup.enter="updatePageOptions()"
+                    @input="filterChanged = true"
+                  ></v-text-field>
+                </v-col>
+                <v-col cols="3" class="py-0">
+                  <v-text-field
+                    v-model="distanceFilterObject.gtValue"
+                    :label="`Distance Greater Than - ${distanceFilterObject.definition.text}`"
+                    outlined
+                    clearable
+                    @keyup.enter="updatePageOptions()"
+                    @input="filterChanged = true"
+                  ></v-text-field>
+                </v-col>
+                <v-col cols="3" class="py-0">
+                  <v-text-field
+                    v-model="distanceFilterObject.latitudeValue"
+                    :label="`Latitude - ${distanceFilterObject.definition.text}`"
+                    outlined
+                    clearable
+                    @keyup.enter="updatePageOptions()"
+                    @input="filterChanged = true"
+                  ></v-text-field>
+                </v-col>
+                <v-col cols="3" class="py-0">
+                  <v-text-field
+                    v-model="distanceFilterObject.longitudeValue"
+                    :label="`Longitude - ${distanceFilterObject.definition.text}`"
+                    outlined
+                    clearable
+                    @keyup.enter="updatePageOptions()"
+                    @input="filterChanged = true"
+                  ></v-text-field>
+                </v-col>
+              </v-row>
+            </v-container>
+          </v-col>
         </v-row>
         <v-toolbar v-if="filterChanged" dense flat color="transparent">
           <v-spacer></v-spacer>

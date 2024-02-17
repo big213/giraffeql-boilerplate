@@ -275,7 +275,7 @@ export async function getObjectType({
   fieldPath,
   externalQuery,
   sqlParams,
-  rawSelect = [],
+  additionalSelect = [],
   data = {},
   externalTypeDef,
 }: {
@@ -284,7 +284,7 @@ export async function getObjectType({
   fieldPath: string[];
   externalQuery: unknown;
   sqlParams?: Omit<SqlSelectQuery, "table" | "select">;
-  rawSelect?: SqlSimpleSelectObject[];
+  additionalSelect?: SqlSimpleSelectObject[];
   data?: any;
   externalTypeDef?: GiraffeqlObjectType;
 }): Promise<any[]> {
@@ -307,14 +307,14 @@ export async function getObjectType({
     validateArgs: false, // should already be validated
   });
 
-  // merge rawSelect into a selectObject first
-  const rawSelectObject = standardizeSelectInput(rawSelect);
+  // merge additionalSelect into a selectObject first
+  const additionalSelectObject = standardizeSelectInput(additionalSelect);
 
   // convert GiraffeqlResolverNode into a validatedSqlQuery
   const selectObject = generateSqlQuerySelectObject({
     // should never end up in here without a nested query
     nestedResolverNodeMap: giraffeqlResolverTree.nested!,
-    selectObject: rawSelectObject,
+    selectObject: additionalSelectObject,
     fieldPath,
   });
 

@@ -171,7 +171,7 @@ export default {
           typeof fieldElement === 'string' ? fieldElement : fieldElement.field
         )
 
-        const { query, serializeMap } = processQuery(
+        const { query, serializeMap } = await processQuery(
           this,
           this.recordInfo,
           fields

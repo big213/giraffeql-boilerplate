@@ -1,5 +1,13 @@
 <template>
-  <v-container fluid style="max-width: 1920px">
+  <v-container
+    v-if="!$route.query.pageOptions || loading.initPageOptions"
+    fill-height
+  >
+    <v-layout align-center justify-center>
+      <CircularLoader style="min-height: 250px"></CircularLoader>
+    </v-layout>
+  </v-container>
+  <v-container v-else fluid style="max-width: 1920px">
     <v-layout column justify-left align-left>
       <v-row>
         <v-col cols="12">
@@ -48,10 +56,12 @@ import CrudRecordInterface from '~/components/interface/crud/crudRecordInterface
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 import { capitalizeString, generateCrudRecordRoute } from '~/services/base'
 import { mapGetters } from 'vuex'
+import CircularLoader from '~/components/common/circularLoader.vue'
 
 export default {
   components: {
     PreviewRecordChip,
+    CircularLoader,
   },
 
   data() {
@@ -60,6 +70,9 @@ export default {
       expandTypeObject: null,
       subPageOptions: null,
       breadcrumbItems: [],
+      loading: {
+        initPageOptions: false,
+      },
     }
   },
 
@@ -142,21 +155,12 @@ export default {
   },
 
   created() {
-    // if no pageOptions, automatically redirect to defaultPageOptions, if any
-    if (
-      !this.$route.query.pageOptions &&
-      this.recordInfo.paginationOptions.defaultPageOptions
-    ) {
-      this.navigateToDefaultRoute()
-    }
+    this.reset()
   },
 
   watch: {
-    '$route.query.pageOptions'(val) {
-      // if no pageOptions, automatically redirect if there is a defaultPageOptions
-      if (!val && this.recordInfo.paginationOptions.defaultPageOptions) {
-        this.navigateToDefaultRoute()
-      }
+    '$route.query.pageOptions'() {
+      this.reset()
     },
   },
 
@@ -209,14 +213,14 @@ export default {
       }
     },
 
-    navigateToDefaultRoute() {
+    async navigateToDefaultRoute() {
       if (!this.recordInfo.paginationOptions.defaultPageOptions) return
 
       this.$router.replace(
         generateCrudRecordRoute(this, {
           path: this.$route.path,
           pageOptions:
-            this.recordInfo.paginationOptions.defaultPageOptions(this),
+            await this.recordInfo.paginationOptions.defaultPageOptions(this),
         })
       )
     },
@@ -236,7 +240,8 @@ export default {
       if (
         pageOptions.search ||
         pageOptions.filters.length ||
-        pageOptions.sort
+        pageOptions.sort ||
+        pageOptions.distance?.length
       ) {
         query.pageOptions = encodeURIComponent(
           btoa(JSON.stringify(pageOptions))
@@ -252,6 +257,26 @@ export default {
         })
         .catch((e) => e)
       // catches if the query is exactly the same
+    },
+
+    async initializePageOptions() {
+      this.loading.initPageOptions = true
+      try {
+        // if no pageOptions, automatically redirect to defaultPageOptions, if any
+        if (
+          !this.$route.query.pageOptions &&
+          this.recordInfo.paginationOptions.defaultPageOptions
+        ) {
+          await this.navigateToDefaultRoute()
+        }
+      } catch (err) {
+        handleError(this, err)
+      }
+      this.loading.initPageOptions = false
+    },
+
+    reset() {
+      this.initializePageOptions()
     },
   },
 

@@ -309,7 +309,7 @@ export default {
     async loadRecord() {
       this.loading.loadRecord = true
       try {
-        const { serializeMap, query } = processQuery(
+        const { serializeMap, query } = await processQuery(
           this,
           this.recordInfo,
           this.rawFields

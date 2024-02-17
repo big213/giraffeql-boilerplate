@@ -21,11 +21,11 @@ export default {
     }),
     resolver: (inputs) => Admin.executeAdminFunction(inputs),
   }),
-  executeVertexRequest: new GiraffeqlRootResolverType({
-    name: "executeVertexRequest",
+  executeGoogleApiRequest: new GiraffeqlRootResolverType({
+    name: "executeGoogleApiRequest",
     restOptions: {
       method: "post",
-      route: "/executeVertexRequest",
+      route: "/executeGoogleApiRequest",
       argsTransformer: (req) => req.body,
     },
     type: Scalars.unknown,
@@ -33,9 +33,9 @@ export default {
     args: new GiraffeqlInputFieldType({
       required: true,
       type: new GiraffeqlInputType({
-        name: "executeVertexRequestInput",
+        name: "executeGoogleApiRequestInput",
         fields: {
-          query: new GiraffeqlInputFieldType({
+          method: new GiraffeqlInputFieldType({
             required: true,
             type: Scalars.string,
           }),
@@ -50,6 +50,6 @@ export default {
         },
       }),
     }),
-    resolver: (inputs) => Admin.executeVertexRequest(inputs),
+    resolver: (inputs) => Admin.executeGoogleApiRequest(inputs),
   }),
 };

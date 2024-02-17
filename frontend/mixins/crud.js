@@ -134,6 +134,7 @@ export default {
 
       // type: CrudFilterObject[]
       filterInputsArray: [],
+      distanceFilterOptions: [],
       filterChanged: false,
       showFilterInterface: false,
 
@@ -396,6 +397,7 @@ export default {
     hasFilters() {
       return (
         this.recordInfo.paginationOptions.filterOptions.length > 0 ||
+        this.recordInfo.paginationOptions.distanceFilterOptions?.length > 0 ||
         this.recordInfo.paginationOptions.searchOptions
       )
     },
@@ -792,6 +794,33 @@ export default {
       const getSearchParams =
         this.recordInfo.paginationOptions.searchOptions?.getParams
 
+      // build the distanceParams, if any
+      let distanceParams
+      if (this.distanceFilterOptions.length > 0) {
+        distanceParams = this.distanceFilterOptions.reduce(
+          (total, distanceObject) => {
+            // if the gt/lt is not defined, skip
+            if (!distanceObject.ltValue && !distanceObject.gtValue) return total
+            // if the key already exists, overrite at this point
+            total[distanceObject.definition.key] = {
+              ...(distanceObject.ltValue && {
+                lt: distanceObject.ltValue,
+              }),
+              ...(distanceObject.gtValue && {
+                gt: distanceObject.gtValue,
+              }),
+              from: {
+                latitude: distanceObject.latitudeValue,
+                longitude: distanceObject.longitudeValue,
+              },
+            }
+
+            return total
+          },
+          {}
+        )
+      }
+
       return {
         ...(pagination && {
           first:
@@ -805,6 +834,9 @@ export default {
         }),
         sortBy,
         filterBy: generateFilterByObjectArray(this.allFilters, this.recordInfo),
+        ...(distanceParams && {
+          distance: distanceParams,
+        }),
         ...(this.search && {
           search: {
             query: this.search,
@@ -910,6 +942,20 @@ export default {
             value: isObject(crudFilterObject.inputObject.value)
               ? crudFilterObject.inputObject.value.id
               : crudFilterObject.inputObject.value,
+          })),
+        distance: this.distanceFilterOptions
+          .filter(
+            (crudDistanceObject) =>
+              !Object.values(crudDistanceObject).some(
+                (ele) => ele === null || ele === undefined
+              )
+          )
+          .map((crudDistanceObject) => ({
+            key: crudDistanceObject.definition.key,
+            latitude: crudDistanceObject.latitudeValue,
+            longitude: crudDistanceObject.longitudeValue,
+            gt: crudDistanceObject.gtValue,
+            lt: crudDistanceObject.ltValue,
           })),
         sort: this.currentSort
           ? { field: this.currentSort.field, desc: this.currentSort.desc }
@@ -1029,7 +1075,7 @@ export default {
         .concat(this.recordInfo.requiredFields ?? [])
         .concat(this.recordInfo.paginationOptions.requiredFields ?? [])
 
-      const { query, serializeMap } = processQuery(
+      const { query, serializeMap } = await processQuery(
         this,
         this.recordInfo,
         fields
@@ -1142,6 +1188,33 @@ export default {
         }
 
         this.filterChanged = false
+      }
+
+      // sync the distance filters
+      const distancePageOptions = this.pageOptions?.distance
+
+      if (distancePageOptions) {
+        // sync the pageOptions distance filters to existing filters
+        this.distanceFilterOptions.forEach((distanceFilterObject) => {
+          // was this filter set in the pageOptions?
+          const matchingRawFilterObject = distancePageOptions.find(
+            (rawFilterObject) =>
+              rawFilterObject.key === distanceFilterObject.definition.key &&
+              rawFilterObject.operator ===
+                distanceFilterObject.definition.operator
+          )
+
+          // if there is a match, sync it with the distanceFilterObject
+          if (matchingRawFilterObject) {
+            distanceFilterObject.latitudeValue =
+              matchingRawFilterObject.latitude
+            distanceFilterObject.longitudeValue =
+              matchingRawFilterObject.longitude
+            distanceFilterObject.ltValue = matchingRawFilterObject.lt
+
+            distanceFilterObject.gtValue = matchingRawFilterObject.gt
+          }
+        })
       }
     },
 
@@ -1257,6 +1330,21 @@ export default {
             }
           )
         )
+
+        // initialize distanceFilterOptions, if any
+        this.distanceFilterOptions = []
+        if (this.recordInfo.paginationOptions.distanceFilterOptions) {
+          for (const distanceFilterObject of this.recordInfo.paginationOptions
+            .distanceFilterOptions) {
+            this.distanceFilterOptions.push({
+              definition: distanceFilterObject,
+              latitudeValue: null,
+              longitudeValue: null,
+              gtValue: null,
+              ltValue: null,
+            })
+          }
+        }
 
         // if pageOptions is undefined, use the defaultPageOptions fn if any
         if (

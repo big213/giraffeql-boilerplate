@@ -85,6 +85,7 @@ import {
   generateViewRecordRoute,
   lookupFieldInfo,
   collapseObject,
+  processQuery,
 } from '~/services/base'
 import { executeGiraffeql } from '~/services/giraffeql'
 import FollowButton from '~/components/button/followButton.vue'
@@ -217,52 +218,15 @@ export default {
     async loadData() {
       this.loading.loadData = true
       try {
+        const { query } =
+          this.recordInfo &&
+          (await processQuery(this, this.recordInfo, this.fields))
+
         this.itemData = await executeGiraffeql(this, {
           ['get' + this.capitalizedType]: {
             id: true,
             __typename: true,
-            ...(this.recordInfo &&
-              collapseObject(
-                this.fields.reduce((total, fieldKey) => {
-                  // skip if key is __typename
-                  if (fieldKey === '__typename') return total
-
-                  const fieldInfo = lookupFieldInfo(this.recordInfo, fieldKey)
-
-                  // if field is hidden, exclude
-                  if (fieldInfo.hidden) return total
-
-                  const fieldsToAdd = new Set()
-
-                  // add all fields
-                  if (fieldInfo.fields) {
-                    fieldInfo.fields.forEach((field) => fieldsToAdd.add(field))
-                  } else {
-                    fieldsToAdd.add(fieldKey)
-                  }
-
-                  // process fields
-                  fieldsToAdd.forEach((field) => {
-                    total[field] = true
-
-                    // add a serializer if there is one for the field
-                    const currentFieldInfo = this.recordInfo.fields[field]
-                    if (currentFieldInfo) {
-                      if (currentFieldInfo.serialize) {
-                        serializeMap.set(field, currentFieldInfo.serialize)
-                      }
-
-                      // if field has args, process them
-                      if (currentFieldInfo.args) {
-                        total[currentFieldInfo.args.path + '.__args'] =
-                          currentFieldInfo.args.getArgs(this)
-                      }
-                    }
-                  })
-
-                  return total
-                }, {})
-              )),
+            ...query,
             ...(this.recordInfo.followLinkModel && {
               currentUserFollowLink: {
                 id: true,

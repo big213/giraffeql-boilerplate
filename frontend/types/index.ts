@@ -28,7 +28,7 @@ export type FieldDefinition = {
   }
 
   args?: {
-    getArgs: (that) => any
+    getArgs: (that) => Promise<any>
     path: string
     // if provided, only load this field if this returns true
     loadIf?: (that) => boolean
@@ -120,7 +120,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
         : null
       : null
 
-    defaultPageOptions?: (that: any) => CrudPageOptions
+    defaultPageOptions?: (
+      that: any
+    ) => Promise<CrudPageOptions> | CrudPageOptions
 
     defaultLockedFilters?: (that: any) => CrudRawFilterObject[]
 
@@ -128,6 +130,13 @@ export type RecordInfo<T extends keyof MainTypes> = {
     filterOptions: `${T}FilterByObject` extends keyof InputTypes
       ? FilterObject[]
       : []
+
+    distanceFilterOptions?: {
+      key: string
+      text: string
+      defaultLocation?: (that) => Promise<any>
+      defaultValue?: (that) => Promise<any>
+    }[]
 
     sortOptions: SortObject[]
 
@@ -506,6 +515,9 @@ type InputOptions = {
   // for stripe-pi and stripe-pi-editable input types, function that returns the instanceOptions (in the genericInput)
   getPaymentIntent?: (that, inputObject, selectedItem, item, amount) => any
 
+  // for text-autocomplete and text-combobox, function that returns an array of suggestions
+  getSuggestions?: (that, inputObject) => Promise<string[]>
+
   // for multiple-file input, maximum number of files
   limit?: number
   // for multiple-file input, whether or not to use mediaMode
@@ -578,6 +590,8 @@ export type InputType =
   | 'server-autocomplete' // if there's lots of entries, may not want to fetch all of the entries at once. getOptions will be optional
   | 'select' // standard select
   | 'multiple-select' // multiple select
+  | 'text-autocomplete' // validate text input using server-side calls
+  | 'text-combobox' // validate text input using server-side calls, but selection not required
   | 'text'
 
 export type ActionOptions = {

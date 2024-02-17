@@ -645,6 +645,57 @@
         </v-chip>
       </template>
     </v-autocomplete>
+    <v-autocomplete
+      v-else-if="item.inputType === 'text-autocomplete'"
+      v-model="item.value"
+      :search-input.sync="item.inputValue"
+      :items="item.options"
+      :label="item.label + (item.optional ? ' (optional)' : '')"
+      :readonly="isReadonly"
+      :append-icon="appendIcon"
+      :append-outer-icon="item.closeable ? 'mdi-close' : null"
+      :hint="item.hint"
+      :loading="item.loading"
+      persistent-hint
+      filled
+      hide-no-data
+      return-object
+      no-filter
+      class="py-0"
+      v-on="$listeners"
+      @update:search-input="handleSearchUpdate(item)"
+      @blur="item.focused = false"
+      @focus="item.focused = true"
+      @click:append="handleClear()"
+      @click:append-outer="handleClose()"
+    >
+    </v-autocomplete>
+
+    <v-combobox
+      v-else-if="item.inputType === 'text-combobox'"
+      ref="combobox"
+      v-model="item.value"
+      :search-input.sync="item.inputValue"
+      :items="item.options"
+      :label="item.label + (item.optional ? ' (optional)' : '')"
+      :readonly="isReadonly"
+      :append-icon="appendIcon"
+      :append-outer-icon="item.closeable ? 'mdi-close' : null"
+      :hint="item.hint"
+      :loading="item.loading"
+      persistent-hint
+      filled
+      hide-no-data
+      no-filter
+      class="py-0"
+      v-on="$listeners"
+      @update:search-input="handleSearchUpdate(item)"
+      @blur="item.focused = false"
+      @focus="item.focused = true"
+      @click:append="handleClear()"
+      @click:append-outer="handleClose()"
+    >
+    </v-combobox>
     <v-select
       v-else-if="
         item.inputType === 'select' || item.inputType === 'multiple-select'
@@ -915,7 +966,6 @@ import {
   initializeFileUploadObject,
 } from '~/services/file'
 import {
-  capitalizeString,
   isObject,
   handleError,
   getIcon,
@@ -924,8 +974,8 @@ import {
   populateInputObject,
   generateDateLocaleString,
   formatAsCurrency,
+  loadTypeSearchResults,
 } from '~/services/base'
-import { executeGiraffeql } from '~/services/giraffeql'
 import FileChip from '~/components/chip/fileChip.vue'
 import MediaChip from '~/components/chip/mediaChip.vue'
 import { StripeElements, StripeElement } from 'vue-stripe-elements-plus'
@@ -1168,10 +1218,11 @@ export default {
       // if empty input, don't do the update
       if (!inputObject.inputValue) return
 
-      // if inputObject is object and search === value.name, skip
+      // if inputObject is object and search === value.name, or if the value is equal to inputValue, skip (this usually happens when an item is selected, and it will trigger this function again)
       if (
-        isObject(inputObject.value) &&
-        inputObject.inputValue === inputObject.value.name
+        inputObject.inputValue === inputObject.value ||
+        (isObject(inputObject.value) &&
+          inputObject.inputValue === inputObject.value.name)
       ) {
         return
       }
@@ -1179,9 +1230,22 @@ export default {
       // cancel pending call, if any
       clearTimeout(this._timerId)
 
+      // set the load search result function if it is a text-autocomplete type
+      const loadSearchResultsFn =
+        inputObject.inputType === 'text-autocomplete' ||
+        inputObject.inputType === 'text-combobox'
+          ? inputObject.inputOptions.getSuggestions
+          : loadTypeSearchResults
+
       // delay new call 500ms
-      this._timerId = setTimeout(() => {
-        this.loadSearchResults(inputObject)
+      this._timerId = setTimeout(async () => {
+        inputObject.loading = true
+        try {
+          inputObject.options = await loadSearchResultsFn(this, inputObject)
+        } catch (err) {
+          handleError(this, err)
+        }
+        inputObject.loading = false
       }, 500)
     },
 
@@ -1379,51 +1443,6 @@ export default {
           })
         }
       )
-    },
-
-    async loadSearchResults(inputObject) {
-      // if the value is empty, don't load results
-      if (!inputObject.inputValue) return
-
-      inputObject.loading = true
-      try {
-        const results = await executeGiraffeql(this, {
-          [`get${capitalizeString(
-            inputObject.inputOptions.typename
-          )}Paginator`]: {
-            edges: {
-              node: {
-                id: true,
-                name: true,
-                ...(inputObject.inputOptions?.hasAvatar && {
-                  avatarUrl: true,
-                }),
-              },
-            },
-            __args: {
-              first: 20,
-              search: {
-                query: inputObject.inputValue,
-                params: inputObject.fieldInfo.inputOptions?.searchParams?.(
-                  this,
-                  this.allItems
-                ),
-              },
-              filterBy: [],
-              sortBy: [],
-              ...inputObject.fieldInfo.inputOptions?.lookupParams?.(
-                this,
-                this.allItems
-              ),
-            },
-          },
-        })
-
-        inputObject.options = results.edges.map((edge) => edge.node)
-      } catch (err) {
-        handleError(this, err)
-      }
-      inputObject.loading = false
     },
 
     async loadFiles(inputObject) {

@@ -72,6 +72,11 @@ export type SearchFieldObject = {
   ) => void;
 };
 
+export type DistanceFieldObject = {
+  latitude: string;
+  longitude: string;
+};
+
 export type KeyMap = {
   [x: string]: string[];
 };
@@ -112,6 +117,8 @@ export class PaginatedService extends BaseService {
   groupByFieldsMap: FieldMap = {};
 
   searchFieldsMap: { [x: string]: SearchFieldObject } = {};
+
+  distanceFieldsMap: { [x: string]: DistanceFieldObject } = {};
 
   searchParams: { [x: string]: GiraffeqlInputFieldType } | undefined =
     undefined;

@@ -793,7 +793,7 @@ export function addNestedInputObject(
   )
 }
 
-export function processQuery(
+export async function processQuery(
   that,
   recordInfo,
   fields: string[],
@@ -802,78 +802,78 @@ export function processQuery(
   // create a map field -> serializeFn for fast serialization
   const serializeMap = new Map()
 
+  // build the query async
+  const query = { id: true, __typename: true }
+  for (const field of fields) {
+    // skip if key is __typename
+    if (field === '__typename') return
+
+    const fieldInfo = lookupFieldInfo(recordInfo, field)
+
+    // skip if args.loadIf provided and it returns false
+    if (fieldInfo.args?.loadIf && !fieldInfo.args.loadIf(that)) {
+      return
+    }
+
+    const fieldsToAdd: Set<string> = new Set()
+
+    // in export mode, generally will only be fetching the first field
+    if (fieldInfo.fields) {
+      if (firstFieldOnly) {
+        fieldsToAdd.add(fieldInfo.fields[0])
+      } else {
+        fieldInfo.fields.forEach((field) => fieldsToAdd.add(field))
+      }
+    } else {
+      fieldsToAdd.add(field)
+    }
+
+    // process fields
+    fieldsToAdd.forEach(async (field) => {
+      const currentFieldInfo = recordInfo.fields[field]
+
+      // add a serializer if there is one for the field
+      if (currentFieldInfo) {
+        // skip if args.loadIf provided and it returns false
+        if (
+          currentFieldInfo.args?.loadIf &&
+          !currentFieldInfo.args.loadIf(that)
+        ) {
+          return
+        }
+
+        if (currentFieldInfo.serialize) {
+          serializeMap.set(field, currentFieldInfo.serialize)
+        }
+
+        // if field has args, process them
+        if (
+          currentFieldInfo.args &&
+          (!currentFieldInfo.args.loadIf || currentFieldInfo.args.loadIf(that))
+        ) {
+          query[`${currentFieldInfo.args.path}.__args`] =
+            await currentFieldInfo.args.getArgs(that)
+        }
+      }
+
+      query[field] = true
+    })
+
+    // if main fieldInfo has args and passes loadIf, process them
+    if (
+      fieldInfo.args &&
+      (!fieldInfo.args.loadIf || fieldInfo.args.loadIf(that))
+    ) {
+      query[`${fieldInfo.args.path}.__args`] = await fieldInfo.args.getArgs(
+        that
+      )
+    }
+  }
+
   return {
     serializeMap,
     query: {
-      ...collapseObject(
-        fields.reduce(
-          (total, field) => {
-            const fieldInfo = lookupFieldInfo(recordInfo, field)
-
-            // skip if args.loadIf provided and it returns false
-            if (fieldInfo.args?.loadIf && !fieldInfo.args.loadIf(that)) {
-              return total
-            }
-
-            const fieldsToAdd: Set<string> = new Set()
-
-            // in export mode, generally will only be fetching the first field
-            if (fieldInfo.fields) {
-              if (firstFieldOnly) {
-                fieldsToAdd.add(fieldInfo.fields[0])
-              } else {
-                fieldInfo.fields.forEach((field) => fieldsToAdd.add(field))
-              }
-            } else {
-              fieldsToAdd.add(field)
-            }
-
-            // process fields
-            fieldsToAdd.forEach((field) => {
-              const currentFieldInfo = recordInfo.fields[field]
-
-              // add a serializer if there is one for the field
-              if (currentFieldInfo) {
-                // skip if args.loadIf provided and it returns false
-                if (
-                  currentFieldInfo.args?.loadIf &&
-                  !currentFieldInfo.args.loadIf(that)
-                ) {
-                  return
-                }
-
-                if (currentFieldInfo.serialize) {
-                  serializeMap.set(field, currentFieldInfo.serialize)
-                }
-
-                // if field has args, process them
-                if (
-                  currentFieldInfo.args &&
-                  (!currentFieldInfo.args.loadIf ||
-                    currentFieldInfo.args.loadIf(that))
-                ) {
-                  total[`${currentFieldInfo.args.path}.__args`] =
-                    currentFieldInfo.args.getArgs(that)
-                }
-              }
-
-              total[field] = true
-            })
-
-            // if main fieldInfo has args and passes loadIf, process them
-            if (
-              fieldInfo.args &&
-              (!fieldInfo.args.loadIf || fieldInfo.args.loadIf(that))
-            ) {
-              total[`${fieldInfo.args.path}.__args`] =
-                fieldInfo.args.getArgs(that)
-            }
-
-            return total
-          },
-          { id: true, __typename: true } // always add id and typename
-        )
-      ),
+      ...collapseObject(query),
     },
   }
 }
@@ -1104,4 +1104,36 @@ export function userHasPermissions(that, requiredPermissions: string[]) {
   return requiredPermissions.every((permission) =>
     that.$store.getters['auth/user'].allPermissions.includes(permission)
   )
+}
+
+export function loadTypeSearchResults(that, inputObject) {
+  return executeGiraffeql(that, <any>{
+    [`get${capitalizeString(inputObject.inputOptions.typename)}Paginator`]: {
+      edges: {
+        node: {
+          id: true,
+          name: true,
+          ...(inputObject.inputOptions?.hasAvatar && {
+            avatarUrl: true,
+          }),
+        },
+      },
+      __args: {
+        first: 20,
+        search: {
+          query: inputObject.inputValue,
+          params: inputObject.fieldInfo.inputOptions?.searchParams?.(
+            that,
+            that.allItems
+          ),
+        },
+        filterBy: [],
+        sortBy: [],
+        ...inputObject.fieldInfo.inputOptions?.lookupParams?.(
+          that,
+          that.allItems
+        ),
+      },
+    },
+  }).then((results: any) => results.edges.map((edge) => edge.node))
 }

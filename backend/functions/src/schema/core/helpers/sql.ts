@@ -15,18 +15,28 @@ import { linkDefs } from "../../links";
 import { generateSqlSingleFieldObject } from "./sqlHelper";
 
 function isSqlWhereObject(
-  obj: SqlWhereFieldObject | SqlWhereObject
+  obj: SqlWhereFieldObject | SqlWhereObject | SqlRawWhereStatement
 ): obj is SqlWhereObject {
-  return (obj as SqlWhereObject).fields !== undefined;
+  return (obj as SqlWhereObject).fields !== undefined && !("statement" in obj);
+}
+
+function isSqlRawWhereStatement(
+  obj: SqlWhereFieldObject | SqlWhereObject | SqlRawWhereStatement
+): obj is SqlRawWhereStatement {
+  return (obj as SqlRawWhereStatement).statement !== undefined;
+}
+
+export function isKnexRawStatement(obj: any): obj is Knex.Raw {
+  return obj.constructor.name === "Raw";
 }
 
 export type SqlWhereObject = {
   connective?: string;
-  fields: (SqlWhereObject | SqlWhereFieldObject)[];
+  fields: (SqlWhereObject | SqlWhereFieldObject | SqlRawWhereStatement)[];
 };
 
 export type SqlOrderByObject = {
-  field: SqlSingleFieldObject | string;
+  field: SqlSingleFieldObject | string | Knex.Raw;
   desc?: boolean;
 };
 
@@ -34,6 +44,11 @@ export type SqlWhereFieldObject = {
   field: SqlSingleFieldObject | string;
   value: any;
   operator?: SqlWhereFieldOperator;
+};
+
+export type SqlRawWhereStatement = {
+  statement: string;
+  fields: (SqlSingleFieldObject | string)[];
 };
 
 type FieldsObjectMap = {
@@ -98,20 +113,26 @@ export type SqlSimpleSelectObject = {
   args?: any;
 };
 
+export type SqlSimpleRawSelectObject = {
+  statement: Knex.Raw;
+  as: string;
+};
+
 export type SqlSimpleOrderByObject = {
-  field: string;
+  field: string | Knex.Raw;
   desc?: boolean;
 };
 
 export type SqlSelectQuery = {
   select: SqlSelectQueryObject | (SqlSimpleSelectObject | string)[];
+  rawSelect?: SqlSimpleRawSelectObject[];
   table: string;
   where: SqlWhereInput;
   groupBy?: (SqlSingleFieldObject | string)[];
   orderBy?: SqlOrderByObject[];
   offset?: number;
   limit?: number;
-  distinctOn?: (SqlSingleFieldObject | string)[];
+  distinctOn?: (SqlSingleFieldObject | string | Knex.Raw)[];
   specialParams?: any;
   transaction?: Knex.Transaction;
 };
@@ -550,6 +571,10 @@ function applyKnexWhere(
           applyKnexWhere(builder, whereSubObject, fieldsObjectMap);
         }
       );
+    } else if (isSqlRawWhereStatement(whereSubObject)) {
+      knexObject[
+        whereObject.connective === "OR" ? "orWhereRaw" : "andWhereRaw"
+      ](whereSubObject.statement);
     } else {
       const operator = whereSubObject.operator ?? "eq";
       const bindings: any[] = [];
@@ -800,6 +825,13 @@ function processWhereObject(
   whereObject.fields.forEach((whereSubObject) => {
     if (isSqlWhereObject(whereSubObject)) {
       processWhereObject(whereSubObject, fieldsObjectMap);
+    } else if (isSqlRawWhereStatement(whereSubObject)) {
+      // process the fields
+      whereSubObject.fields.forEach((field) => {
+        const singleSelectField = standardizeSqlSingleSelectField(field);
+
+        processSingleFieldObject(singleSelectField, fieldsObjectMap);
+      });
     } else {
       const singleSelectField = standardizeSqlSingleSelectField(
         whereSubObject.field
@@ -817,6 +849,7 @@ export async function fetchTableRows(sqlQuery: SqlSelectQuery) {
     // acquire alias of the first table
     const { tableIndexMap, tableAlias } = acquireTableAlias(sqlQuery.table);
 
+    // standardize the select inputs, i.e. return a SqlSelectQueryObject
     const standardizedSelectObject = standardizeSelectInput(sqlQuery.select);
 
     // initialize fieldsObjectMap
@@ -839,14 +872,16 @@ export async function fetchTableRows(sqlQuery: SqlSelectQuery) {
       );
     }
 
-    // process orderBy
+    // process orderBy (exclude raw)
     if (sqlQuery.orderBy) {
-      sqlQuery.orderBy.forEach((orderByObject) =>
-        processSingleFieldObject(
-          standardizeSqlSingleSelectField(orderByObject.field),
-          fieldsObjectMap
-        )
-      );
+      sqlQuery.orderBy.forEach((orderByObject) => {
+        if (!isKnexRawStatement(orderByObject.field)) {
+          processSingleFieldObject(
+            standardizeSqlSingleSelectField(orderByObject.field),
+            fieldsObjectMap
+          );
+        }
+      });
     }
 
     // standardize the where input
@@ -869,7 +904,7 @@ export async function fetchTableRows(sqlQuery: SqlSelectQuery) {
     applyJoins(knexObject, joinObjectMap, tableAlias, sqlQuery.specialParams);
 
     // build and apply select object
-    const knexSelectObject = {};
+    const knexSelectObject: { [x: string]: Knex.Raw } = {};
 
     Object.entries(standardizedSelectObject).forEach(
       ([alias, singleFieldObject]) => {
@@ -878,6 +913,11 @@ export async function fetchTableRows(sqlQuery: SqlSelectQuery) {
         );
       }
     );
+
+    // apply raw selects, if any
+    sqlQuery.rawSelect?.forEach((ele) => {
+      knexSelectObject[ele.as] = ele.statement;
+    });
 
     knexObject.select(knexSelectObject);
 
@@ -901,11 +941,15 @@ export async function fetchTableRows(sqlQuery: SqlSelectQuery) {
       knexObject.orderByRaw(
         sqlQuery.orderBy
           .map((orderByObject) => {
-            return `${getSingleFieldAlias(
-              fieldsObjectMap,
-              standardizeSqlSingleSelectField(orderByObject.field),
-              { ignoreGetter: true }
-            )} ${orderByObject.desc ? "desc NULLS LAST" : "asc NULLS FIRST"}`;
+            return `${
+              isKnexRawStatement(orderByObject.field)
+                ? orderByObject.field
+                : getSingleFieldAlias(
+                    fieldsObjectMap,
+                    standardizeSqlSingleSelectField(orderByObject.field),
+                    { ignoreGetter: true }
+                  )
+            } ${orderByObject.desc ? "desc NULLS LAST" : "asc NULLS FIRST"}`;
           })
           .join(", ")
       );
@@ -929,16 +973,18 @@ export async function fetchTableRows(sqlQuery: SqlSelectQuery) {
     // apply distinct
     if (sqlQuery.distinctOn) {
       knexObject.distinctOn(
-        sqlQuery.distinctOn.map((ele) =>
-          getSingleFieldAlias(
-            fieldsObjectMap,
-            standardizeSqlSingleSelectField(ele),
-            {
-              ignoreGetter: true,
-              wrapTableAlias: false, // not wrapping table alias because knex will do it for us here
-            }
-          )
-        )
+        sqlQuery.distinctOn.map((ele) => {
+          return isKnexRawStatement(ele)
+            ? ele.toQuery()
+            : getSingleFieldAlias(
+                fieldsObjectMap,
+                standardizeSqlSingleSelectField(ele),
+                {
+                  ignoreGetter: true,
+                  wrapTableAlias: false, // not wrapping table alias because knex will do it for us here
+                }
+              );
+        })
       );
     }
 
