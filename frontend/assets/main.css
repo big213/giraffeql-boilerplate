@@ -53,5 +53,5 @@
 }
 
 .selected-element {
-  border: 5px solid var(--v-secondary-base);
+  outline: 5px solid var(--v-secondary-base);
 }
