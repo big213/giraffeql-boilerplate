@@ -8,7 +8,7 @@
     "generate:schema": "set DEV=1 && ts-node src/scripts/generateSchema.ts",
     "generate:migration": "set DEV=1 && ts-node src/scripts/generateMigration.ts",
     "generate:model": "set DEV=1 && ts-node src/scripts/generateModel.ts",
-    "grantDBPermissions": "set DEV=1 && ts-node src/scripts/grantSchemaPermissions.ts",
+    "grantDBPermissions": "ts-node src/scripts/grantSchemaPermissions.ts",
     "executeAdminScript": "set DEV=1 && ts-node src/scripts/executeAdminScript.ts",
     "grantAdmin": "ts-node src/scripts/grantAdmin.ts",
     "shell": "npm run build && firebase functions:shell",

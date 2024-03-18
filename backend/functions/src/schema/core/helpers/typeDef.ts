@@ -420,13 +420,11 @@ export function generateArrayField(
     sqlType: "jsonb",
     type,
     ...(!allowNull && { defaultValue: [] }),
-    sqlOptions: sqlOptions
-      ? {
-          // necessary for inserting JSON into DB properly
-          parseValue: (val) => JSON.stringify(val),
-          ...sqlOptions,
-        }
-      : sqlOptions,
+    sqlOptions: {
+      // necessary for inserting JSON into DB properly
+      parseValue: (val) => JSON.stringify(val),
+      ...sqlOptions,
+    },
     typeDefOptions: {
       ...typeDefOptions,
     },

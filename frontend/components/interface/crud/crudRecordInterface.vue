@@ -52,6 +52,40 @@
         </v-toolbar>
       </v-container>
       <v-container
+        v-if="parentExpandTypes && parentExpandTypes.length > 1"
+        class="mx-0 text-center"
+        fluid
+      >
+        <v-row justify="center" no-gutters>
+          <v-col
+            v-for="expandTypeObject in parentExpandTypes"
+            :key="expandTypeObject.key"
+            cols="12"
+            sm="3"
+          >
+            <v-card
+              class="ma-2 text-center"
+              outlined
+              @click="handleParentExpandTypeUpdated(expandTypeObject)"
+            >
+              <v-img
+                height="75px"
+                :src="null"
+                :class="
+                  currentExpandTypeKey === expandTypeObject.key
+                    ? 'selected-element'
+                    : null
+                "
+              >
+                <v-layout column justify-center align-center fill-height>
+                  <v-card-title>{{ expandTypeObject.name }}</v-card-title>
+                </v-layout>
+              </v-img>
+            </v-card>
+          </v-col>
+        </v-row>
+      </v-container>
+      <v-container
         v-if="breadcrumbMode && !hideBreadcrumbs && breadcrumbItems.length"
         fluid
         class="px-0"
@@ -103,7 +137,7 @@
           icon || recordInfo.icon || 'mdi-domain'
         }}</v-icon>
         <v-toolbar-title v-if="!recordInfo.paginationOptions.hideTitle">{{
-          title || recordInfo.title || recordInfo.pluralName
+          elementTitle || recordInfo.title || recordInfo.pluralName
         }}</v-toolbar-title>
         <v-divider
           v-if="recordInfo.addOptions && !recordInfo.addOptions.hidden"
@@ -448,7 +482,7 @@
                         bottom
                         offset-y
                         @handle-action-click="openEditDialog"
-                        @handle-expand-click="toggleGridExpand(item, ...$event)"
+                        @handle-expand-click="toggleGridExpand(item, $event)"
                         @handle-custom-action-click="handleCustomActionClick"
                       >
                         <template v-slot:activator="{ on, attrs }">
@@ -540,7 +574,7 @@
                     bottom
                     offset-y
                     @handle-action-click="openEditDialog"
-                    @handle-expand-click="toggleItemExpanded(props, ...$event)"
+                    @handle-expand-click="toggleItemExpanded(props, $event)"
                     @handle-custom-action-click="handleCustomActionClick"
                   >
                     <template v-slot:activator="{ on, attrs }">
@@ -595,7 +629,7 @@
                     left
                     offset-x
                     @handle-action-click="openEditDialog"
-                    @handle-expand-click="toggleItemExpanded(props, ...$event)"
+                    @handle-expand-click="toggleItemExpanded(props, $event)"
                     @handle-custom-action-click="handleCustomActionClick"
                   >
                     <template v-slot:activator="{ on, attrs }">
@@ -655,7 +689,7 @@
                 class="mb-2 expanded-table-bg"
                 :record-info="expandTypeObject.recordInfo"
                 :icon="expandTypeObject.icon"
-                :title="expandTypeObject.name"
+                :element-title="expandTypeObject.name"
                 :hidden-headers="expandTypeObject.excludeHeaders"
                 :locked-filters="lockedSubFilters"
                 :page-options="subPageOptions"
@@ -666,6 +700,9 @@
                 :breadcrumb-items="subBreadcrumbItems"
                 :results-per-page="expandTypeObject.resultsPerPage"
                 :hide-presets="!expandTypeObject.showPresets"
+                :parent-expand-types="recordInfo.expandTypes"
+                :current-expand-type-key="expandTypeObject.key"
+                @parent-expand-type-updated="toggleItemExpanded(props, $event)"
                 @pageOptions-updated="handleSubPageOptionsUpdated"
                 @reload-parent-item="handleReloadParentItem"
                 @expand-type-updated="handleExpandTypeUpdated"
@@ -702,7 +739,7 @@
           v-if="dialogs.expandRecord && expandTypeObject"
           :record-info="expandTypeObject.recordInfo"
           :icon="expandTypeObject.icon"
-          :title="expandTypeObject.name"
+          :element-title="expandTypeObject.name"
           :hidden-headers="expandTypeObject.excludeHeaders"
           :locked-filters="lockedSubFilters"
           :page-options="subPageOptions"

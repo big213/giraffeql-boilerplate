@@ -12,7 +12,7 @@ import BooleanColumn from '~/components/table/booleanColumn.vue'
 import FilesColumn from '~/components/table/filesColumn.vue'
 import PreviewableFilesColumn from '~/components/table/previewableFilesColumn.vue'
 import * as SimpleModels from '../models/simple'
-import { capitalizeString } from './base'
+import { capitalizeString, enterRoute, generateViewRecordRoute } from './base'
 import OwnerColumn from '~/components/table/ownerColumn.vue'
 import CopyableColumn from '~/components/table/copyableColumn.vue'
 
@@ -351,6 +351,42 @@ export function generateClickRowToExpandOptions() {
   }
 }
 
+export function generateClickRowToEnterOptions({
+  expandKey,
+  queryParams,
+}: { expandKey?: string | null; queryParams?: any } = {}) {
+  return {
+    handleRowClick: (that, props) => {
+      enterRoute(
+        that,
+        generateViewRecordRoute(that, {
+          typename: that.recordInfo.typename,
+          routeType: that.recordInfo.routeType,
+          id: props.item.id,
+          showComments: true,
+          expandKey,
+          queryParams,
+        }),
+        false
+      )
+    },
+    handleGridElementClick: (that, item) => {
+      enterRoute(
+        that,
+        generateViewRecordRoute(that, {
+          typename: that.recordInfo.typename,
+          routeType: that.recordInfo.routeType,
+          id: item.id,
+          showComments: true,
+          expandKey,
+          queryParams,
+        }),
+        false
+      )
+    },
+  }
+}
+
 export function generateKeyValueArrayField({
   fieldname,
   text,
@@ -516,6 +552,7 @@ export function generateHomePageRecordInfo({
   return {
     ...recordInfo,
     ...(title && { title }),
+    addOptions: undefined,
     paginationOptions: {
       // dont override existing configuration for these
       defaultLockedFilters: () => [],
@@ -530,7 +567,6 @@ export function generateHomePageRecordInfo({
       ...recordInfo.paginationOptions,
       // override existing configuration for these
       searchOptions: undefined,
-      filterOptions: [],
       hideGridModeToggle: true,
       hideSortOptions: true,
       minHeight: '250px',

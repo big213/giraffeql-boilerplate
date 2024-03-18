@@ -69,6 +69,7 @@
             :locked-filters="postLockedFilters"
             :hidden-fields="recordInfo.postOptions.hiddenFields"
             :record-info="recordInfo.postOptions.recordInfo"
+            :page-options="initialPostPageOptions"
             :initial-sort-options="recordInfo.postOptions.initialSortOptions"
           ></component></div
       ></template>
@@ -226,6 +227,14 @@ export default {
 
     postInterface() {
       return this.recordInfo.postOptions?.component ?? CrudPostInterface
+    },
+
+    initialPostPageOptions() {
+      return this.recordInfo.postOptions?.initialSortOptions
+        ? {
+            sort: this.recordInfo.postOptions?.initialSortOptions,
+          }
+        : null
     },
   },
 

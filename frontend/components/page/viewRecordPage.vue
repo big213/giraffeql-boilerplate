@@ -130,7 +130,7 @@
             <component
               :is="paginationComponent"
               :record-info="expandTypeObject.recordInfo"
-              :title="expandTypeObject.name"
+              :element-title="expandTypeObject.name"
               :icon="expandTypeObject.icon"
               :hidden-headers="expandTypeObject.excludeHeaders"
               :locked-filters="lockedSubFilters"
@@ -143,7 +143,10 @@
               :breadcrumb-items="breadcrumbItems"
               :is-child-component="isChildComponent"
               dense
+              :parent-expand-types="recordInfo.expandTypes"
+              :current-expand-type-key="expandTypeObject.key"
               @pageOptions-updated="handleSubPageOptionsUpdated"
+              @parent-expand-type-updated="handleExpandClick"
               @reload-parent-item="handleReloadParentItem()"
               @expand-type-updated="handleExpandTypeUpdated"
               @breadcrumb-item-click="handleBreadcrumbItemClick"

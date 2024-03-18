@@ -399,6 +399,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // fields to hide
     hiddenFields?: string[]
+
+    // initial sort options that should be applied to nested component
+    initialSortOptions?: CrudRawSortObject
   }
 
   copyOptions?: {
@@ -648,6 +651,9 @@ export type EditFieldDefinition = {
 export type ViewFieldDefinition = {
   field: string
   hideIf?: (that, fieldValue, item, inputsArray) => boolean
+
+  // whether or not to show the key:val combo vertically
+  verticalMode?: boolean
 }
 
 export type ImportFieldDefinition = {

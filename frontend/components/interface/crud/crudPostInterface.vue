@@ -1,6 +1,18 @@
 <template>
   <v-card flat>
     <v-toolbar dense flat color="accent" class="mb-3">
+      <PreviewRecordChip
+        v-if="parentItem && isDialog"
+        :value="parentItem"
+        class="pointer-cursor"
+      >
+      </PreviewRecordChip>
+      <v-divider
+        v-if="parentItem && isDialog"
+        class="mx-4"
+        inset
+        vertical
+      ></v-divider>
       <v-icon left>{{ recordInfo.icon }}</v-icon>
       <v-toolbar-title>
         <span
@@ -36,7 +48,10 @@
             </div>
           </v-col>
           <v-col v-for="props in records" :key="props.item.id" cols="12">
-            <v-card class="elevation-5" color="grey darken-3">
+            <v-card
+              class="elevation-5"
+              :color="$vuetify.theme.dark ? 'grey darken-3' : 'grey lighten-3'"
+            >
               <v-list-item>
                 <v-list-item-avatar>
                   <v-img

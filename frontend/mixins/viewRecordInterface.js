@@ -142,10 +142,6 @@ export default {
       }
     },
 
-    renderVerticalView(inputObject) {
-      return inputObject.fieldInfo.tableOptions?.verticalView
-    },
-
     getFieldPath(inputObject) {
       const primaryField = inputObject.fieldInfo.fields
         ? inputObject.fieldInfo.fields[0]
@@ -228,6 +224,11 @@ export default {
               options: [],
               readonly: true,
               generation: 0,
+              verticalMode:
+                fieldInfo.tableOptions?.verticalView ??
+                (typeof fieldElement === 'string'
+                  ? false
+                  : fieldElement.verticalMode ?? false),
               hideIf:
                 typeof fieldElement === 'string' ? false : fieldElement.hideIf,
             }

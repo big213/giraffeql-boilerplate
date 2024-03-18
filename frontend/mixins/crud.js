@@ -42,7 +42,7 @@ export default {
 
   props: {
     // replacement title to override default one
-    title: {
+    elementTitle: {
       type: String,
     },
     // replacement icon
@@ -122,6 +122,20 @@ export default {
     breadcrumbItems: {
       type: Array,
       default: () => [],
+    },
+
+    // all of the expandTypes from the parent, if any
+    parentExpandTypes: {
+      type: Array,
+    },
+
+    // current expand type key selected
+    currentExpandTypeKey: {
+      type: String,
+    },
+
+    hideParentExpandTypes: {
+      type: Boolean,
     },
   },
 
@@ -661,6 +675,10 @@ export default {
 
       this.currentParentItem = item
       this.expandTypeObject = expandTypeObject
+    },
+
+    handleParentExpandTypeUpdated(expandTypeObject) {
+      this.$emit('parent-expand-type-updated', expandTypeObject)
     },
 
     // toggle the expand state. if it is mobile view (or forceDialog), use dialog

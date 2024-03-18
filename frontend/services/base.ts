@@ -806,13 +806,13 @@ export async function processQuery(
   const query = { id: true, __typename: true }
   for (const field of fields) {
     // skip if key is __typename
-    if (field === '__typename') return
+    if (field === '__typename') continue
 
     const fieldInfo = lookupFieldInfo(recordInfo, field)
 
     // skip if args.loadIf provided and it returns false
     if (fieldInfo.args?.loadIf && !fieldInfo.args.loadIf(that)) {
-      return
+      continue
     }
 
     const fieldsToAdd: Set<string> = new Set()

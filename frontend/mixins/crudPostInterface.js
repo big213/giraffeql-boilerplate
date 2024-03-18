@@ -12,6 +12,7 @@ import {
 import EditRecordInterface from '~/components/interface/crud/editRecordInterface.vue'
 import PreviewableFilesColumn from '~/components/table/previewableFilesColumn.vue'
 import PreviewRecordMenu from '~/components/menu/previewRecordMenu.vue'
+import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 
 export default {
   components: {
@@ -19,6 +20,7 @@ export default {
     EditRecordInterface,
     PreviewableFilesColumn,
     PreviewRecordMenu,
+    PreviewRecordChip,
   },
 
   props: {
@@ -32,23 +34,16 @@ export default {
       default: () => [],
     },
 
-    // not currently implemented - type: CrudPageOptions | null
-    /*
+    // only implemented to extract the initialSortOptions, if any - type: CrudPageOptions | null
     pageOptions: {
       type: Object,
       default: null,
     },
-    */
 
     // additional fields to hide
     hiddenFields: {
       type: Array,
       default: () => [],
-    },
-
-    // the initial set of sort options
-    initialSortOptions: {
-      type: Object,
     },
 
     generation: {
@@ -59,6 +54,11 @@ export default {
     isDialog: {
       type: Boolean,
       default: false,
+    },
+
+    // if it is a child component, the parent component with at least id
+    parentItem: {
+      type: Object,
     },
   },
 
@@ -141,10 +141,23 @@ export default {
         }
       })
     },
+
+    // extracted from the pageOptions object, if any
+    initialSortOptions() {
+      return this.pageOptions?.sort
+    },
+
+    additionalFilters() {
+      return []
+    },
   },
 
   watch: {
     generation() {
+      this.reset()
+    },
+
+    additionalFilters() {
       this.reset()
     },
   },
@@ -267,7 +280,7 @@ export default {
               after: this.endCursor,
             }),
             filterBy: generateFilterByObjectArray(
-              this.lockedFilters,
+              this.lockedFilters.concat(this.additionalFilters),
               this.recordInfo
             ),
             sortBy: this.currentSort

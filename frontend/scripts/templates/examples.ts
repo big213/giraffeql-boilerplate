@@ -63,7 +63,7 @@ export const Event = {
       fieldname: 'locale',
       typename: 'locale',
       // inputType: 'autocomplete',
-      // getOptions: getLocales
+      // fieldOptions: { getOptions: getLocales },
     }),
     endedAt: {
       text: 'Ended At',

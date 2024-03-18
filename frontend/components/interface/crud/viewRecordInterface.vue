@@ -20,7 +20,7 @@
             <template v-slot:default>
               <tbody>
                 <tr v-for="(item, i) in visibleInputsArray" :key="i">
-                  <td v-if="renderVerticalView(item)" colspan="2" class="pb-3">
+                  <td v-if="item.verticalMode" colspan="2" class="pb-3">
                     <div class="pt-3 subtitle-2 text-decoration-underline">
                       {{ item.fieldInfo.text }}
                     </div>
@@ -38,10 +38,10 @@
                       getNestedProperty(currentItem, item.field)
                     }}</span>
                   </td>
-                  <td v-if="!renderVerticalView(item)" style="width: 150px">
+                  <td v-if="!item.verticalMode" style="width: 150px">
                     <span class="subtitle-2">{{ item.fieldInfo.text }}</span>
                   </td>
-                  <td v-if="!renderVerticalView(item)">
+                  <td v-if="!item.verticalMode">
                     <component
                       :is="item.fieldInfo.component"
                       v-if="item.fieldInfo.component"

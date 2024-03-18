@@ -24,7 +24,9 @@
             :hidden-headers="
               expandTypeObject ? expandTypeObject.excludeHeaders : hiddenHeaders
             "
-            :title="expandTypeObject ? expandTypeObject.name : title"
+            :element-title="
+              expandTypeObject ? expandTypeObject.name : elementTitle
+            "
             :icon="expandTypeObject ? expandTypeObject.icon : icon"
             :poll-interval="pollInterval"
             :parent-item="currentParentItem"
@@ -77,7 +79,7 @@ export default {
   },
 
   props: {
-    title: {
+    elementTitle: {
       type: String,
       default: null,
     },
@@ -283,7 +285,7 @@ export default {
   head() {
     return {
       title:
-        this.title ??
+        this.elementTitle ??
         this.recordInfo.title ??
         'Manage ' + this.recordInfo.pluralName,
     }

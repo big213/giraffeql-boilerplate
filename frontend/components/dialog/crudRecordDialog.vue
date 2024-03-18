@@ -12,7 +12,7 @@
       :hidden-filters="hiddenFilters"
       :hidden-headers="hiddenHeaders"
       :page-options="pageOptions || initialPageOptions"
-      :title="title"
+      :element-title="elementTitle"
       :icon="icon"
       :parent-item="parentItem"
       :hide-presets="hidePresets"
@@ -40,7 +40,7 @@ import CrudRecordInterface from '~/components/interface/crud/crudRecordInterface
 
 export default {
   props: {
-    title: {
+    elementTitle: {
       type: String,
       default: null,
     },

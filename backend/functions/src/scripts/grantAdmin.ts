@@ -12,7 +12,11 @@ const argv = yargs(process.argv.slice(2))
   .parseSync();
 
 // set the DEV state based on the args provided
-process.env.DEV = argv.prod ? undefined : "1";
+if (argv.prod) {
+  delete process.env.DEV;
+} else {
+  process.env.DEV = "1";
+}
 
 import { pgOptions } from "../config";
 
