@@ -436,6 +436,10 @@ export default {
         }
       )
     },
+
+    hideAddButton() {
+      return this.recordInfo.addOptions?.hideIf?.(this)
+    },
   },
 
   watch: {

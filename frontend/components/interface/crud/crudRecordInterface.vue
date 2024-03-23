@@ -140,13 +140,13 @@
           elementTitle || recordInfo.title || recordInfo.pluralName
         }}</v-toolbar-title>
         <v-divider
-          v-if="recordInfo.addOptions && !recordInfo.addOptions.hidden"
+          v-if="recordInfo.addOptions && !hideAddButton"
           class="mx-4"
           inset
           vertical
         ></v-divider>
         <v-btn
-          v-if="recordInfo.addOptions && !recordInfo.addOptions.hidden"
+          v-if="recordInfo.addOptions && !hideAddButton"
           color="primary"
           @click="handleAddButtonClick()"
         >

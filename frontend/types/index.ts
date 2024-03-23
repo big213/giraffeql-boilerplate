@@ -272,8 +272,8 @@ export type RecordInfo<T extends keyof MainTypes> = {
     // post-processing of inputs, if any
     afterLoaded?: (that, inputsArray) => Promise<void>
 
-    // will the button be hidden on the interface?
-    hidden?: boolean
+    // under what conditions will the button be hidden?
+    hideIf?: (that) => boolean
   }
 
   importOptions?: {
