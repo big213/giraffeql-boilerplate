@@ -36,19 +36,16 @@ export default {
     },
 
     lockedFilters() {
-      const myFilterFieldFn =
-        this.currentModel?.paginationOptions?.defaultLockedFilters
-
       // defaults to "createdBy" is current user
-      return myFilterFieldFn
-        ? myFilterFieldFn(this)
-        : [
-            {
-              field: 'createdBy',
-              operator: 'eq',
-              value: this.$store.getters['auth/user'].id,
-            },
-          ]
+      return (
+        this.currentModel?.paginationOptions?.defaultLockedFilters?.(this) ?? [
+          {
+            field: 'createdBy',
+            operator: 'eq',
+            value: this.$store.getters['auth/user'].id,
+          },
+        ]
+      )
     },
   },
 }

@@ -131,10 +131,12 @@ export class PaginatorService extends SimpleService {
     const rawSelect: SqlSimpleRawSelectObject[] = [];
 
     // additional select statements that should be added for scaffolding
-    const additionalSelect: SqlSimpleSelectObject[] = [];
+    const additionalSelect: SqlSimpleSelectObject[] = [
+      { field: "id", as: "$last_id" },
+    ];
 
     // this helper function processes the args.filterBy, args.search, and args.distance
-    this.processArgs(args, whereObject, rawSelect)
+    this.processArgs(args, whereObject, rawSelect);
 
     // process sort fields
     const orderBy: SqlSimpleOrderByObject[] = [];
@@ -306,7 +308,7 @@ export class PaginatorService extends SimpleService {
     };
 
     // this helper function processes the args.filterBy, args.search, and args.distance
-    this.processArgs(args, whereObject)
+    this.processArgs(args, whereObject);
 
     const resultsCount = await countObjectType(
       this.service.typename,
@@ -318,8 +320,11 @@ export class PaginatorService extends SimpleService {
     return resultsCount;
   }
 
-  processArgs(args: any, whereObject:SqlWhereObject, rawSelect?: SqlSimpleRawSelectObject[]) {
-
+  processArgs(
+    args: any,
+    whereObject: SqlWhereObject,
+    rawSelect?: SqlSimpleRawSelectObject[]
+  ) {
     if (Array.isArray(args.filterBy)) {
       const filterByOrObject: SqlWhereObject = {
         connective: "OR",
@@ -436,25 +441,22 @@ export class PaginatorService extends SimpleService {
         }
 
         // if also sorting by this distance field, need to add it to the raw selects
-        if(rawSelect) {
-        if (
-          args.sortBy &&
-          args.sortBy.some((sortByObject) => sortByObject.field === key)
-        ) {
-          rawSelect.push({
-            statement: knex.raw(
-              `earth_distance(ll_to_earth(${latitude}, ${longitude}), ll_to_earth(${latitudeField}, ${longitudeField}))`
-            ),
-            as: key,
-          });
+        if (rawSelect) {
+          if (
+            args.sortBy &&
+            args.sortBy.some((sortByObject) => sortByObject.field === key)
+          ) {
+            rawSelect.push({
+              statement: knex.raw(
+                `earth_distance(ll_to_earth(${latitude}, ${longitude}), ll_to_earth(${latitudeField}, ${longitudeField}))`
+              ),
+              as: key,
+            });
+          }
         }
-        }
-
       });
 
       whereObject.fields.push(whereSubObject);
     }
-
-
   }
 }

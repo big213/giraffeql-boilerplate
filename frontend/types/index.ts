@@ -402,6 +402,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // initial sort options that should be applied to nested component
     initialSortOptions?: CrudRawSortObject
+
+    // custom function for generating the lockedFilters for filtering the posts, if any
+    getLockedFilters?: (that, selectedItem) => any
   }
 
   copyOptions?: {

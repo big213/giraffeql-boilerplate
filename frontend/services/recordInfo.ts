@@ -14,6 +14,7 @@ import PreviewableFilesColumn from '~/components/table/previewableFilesColumn.vu
 import * as SimpleModels from '../models/simple'
 import { capitalizeString, enterRoute, generateViewRecordRoute } from './base'
 import OwnerColumn from '~/components/table/ownerColumn.vue'
+import TruthyRecordColumn from '~/components/table/truthyRecordColumn.vue'
 import CopyableColumn from '~/components/table/copyableColumn.vue'
 
 export function getSimpleModel(typename: string) {
@@ -255,6 +256,31 @@ export function generateDualOwnerPreviewableRecordField({
       pathPrefix,
       component: OwnerColumn,
     },
+  }
+}
+
+// of N fields, where one is expected to be truthy
+export function generateTruthyRecordField({
+  text,
+  fields,
+}: {
+  text: string
+  fields: string[] // fieldPaths are OK
+}) {
+  return {
+    text,
+    fields: fields.reduce((total, fieldPath) => {
+      return total.concat([
+        `${fieldPath}.id`,
+        `${fieldPath}.name`,
+        `${fieldPath}.__typename`,
+        `${fieldPath}.avatarUrl`,
+      ])
+    }, <string[]>[]),
+    columnOptions: {
+      fields,
+    },
+    component: TruthyRecordColumn,
   }
 }
 
@@ -620,5 +646,47 @@ export function generatePreviewRecordInfo({
       },
       hideRefresh: true,
     },
+  }
+}
+
+export function generateMultipleJoinableField({
+  fieldname,
+  text,
+  typename,
+  inputType = 'server-autocomplete',
+  fieldOptions = {},
+}: {
+  fieldname: string
+  text: string
+  typename: string
+  inputType?: InputType
+  fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
+}) {
+  return {
+    text,
+    fields: [
+      `${fieldname}`,
+      `${fieldname}.id`,
+      `${fieldname}.name`,
+      `${fieldname}.__typename`,
+      `${fieldname}.avatarUrl`,
+    ],
+    inputType,
+    inputOptions: {
+      hasAvatar: true,
+      typename,
+    },
+    default: () => [],
+    parseValue: (val) => {
+      // if array, extract the id field only
+      if (!Array.isArray(val)) {
+        return val
+      }
+
+      return val.map((ele) => ({ id: ele.id }))
+    },
+    pathPrefix: fieldname,
+    component: RecordColumn,
+    ...fieldOptions,
   }
 }

@@ -214,15 +214,21 @@ export default {
     },
 
     postLockedFilters() {
-      return this.selectedItem
-        ? [
-            {
-              field: this.recordInfo.typename,
-              operator: 'eq',
-              value: this.selectedItem.id,
-            },
-          ]
-        : null
+      return (
+        this.recordInfo.postOptions?.getLockedFilters?.(
+          this,
+          this.selectedItem
+        ) ??
+        (this.selectedItem
+          ? [
+              {
+                field: this.recordInfo.typename,
+                operator: 'eq',
+                value: this.selectedItem.id,
+              },
+            ]
+          : null)
+      )
     },
 
     postInterface() {
