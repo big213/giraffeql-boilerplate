@@ -5,12 +5,12 @@
       :class="elements.length > 1 ? 'mr-2' : null"
       :key="index"
     >
-      <v-chip
+      <MappedChip
         v-if="element"
         :small="smallMode"
-        :color="valuesMap ? valuesMap[element].color : null"
-        >{{ valuesMap ? valuesMap[element].text : element }}
-      </v-chip>
+        :value="element"
+        :values-map="valuesMap"
+      ></MappedChip>
       <v-chip v-else-if="emptyText" small
         ><i>{{ emptyText }}</i></v-chip
       >
@@ -21,11 +21,11 @@
 
 <script>
 import columnMixin from '~/mixins/column'
-import PreviewRecordMenu from '~/components/menu/previewRecordMenu.vue'
+import MappedChip from '~/components/chip/mappedChip.vue'
 
 export default {
   components: {
-    PreviewRecordMenu,
+    MappedChip,
   },
 
   /* expected options:
@@ -35,6 +35,7 @@ export default {
     [x: string]: {
       text: string
       color?: string
+      textColor?: string // defaults to black
     }
   }
   */

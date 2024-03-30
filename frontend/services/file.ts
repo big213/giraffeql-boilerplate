@@ -206,6 +206,7 @@ export function downloadWithProgress(that, fileUrl, name) {
           (downloadObject.bytesSent / downloadObject.bytesTotal) * 100
 
         // extra stuff
+        /*
         const percentCompleted = Math.floor((e.loaded / e.total) * 100)
         const duration = (new Date().getTime() - startTime) / 1000
         const bps = e.loaded / duration
@@ -217,6 +218,7 @@ export function downloadWithProgress(that, fileUrl, name) {
         console.log(
           `${percentCompleted}% - ${kbps} Kbps - ${minutes} min ${seconds} sec remaining`
         )
+        */
       }
     }),
   }

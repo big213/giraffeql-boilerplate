@@ -40,14 +40,18 @@
               firebaseUser.email
             }}</v-list-item-subtitle>
             <v-list-item-subtitle
-              >Role: <span v-if="user">{{ user.role }}</span
               ><v-progress-circular
-                v-else
+                v-if="!user"
                 class="ml-2"
                 indeterminate
                 size="16"
-              ></v-progress-circular
-            ></v-list-item-subtitle>
+              ></v-progress-circular>
+              <MappedChip
+                small
+                :value="user.role"
+                :values-map="userRoleMap"
+              ></MappedChip>
+            </v-list-item-subtitle>
           </v-list-item-content>
         </v-list-item>
       </v-list>
@@ -124,16 +128,20 @@ import { mapGetters } from 'vuex'
 import { auth } from '~/services/fireinit'
 import { handleError } from '~/services/base'
 import { generateUserMenuItems } from '~/services/navigation'
+import { userRoleMap } from '~/services/constants'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 import SelectOptionDialog from '~/components/dialog/selectOptionDialog.vue'
+import MappedChip from '~/components/chip/mappedChip.vue'
 
 export default {
   components: {
     PreviewRecordChip,
     SelectOptionDialog,
+    MappedChip,
   },
   data() {
     return {
+      userRoleMap,
       dialogs: {
         selectOption: null,
       },

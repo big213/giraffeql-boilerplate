@@ -9,6 +9,8 @@ import {
   generateSortOptions,
 } from '~/services/recordInfo'
 import { SimpleUser } from '../simple'
+import ChipColumn from '~/components/table/chipColumn.vue'
+import { userRoleMap } from '~/services/constants'
 
 export const User = <RecordInfo<'user'>>{
   ...SimpleUser,
@@ -27,6 +29,11 @@ export const User = <RecordInfo<'user'>>{
       text: 'User Role',
       getOptions: getUserRoles,
       inputType: 'select',
+      component: ChipColumn,
+      columnOptions: {
+        smallMode: true,
+        valuesMap: userRoleMap,
+      },
     },
     permissions: {
       text: 'Custom Permissions',
