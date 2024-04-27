@@ -1,8 +1,5 @@
 <template>
-  <v-container
-    v-if="!$route.query.pageOptions || loading.initPageOptions"
-    fill-height
-  >
+  <v-container v-if="loading.initPageOptions" fill-height>
     <v-layout align-center justify-center>
       <CircularLoader style="min-height: 250px"></CircularLoader>
     </v-layout>

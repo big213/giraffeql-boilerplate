@@ -225,7 +225,13 @@ export type RecordInfo<T extends keyof MainTypes> = {
     }
 
     // hide the view more button
-    hideViewMore?: boolean
+    hideViewMoreOptions?: {
+      // even though the view more button is hidden, should more records be allowed to load? infinite scroll must be true on paginatorOptions too.
+      infiniteScroll?: boolean
+    }
+
+    // should more records be loaded when the scroll bar reaches the bottom?
+    infiniteScroll?: boolean
 
     // hide the total number of results (showing X of Y)
     hideCount?: boolean
@@ -316,6 +322,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // post-processing of inputs, if any
     afterLoaded?: (that, inputsArray) => Promise<void>
+
+    // under what conditions will the button be hidden?
+    hideIf?: (that, item) => boolean
   }
 
   deleteOptions?: {
@@ -326,6 +335,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
     operationName?: string
     // function that runs when recorded is successfully deleted
     onSuccess?: (that, item) => void
+
+    // under what conditions will the button be hidden?
+    hideIf?: (that, item) => boolean
   }
 
   viewOptions?: {
@@ -378,6 +390,16 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // hides the "view" button
     hideViewButton?: boolean
+
+    // hides the follow button, if any
+    hideFollowButton?: boolean
+
+    // customActions
+    customActions?: {
+      text: string
+      icon: string
+      handleClick: (that, item: any) => void
+    }[]
   }
 
   chipOptions?: {

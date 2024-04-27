@@ -15,7 +15,9 @@ import * as SimpleModels from '../models/simple'
 import { capitalizeString, enterRoute, generateViewRecordRoute } from './base'
 import OwnerColumn from '~/components/table/ownerColumn.vue'
 import TruthyRecordColumn from '~/components/table/truthyRecordColumn.vue'
+import ConcatRecordColumn from '~/components/table/concatRecordColumn.vue'
 import CopyableColumn from '~/components/table/copyableColumn.vue'
+import ShareLinkColumn from '~/components/table/shareLinkColumn.vue'
 
 export function getSimpleModel(typename: string) {
   const model = SimpleModels[`Simple${capitalizeString(typename)}`]
@@ -259,6 +261,14 @@ export function generateDualOwnerPreviewableRecordField({
   }
 }
 
+export function generateShareLinkField() {
+  return {
+    text: 'Share Link',
+    fields: ['id', '__typename'],
+    component: ShareLinkColumn,
+  }
+}
+
 // of N fields, where one is expected to be truthy
 export function generateTruthyRecordField({
   text,
@@ -281,6 +291,31 @@ export function generateTruthyRecordField({
       fields,
     },
     component: TruthyRecordColumn,
+  }
+}
+
+// series of records that are supposed to appear sequentially
+export function generateConcatRecordField({
+  text,
+  fields,
+}: {
+  text: string
+  fields: string[] // fieldPaths are OK
+}) {
+  return {
+    text,
+    fields: fields.reduce((total, fieldPath) => {
+      return total.concat([
+        `${fieldPath}.id`,
+        `${fieldPath}.name`,
+        `${fieldPath}.__typename`,
+        `${fieldPath}.avatarUrl`,
+      ])
+    }, <string[]>[]),
+    columnOptions: {
+      fields,
+    },
+    component: ConcatRecordColumn,
   }
 }
 
@@ -569,11 +604,13 @@ export function generateHomePageRecordInfo({
   title,
   columnMode = false,
   limit = 4,
+  paginationOptions,
 }: {
   recordInfo: RecordInfo<any>
   title?: string
   columnMode?: boolean
   limit?: number
+  paginationOptions?: any
 }) {
   return {
     ...recordInfo,
@@ -600,7 +637,7 @@ export function generateHomePageRecordInfo({
       limitOptions: {
         maxInitialRecords: limit,
       },
-      hideViewMore: true,
+      hideViewMoreOptions: {},
       hideCount: true,
       showViewAll: true,
       hideRefresh: true,
@@ -613,6 +650,7 @@ export function generateHomePageRecordInfo({
           },
         },
       }),
+      ...paginationOptions,
     },
   }
 }

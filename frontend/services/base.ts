@@ -3,6 +3,7 @@ import { convertArrayToCSV } from 'convert-array-to-csv'
 import { executeGiraffeql } from '~/services/giraffeql'
 import * as models from '~/models/base'
 import { CrudInputObject, CrudRawFilterObject } from '~/types/misc'
+import { Root } from '../../schema'
 
 type StringKeyObject = { [x: string]: any }
 
@@ -479,6 +480,7 @@ export function generateViewRecordRoute(
     queryParams,
     id,
     expandKey,
+    miniMode,
     showComments = false,
   }: {
     path?: string
@@ -487,6 +489,7 @@ export function generateViewRecordRoute(
     queryParams?: any
     id: string
     expandKey?: string | null
+    miniMode?: boolean
     showComments?: boolean
   }
 ) {
@@ -501,6 +504,7 @@ export function generateViewRecordRoute(
       id,
       e: expandKey,
       c: showComments ? null : undefined,
+      m: miniMode ? '1' : undefined,
       ...queryParams,
     },
   }).href
@@ -1092,6 +1096,16 @@ export function generateMemoizedGetter(operation: string, fields: string[]) {
   })
 }
 
+export function generateMemoizedEnumGetter(operation: keyof Root) {
+  return <any>memoize(async function (that, _forceReload) {
+    return executeGiraffeql<any>(that, {
+      [operation]: {
+        values: true,
+      },
+    }).then((data: any) => data.values)
+  })
+}
+
 export function userHasPermissions(that, requiredPermissions: string[]) {
   if (!that.$store.getters['auth/user']) {
     return false
@@ -1136,4 +1150,32 @@ export function loadTypeSearchResults(that, inputObject) {
       },
     },
   }).then((results: any) => results.edges.map((edge) => edge.node))
+}
+
+export function generateShareUrl(
+  that,
+  {
+    typename,
+    routeType = 'i',
+    id,
+    showComments,
+    miniMode,
+  }: {
+    typename: string
+    routeType?: string
+    id: string
+    showComments?: boolean
+    miniMode?: boolean
+  }
+) {
+  return (
+    window.location.origin +
+    generateViewRecordRoute(that, {
+      typename,
+      routeType,
+      id,
+      showComments,
+      miniMode,
+    })
+  )
 }

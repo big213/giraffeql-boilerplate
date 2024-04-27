@@ -543,6 +543,15 @@ export default {
     // listen for root refresh events
     this.$root.$on('refresh-interface', this.refreshCb)
 
+    // if the viewMoreOptions button is , and infiniteScroll is falsey, do nothing
+    if (
+      this.recordInfo.paginationOptions.infiniteScroll &&
+      (!this.recordInfo.paginationOptions.hideViewMoreOptions ||
+        this.recordInfo.paginationOptions.hideViewMoreOptions.infiniteScroll)
+    ) {
+      window.addEventListener('scroll', this.handleInfiniteScroll)
+    }
+
     // run any onSuccess functions
     const onSuccess = this.recordInfo.paginationOptions.onSuccess
     if (onSuccess) {
@@ -551,6 +560,8 @@ export default {
   },
 
   destroyed() {
+    window.removeEventListener('scroll', this.handleInfiniteScroll)
+
     this.stopPolling()
     document.removeEventListener(
       'visibilitychange',
@@ -564,6 +575,25 @@ export default {
     generateTimeAgoString,
     getIcon,
     getNestedProperty,
+
+    throttle(callback, ms = 1000) {
+      if (this._throttleScroll) return
+      this._throttleScroll = true
+      setTimeout(() => {
+        callback()
+        this._throttleScroll = false
+      }, ms)
+    },
+
+    handleInfiniteScroll() {
+      this.throttle(() => {
+        const endOfPage =
+          window.innerHeight + window.pageYOffset >= document.body.offsetHeight
+        if (endOfPage) {
+          this.loadMore()
+        }
+      }, 1000)
+    },
 
     refreshCb(typename, { refreshParent = false, id, refreshType } = {}) {
       // if type of refresh is not defined or 'crud', refresh
@@ -1051,6 +1081,9 @@ export default {
     },
 
     async loadMore() {
+      // if there are no more items, do nothing
+      if (this.records.length >= this.totalRecords) return
+
       // save snapshot of currentReloadGeneration
       const currentReloadGeneration = this.reloadGeneration
 

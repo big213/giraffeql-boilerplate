@@ -46,7 +46,9 @@
         <v-list-item-title>Share</v-list-item-title>
       </v-list-item>
       <v-list-item
-        v-if="recordInfo.editOptions"
+        v-if="
+          recordInfo.editOptions && !isComponentHidden(recordInfo.editOptions)
+        "
         key="edit"
         @click="openEditDialog('edit')"
       >
@@ -72,7 +74,10 @@
         }}</v-list-item-title>
       </v-list-item>
       <v-list-item
-        v-if="recordInfo.deleteOptions"
+        v-if="
+          recordInfo.deleteOptions &&
+          !isComponentHidden(recordInfo.deleteOptions)
+        "
         key="delete"
         @click="openEditDialog('delete')"
       >
@@ -191,6 +196,10 @@ export default {
   },
 
   methods: {
+    isComponentHidden(options) {
+      return !!options.hideIf?.(this, this.item)
+    },
+
     openEditDialog(mode) {
       this.$emit('handle-action-click', mode, this.item)
     },

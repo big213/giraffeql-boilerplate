@@ -11,7 +11,7 @@ export const File = <RecordInfo<'file'>>{
     ...generateBaseFields(SimpleFile),
     nameWithId: {
       text: 'File',
-      fields: ['name', 'id'],
+      fields: ['name', 'id', 'location'],
       component: FileColumn,
     },
     size: {
@@ -24,6 +24,9 @@ export const File = <RecordInfo<'file'>>{
     contentType: {
       text: 'Content Type',
     },
+    parentKey: {
+      text: 'Parent Key',
+    },
   },
   paginationOptions: {
     filterOptions: [],
@@ -33,10 +36,14 @@ export const File = <RecordInfo<'file'>>{
     handleGridElementClick: (that, item) => {
       that.openEditDialog('view', item)
     },
-    sortOptions: [...generateSortOptions('updatedAt')],
+    sortOptions: [
+      ...generateSortOptions('createdAt'),
+      ...generateSortOptions('updatedAt'),
+    ],
     headerOptions: [
       {
         field: 'nameWithId',
+        hideTitleIfGrid: true,
       },
       {
         field: 'contentType',
@@ -60,7 +67,7 @@ export const File = <RecordInfo<'file'>>{
     fields: ['name'],
   },
   viewOptions: {
-    fields: ['name', 'size', 'contentType', 'location'],
+    fields: ['nameWithId', 'size', 'contentType', 'location', 'parentKey'],
   },
   enterOptions: {},
   deleteOptions: {},

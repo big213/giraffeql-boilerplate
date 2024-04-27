@@ -31,7 +31,7 @@
 </template>
 
 <script>
-import { copyToClipboard, generateViewRecordRoute } from '~/services/base'
+import { copyToClipboard, generateShareUrl } from '~/services/base'
 
 export default {
   props: {
@@ -53,13 +53,11 @@ export default {
             this.recordInfo,
             this.selectedItem.id
           )
-        : window.location.origin +
-            generateViewRecordRoute(this, {
-              typename: this.recordInfo.typename,
-              routeType: 'i',
-              id: this.selectedItem.id,
-              showComments: true,
-            })
+        : generateShareUrl(this, {
+            typename: this.recordInfo.typename,
+            id: this.selectedItem.id,
+            showComments: true,
+          })
     },
     // default to name || id
     itemIdentifier() {

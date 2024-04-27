@@ -22,7 +22,11 @@ export default {
       return this.valuesMap?.[this.value]?.color ?? null
     },
     textClass() {
-      return (this.valuesMap?.[this.value]?.textColor ?? 'white') + '--text'
+      const textColor = this.valuesMap?.[this.value]?.textColor
+
+      return textColor
+        ? `${this.valuesMap?.[this.value]?.textColor}--text`
+        : null
     },
   },
 }

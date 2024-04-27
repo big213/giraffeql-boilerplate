@@ -170,3 +170,27 @@ export function allowIfArgsFieldIsCurrentUserFn(
     return false;
   };
 }
+
+export function allowIfPublicOrCreatedByCurrentUser(
+  service: PaginatedService,
+  fieldPrefix?: string
+) {
+  const prefixStr = fieldPrefix ? `${fieldPrefix}.` : "";
+
+  return async function ({ req, args }) {
+    const record = await service.getFirstSqlRecord({
+      select: [`${prefixStr}createdBy.id`, `${prefixStr}isPublic`],
+      where: args,
+    });
+
+    if (!record) return false;
+
+    if (
+      record[`${prefixStr}isPublic`] ||
+      isCurrentUser(req, record[`${prefixStr}createdBy.id`])
+    )
+      return true;
+
+    return false;
+  };
+}

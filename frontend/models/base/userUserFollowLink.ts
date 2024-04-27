@@ -25,7 +25,10 @@ export const UserUserFollowLink = <RecordInfo<'userUserFollowLink'>>{
   paginationOptions: {
     searchOptions: undefined,
     filterOptions: [],
-    sortOptions: [...generateSortOptions('updatedAt')],
+    sortOptions: [
+      ...generateSortOptions('createdAt'),
+      ...generateSortOptions('updatedAt'),
+    ],
     headerOptions: [
       {
         field: 'userRecord',

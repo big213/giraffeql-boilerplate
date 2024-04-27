@@ -96,7 +96,9 @@ export function uploadFile(
           },
         })
 
-        fileUploadObject.servingUrl = generateFileServingUrl(subPath)
+        fileUploadObject.servingUrl = generateFileServingUrl({
+          bucketPath: subPath,
+        })
 
         if (fileRecord.downloadUrl) {
           fileUploadObject.url = fileRecord.downloadUrl
@@ -114,8 +116,25 @@ export function uploadFile(
   return fileUploadObject
 }
 
-export function generateFileServingUrl(bucketPath: string) {
-  return encodeURI(process.env.imageServingUrl + '/' + bucketPath)
+export function generateFileServingUrl({
+  bucketPath,
+  width,
+  height,
+}: {
+  bucketPath: string
+  width?: number
+  height?: number
+}) {
+  let modifierStatements: string[] = [
+    `${width ? `w_${String(width)}` : ''}`,
+    `${height ? `h_${String(height)}` : ''}`,
+  ].filter((e) => e)
+
+  return encodeURI(
+    `${process.env.imageServingUrl}/${
+      modifierStatements.length ? `${modifierStatements.join(',')}/` : ''
+    }${bucketPath}`
+  )
 }
 
 export function formatBytes(bytes: number) {

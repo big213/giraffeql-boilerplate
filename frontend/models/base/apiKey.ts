@@ -39,7 +39,10 @@ export const ApiKey = <RecordInfo<'apiKey'>>{
     handleGridElementClick: (that, item) => {
       that.openEditDialog('view', item)
     },
-    sortOptions: [...generateSortOptions('updatedAt')],
+    sortOptions: [
+      ...generateSortOptions('createdAt'),
+      ...generateSortOptions('updatedAt'),
+    ],
     headerOptions: [
       {
         field: 'name',

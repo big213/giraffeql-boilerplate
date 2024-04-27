@@ -26,6 +26,7 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
     searchOptions: undefined,
     filterOptions: [],
     sortOptions: [
+      ...generateSortOptions("createdAt"),
       ...generateSortOptions("updatedAt"),
     ],
     headerOptions: [

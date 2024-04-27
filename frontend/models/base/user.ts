@@ -64,7 +64,10 @@ export const User = <RecordInfo<'user'>>{
       },
     ],
     ...generateClickRowToOpenOptions(),
-    sortOptions: [...generateSortOptions('updatedAt')],
+    sortOptions: [
+      ...generateSortOptions('createdAt'),
+      ...generateSortOptions('updatedAt'),
+    ],
     headerOptions: [
       {
         field: 'nameWithAvatar',

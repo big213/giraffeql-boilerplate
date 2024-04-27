@@ -24,7 +24,7 @@ export default {
       const getPreviewImage =
         this.recordInfo[
           this.mode === 'view' ? 'viewOptions' : 'paginationOptions'
-        ].heroOptions.getPreviewImage
+        ]?.heroOptions?.getPreviewImage
 
       return getPreviewImage ? getPreviewImage(this.item) : this.item.avatarUrl
     },
@@ -33,7 +33,7 @@ export default {
       const getPreviewName =
         this.recordInfo[
           this.mode === 'view' ? 'viewOptions' : 'paginationOptions'
-        ].heroOptions.getPreviewName
+        ]?.heroOptions?.getPreviewName
 
       return getPreviewName ? getPreviewName(this.item) : this.item.name
     },
@@ -41,7 +41,7 @@ export default {
     containMode() {
       return !!this.recordInfo[
         this.mode === 'view' ? 'viewOptions' : 'paginationOptions'
-      ].heroOptions.containMode
+      ]?.heroOptions?.containMode
     },
   },
 }

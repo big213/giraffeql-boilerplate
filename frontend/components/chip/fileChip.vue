@@ -106,7 +106,11 @@ export default {
 
     openFile() {
       try {
-        openLink(generateFileServingUrl(this.file.location))
+        openLink(
+          generateFileServingUrl({
+            bucketPath: this.file.location,
+          })
+        )
       } catch (err) {
         handleError(this, err)
       }

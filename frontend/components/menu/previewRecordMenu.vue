@@ -54,9 +54,14 @@
         </v-list-item>
       </v-list>
       <v-divider></v-divider>
-      <v-card-actions>
+      <v-card-actions
+        v-if="
+          (!isFollowButtonHidden || !recordInfo.followLinkModel) &&
+          !isViewButtonHidden
+        "
+      >
         <FollowButton
-          v-if="itemData && recordInfo.followLinkModel"
+          v-if="!isFollowButtonHidden && itemData && recordInfo.followLinkModel"
           color="primary"
           :item="itemData"
           :follow-link-model="recordInfo.followLinkModel"
@@ -66,6 +71,17 @@
           <v-icon v-if="openMode === 'openInNew'" left>mdi-open-in-new</v-icon>
           View
         </v-btn>
+      </v-card-actions>
+      <v-card-actions v-if="customActions.length > 0">
+        <v-btn
+          v-for="(action, index) in customActions"
+          :key="index"
+          block
+          color="primary"
+          @click="handleCustomActionClick(action)"
+          ><v-icon v-if="action.icon" left>{{ action.icon }}</v-icon
+          >{{ action.text }}</v-btn
+        >
       </v-card-actions>
     </v-card>
   </v-menu>
@@ -83,8 +99,6 @@ import {
   capitalizeString,
   enterRoute,
   generateViewRecordRoute,
-  lookupFieldInfo,
-  collapseObject,
   processQuery,
 } from '~/services/base'
 import { executeGiraffeql } from '~/services/giraffeql'
@@ -145,6 +159,9 @@ export default {
     fields() {
       return this.recordInfo.previewOptions?.fields ?? ['__typename']
     },
+    customActions() {
+      return this.recordInfo.previewOptions?.customActions ?? []
+    },
     hasHeroOptions() {
       return !!this.recordInfo.previewOptions?.heroOptions
     },
@@ -153,6 +170,10 @@ export default {
     },
     isViewButtonHidden() {
       return !!this.recordInfo.previewOptions?.hideViewButton
+    },
+
+    isFollowButtonHidden() {
+      return !!this.recordInfo.previewOptions?.hideFollowButton
     },
 
     heroComponent() {
@@ -168,6 +189,10 @@ export default {
   },
 
   methods: {
+    handleCustomActionClick(action) {
+      action.handleClick(this, this.item)
+    },
+
     renderFieldTitle(field) {
       return field === '__typename'
         ? 'Type'

@@ -49,7 +49,20 @@ export const Event = {
         typename: 'locale',
         hasAvatar: true,
         // inputType: 'autocomplete',
-        // getOptions: getLocales
+        fieldOptions: {
+          // getOptions: getLocales
+          /*
+          getOptions: (that) =>
+            getEvents(that, false, {
+              sortBy: [
+                {
+                  field: 'sortIndex',
+                  desc: false,
+                },
+              ],
+            }),
+          */
+        },
       }),
     },
     localeRecord: generatePreviewableRecordField({
@@ -191,24 +204,16 @@ export const Event = {
   },
   importOptions: {
     fields: [
-      'locale',
-      'avatarUrl',
-      'name',
-      'description',
-      'files',
-      'externalLinks',
-      'location',
-      'locationInstructions',
-      'startAt',
-      'endAt',
-      'signupStartAt',
-      'signupEndAt',
-      'costPerPerson',
-      'totalCost',
-      'paymentInstructions',
-      'participantsLimit',
-      'isPublic',
-      'isActive',
+      {
+        field: 'collectibleType',
+        path: 'collectibleType.id',
+      },
+      {
+        field: 'sortIndex',
+      },
+      {
+        field: 'name',
+      },
     ],
   },
   editOptions: {

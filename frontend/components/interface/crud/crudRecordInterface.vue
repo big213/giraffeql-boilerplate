@@ -496,7 +496,7 @@
                 </v-col>
                 <v-col
                   v-if="
-                    !recordInfo.paginationOptions.hideViewMore &&
+                    !recordInfo.paginationOptions.hideViewMoreOptions &&
                     records.length < totalRecords
                   "
                   cols="12"
@@ -658,7 +658,7 @@
           <template v-slot:footer>
             <div
               v-if="
-                !recordInfo.paginationOptions.hideViewMore &&
+                !recordInfo.paginationOptions.hideViewMoreOptions &&
                 records.length < totalRecords
               "
               class="text-center"

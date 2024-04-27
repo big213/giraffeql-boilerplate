@@ -10,7 +10,7 @@
       </v-system-bar>
       <v-hover v-slot="{ hover }">
         <v-img
-          :src="generateFileServingUrl(file.location)"
+          :src="generateFileServingUrl({ bucketPath: file.location })"
           aspect-ratio="1"
           contain
           @click="openFile()"
@@ -128,7 +128,11 @@ export default {
 
     openFile() {
       try {
-        openLink(generateFileServingUrl(this.file.location))
+        openLink(
+          generateFileServingUrl({
+            bucketPath: this.file.location,
+          })
+        )
       } catch (err) {
         handleError(this, err)
       }

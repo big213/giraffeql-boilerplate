@@ -8,9 +8,11 @@ export const MyFile = {
     ...File.paginationOptions,
     downloadOptions: undefined,
   },
-  viewOptions: undefined,
+  viewOptions: {
+    fields: ['nameWithId', 'size', 'contentType', 'parentKey'],
+  },
   shareOptions: undefined,
-  enterOptions: {},
+  enterOptions: undefined,
   editOptions: undefined,
   addOptions: undefined,
 }

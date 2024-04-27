@@ -13,6 +13,7 @@ export const {{ capitalizedTypename }} = <RecordInfo<'{{ typename }}'>>{
     filterOptions: [],
     heroOptions: {},
     sortOptions: [
+      ...generateSortOptions("createdAt"),
       ...generateSortOptions("updatedAt"),
     ],
     headerOptions: [
