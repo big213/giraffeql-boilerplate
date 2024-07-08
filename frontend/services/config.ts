@@ -35,4 +35,5 @@ export const routesMap = {
     my: ['apiKey', 'file'],
     s: [],
   },
+  action: [],
 }
