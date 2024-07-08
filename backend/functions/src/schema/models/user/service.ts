@@ -107,7 +107,37 @@ export class UserService extends PaginatedService {
     },
 
     // not allowed (except by admins)
-    getPaginator: () => false,
+    /*
+    Allow if:
+    - filtering by isPublic === true
+    - if requested fields are id, name, avatarUrl, isPublic, currentUserFollowLink ONLY, or NO query
+    */
+    getPaginator: async ({ args, query }) => {
+      if (
+        !query ||
+        queryOnlyHasFields(query, [
+          "id",
+          "__typename",
+          "name",
+          "avatarUrl",
+          "description",
+          "isPublic",
+          "currentUserFollowLink",
+        ])
+      ) {
+        return true;
+      }
+
+      if (
+        await filterPassesTest(args.filterBy, (filterObject) => {
+          return filterObject["isPublic"]?.eq === true;
+        })
+      ) {
+        return true;
+      }
+
+      return false;
+    },
 
     /*
     Allow if:
