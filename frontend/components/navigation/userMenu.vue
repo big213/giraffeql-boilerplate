@@ -58,6 +58,21 @@
 
       <v-divider></v-divider>
 
+      <v-list v-if="hasCoachPermissions" dense>
+        <v-subheader>Coach</v-subheader>
+        <v-list-item @click.stop="openCoachDialog()">
+          <PreviewRecordChip v-if="coach" :value="coach">
+            <template slot="rightIcon">
+              <v-icon color="pink" right @click.stop="clearSelection('coach')"
+                >mdi-close</v-icon
+              >
+            </template>
+          </PreviewRecordChip>
+          <v-chip v-else><i>None</i></v-chip>
+        </v-list-item>
+      </v-list>
+
+      <v-divider></v-divider>
       <v-list dense>
         <v-list-item
           v-for="(item, i) in accountItems"
@@ -126,7 +141,11 @@
 <script>
 import { mapGetters } from 'vuex'
 import { auth } from '~/services/fireinit'
-import { handleError } from '~/services/base'
+import {
+  handleError,
+  userHasRole,
+  generateViewRecordRoute,
+} from '~/services/base'
 import { generateUserMenuItems } from '~/services/navigation'
 import { userRoleMap } from '~/services/constants'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
@@ -152,14 +171,62 @@ export default {
     ...mapGetters({
       user: 'auth/user',
       firebaseUser: 'auth/firebaseUser',
+      coach: 'coach/current',
     }),
 
     accountItems() {
       return generateUserMenuItems(this)
     },
+
+    hasCoachPermissions() {
+      return userHasRole(this, 'COACH') || userHasRole(this, 'CONTENT_ADMIN')
+    },
+  },
+
+  watch: {
+    coach(val) {
+      // if no coach, redirect to home page
+      if (!val) {
+        this.$router.push('/')
+        return
+      } else {
+        // if yes coach, perform these actions
+        this.$notifier.showSnackbar({
+          message: `Coach selected`,
+          variant: 'success',
+        })
+
+        // force refresh of coach, in case it was on the settings page already
+        this.$root.$emit('refresh-interface', 'coach')
+
+        // go to coach page
+        this.$router.push(
+          generateViewRecordRoute(this, {
+            routeKey: 'coach',
+            routeType: 'coach',
+            id: this.$store.getters['coach/current'].id,
+          })
+        )
+      }
+    },
   },
 
   methods: {
+    openCoachDialog() {
+      this.$root.$emit('openCrudRecordDialog', {
+        recordInfo: 'SelectCoach',
+      })
+    },
+
+    clearSelection(typename) {
+      this.$store.commit(`${typename}/setCurrent`, null)
+
+      this.$notifier.showSnackbar({
+        message: `Cleared current ${typename}`,
+        variant: 'success',
+      })
+    },
+
     async logout() {
       try {
         await auth.signOut()

@@ -1,6 +1,6 @@
 import { UserUserFollowLink, User } from "../../services";
 import { GiraffeqlObjectType } from "giraffeql";
-import { generateLinkTypeDef } from "../../core/generators";
+import { generateLinkTypeDef } from "../../core/helpers/typeDef";
 
 export default new GiraffeqlObjectType(
   generateLinkTypeDef(

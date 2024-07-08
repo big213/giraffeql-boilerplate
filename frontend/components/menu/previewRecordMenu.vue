@@ -72,17 +72,18 @@
           View
         </v-btn>
       </v-card-actions>
-      <v-card-actions v-if="customActions.length > 0">
+      <div class="pa-2">
         <v-btn
           v-for="(action, index) in customActions"
           :key="index"
           block
           color="primary"
-          @click="handleCustomActionClick(action)"
+          :class="index > 0 ? 'mt-1' : null"
+          @click.stop="handleCustomActionClick(action)"
           ><v-icon v-if="action.icon" left>{{ action.icon }}</v-icon
           >{{ action.text }}</v-btn
         >
-      </v-card-actions>
+      </div>
     </v-card>
   </v-menu>
   <v-chip v-else small>
@@ -119,10 +120,9 @@ export default {
       required: true,
     },
 
-    // required
+    // only required if it is not provided *in* item as __typename
     typename: {
       type: String,
-      required: true,
     },
 
     openMode: {
@@ -149,11 +149,14 @@ export default {
       return this.recordInfo.icon
     },
     capitalizedType() {
-      return capitalizeString(this.typename)
+      return capitalizeString(this.typenameComputed)
+    },
+    typenameComputed() {
+      return this.typename ?? this.item.__typename
     },
     // must exist
     recordInfo() {
-      return simpleModels[`Simple${capitalizeString(this.typename)}`]
+      return simpleModels[`Simple${capitalizeString(this.typenameComputed)}`]
     },
     // if previewOptions is not specified, default to showing typename only
     fields() {
@@ -220,7 +223,7 @@ export default {
         enterRoute(
           this,
           generateViewRecordRoute(this, {
-            typename: this.typename,
+            routeKey: this.typenameComputed,
             routeType: 'i',
             id: this.item.id,
           }),

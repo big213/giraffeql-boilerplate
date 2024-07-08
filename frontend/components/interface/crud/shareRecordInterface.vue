@@ -54,7 +54,7 @@ export default {
             this.selectedItem.id
           )
         : generateShareUrl(this, {
-            typename: this.recordInfo.typename,
+            routeKey: this.recordInfo.typename,
             id: this.selectedItem.id,
             showComments: true,
           })

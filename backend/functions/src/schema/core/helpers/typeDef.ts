@@ -28,6 +28,8 @@ import type {
 } from "../../../types";
 import { getObjectType } from "./resolver";
 import { SqlSelectQuery } from "./sql";
+import { Enum, Kenum } from "./enum";
+import { User } from "../../services";
 
 type GenerateFieldParams = {
   name?: string;
@@ -272,7 +274,11 @@ export function generateIntegerField(
     nestHidden,
     sqlType: "integer",
     type,
-    sqlOptions,
+    sqlOptions: {
+      // detect NaN and convert to undefined
+      parseValue: (val) => (Number.isNaN(val) ? undefined : val),
+      ...sqlOptions,
+    },
     typeDefOptions,
   });
 }
@@ -302,7 +308,11 @@ export function generateFloatField(
     nestHidden,
     sqlType: "float",
     type,
-    sqlOptions,
+    sqlOptions: {
+      // detect NaN and convert to undefined
+      parseValue: (val) => (Number.isNaN(val) ? undefined : val),
+      ...sqlOptions,
+    },
     typeDefOptions,
   });
 }
@@ -332,7 +342,11 @@ export function generateDecimalField(
     nestHidden,
     sqlType: "decimal",
     type,
-    sqlOptions,
+    sqlOptions: {
+      // detect NaN and convert to undefined
+      parseValue: (val) => (Number.isNaN(val) ? undefined : val),
+      ...sqlOptions,
+    },
     typeDefOptions,
   });
 }
@@ -509,13 +523,14 @@ export function generateEnumField(
   params: {
     scalarDefinition: GiraffeqlScalarType;
     isKenum?: boolean;
+    defaultValue?: Enum | Kenum;
   } & GenerateFieldParams
 ) {
   const {
     description,
     allowNull = true,
     allowNullOutput,
-    defaultValue, // must be abcEnum.parsed
+    defaultValue, // must be abcEnum
     hidden,
     nestHidden,
     scalarDefinition,
@@ -528,7 +543,7 @@ export function generateEnumField(
     description,
     allowNull,
     allowNullOutput,
-    defaultValue,
+    defaultValue: defaultValue?.parsed,
     hidden,
     nestHidden,
     sqlType: isKenum ? "integer" : "string",
@@ -1085,19 +1100,19 @@ export function generatePaginatorPivotResolverObject({
         filterObject[filterByField] = { eq: parentItemId };
       });
 
-      return pivotService.paginator.getRecord({
+      return pivotService.getRecordPaginator({
         req,
-        fieldPath,
         args: {
           ...validatedArgs,
           filterBy: filterObjectArray,
         },
+        fieldPath,
         query,
         data,
       });
     };
   } else {
-    rootResolverFunction = (inputs) => pivotService.getPaginator(inputs);
+    rootResolverFunction = (inputs) => pivotService.getRecordPaginator(inputs);
   }
 
   const hasSearchFields =
@@ -1173,13 +1188,64 @@ export function generatePaginatorPivotResolverObject({
   }
 
   return <ObjectTypeDefinitionField>{
-    type: new GiraffeqlObjectTypeLookup(pivotService.paginator.typename),
+    type: new GiraffeqlObjectType(<ObjectTypeDefinition>{
+      name: `${pivotService.typename}Paginator`,
+      description: "Paginator",
+      fields: {
+        paginatorInfo: {
+          type: new GiraffeqlObjectType(
+            {
+              name: "paginatorInfo",
+              fields: {
+                total: {
+                  type: Scalars.number,
+                  allowNull: false,
+                },
+                count: {
+                  type: Scalars.number,
+                  allowNull: false,
+                },
+                startCursor: {
+                  type: Scalars.string,
+                  allowNull: true,
+                },
+                endCursor: {
+                  type: Scalars.string,
+                  allowNull: true,
+                },
+              },
+            },
+            true
+          ),
+          allowNull: false,
+        },
+        edges: {
+          type: new GiraffeqlObjectType({
+            name: `${pivotService.typename}Edge`,
+            fields: {
+              node: {
+                type: pivotService.typeDefLookup,
+                allowNull: false,
+              },
+              cursor: {
+                type: Scalars.string,
+                allowNull: false,
+              },
+            },
+          }),
+          arrayOptions: {
+            allowNullElement: false,
+          },
+          allowNull: false,
+        },
+      },
+    }),
     allowNull: false,
     args: new GiraffeqlInputFieldType({
       required: true,
       type: new GiraffeqlInputType(
         {
-          name: pivotService.paginator.typename,
+          name: `${pivotService.typename}PaginatorInput`,
           fields: {
             first: new GiraffeqlInputFieldType({
               type: Scalars.number,
@@ -1533,6 +1599,235 @@ export function generateStatsResolverObject({
   };
 }
 
+export function generateAggregatorResolverObject({
+  pivotService,
+  filterByField,
+}: {
+  pivotService: PaginatedService;
+  filterByField?: string;
+}) {
+  // check for aggregator options
+  if (!pivotService.aggregatorOptions) {
+    throw new GiraffeqlInitializationError({
+      message: `Aggregator options not set up on type '${pivotService.typename}'`,
+    });
+  }
+
+  // if filterByField, ensure that filterByField is a valid filterField on pivotService
+  if (filterByField && !pivotService.filterFieldsMap[filterByField]) {
+    throw new GiraffeqlInitializationError({
+      message: `Filter Key '${filterByField}' does not exist on type '${pivotService.typename}'`,
+    });
+  }
+
+  let rootResolverFunction: RootResolverFunction | undefined;
+  let resolverFunction: ResolverFunction | undefined;
+
+  if (filterByField) {
+    resolverFunction = async ({
+      req,
+      args,
+      fieldPath,
+      query,
+      parentValue,
+      data,
+    }) => {
+      // args should be validated already
+      const validatedArgs = <any>args;
+
+      // parentValue.id should be requested (via requiredSqlFields)
+      const parentItemId = parentValue.id;
+
+      // apply the filterByField as an arg to each filterObject
+      const filterObjectArray = validatedArgs.filterBy ?? [{}];
+      filterObjectArray.forEach((filterObject) => {
+        filterObject[filterByField] = { eq: parentItemId };
+      });
+
+      return pivotService.getRecordAggregator({
+        req,
+        fieldPath,
+        args: {
+          ...validatedArgs,
+          filterBy: filterObjectArray,
+        },
+        query,
+        data,
+      });
+    };
+  } else {
+    rootResolverFunction = (inputs) => pivotService.getRecordAggregator(inputs);
+  }
+
+  const hasSearchFields =
+    pivotService.searchFieldsMap &&
+    Object.keys(pivotService.searchFieldsMap).length > 0;
+
+  const hasDistanceFields =
+    pivotService.distanceFieldsMap &&
+    Object.keys(pivotService.distanceFieldsMap).length > 0;
+
+  const aggregatorKeyFieldScalarDefinition: ScalarDefinition = {
+    name: pivotService.typename + "AggregatorKeyField",
+    types: Object.entries(pivotService.aggregatorOptions.keys).map(
+      ([key, value]) => {
+        return `"${key}"`;
+      }
+    ),
+    parseValue: (value) => {
+      if (
+        typeof value !== "string" ||
+        !(value in pivotService.aggregatorOptions!.keys)
+      )
+        throw true;
+      return value;
+    },
+  };
+
+  // ensure one of the keys of values is not "key"
+  if ("key" in pivotService.aggregatorOptions.values) {
+    throw new GiraffeqlInitializationError({
+      message: `Cannot have a value key called "key"`,
+    });
+  }
+
+  const aggregatorSortKeys = Object.keys(
+    pivotService.aggregatorOptions.values
+  ).concat("key");
+
+  const aggregatorSortByKeyScalarDefinition: ScalarDefinition = {
+    name: pivotService.typename + "AggregatorSortByKeyField",
+    types: aggregatorSortKeys.map((value) => {
+      return `"${value}"`;
+    }),
+    parseValue: (value) => {
+      if (typeof value !== "string" || !aggregatorSortKeys.includes(value))
+        throw true;
+      return value;
+    },
+  };
+
+  return <ObjectTypeDefinitionField>{
+    type: new GiraffeqlObjectType({
+      name: `${pivotService.typename}AggregatorResult`,
+      fields: {
+        key: {
+          type: Scalars.unknown,
+          allowNull: false,
+        },
+        ...Object.keys(pivotService.aggregatorOptions.values).reduce(
+          (total, key) => {
+            total[key] = {
+              type: Scalars.number,
+              allowNull: false,
+            };
+
+            return total;
+          },
+          {}
+        ),
+      },
+    }),
+    allowNull: false,
+    arrayOptions: {
+      allowNullElement: false,
+    },
+    args: new GiraffeqlInputFieldType({
+      required: true,
+      type: new GiraffeqlInputType(
+        {
+          name: `${pivotService.typename}AggregatorInput`,
+          fields: {
+            keyField: new GiraffeqlInputFieldType({
+              type: new GiraffeqlScalarType(
+                aggregatorKeyFieldScalarDefinition,
+                true
+              ),
+              required: true,
+            }),
+            filterBy: new GiraffeqlInputFieldType({
+              arrayOptions: {
+                allowNullElement: false,
+              },
+              type: new GiraffeqlInputTypeLookup(
+                `${pivotService.typename}FilterByObject`
+              ),
+            }),
+            ...(hasSearchFields && {
+              search: new GiraffeqlInputFieldType({
+                type: new GiraffeqlInputTypeLookup(
+                  `${pivotService.typename}SearchObject`
+                ),
+              }),
+            }),
+            ...(hasDistanceFields && {
+              distance: new GiraffeqlInputFieldType({
+                type: new GiraffeqlInputTypeLookup(
+                  `${pivotService.typename}DistanceObject`
+                ),
+              }),
+            }),
+            sortBy: new GiraffeqlInputFieldType({
+              type: new GiraffeqlInputType(
+                {
+                  name: `AggregatorSortByObject`,
+                  fields: {
+                    field: new GiraffeqlInputFieldType({
+                      type: new GiraffeqlScalarType(
+                        aggregatorSortByKeyScalarDefinition,
+                        true
+                      ),
+                    }),
+                    desc: new GiraffeqlInputFieldType({
+                      type: Scalars.boolean,
+                    }),
+                  },
+                },
+                true
+              ),
+              required: false,
+            }),
+          },
+          inputsValidator: (args, fieldPath) => {
+            // check for invalid first/last, before/after combos
+            const validatedArgs = <any>args;
+
+            // after
+            if (!isObject(args)) {
+              throw new GiraffeqlArgsError({
+                message: `Args required`,
+                fieldPath,
+              });
+            }
+
+            // if args.filterBy is provided, all of its objects must be non-empty
+            if (
+              validatedArgs.filterBy &&
+              validatedArgs.filterBy.some(
+                (filterObject) => Object.keys(filterObject).length < 1
+              )
+            ) {
+              throw new GiraffeqlArgsError({
+                message: `All filterBy objects must have at least one filter parameter specified`,
+                fieldPath,
+              });
+            }
+          },
+        },
+        true
+      ),
+    }),
+    ...(rootResolverFunction
+      ? {
+          resolver: rootResolverFunction,
+        }
+      : {
+          resolver: resolverFunction,
+          requiredSqlFields: ["id"],
+        }),
+  };
+}
+
 // special field for generating the currentUserFollowLink foreign sql field for a model
 export function generateCurrentUserFollowLinkField(followLink: LinkService) {
   return {
@@ -1584,4 +1879,63 @@ export function processTypeDef(typeDefObject: ObjectTypeDefinition) {
   });
 
   return typeDefObject;
+}
+
+export type ServicesObjectMap = {
+  [x: string]: {
+    service: PaginatedService;
+    allowNull?: boolean;
+    allowNullOutput?: boolean;
+    sqlField?: string; // sql alias for the field, e.g. if it has CAPS
+    updateable?: boolean; // can this field be updated?
+  };
+};
+
+export function generateLinkTypeDef(
+  servicesObjectMap: ServicesObjectMap,
+  currentService: LinkService,
+  additionalFields?: { [x: string]: ObjectTypeDefinitionField }
+): ObjectTypeDefinition {
+  // set the servicesObjectMap on currentService
+  currentService.servicesObjectMap = servicesObjectMap;
+
+  // only 2 services supported at the moment. additional fields may not work properly in sql.ts processJoinFields
+  if (Object.keys(servicesObjectMap).length > 2) {
+    throw new Error(
+      `Maximum 2 services supported for link types at the moment`
+    );
+  }
+
+  const typeDefFields = {};
+
+  for (const field in servicesObjectMap) {
+    typeDefFields[field] = generateJoinableField({
+      service: servicesObjectMap[field].service,
+      allowNull: servicesObjectMap[field].allowNull ?? false,
+      allowNullOutput: servicesObjectMap[field].allowNullOutput,
+      typeDefOptions: {
+        addable: true,
+        updateable: servicesObjectMap[field].updateable ?? true,
+      },
+      sqlOptions: {
+        unique: "compositeIndex",
+        ...(servicesObjectMap[field].sqlField && {
+          field: servicesObjectMap[field].sqlField,
+        }),
+      },
+    });
+  }
+
+  return <ObjectTypeDefinition>processTypeDef({
+    name: currentService.typename,
+    description: "Link type",
+    fields: {
+      ...generateIdField(currentService),
+      ...generateTypenameField(currentService),
+      ...typeDefFields,
+      ...generateTimestampFields(),
+      ...generateCreatedByField(User),
+      ...additionalFields,
+    },
+  });
 }

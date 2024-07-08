@@ -1,6 +1,40 @@
 <template>
-  <div>
+  <div class="elevation-1">
     <v-card flat>
+      <v-container
+        v-if="parentExpandTypesComputed && parentExpandTypesComputed.length > 1"
+        class="mx-0 text-center"
+        fluid
+      >
+        <v-row justify="center" no-gutters>
+          <v-col
+            v-for="expandTypeObject in parentExpandTypesComputed"
+            :key="expandTypeObject.key"
+            cols="12"
+            sm="3"
+          >
+            <v-card
+              class="ma-2 text-center"
+              outlined
+              @click="handleParentExpandTypeUpdated(expandTypeObject)"
+            >
+              <v-img
+                height="75px"
+                :src="null"
+                :class="
+                  currentExpandTypeKey === expandTypeObject.key
+                    ? 'selected-element'
+                    : null
+                "
+              >
+                <v-layout column justify-center align-center fill-height>
+                  <v-card-title>{{ expandTypeObject.name }}</v-card-title>
+                </v-layout>
+              </v-img>
+            </v-card>
+          </v-col>
+        </v-row>
+      </v-container>
       <v-container
         v-if="!hidePresets && hasPresetFilters"
         fluid
@@ -51,40 +85,45 @@
           </v-btn>
         </v-toolbar>
       </v-container>
-      <v-container
-        v-if="parentExpandTypes && parentExpandTypes.length > 1"
-        class="mx-0 text-center"
-        fluid
-      >
-        <v-row justify="center" no-gutters>
-          <v-col
-            v-for="expandTypeObject in parentExpandTypes"
-            :key="expandTypeObject.key"
-            cols="12"
-            sm="3"
+      <div v-if="visibleChipsFiltersArray.length" class="py-2">
+        <div
+          v-for="(crudFilterObject, i) in visibleChipsFiltersArray"
+          :key="i"
+          class="text-center pb-2"
+        >
+          <div
+            v-if="crudFilterObject.inputObject.options.length"
+            class="mb-2 title"
           >
-            <v-card
-              class="ma-2 text-center"
-              outlined
-              @click="handleParentExpandTypeUpdated(expandTypeObject)"
+            {{ crudFilterObject.filterObject.text }}
+          </div>
+          <div>
+            <v-chip
+              :color="
+                crudFilterObject.inputObject.value === null ? 'green' : null
+              "
+              @click.stop="applyChipFilter(crudFilterObject.inputObject, null)"
+              >Show All</v-chip
             >
-              <v-img
-                height="75px"
-                :src="null"
-                :class="
-                  currentExpandTypeKey === expandTypeObject.key
-                    ? 'selected-element'
-                    : null
-                "
-              >
-                <v-layout column justify-center align-center fill-height>
-                  <v-card-title>{{ expandTypeObject.name }}</v-card-title>
-                </v-layout>
-              </v-img>
-            </v-card>
-          </v-col>
-        </v-row>
-      </v-container>
+            |
+            <PreviewRecordChip
+              v-for="(inputOption, j) in crudFilterObject.inputObject.options"
+              :key="j"
+              :value="inputOption"
+              class="mr-2"
+              :color="
+                crudFilterObject.inputObject.value === inputOption.id
+                  ? 'green'
+                  : null
+              "
+              @click.stop="
+                applyChipFilter(crudFilterObject.inputObject, inputOption)
+              "
+            ></PreviewRecordChip>
+          </div>
+        </div>
+      </div>
+
       <v-container
         v-if="breadcrumbMode && !hideBreadcrumbs && breadcrumbItems.length"
         fluid
@@ -210,7 +249,6 @@
             </v-list-item>
           </v-list>
         </v-menu>
-
         <v-switch
           v-if="pollInterval > 0"
           v-model="isPolling"
@@ -368,17 +406,14 @@
         }"
         class="pa-0"
       >
-        <v-card
-          v-if="!recordInfo.paginationOptions.hideCount"
-          class="text-center"
-        >
+        <div v-if="!recordInfo.paginationOptions.hideCount" class="text-center">
           <span v-if="isDataLoading">...</span>
           <span v-else-if="!totalRecords">---</span>
           <span v-else class="noselect">
             (Showing {{ records.length }} of {{ totalRecords }}
             {{ recordInfo.pluralName }})
           </span>
-        </v-card>
+        </div>
         <v-divider />
         <slot name="header-text"></slot>
         <v-data-iterator
@@ -387,7 +422,7 @@
           disable-sort
           disable-pagination
           hide-default-footer
-          class="pt-5 elevation-1"
+          class="pt-5"
           :style="
             recordInfo.paginationOptions.minHeight
               ? `min-height: ${recordInfo.paginationOptions.minHeight}`
@@ -457,18 +492,23 @@
                         </v-list-item-content>
                       </v-list-item>
                     </v-list>
-                    <v-btn
+                    <div
                       v-for="(expandObject, i) in renderedExpandItems"
-                      block
                       :key="i"
-                      class="mt-1"
-                      @click.stop="toggleGridExpand(item, expandObject)"
                     >
-                      <v-icon left>{{
-                        expandObject.icon || expandObject.recordInfo.icon
-                      }}</v-icon>
-                      {{ expandObject.name || expandObject.recordInfo.name }}
-                    </v-btn>
+                      <v-btn
+                        v-if="isShowExpandButton(item, expandObject)"
+                        block
+                        class="mt-1"
+                        @click.stop="toggleGridExpand(item, expandObject)"
+                      >
+                        <v-icon left>{{
+                          expandObject.icon || expandObject.recordInfo.icon
+                        }}</v-icon>
+                        {{ expandObject.name || expandObject.recordInfo.name }}
+                      </v-btn>
+                    </div>
+
                     <div
                       v-if="!recordInfo.paginationOptions.hideActions"
                       class="text-center"
@@ -537,7 +577,6 @@
           v-else
           :headers="headerOptions"
           :items="records"
-          class="elevation-1"
           :loading="loading.loadData"
           loading-text="Loading... Please wait"
           :server-items-length="totalRecords"
@@ -682,7 +721,10 @@
             </div>
           </template>
 
-          <template v-if="hasNested" v-slot:expanded-item="{ headers }">
+          <template
+            v-if="hasNested"
+            v-slot:expanded-item="{ headers, item, isMobile }"
+          >
             <td :colspan="headers.length" class="pr-0">
               <component
                 :is="childInterfaceComponent"
@@ -702,7 +744,12 @@
                 :hide-presets="!expandTypeObject.showPresets"
                 :parent-expand-types="recordInfo.expandTypes"
                 :current-expand-type-key="expandTypeObject.key"
-                @parent-expand-type-updated="toggleItemExpanded(props, $event)"
+                @parent-expand-type-updated="
+                  toggleItemExpanded(
+                    { item, isMobile, isExpanded: true },
+                    $event
+                  )
+                "
                 @pageOptions-updated="handleSubPageOptionsUpdated"
                 @reload-parent-item="handleReloadParentItem"
                 @expand-type-updated="handleExpandTypeUpdated"

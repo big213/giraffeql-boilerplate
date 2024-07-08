@@ -1,8 +1,9 @@
 import { ServiceFunctionInputs } from "../../../types";
 import { linkDefs } from "../../links";
-import { ServicesObjectMap } from "../generators/link";
 import { permissionsCheck } from "../helpers/permissions";
 import { createObjectType } from "../helpers/resolver";
+import { camelToSnake } from "../helpers/shared";
+import { ServicesObjectMap } from "../helpers/typeDef";
 import { PaginatedService } from "./paginated";
 
 export class LinkService extends PaginatedService {
@@ -40,7 +41,9 @@ export class LinkService extends PaginatedService {
         createdBy: req.user!.id,
       },
       extendFn: (knexObject) => {
-        knexObject.onConflict(fields).ignore();
+        knexObject
+          .onConflict(fields.map((field) => camelToSnake(field)))
+          .ignore();
       },
       req,
       fieldPath,
@@ -66,15 +69,13 @@ export class LinkService extends PaginatedService {
       addResults.id
     );
 
-    return this.isEmptyQuery(query)
-      ? {}
-      : await this.getRecord({
-          req,
-          args: { id: addResults.id },
-          query,
-          fieldPath,
-          isAdmin,
-          data,
-        });
+    return this.getRecord({
+      req,
+      args: { id: addResults.id },
+      query,
+      fieldPath,
+      isAdmin,
+      data,
+    });
   }
 }

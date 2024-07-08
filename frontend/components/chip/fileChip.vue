@@ -18,11 +18,11 @@
         size="12"
         indeterminate
       ></v-progress-circular>
-      <v-icon v-else small class="ml-2" @click="downloadFile()"
+      <v-icon v-else small class="ml-2" @click.stop="downloadFile()"
         >mdi-download</v-icon
       >
     </span>
-    <v-icon v-if="openable" small class="ml-2" @click="openFile()"
+    <v-icon v-if="openable" small class="ml-2" @click.stop="openFile()"
       >mdi-open-in-new</v-icon
     >
   </v-chip>

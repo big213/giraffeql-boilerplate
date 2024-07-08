@@ -55,10 +55,10 @@
               <v-list-item>
                 <v-list-item-avatar>
                   <v-img
-                    v-if="props.item.createdBy.avatar"
+                    v-if="props.item.createdBy.avatarUrl"
                     class="elevation-6"
                     :alt="props.item.createdBy.name"
-                    :src="props.item.createdBy.avatar"
+                    :src="props.item.createdBy.avatarUrl"
                   ></v-img>
                   <v-icon v-else>mdi-account</v-icon>
                 </v-list-item-avatar>

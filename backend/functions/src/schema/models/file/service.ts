@@ -55,7 +55,7 @@ export class FileService extends PaginatedService {
     Allow if:
     - filtering by createdBy.id is currentUser,
     */
-    getMultiple: allowIfFilteringByCurrentUserFn("createdBy.id"),
+    getPaginator: allowIfFilteringByCurrentUserFn("createdBy.id"),
 
     /*
     Allow if:
@@ -165,16 +165,14 @@ export class FileService extends PaginatedService {
       fieldPath,
     });
 
-    return this.isEmptyQuery(query)
-      ? {}
-      : await this.getRecord({
-          req,
-          args: { id: addResults.id },
-          query,
-          fieldPath,
-          isAdmin,
-          data,
-        });
+    return this.getRecord({
+      req,
+      args: { id: addResults.id },
+      query,
+      fieldPath,
+      isAdmin,
+      data,
+    });
   }
 
   @permissionsCheck("delete")
@@ -203,17 +201,28 @@ export class FileService extends PaginatedService {
 
     await file.delete();
 
-    // first, fetch the requested query, if any
-    const requestedResults = this.isEmptyQuery(query)
-      ? {}
-      : await this.getRecord({
-          req,
-          args,
-          query,
-          fieldPath,
-          isAdmin,
-          data,
-        });
+    let requestedResults;
+
+    if (Object.keys(query).length > 0) {
+      // check for get permissions, if fields were requested
+      await this.testPermissions("get", {
+        req,
+        args,
+        query,
+        fieldPath,
+        isAdmin,
+        data,
+      });
+      // fetch the requested query, if any
+      requestedResults = await this.getRecord({
+        req,
+        args,
+        query,
+        fieldPath,
+        isAdmin,
+        data,
+      });
+    }
 
     await deleteObjectType({
       typename: this.typename,
@@ -222,6 +231,6 @@ export class FileService extends PaginatedService {
       fieldPath,
     });
 
-    return requestedResults;
+    return requestedResults ?? {};
   }
 }

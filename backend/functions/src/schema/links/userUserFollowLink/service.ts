@@ -35,7 +35,7 @@ export class UserUserFollowLinkService extends LinkService {
     */
     get: allowIfRecordFieldIsCurrentUserFn(this, "user.id"),
 
-    // getMultiple not allowed
+    // getPaginator not allowed
 
     // update not allowed
 

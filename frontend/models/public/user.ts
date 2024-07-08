@@ -1,4 +1,4 @@
-import { MyProfile } from '../special/myProfile'
+import { MyProfile } from '../my/profile'
 
 export const PublicUser = {
   ...MyProfile,

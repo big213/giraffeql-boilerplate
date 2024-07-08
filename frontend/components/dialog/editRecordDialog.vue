@@ -202,15 +202,21 @@ export default {
     interfaceComponent() {
       return this.specialMode
         ? this.modeObject.defaultInterface
-        : this.recordInfo[this.computedMode + 'Options']?.component ??
-            this.modeObject.defaultInterface
+        : this.options?.component ?? this.modeObject.defaultInterface
+    },
+
+    options() {
+      return this.recordInfo[`${this.computedMode}Options`]
     },
 
     title() {
-      return `${this.modeObject.prefix} ${this.recordInfo.name}`
+      return (
+        this.options?.title ??
+        `${this.modeObject.prefix} ${this.recordInfo.name}`
+      )
     },
     icon() {
-      return this.modeObject.icon
+      return this.options?.icon ?? this.modeObject.icon
     },
 
     postLockedFilters() {

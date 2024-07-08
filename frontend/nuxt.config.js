@@ -23,6 +23,8 @@ export default {
     stripePubKey: process.env.STRIPE_PUB_KEY,
     socialLoginEnabled: !!process.env.SOCIAL_LOGIN_ENABLED,
     tempStoragePath: process.env.TEMP_STORAGE_PATH,
+    hideNullInputIcon: process.env.HIDE_NULL_INPUT_ICON,
+    paypalClientId: process.env.PAYPAL_CLIENT_ID,
   },
 
   // Target (https://go.nuxtjs.dev/config-target)
@@ -54,6 +56,11 @@ export default {
           routes.add(`/${key}/${camelToKebabCase(type)}`)
         })
       })
+
+      routesMap.action.forEach((action) => {
+        routes.add(`/action/${camelToKebabCase(action)}`)
+      })
+
       return [...routes]
     },
   },
@@ -93,7 +100,12 @@ export default {
       {
         src: 'https://js.stripe.com/v3/',
       },
-    ],
+      process.env.PAYPAL_CLIENT_ID
+        ? {
+            src: `https://www.paypal.com/sdk/js?client-id=${process.env.PAYPAL_CLIENT_ID}&currency=USD&components=buttons&enable-funding=venmo&disable-funding=card,paylater`,
+          }
+        : null,
+    ].filter((e) => e),
     link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
   },
 
@@ -147,7 +159,7 @@ export default {
         light: {
           primary: colors.blue.darken1,
           secondary: colors.amber.lighten2,
-          accent: colors.blue.lighten4,
+          accent: colors.grey.lighten2,
           info: colors.teal.lighten1,
           warning: colors.amber.base,
           error: colors.red.accent3,

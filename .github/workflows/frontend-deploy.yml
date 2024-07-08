@@ -39,6 +39,7 @@ jobs:
           SOCIAL_LOGIN_ENABLED:
           TEMP_STORAGE_PATH: temp
           STRIPE_PUB_KEY:
+          PAYPAL_CLIENT_ID:
       - name: Create SA key
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > $HOME/gcloud.json
       - name: Deploy Hosting

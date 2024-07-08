@@ -202,6 +202,7 @@ export default {
     handlePostUpdate(props, updatedPost) {
       props.item.content = updatedPost.content
       props.item.files = updatedPost.files
+      props.item.updatedAt = new Date().getTime() / 1000
       props.isEditing = false
     },
 

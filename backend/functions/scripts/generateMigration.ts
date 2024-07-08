@@ -1,9 +1,14 @@
-import "../schema";
+import "../src/schema";
 import { objectTypeDefs } from "giraffeql";
 import * as fs from "fs";
+import { Enum, Kenum } from "../src/schema/core/helpers/enum";
 
 export function isKnexNow(ele: unknown) {
   return Object.prototype.toString.call(ele) === "[object object]";
+}
+
+function isEnum(ele: unknown) {
+  return ele instanceof Enum || ele instanceof Kenum;
 }
 
 const output = generateMigration();
@@ -76,7 +81,11 @@ function generateMigration(initSubscriptions = true, force = false) {
             typeDefField.sqlOptions.defaultValue
           )
             ? "knex.fn.now()"
-            : JSON.stringify(typeDefField.sqlOptions.defaultValue);
+            : JSON.stringify(
+                isEnum(typeDefField.sqlOptions.defaultValue)
+                  ? typeDefField.sqlOptions.defaultValue.parsed
+                  : typeDefField.sqlOptions.defaultValue
+              );
 
           operationString += `.defaultTo(${defaultValueString})`;
         }

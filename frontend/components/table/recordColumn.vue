@@ -15,6 +15,7 @@
         offset-y
         top
         open-mode="openInDialog"
+        :disabled="disablePreview"
       ></PreviewRecordMenu>
       <v-chip v-else-if="emptyText" small
         ><i>{{ emptyText }}</i></v-chip
@@ -44,6 +45,10 @@ export default {
 
     emptyText() {
       return this.options?.emptyText
+    },
+
+    disablePreview() {
+      return !!this.options?.disablePreview
     },
   },
 }

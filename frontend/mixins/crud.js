@@ -199,6 +199,12 @@ export default {
   },
 
   computed: {
+    parentExpandTypesComputed() {
+      return this.parentExpandTypes?.filter(
+        (ele) => !ele.hideIf?.(this, this.parentItem)
+      )
+    },
+
     isDataLoading() {
       return (
         this.loading.loadData || this.loading.loadMore || this.loading.syncData
@@ -365,6 +371,14 @@ export default {
       )
     },
 
+    visibleChipsFiltersArray() {
+      return this.filterInputsArray.filter(
+        (ele) =>
+          ele.filterObject.chips &&
+          !this.hiddenFilters.includes(ele.filterObject.field)
+      )
+    },
+
     visibleRawFiltersArray() {
       return this.rawFilters.filter(
         (ele) => !this.hiddenFilters.includes(ele.field)
@@ -455,7 +469,7 @@ export default {
     '$vuetify.breakpoint.name'(value) {
       if (value === 'xs') {
         // when switching to mobile view, un-expand all
-        this.closeExpandedItems()
+        this.closeExpandedItems?.()
       }
     },
 
@@ -575,6 +589,15 @@ export default {
     generateTimeAgoString,
     getIcon,
     getNestedProperty,
+
+    isShowExpandButton(item, expandObject) {
+      return !expandObject.hideIf?.(this, item)
+    },
+
+    applyChipFilter(inputObject, value) {
+      inputObject.value = value
+      this.updatePageOptions()
+    },
 
     throttle(callback, ms = 1000) {
       if (this._throttleScroll) return

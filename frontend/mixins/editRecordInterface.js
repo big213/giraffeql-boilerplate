@@ -143,7 +143,14 @@ export default {
     },
 
     visibleInputsArray() {
-      return this.inputsArray.filter((inputObject) => !inputObject.hidden)
+      return this.inputsArray.filter((inputObject) => {
+        if (inputObject.hidden) return false
+
+        if (inputObject.hideIf)
+          return !inputObject.hideIf(this, this.inputsArray)
+
+        return true
+      })
     },
   },
 
@@ -389,6 +396,10 @@ export default {
               parentInput: null,
               nestedInputsArray: [],
               inputData: null,
+              hideIf:
+                typeof fieldElement === 'string'
+                  ? undefined
+                  : fieldElement.hideIf,
             }
 
             // if copy mode and fieldKey not in original fields, use default
@@ -521,6 +532,10 @@ export default {
               parentInput: null,
               nestedInputsArray: [],
               inputData: null,
+              hideIf:
+                typeof fieldElement === 'string'
+                  ? undefined
+                  : fieldElement.hideIf,
             }
 
             // is the field in selectedItem? if so, use that and set field to readonly

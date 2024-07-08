@@ -23,7 +23,7 @@ export abstract class BaseService {
     this.rootResolvers = rootResolvers;
   }
 
-  // standard ones are 'get', 'getMultiple', 'update', 'create', 'delete'
+  // standard ones are 'get', 'getPaginator', 'update', 'create', 'delete'
   accessControl?: AccessControlMap;
 
   constructor(typename?: string) {

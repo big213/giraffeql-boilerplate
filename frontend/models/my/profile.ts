@@ -29,7 +29,7 @@ export const MyProfile = {
   },
   viewOptions: {
     ...User.viewOptions,
-    fields: ['isPublic', 'description', 'currentUserFollowing'],
+    fields: ['isPublic', 'description'],
   },
   deleteOptions: undefined,
   expandTypes: [],

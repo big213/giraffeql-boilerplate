@@ -3,9 +3,12 @@ import BooleanColumn from '~/components/table/booleanColumn.vue'
 import PreviewableFilesColumn from '~/components/table/previewableFilesColumn.vue'
 import {
   generateBaseFields,
+  generateClickRowToExpandOptions,
+  generateClickRowToOpenOptions,
   generateJoinableField,
   generatePreviewableJoinableField,
   generatePreviewableRecordField,
+  generateSortOptions,
 } from '~/services/recordInfo'
 import TimeagoColumn from '~/components/table/timeagoColumn.vue'
 import { getUserRoles } from '~/services/dropdown'
@@ -117,25 +120,11 @@ export const Event = {
       },
     ],
     heroOptions: {},
-    handleRowClick: (that, props) => {
-      that.openEditDialog('view', props.item)
-    },
-    handleGridElementClick: (that, item) => {
-      that.openEditDialog('view', item)
-    },
+    ...generateClickRowToOpenOptions(),
+    ...generateClickRowToExpandOptions(),
     sortOptions: [
-      {
-        field: 'createdAt',
-        desc: true,
-      },
-      {
-        field: 'startAt',
-        desc: false,
-      },
-      {
-        field: 'startAt',
-        desc: true,
-      },
+      ...generateSortOptions('createdAt'),
+      ...generateSortOptions('updatedAt'),
     ],
     headerOptions: [
       {
@@ -283,7 +272,7 @@ export const Event = {
         ]
       },
       initialSortOptions: {
-        field: 'updatedAt',
+        field: 'createdAt',
         desc: true,
       },
     },

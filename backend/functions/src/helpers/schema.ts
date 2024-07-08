@@ -107,7 +107,6 @@ export class CustomSchemaGenerator extends TsSchemaGenerator {
     super(giraffeqlOptions);
     this.scaffoldStr += `
 type Edge<T> = {
-  __typename: Field<string, undefined>;
   node: Field<T, undefined>;
   cursor: Field<string, undefined>;
 };

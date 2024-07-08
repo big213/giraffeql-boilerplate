@@ -1,4 +1,4 @@
-import { SqlSingleFieldObject, SqlWhereObject } from "./sql";
+import { SqlFieldGetter, SqlSingleFieldObject, SqlWhereObject } from "./sql";
 
 export type SqlSimpleWhereObject = {
   [x: string]: unknown;
@@ -25,7 +25,8 @@ export function generateSqlWhereObject(
 // args will be appended on the final object
 export function generateSqlSingleFieldObject(
   fieldPath: string,
-  args?: any
+  args?: any,
+  getter?: SqlFieldGetter
 ): SqlSingleFieldObject {
   const fieldParts = fieldPath.split(/\./);
 
@@ -33,6 +34,7 @@ export function generateSqlSingleFieldObject(
 
   const singleFieldObject: SqlSingleFieldObject = {
     field: fieldParts[0],
+    getter,
     nested: null,
   };
 
@@ -44,9 +46,10 @@ export function generateSqlSingleFieldObject(
 
     currentSingleFieldObject.nested = {
       field: fieldFragment,
-      // args added on the final object
+      // args, getter, added on the final object
       ...(index === fieldParts.length - 1 && {
         args,
+        getter,
       }),
     };
 

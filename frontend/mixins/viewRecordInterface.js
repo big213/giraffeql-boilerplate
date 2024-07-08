@@ -230,7 +230,9 @@ export default {
                   ? false
                   : fieldElement.verticalMode ?? false),
               hideIf:
-                typeof fieldElement === 'string' ? false : fieldElement.hideIf,
+                typeof fieldElement === 'string'
+                  ? undefined
+                  : fieldElement.hideIf,
             }
 
             return inputObject

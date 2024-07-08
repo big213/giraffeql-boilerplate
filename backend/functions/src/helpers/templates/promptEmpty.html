@@ -201,8 +201,9 @@
 
         if (aiModel === "code") {
           giraffeqlQuery = {
-            executeGoogleApiRequest: {
+            executeVertexRequest: {
               __args: {
+                query,
                 url: `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/code-bison:predict`,
                 data: {
                   instances: [
@@ -216,14 +217,14 @@
                     temperature: 0.2,
                   },
                 },
-                method: "post",
               },
             },
           };
         } else {
           giraffeqlQuery = {
-            executeGoogleApiRequest: {
+            executeVertexRequest: {
               __args: {
+                query,
                 url: `https://us-central1-aiplatform.googleapis.com/v1/projects/${projectId}/locations/us-central1/publishers/google/models/gemini-pro:streamGenerateContent`,
                 data: {
                   contents: [
@@ -242,7 +243,6 @@
                     topP: 1,
                   },
                 },
-                method: "post",
               },
             },
           };

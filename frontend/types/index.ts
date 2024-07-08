@@ -101,6 +101,13 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // custom page component
     component?: any
+
+    // should the actions be hidden?
+    hideActions?: boolean
+    // should the refresh button be hidden?
+    hideRefresh?: boolean
+    // should the minimize button be hidden?
+    hideMinimize?: boolean
   }
 
   // options related to viewing multiple, if possible
@@ -109,8 +116,8 @@ export type RecordInfo<T extends keyof MainTypes> = {
     onSuccess?: (that) => void
 
     // does the interface have the ability to search?
-    searchOptions?: `${T}Paginator` extends keyof InputTypes
-      ? 'search' extends keyof InputTypes[`${T}Paginator`]
+    searchOptions?: `${T}PaginatorInput` extends keyof InputTypes
+      ? 'search' extends keyof InputTypes[`${T}PaginatorInput`]
         ? {
             // should the search bar show up in the presets
             preset?: boolean
@@ -280,6 +287,12 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // under what conditions will the button be hidden?
     hideIf?: (that) => boolean
+
+    // if a custom title, what should it be?
+    title?: string
+
+    // if a custom icon, what should it be?
+    icon?: string
   }
 
   importOptions?: {
@@ -301,6 +314,12 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // function that runs when an import operation throws an error. it is a way to ignore (catch) the error if it should be caught
     onError?: (that, err) => void
+
+    // if a custom title, what should it be?
+    title?: string
+
+    // if a custom icon, what should it be?
+    icon?: string
   }
 
   editOptions?: {
@@ -313,10 +332,7 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // custom function to modify the inputs in-place before they get sent as args
     inputsModifier?: (that, inputs) => void
-    // replacement icon
-    icon?: string
-    // replacement text
-    text?: string
+
     // function that runs when recorded is successfully edited
     onSuccess?: (that, item) => void
 
@@ -325,6 +341,12 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // under what conditions will the button be hidden?
     hideIf?: (that, item) => boolean
+
+    // if a custom title, what should it be?
+    title?: string
+
+    // if a custom icon, what should it be?
+    icon?: string
   }
 
   deleteOptions?: {
@@ -338,6 +360,12 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // under what conditions will the button be hidden?
     hideIf?: (that, item) => boolean
+
+    // if a custom title, what should it be?
+    title?: string
+
+    // if a custom icon, what should it be?
+    icon?: string
   }
 
   viewOptions?: {
@@ -367,6 +395,12 @@ export type RecordInfo<T extends keyof MainTypes> = {
       // custom component that should be rendered, which will override the above 2 options
       component?: any
     }
+
+    // if a custom title, what should it be?
+    title?: string
+
+    // if a custom icon, what should it be?
+    icon?: string
   }
 
   previewOptions?: {
@@ -447,6 +481,12 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // get a custom share URL
     getUrl?: (that, recordInfo, id) => string
+
+    // if a custom title, what should it be?
+    title?: string
+
+    // if a custom icon, what should it be?
+    icon?: string
   }
 
   enterOptions?: {}
@@ -489,6 +529,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // show this option as its own block/row if it is rendered as a grid
     showRowIfGrid?: boolean
+
+    // hide the expand type if true
+    hideIf?: (that, item) => boolean
   }[]
 
   customActions?: {
@@ -503,6 +546,10 @@ export type RecordInfo<T extends keyof MainTypes> = {
     simpleActionOptions?: {
       handleClick: (that, item) => void
       isAsync?: boolean // should the button have a loader and not be clickable while the operation is processing?
+      // should a confirmation dialog trigger when clicking this action
+      confirmOptions?: {
+        text?: string
+      }
     }
   }[]
 }
@@ -522,14 +569,43 @@ type InputOptions = {
   typename?: string
   cols?: number // defaults to 12
 
-  // for stripe-cc
-  getPrice?: (that, item) => any
+  // for stripe-pi
+  paymentOptions?: {
+    quantityOptions?: {
+      default?: () => number
+      getDiscountScheme?: (that, item) => any
+    }
+    getPriceObject: (
+      that,
+      item,
+      quantity: number,
+      discountScheme?
+    ) => PriceObject
+    // for stripe-pi and stripe-pi-editable input types, function that returns the instanceOptions (in the genericInput)
+    getPaymentIntent: (that, inputObject, selectedItem, quantity, amount) => any
+
+    // for stripe-pi, if there is a paypal option
+    paypalOptions?: {
+      createPaypalOrder: (
+        that,
+        inputObject,
+        selectedItem,
+        quantity,
+        amount
+      ) => any
+
+      capturePaypalOrder: (orderId) => any
+    }
+  }
 
   // for single-file-url and avatar, use the firebase URL instead of the cdn url?
   useFirebaseUrl?: boolean
 
   // for single-file-url, multiple-file, restrict the content type
   contentType?: string
+
+  // for text input field, additional params that should be binded, like 'type'. should be an object, like { type: 'number' }
+  inputParams?: any
 
   // params that should be applied when looking up results (server-X input type) -- namely filterBy, sortBy
   lookupParams?: (that, inputObjectArray) => any
@@ -539,9 +615,6 @@ type InputOptions = {
 
   // additional args that should be appended to the __args when creating a new record for a combobox
   getCreateArgs?: (that, inputObjectArray) => any
-
-  // for stripe-pi and stripe-pi-editable input types, function that returns the instanceOptions (in the genericInput)
-  getPaymentIntent?: (that, inputObject, selectedItem, item, amount) => any
 
   // for text-autocomplete and text-combobox, function that returns an array of suggestions
   getSuggestions?: (that, inputObject) => Promise<string[]>
@@ -582,6 +655,7 @@ export type FilterObject = {
   operator: keyof FilterByField<any>
   inputType?: InputType
   preset?: boolean // should this filter show up as a preset
+  chips?: boolean // should this filter show up in the special chip filters section? (only certain types supported)
 }
 
 type HeaderObject = {
@@ -620,6 +694,7 @@ export type InputType =
   | 'multiple-select' // multiple select
   | 'text-autocomplete' // validate text input using server-side calls
   | 'text-combobox' // validate text input using server-side calls, but selection not required
+  | 'rating' // rating from 1 to 5
   | 'text'
 
 export type ActionOptions = {
@@ -631,8 +706,19 @@ export type ActionOptions = {
 
   title: string
   icon: string
+
+  // override submit button text
+  submitButtonText?: string
+
+  // hide the actions bar entirely (since stripe-pi has its own button)
+  hideActions?: boolean
+
   // custom component, if any
   component?: any
+
+  // the query to return with the action, if any
+  getReturnQuery?: (that, item) => any
+
   // function that runs when action is successfully completed
   onSuccess?: (that, item) => void
   inputs: {
@@ -648,6 +734,8 @@ export type ActionOptions = {
       inputRules?: any[]
       default?: (that) => unknown
     }
+
+    watch?: (that, val, prev) => void
 
     // number of cols the input should take. defaults to 12
     cols?: number
@@ -669,8 +757,7 @@ export type EditFieldDefinition = {
   field: string
   cols?: number
   handleFileAdded?: (that, inputsArray, inputObject, fileRecord) => void
-  // not currently implemented
-  // hideIf?: (that, inputsArray) => boolean
+  hideIf?: (that, inputsArray) => boolean
 }
 
 export type ViewFieldDefinition = {
@@ -705,4 +792,11 @@ export type ExportFieldDefinition = {
     // if provided, only load this field if this returns true
     loadIf?: (that) => boolean
   }
+}
+
+export type PriceObject = {
+  price: number // 100
+  quantity?: number // 2
+  discount?: number // 5
+  discountPercent?: number // 5
 }

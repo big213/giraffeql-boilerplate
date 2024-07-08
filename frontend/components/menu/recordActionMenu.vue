@@ -270,10 +270,30 @@ export default {
         if (actionWrapper.actionObject.simpleActionOptions.isAsync)
           actionWrapper.isLoading = true
 
-        await actionWrapper.actionObject.simpleActionOptions.handleClick(
-          this,
-          this.item
-        )
+        if (actionWrapper.actionObject.simpleActionOptions.confirmOptions) {
+          if (
+            confirm(
+              actionWrapper.actionObject.simpleActionOptions.confirmOptions
+                ?.text ??
+                `Confirm execute action: ${actionWrapper.actionObject.text}`
+            )
+          ) {
+            await actionWrapper.actionObject.simpleActionOptions.handleClick(
+              this,
+              this.item
+            )
+          } else {
+            this.$notifier.showSnackbar({
+              message: 'Action cancelled',
+              variant: 'warning',
+            })
+          }
+        } else {
+          await actionWrapper.actionObject.simpleActionOptions.handleClick(
+            this,
+            this.item
+          )
+        }
       } catch (err) {
         handleError(this, err)
       }
@@ -285,7 +305,7 @@ export default {
       enterRoute(
         this,
         generateViewRecordRoute(this, {
-          typename: this.recordInfo.typename,
+          routeKey: this.recordInfo.typename,
           routeType: this.recordInfo.routeType,
           id: this.item.id,
           showComments: true,

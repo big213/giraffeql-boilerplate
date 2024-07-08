@@ -1,6 +1,12 @@
-import { generateNavRouteObject } from './base'
+import {
+  camelToKebabCase,
+  generateNavRouteObject,
+  userHasPermissions,
+} from './base'
 import * as publicModels from '../models/public'
 import * as myModels from '../models/my'
+import * as baseModels from '~/models/base'
+import * as actions from '~/models/actions'
 
 export function generateNavDrawerItems(that) {
   return [
@@ -56,6 +62,46 @@ export function generateNavDrawerItems(that) {
               to: '/my-profile',
             },
           ],
+        }
+      : null,
+    userHasPermissions(that, ['A_A'])
+      ? {
+          title: 'Administration',
+          items: [
+            userHasPermissions(that, ['A_A'])
+              ? {
+                  title: 'Models',
+                  icon: 'mdi-star',
+                  collapsible: true,
+                  items: Object.values(baseModels)
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((recordInfo) =>
+                      generateNavRouteObject(that, {
+                        recordInfo,
+                        pageOptions: {
+                          sort: {
+                            field: 'createdAt',
+                            desc: true,
+                          },
+                        },
+                      })
+                    ),
+                }
+              : null,
+            userHasPermissions(that, ['A_A'])
+              ? {
+                  title: 'Actions',
+                  icon: 'mdi-code-tags',
+                  collapsible: true,
+                  items: Object.entries(actions)
+                    .sort(([key, val], [key2, val2]) => key.localeCompare(key2))
+                    .map(([key, actionOptions]) => ({
+                      title: key,
+                      to: `/action/${camelToKebabCase(key)}`,
+                    })),
+                }
+              : null,
+          ].filter((e) => e),
         }
       : null,
   ].filter((e) => e)

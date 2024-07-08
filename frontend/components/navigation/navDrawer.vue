@@ -12,68 +12,53 @@
             <v-list-item-subtitle>{{ drawerItem.title }} </v-list-item-subtitle>
           </v-list-item-content>
         </v-list-item>
-        <v-list-item
-          v-for="(item, j) in drawerItem.items"
-          :key="j"
-          :to="item.to"
-          nuxt
-          router
-          exact-path
-        >
-          <v-list-item-action>
-            <v-icon>{{ item.icon }}</v-icon>
-          </v-list-item-action>
-          <v-list-item-content>
-            <v-list-item-title>{{ item.title }}</v-list-item-title>
-          </v-list-item-content>
-        </v-list-item>
-      </v-list>
-      <v-divider></v-divider>
-    </div>
-
-    <div v-if="hasAdminPermissions">
-      <v-list dense>
-        <v-list-group
-          v-for="item in adminItems"
-          :key="item.title"
-          v-model="item.active"
-          :prepend-icon="item.action"
-          no-action
-        >
-          <template v-slot:activator>
+        <div v-for="(item, j) in drawerItem.items" :key="j">
+          <v-list-item
+            v-if="!item.collapsible"
+            :to="item.to"
+            nuxt
+            router
+            exact-path
+          >
+            <v-list-item-action>
+              <v-icon>{{ item.icon }}</v-icon>
+            </v-list-item-action>
             <v-list-item-content>
               <v-list-item-title>{{ item.title }}</v-list-item-title>
             </v-list-item-content>
-          </template>
-          <template v-for="(child, j) in item.items">
-            <v-list-item :key="j" :to="child.to" nuxt router exact-path>
+          </v-list-item>
+          <v-list-group v-else :prepend-icon="item.icon" no-action>
+            <template v-slot:activator>
               <v-list-item-content>
-                <v-list-item-title>{{ child.title }}</v-list-item-title>
+                <v-list-item-title>{{ item.title }}</v-list-item-title>
               </v-list-item-content>
-            </v-list-item>
-          </template>
-        </v-list-group>
+            </template>
+            <template v-for="(childItem, k) in item.items">
+              <v-list-item :key="k" :to="childItem.to" nuxt router exact-path>
+                <v-list-item-content>
+                  <v-list-item-title>{{ childItem.title }}</v-list-item-title>
+                </v-list-item-content>
+              </v-list-item>
+            </template>
+          </v-list-group>
+        </div>
       </v-list>
+
+      <v-divider></v-divider>
     </div>
   </v-navigation-drawer>
 </template>
 
 <script>
 import { mapGetters } from 'vuex'
-import { generateNavRouteObject, userHasPermissions } from '~/services/base'
 import { logoHasLightVariant } from '~/services/config'
 import { generateNavDrawerItems } from '~/services/navigation'
-import * as baseModels from '~/models/base'
 
 export default {
   computed: {
     ...mapGetters({
       user: 'auth/user',
     }),
-
-    hasAdminPermissions() {
-      return userHasPermissions(this, ['A_A'])
-    },
 
     logoImageSrc() {
       return logoHasLightVariant
@@ -85,27 +70,6 @@ export default {
 
     navDrawerItems() {
       return generateNavDrawerItems(this)
-    },
-
-    adminItems() {
-      return [
-        {
-          action: 'mdi-star',
-          active: false,
-          title: 'Administration',
-          items: Object.values(baseModels).map((recordInfo) =>
-            generateNavRouteObject(this, {
-              recordInfo,
-              pageOptions: {
-                sort: {
-                  field: 'createdAt',
-                  desc: true,
-                },
-              },
-            })
-          ),
-        },
-      ]
     },
   },
 }

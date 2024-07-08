@@ -1,6 +1,9 @@
 import type { Request } from "express";
 import Knex = require("knex");
-import { SpecialJoinDefinition } from "../schema/core/helpers/sql";
+import {
+  SpecialJoinDefinition,
+  SqlFieldGetter,
+} from "../schema/core/helpers/sql";
 import { userPermission, userRole } from "../schema/enums";
 
 export type StringKeyObject = Record<string, unknown>;
@@ -37,7 +40,7 @@ export type ObjectTypeDefSqlOptions = {
     joinFunction: SpecialJoinFunction;
   };
 
-  getter?: (tableAlias: string, field: string) => string;
+  getter?: SqlFieldGetter;
   setter?: (value: string) => string;
   parseValue?: (value: any) => any; // performed before inserts/updates
 

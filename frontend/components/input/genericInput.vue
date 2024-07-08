@@ -839,12 +839,30 @@
       <v-container class="highlighted-bg">
         <v-row>
           <v-col cols="12">
-            <div class="subtitle-1">
-              {{
-                item.inputOptions && item.inputOptions.getPrice
-                  ? `Charge ${getStripeCcPrice()}`
-                  : item.label + (item.optional ? ' (optional)' : '')
-              }}
+            <div
+              v-if="renderDiscountScheme().length > 0"
+              class="subtitle-1 mb-2"
+            >
+              Buy more and save!
+              <div>{{ renderDiscountScheme() }}</div>
+            </div>
+            <v-text-field
+              v-if="item.inputOptions.paymentOptions.quantityOptions"
+              v-model="item.secondaryInputValue"
+              label="Quantity"
+              type="number"
+              min="1"
+              filled
+              dense
+              class="py-0"
+              @blur="handleStripePiQuantityUpdate()"
+              @keyup.enter="handleStripePiQuantityUpdate()"
+            ></v-text-field>
+            <div class="subtitle-1 mb-2 text-left">
+              {{ renderPrice() }}
+              <span v-if="renderDiscount()" class="red--text"
+                >-- {{ renderDiscount() }}</span
+              >
             </div>
             <div v-if="item.hint">{{ item.hint }}</div>
             <StripeElements
@@ -862,26 +880,42 @@
                 ref="card"
               />
             </StripeElements>
-            <StripeElements
-              v-if="item.inputType === 'stripe-pi'"
-              :stripe-key="stripeKey"
-              :instance-options="instanceOptionsComputed"
-              :elements-options="elementsOptionsComputed"
-              #default="{ elements }"
-              ref="elms"
-            >
-              <StripeElement
-                type="payment"
-                :elements="elements"
-                :options="cardOptions"
-                ref="card"
-                @ready="stripePiReady = true"
-              />
-            </StripeElements>
             <v-progress-linear
               v-if="item.loading"
               indeterminate
             ></v-progress-linear>
+            <div v-else-if="item.inputType === 'stripe-pi'">
+              <StripeElements
+                :stripe-key="stripeKey"
+                :instance-options="instanceOptionsComputed"
+                :elements-options="elementsOptionsComputed"
+                #default="{ elements }"
+                ref="elms"
+              >
+                <StripeElement
+                  type="payment"
+                  :elements="elements"
+                  :options="cardOptions"
+                  ref="card"
+                  @ready="stripePiReady = true"
+                />
+              </StripeElements>
+              <div v-if="stripePiReady" class="mt-5">
+                <v-btn color="primary" block @click="triggerSubmit()"
+                  >Buy</v-btn
+                >
+              </div>
+            </div>
+          </v-col>
+        </v-row>
+
+        <v-row v-if="hasPaypal">
+          <v-col cols="12" class="py-0">
+            <v-divider></v-divider>
+            <div
+              :id="`paypal-button-container-${$vnode.key}`"
+              class="mt-3"
+            ></div>
           </v-col>
         </v-row>
       </v-container>
@@ -904,7 +938,7 @@
               @blur="handleStripePiEditableUpdate()"
               @keyup.enter="handleStripePiEditableUpdate()"
             ></v-text-field>
-            <div class="subtitle-1" v-if="item.inputValue">
+            <div class="subtitle-1 mb-3" v-if="item.inputValue">
               {{ `Charge ${formatAsCurrency(item.inputValue)}` }}
               <span v-if="item.inputValue < 0.5" class="red--text"
                 >(Invalid Amount)</span
@@ -935,6 +969,29 @@
         </v-row>
       </v-container>
     </div>
+    <div v-else-if="item.inputType === 'rating'" class="rounded-sm mb-4">
+      <v-container class="highlighted-bg">
+        <v-row>
+          <v-col cols="12">
+            <div class="subtitle-1">
+              {{ item.label + (item.optional ? ' (optional)' : '') }}
+            </div>
+            <div v-if="item.hint">{{ item.hint }}</div>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col cols="12" class="pt-0">
+            <v-rating
+              v-model="item.value"
+              length="5"
+              color="yellow darken-2"
+              background-color="grey lighten-1"
+              large
+            ></v-rating>
+          </v-col>
+        </v-row>
+      </v-container>
+    </div>
     <v-text-field
       v-else
       v-model="item.value"
@@ -949,6 +1006,7 @@
       filled
       dense
       class="py-0"
+      v-bind="inputParams"
       v-on="$listeners"
       @click:append="handleClear()"
       @keyup.enter="triggerSubmit()"
@@ -975,10 +1033,12 @@ import {
   generateDateLocaleString,
   formatAsCurrency,
   loadTypeSearchResults,
+  parseDiscountScheme,
 } from '~/services/base'
 import FileChip from '~/components/chip/fileChip.vue'
 import MediaChip from '~/components/chip/mediaChip.vue'
 import { StripeElements, StripeElement } from 'vue-stripe-elements-plus'
+import { hideNullInputIcon, paypalClientId } from '~/services/config'
 
 export default {
   name: 'GenericInput',
@@ -1046,6 +1106,12 @@ export default {
   },
 
   computed: {
+    hasPaypal() {
+      return (
+        !!paypalClientId && this.item.inputOptions.paymentOptions.paypalOptions
+      )
+    },
+
     instanceOptionsComputed() {
       return this.item.inputData?.stripeAccount
         ? {
@@ -1089,12 +1155,18 @@ export default {
 
     appendIcon() {
       return this.item.value === null
-        ? 'mdi-null'
+        ? hideNullInputIcon
+          ? null
+          : 'mdi-null'
         : this.isReadonly
         ? null
         : this.item.clearable
         ? 'mdi-close'
         : null
+    },
+
+    inputParams() {
+      return this.item.inputOptions?.inputParams
     },
   },
 
@@ -1108,14 +1180,136 @@ export default {
     this.reset()
   },
 
+  mounted() {
+    if (this.item.inputType === 'stripe-pi' && this.hasPaypal) {
+      this.renderPayPal()
+    }
+  },
+
   methods: {
     formatAsCurrency,
-    getStripeCcPrice() {
-      if (this.item.inputOptions?.getPrice) {
-        return formatAsCurrency(
-          this.item.inputOptions.getPrice(this, this.parentItem)
-        )
+
+    async createPaypalOrder() {
+      try {
+        const priceObject = this.getPriceObject()
+        const orderData =
+          await this.item.inputOptions.paymentOptions.paypalOptions.createPaypalOrder(
+            this,
+            this.item,
+            this.selectedItem,
+            priceObject.quantity,
+            priceObject.price
+          )
+
+        if (orderData.id) {
+          return orderData.id
+        } else {
+          const errorDetail = orderData?.details?.[0]
+          const errorMessage = errorDetail
+            ? `${errorDetail.issue} ${errorDetail.description} (${orderData.debug_id})`
+            : JSON.stringify(orderData)
+
+          throw new Error(errorMessage)
+        }
+      } catch (err) {
+        handleError(this, err)
       }
+    },
+
+    async capturePaypalOrder(data, actions) {
+      try {
+        const orderData =
+          await this.item.inputOptions.paymentOptions.paypalOptions.capturePaypalOrder(
+            data.orderID
+          )
+
+        // Three cases to handle:
+        //   (1) Recoverable INSTRUMENT_DECLINED -> call actions.restart()
+        //   (2) Other non-recoverable errors -> Show a failure message
+        //   (3) Successful transaction -> Show confirmation or thank you message
+
+        const errorDetail = orderData?.details?.[0]
+
+        if (errorDetail?.issue === 'INSTRUMENT_DECLINED') {
+          // (1) Recoverable INSTRUMENT_DECLINED -> call actions.restart()
+          // recoverable state, per https://developer.paypal.com/docs/checkout/standard/customize/handle-funding-failures/
+          return actions.restart()
+        } else if (errorDetail) {
+          // (2) Other non-recoverable errors -> Show a failure message
+          throw new Error(`${errorDetail.description} (${orderData.debug_id})`)
+        } else if (!orderData.purchase_units) {
+          throw new Error(JSON.stringify(orderData))
+        } else {
+          // (3) Successful transaction -> Show confirmation or thank you message
+          // Or go to another URL:  actions.redirect('thank_you.html');
+
+          // succeeded, so will now submit
+          this.item.value = `paypal_${data.orderID}`
+          this.triggerSubmit()
+        }
+      } catch (err) {
+        handleError(this, err)
+      }
+    },
+
+    renderPayPal() {
+      window.paypal
+        .Buttons({
+          style: {
+            shape: 'rect',
+            layout: 'horizontal',
+          },
+          message: {
+            color: this.$vuetify.theme.dark ? 'white' : 'black',
+          },
+          createOrder: this.createPaypalOrder,
+          onApprove: this.capturePaypalOrder,
+        })
+        .render(`#paypal-button-container-${this.$vnode.key}`)
+    },
+    renderDiscountScheme() {
+      return parseDiscountScheme(
+        this.item.inputOptions.paymentOptions.quantityOptions?.getDiscountScheme?.(
+          this,
+          this.parentItem
+        )
+      )
+        .map((item) => `Buy ${item.quantity}, Save ${item.discount}%`)
+        .join(' | ')
+    },
+
+    renderPrice() {
+      const priceObject = this.getPriceObject()
+
+      if (!priceObject) return null
+
+      return `Grand Total ${formatAsCurrency(
+        priceObject.price - (priceObject.discount ?? 0)
+      )}${priceObject.quantity ? ` (Quantity ${priceObject.quantity})` : ''}`
+    },
+
+    renderDiscount() {
+      const priceObject = this.getPriceObject()
+
+      if (!priceObject) return null
+
+      return priceObject.discount
+        ? `you saved ${formatAsCurrency(priceObject.discount)} (${
+            priceObject.discountPercent
+          }%)!`
+        : null
+    },
+
+    getPriceObject() {
+      return this.item.inputOptions.paymentOptions?.getPriceObject?.(
+        this,
+        this.parentItem,
+        this.item.secondaryInputValue,
+        this.item.inputOptions.paymentOptions.quantityOptions?.getDiscountScheme?.(
+          this,
+          this.parentItem
+        )
+      )
     },
 
     standardizeComboboxName(value) {
@@ -1494,6 +1688,48 @@ export default {
       inputObject.loading = false
     },
 
+    async handleStripePiQuantityUpdate() {
+      const priceObject = this.getPriceObject()
+
+      // if temp data not set, set it and return
+      if (!this._tempData) {
+        this._tempData = JSON.stringify(priceObject)
+      } else if (this._tempData === JSON.stringify(priceObject)) {
+        // if the quantity + price combination is the same
+        return
+      }
+
+      this.item.loading = true
+      this.stripePiReady = false
+      try {
+        // update the inputValue
+        this.item.inputValue = priceObject.price
+
+        // min supported payment is $0.50
+        if (this.item.inputValue < 0.5 && this.item.inputValue !== 0) {
+          throw new Error(`Minimum payment amount is $0.50`)
+        }
+
+        // storing the params in temp data to check against
+        this._tempData = JSON.stringify(priceObject)
+
+        // load the updated inputData (paymentIntent)
+        this.item.inputData =
+          await this.item.inputOptions.paymentOptions.getPaymentIntent(
+            this,
+            this.item,
+            this.selectedItem,
+            priceObject.quantity,
+            priceObject.price
+          )
+      } catch (err) {
+        handleError(this, err)
+        // if there is an error, set the inputData to null
+        this.item.inputData = null
+      }
+      this.item.loading = false
+    },
+
     async handleStripePiEditableUpdate() {
       this.item.loading = true
       this.stripePiReady = false
@@ -1507,12 +1743,14 @@ export default {
         }
 
         // load the updated inputData (paymentIntent)
-        this.item.inputData = await this.item.inputOptions.getPaymentIntent(
-          this,
-          this.item,
-          this.selectedItem,
-          this.item.inputValue
-        )
+        this.item.inputData =
+          await this.item.inputOptions.paymentOptions.getPaymentIntent(
+            this,
+            this.item,
+            this.selectedItem,
+            undefined,
+            this.item.inputValue
+          )
       } catch (err) {
         handleError(this, err)
         // if there is an error, set the inputData to null
@@ -1533,6 +1771,9 @@ export default {
         this.item.inputType === 'stripe-pi' ||
         this.item.inputType === 'stripe-pi-editable'
       ) {
+        // if the value is already set, this must be due to having captured a paypal payment already, so will skip
+        if (this.item.value) return
+
         // for stripe-pi-editable, if amount is <= 0, don't process
         if (
           this.item.inputType === 'stripe-pi-editable' &&
@@ -1566,6 +1807,10 @@ export default {
           // Uncomment below if you only want redirect for redirect-based payments
           redirect: 'if_required',
         })
+
+        if (res.error) {
+          throw new Error(res.error.message)
+        }
 
         this.item.value = res.paymentIntent.id
       } else if (this.item.inputType === 'stripe-cc') {

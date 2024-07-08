@@ -2,7 +2,7 @@ import * as knexBuilder from "knex";
 import { configDotenv } from "dotenv";
 configDotenv();
 import yargs from "yargs";
-import { userRole } from "../schema/enums";
+import { userRole } from "../src/schema/enums";
 
 const argv = yargs(process.argv.slice(2))
   .options({
@@ -18,7 +18,7 @@ if (argv.prod) {
   process.env.DEV = "1";
 }
 
-import { pgOptions } from "../config";
+import { pgOptions } from "../src/config";
 
 export const knex = knexBuilder({
   ...pgOptions,

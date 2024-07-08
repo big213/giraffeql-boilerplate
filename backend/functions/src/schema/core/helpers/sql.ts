@@ -30,6 +30,8 @@ export function isKnexRawStatement(obj: any): obj is Knex.Raw {
   return obj.constructor.name === "Raw";
 }
 
+export type SqlFieldGetter = (tableAlias: string, field: string) => string;
+
 export type SqlWhereObject = {
   connective?: string;
   fields: (SqlWhereObject | SqlWhereFieldObject | SqlRawWhereStatement)[];
@@ -81,6 +83,7 @@ export type SqlSelectQueryObject = {
 export type SqlSingleFieldObject = {
   field: string;
   args?: any;
+  getter?: SqlFieldGetter;
   nested?: SqlSingleFieldObject | null;
 };
 
@@ -110,6 +113,7 @@ export type SqlWhereFieldOperator =
 export type SqlSimpleSelectObject = {
   field: string;
   as?: string;
+  getter?: SqlFieldGetter;
   args?: any;
 };
 
@@ -128,7 +132,7 @@ export type SqlSelectQuery = {
   rawSelect?: SqlSimpleRawSelectObject[];
   table: string;
   where: SqlWhereInput;
-  groupBy?: (SqlSingleFieldObject | string)[];
+  groupBy?: (SqlSingleFieldObject | string | Knex.Raw)[];
   orderBy?: SqlOrderByObject[];
   offset?: number;
   limit?: number;
@@ -140,6 +144,17 @@ export type SqlSelectQuery = {
 export type SqlCountQuery = {
   field?: string; // defaults to "id"
   table: string;
+  where: SqlWhereInput;
+  limit?: number;
+  distinct?: boolean;
+  specialParams?: any;
+  transaction?: Knex.Transaction;
+};
+
+export type SqlAggregateQuery = {
+  field: SqlSingleFieldObject | string;
+  table: string;
+  operation: "sum" | "avg" | "count";
   where: SqlWhereInput;
   limit?: number;
   distinct?: boolean;
@@ -294,7 +309,8 @@ export function standardizeSelectInput(
         selectObject[simpleSelectObject.as ?? simpleSelectObject.field] =
           generateSqlSingleFieldObject(
             simpleSelectObject.field,
-            simpleSelectObject.args
+            simpleSelectObject.args,
+            simpleSelectObject.getter
           );
         return selectObject;
       }, {});
@@ -344,7 +360,8 @@ function getSingleFieldAlias(
     // no nested, return. but check if there is a sql getter
     const fieldInfo = fieldsObjectMap.fields[keyName].fieldInfo!;
     const sqlField = fieldInfo.fieldDef.sqlOptions?.field!;
-    const getter = fieldInfo.fieldDef.sqlOptions?.getter;
+    const getter =
+      singleFieldObject.getter ?? fieldInfo.fieldDef.sqlOptions?.getter;
 
     const tableAlias = wrapTableAlias
       ? `"${fieldInfo.tableAlias}"`
@@ -864,11 +881,13 @@ export async function fetchTableRows(sqlQuery: SqlSelectQuery) {
 
     // process groupBy
     if (sqlQuery.groupBy) {
-      sqlQuery.groupBy.forEach((ele) =>
-        processSingleFieldObject(
-          standardizeSqlSingleSelectField(ele),
-          fieldsObjectMap
-        )
+      sqlQuery.groupBy.forEach(
+        (ele) =>
+          !isKnexRawStatement(ele) &&
+          processSingleFieldObject(
+            standardizeSqlSingleSelectField(ele),
+            fieldsObjectMap
+          )
       );
     }
 
@@ -926,12 +945,14 @@ export async function fetchTableRows(sqlQuery: SqlSelectQuery) {
       sqlQuery.groupBy.forEach((ele) => {
         // should always exist
         knexObject.groupBy(
-          knex.raw(
-            getSingleFieldAlias(
-              fieldsObjectMap,
-              standardizeSqlSingleSelectField(ele)
-            )
-          )
+          isKnexRawStatement(ele)
+            ? ele
+            : knex.raw(
+                getSingleFieldAlias(
+                  fieldsObjectMap,
+                  standardizeSqlSingleSelectField(ele)
+                )
+              )
         );
       });
     }
@@ -1042,6 +1063,68 @@ export async function countTableRows(sqlQuery: SqlCountQuery) {
 
     const results = await knexObject;
     return Number(results[0].count);
+  } catch (err) {
+    throw handleSqlError(err);
+  }
+}
+
+export async function aggregateTableRows(sqlQuery: SqlAggregateQuery) {
+  try {
+    // acquire alias of the first table
+    const { tableIndexMap, tableAlias } = acquireTableAlias(sqlQuery.table);
+
+    // standardize the where input
+    const standardizedWhereObject = standardizeWhereInput(sqlQuery.where);
+
+    const fieldsObjectMap = processWhereObject(standardizedWhereObject);
+
+    // add the field to be summed
+    processSingleFieldObject(
+      standardizeSqlSingleSelectField(sqlQuery.field),
+      fieldsObjectMap
+    );
+
+    // finalize processing of fields
+    const { joinObjectMap } = processJoinFields(
+      sqlQuery.table,
+      tableAlias,
+      fieldsObjectMap,
+      tableIndexMap
+    );
+
+    const knexObject = knex.from({ [tableAlias]: sqlQuery.table });
+
+    // apply the joins
+    applyJoins(knexObject, joinObjectMap, tableAlias, sqlQuery.specialParams);
+
+    // apply where, if any fields
+    if (standardizedWhereObject.fields.length > 0) {
+      applyKnexWhere(knexObject, standardizedWhereObject, fieldsObjectMap);
+    }
+
+    // apply limit
+    if (sqlQuery.limit) {
+      knexObject.limit(sqlQuery.limit);
+    }
+
+    // apply distinct
+    knexObject[
+      <any>`${sqlQuery.operation}${sqlQuery.distinct ? "Distinct" : ""}`
+    ](
+      knex.raw(
+        getSingleFieldAlias(
+          fieldsObjectMap,
+          standardizeSqlSingleSelectField(sqlQuery.field)
+        )
+      )
+    );
+
+    if (sqlQuery.transaction) {
+      knexObject.transacting(sqlQuery.transaction);
+    }
+
+    const results = await knexObject;
+    return Number(results[0][sqlQuery.operation]);
   } catch (err) {
     throw handleSqlError(err);
   }

@@ -421,7 +421,7 @@ export function generateClickRowToEnterOptions({
       enterRoute(
         that,
         generateViewRecordRoute(that, {
-          typename: that.recordInfo.typename,
+          routeKey: that.recordInfo.typename,
           routeType: that.recordInfo.routeType,
           id: props.item.id,
           showComments: true,
@@ -435,7 +435,7 @@ export function generateClickRowToEnterOptions({
       enterRoute(
         that,
         generateViewRecordRoute(that, {
-          typename: that.recordInfo.typename,
+          routeKey: that.recordInfo.typename,
           routeType: that.recordInfo.routeType,
           id: item.id,
           showComments: true,

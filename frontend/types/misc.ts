@@ -36,6 +36,7 @@ export type CrudInputObject = {
   } // various extra options relating to the specific inputType
   value: any // the actual value of the input
   inputValue: any // the proxy value of the input
+  secondaryInputValue: any // a secondary proxy value, for compound fields (like stripe-pi)
   getOptions?: (that) => any
   // function that will get run whenever a file gets added to the input (if it is a file input)
   handleFileAdded?: (that, inputsArray, inputObject, fileRecord) => void

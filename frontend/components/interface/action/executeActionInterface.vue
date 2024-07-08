@@ -28,7 +28,7 @@
       </v-container>
     </v-card-text>
 
-    <v-card-actions v-if="!isLoading">
+    <v-card-actions v-if="!isLoading && !actionOptions.hideActions">
       <v-spacer></v-spacer>
       <slot name="footer-action"></slot>
       <v-btn
@@ -36,7 +36,7 @@
         color="primary"
         :loading="loading.executeAction"
         @click="handleSubmit()"
-        >Submit</v-btn
+        >{{ submitButtonText }}</v-btn
       >
     </v-card-actions>
   </v-card>
@@ -53,6 +53,9 @@ import {
   addNestedInputObject,
   processInputObject,
   timeout,
+  setInputValue,
+  getInputValue,
+  getInputObject,
 } from '~/services/base'
 
 export default {
@@ -107,6 +110,17 @@ export default {
           !inputObject.hideIf(this, this.item, this.inputsArray)
       )
     },
+
+    submitButtonText() {
+      return this.actionOptions.submitButtonText ?? 'Submit'
+    },
+  },
+
+  watch: {
+    generation() {
+      // if generation changes, reset all inputs
+      this.reset()
+    },
   },
 
   created() {
@@ -114,6 +128,25 @@ export default {
   },
 
   methods: {
+    setInputValue(key, value) {
+      return setInputValue(this.inputsArray, key, value)
+    },
+
+    getInputValue(key) {
+      return getInputValue(this.inputsArray, key, false)
+    },
+
+    getInputObject(key) {
+      return getInputObject(this.inputsArray, key)
+    },
+
+    handleParentItemUpdated(item, selectedItem) {
+      this.$emit('handle-parent-item-updated', item, {
+        ...this.selectedItem,
+        ...selectedItem,
+      })
+    },
+
     async handleSubmit() {
       this.loading.executeAction = true
       try {
@@ -149,6 +182,7 @@ export default {
         if (this.actionOptions.operationName) {
           const query = {
             [this.actionOptions.operationName]: {
+              ...this.actionOptions.getReturnQuery?.(this, this.item),
               __args: collapseObject(args),
             },
           }
@@ -163,11 +197,6 @@ export default {
           throw new Error('Misconfigured action')
         }
 
-        this.$notifier.showSnackbar({
-          message: `Action: ${this.actionOptions.title} completed successfully`,
-          variant: 'success',
-        })
-
         // reset inputs
         // this.resetInputs()
       } catch (err) {
@@ -180,10 +209,15 @@ export default {
       this.$emit('close')
       this.$emit('handle-submit', data)
 
-      // run any custom onSuccess functions
+      // run any custom onSuccess functions. if none, simply show a snackbar
       const onSuccess = this.actionOptions.onSuccess
       if (onSuccess) {
-        onSuccess(this, this.item)
+        onSuccess(this, data)
+      } else {
+        this.$notifier.showSnackbar({
+          message: `Action: ${this.actionOptions.title} completed successfully`,
+          variant: 'success',
+        })
       }
     },
 
@@ -214,6 +248,7 @@ export default {
                 inputOptions: inputDef.definition.inputOptions,
                 value: null,
                 inputValue: null,
+                secondaryInputValue: null,
                 getOptions: inputDef.definition.getOptions,
                 options: [],
                 readonly: false,
@@ -226,6 +261,7 @@ export default {
                 nestedInputsArray: [],
                 hideIf: inputDef.hideIf,
                 inputData: null,
+                watch: inputDef.watch,
               }
 
               // is the field in selectedItem? if so, use that and set field to readonly
@@ -263,6 +299,22 @@ export default {
               return inputObject
             })
         )
+
+        // add the watchers *after* initial inputs finished loading
+        this.inputsArray.forEach((inputObject) => {
+          // should there be a watcher on this input?
+          if (inputObject.watch) {
+            this.$watch(
+              function () {
+                return this.getInputValue(inputObject.fieldKey)
+              },
+              function (val, prev) {
+                return inputObject.watch(this, val, prev)
+              }
+            )
+          }
+        })
+
         this.loading.initInputs = false
       } catch (err) {
         // if there is an error, keep the loading state

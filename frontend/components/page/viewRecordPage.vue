@@ -19,6 +19,7 @@
           <PreviewRecordChip :value="selectedItem">
             <template v-slot:rightIcon>
               <RecordActionMenu
+                v-if="!hideActions"
                 :record-info="recordInfo"
                 :item="selectedItem"
                 hide-enter
@@ -74,10 +75,11 @@
                   >
                     <v-icon>mdi-comment</v-icon>
                   </v-btn>
-                  <v-btn icon @click="reset()">
+                  <v-btn v-if="!hideRefresh" icon @click="reset()">
                     <v-icon>mdi-refresh</v-icon>
                   </v-btn>
                   <RecordActionMenu
+                    v-if="!hideActions"
                     :record-info="recordInfo"
                     :item="selectedItem"
                     hide-view
@@ -89,7 +91,11 @@
                     @handle-custom-action-click="handleCustomActionClick"
                     @handle-expand-click="handleExpandClick"
                   ></RecordActionMenu>
-                  <v-btn icon @click="toggleRecordMinimized(true)">
+                  <v-btn
+                    v-if="!hideMinimize"
+                    icon
+                    @click="toggleRecordMinimized(true)"
+                  >
                     <v-icon>mdi-arrow-collapse</v-icon>
                   </v-btn>
                 </v-toolbar>

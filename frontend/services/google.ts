@@ -8,6 +8,8 @@ const loader = new Loader({
 
 let placesAutocompleteService
 
+/* To-do */
+
 // turn getQueryPredictions from a callback to a promise
 export async function getQueryPredictions(query: string) {
   if (!placesAutocompleteService) {
@@ -17,7 +19,7 @@ export async function getQueryPredictions(query: string) {
     console.log(places)
     placesService.getDetails(
       {
-        placeId: 'ChIJOwg_06VPwokRYv534QaPC8g',
+        placeId: 'place_id',
       },
       (data, status) => {
         console.log(data)

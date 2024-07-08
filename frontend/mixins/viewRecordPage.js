@@ -155,6 +155,18 @@ export default {
     hideBreadcrumbs() {
       return !!this.expandTypeObject?.breadcrumbOptions?.hideBreadcrumbs
     },
+
+    hideActions() {
+      return this.recordInfo.pageOptions?.hideActions
+    },
+
+    hideRefresh() {
+      return this.recordInfo.pageOptions?.hideRefresh
+    },
+
+    hideMinimize() {
+      return this.recordInfo.pageOptions?.hideMinimize
+    },
   },
 
   watch: {
@@ -297,7 +309,15 @@ export default {
     },
 
     handleExpandClick(expandTypeObject) {
-      this.toggleExpand(expandTypeObject.key)
+      this.handleSubPageOptionsUpdated(
+        {
+          search: null,
+          filters: expandTypeObject.initialFilters ?? [],
+          sort: expandTypeObject.initialSortOptions ?? null,
+        },
+        expandTypeObject.key
+      )
+      // this.toggleExpand(expandTypeObject.key)
     },
 
     toggleComments(state = true) {
@@ -439,7 +459,7 @@ export default {
       }
     },
 
-    handleSubPageOptionsUpdated(pageOptions) {
+    handleSubPageOptionsUpdated(pageOptions, expandKey) {
       // if it's a child component, set the subPageOptions
       if (this.isChildComponent) {
         this.subPageOptions = pageOptions
@@ -448,6 +468,10 @@ export default {
 
       const query = {
         ...this.$route.query,
+      }
+
+      if (expandKey) {
+        query.e = expandKey
       }
 
       // check if any valid options

@@ -50,7 +50,7 @@ export class ApiKeyService extends PaginatedService {
     Allow if:
     - filtering by user.id is currentUser
     */
-    getMultiple: allowIfFilteringByCurrentUserFn("user.id"),
+    getPaginator: allowIfFilteringByCurrentUserFn("user.id"),
 
     /*
     Allow if:

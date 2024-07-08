@@ -39,8 +39,9 @@
         color="primary"
         :loading="loading.editRecord"
         @click="handleSubmit()"
-        >Submit</v-btn
       >
+        <slot name="submit-button">Submit</slot>
+      </v-btn>
     </v-card-actions>
   </v-card>
 </template>

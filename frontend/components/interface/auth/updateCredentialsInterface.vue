@@ -37,6 +37,7 @@
           type="password"
         ></v-text-field>
         <v-text-field
+          v-if="isChanged"
           v-model="inputs.password"
           label="Current Password"
           prepend-icon="mdi-lock"
@@ -71,11 +72,15 @@ import { handleError } from '~/services/base'
 import { executeGiraffeql } from '~/services/giraffeql'
 import { handleUserRefreshed } from '~/services/auth'
 import { auth } from '~/services/fireinit'
-import { EmailAuthProvider, sendEmailVerification } from 'firebase/auth'
+import {
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  sendEmailVerification,
+  updateEmail,
+  updatePassword,
+} from 'firebase/auth'
 
 export default {
-  components: {},
-
   data() {
     return {
       inputs: null,
@@ -143,19 +148,16 @@ export default {
           this.inputs.password
         )
 
-        await this.currentUser.reauthenticateWithCredential(credential)
+        await reauthenticateWithCredential(this.currentUser, credential)
 
         // update email if different
         if (this.currentUser.email !== this.inputs.newEmail) {
-          await this.currentUser.updateEmail(this.inputs.newEmail)
+          await updateEmail(this.currentUser, this.inputs.newEmail)
 
           // also update email on the api
           await executeGiraffeql(this, {
             syncCurrentUser: {
-              __args: {
-                id: this.$store.getters['auth/user'].id,
-                email: this.inputs.newEmail,
-              },
+              id: true,
             },
           })
 
@@ -165,7 +167,7 @@ export default {
 
         // update password if different and provided
         if (this.inputs.newPassword) {
-          await this.currentUser.updatePassword(this.inputs.newPassword)
+          await updatePassword(this.currentUser, this.inputs.newPassword)
         }
 
         this.reset()

@@ -4,6 +4,7 @@ import { userRole, userPermission } from "../schema/enums";
 import { userRoleToPermissionsMap } from "../schema/helpers/permissions";
 import type { ContextUser } from "../types";
 import { AuthenticationError } from "../schema/core/helpers/error";
+import { timeout } from "../schema/core/helpers/shared";
 
 export async function validateToken(bearerToken: string): Promise<ContextUser> {
   try {
@@ -32,11 +33,18 @@ export async function validateToken(bearerToken: string): Promise<ContextUser> {
       // user not exists, must create
 
       // get the displayName, photoURL from firebase
-      const firebaseUserRecord = await auth().getUser(decodedToken.uid);
+      let firebaseUserRecord = await auth().getUser(decodedToken.uid);
+
+      // if firebaseUserRecord.displayName is undefined, try waiting 1 second and then trying again
+      if (firebaseUserRecord.displayName === undefined) {
+        await timeout(1000);
+        firebaseUserRecord = await auth().getUser(decodedToken.uid);
+      }
 
       const addUserResults = await User.createSqlRecord({
         fields: {
-          name: firebaseUserRecord.displayName,
+          // if after 2 tries it is still null, just fall back to empty str
+          name: firebaseUserRecord.displayName ?? "",
           avatarUrl: firebaseUserRecord.photoURL,
           email: decodedToken.email,
           firebaseUid: decodedToken.uid,

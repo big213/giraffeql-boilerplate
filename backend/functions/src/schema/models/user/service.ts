@@ -50,6 +50,7 @@ export class UserService extends PaginatedService {
 
   searchFieldsMap = {
     name: {},
+    email: {},
   };
 
   accessControl: AccessControlMap = {
@@ -105,37 +106,8 @@ export class UserService extends PaginatedService {
       return false;
     },
 
-    /*
-    Allow if:
-    - filtering by isPublic === true
-    - if requested fields are id, name, avatarUrl, isPublic, currentUserFollowLink ONLY, or NO query
-    */
-    getMultiple: async ({ args, query }) => {
-      if (
-        !query ||
-        queryOnlyHasFields(query, [
-          "id",
-          "__typename",
-          "name",
-          "avatarUrl",
-          "description",
-          "isPublic",
-          "currentUserFollowLink",
-        ])
-      ) {
-        return true;
-      }
-
-      if (
-        await filterPassesTest(args.filterBy, (filterObject) => {
-          return filterObject["isPublic"]?.eq === true;
-        })
-      ) {
-        return true;
-      }
-
-      return false;
-    },
+    // not allowed (except by admins)
+    getPaginator: () => false,
 
     /*
     Allow if:
@@ -201,19 +173,17 @@ export class UserService extends PaginatedService {
       fieldPath,
     });
 
-    return this.isEmptyQuery(query)
-      ? {}
-      : await this.getRecord({
-          req,
-          args: { id: addResults.id },
-          query,
-          fieldPath,
-          isAdmin,
-          data,
-        });
+    return this.getRecord({
+      req,
+      args: { id: addResults.id },
+      query,
+      fieldPath,
+      isAdmin,
+      data,
+    });
   }
 
-  // syncs the user record with the firebase auth record
+  // syncs the user's email with their firebase email, in case they fall out of sync (due to updating email, etc)
   async syncRecord({
     req,
     fieldPath,
@@ -222,37 +192,38 @@ export class UserService extends PaginatedService {
     data,
     isAdmin = false,
   }: ServiceFunctionInputs) {
-    //check if record exists
+    // login required
+    if (!req.user) throw new Error(`Login required`);
+
+    // check if record exists
     const item = await this.getFirstSqlRecord(
       {
-        select: ["id", "role", "firebaseUid"],
+        select: ["id", "email", "role", "firebaseUid"],
         where: {
-          id: data!.id,
+          id: req.user.id,
         },
       },
       true
     );
 
-    // make sure email field, if provided, matches the firebase user email
-    if ("email" in args) {
-      const userRecord = await auth().getUser(item.firebaseUid);
-      args.email = userRecord.email;
-    }
+    const userRecord = await auth().getUser(item.firebaseUid);
 
-    await updateObjectType({
-      typename: this.typename,
-      id: <number>args.id,
-      updateFields: {
-        ...args,
-        updatedAt: 1,
-      },
-      req,
-      fieldPath,
-    });
+    // if email is different, sync it
+    if (item.email !== userRecord.email) {
+      await this.updateSqlRecord({
+        fields: {
+          email: userRecord.email,
+          updatedAt: "knex.fn.now()",
+        },
+        where: {
+          id: req.user.id,
+        },
+      });
+    }
 
     return this.getRecord({
       req,
-      args: { id: args.id },
+      args: { id: req.user.id },
       query,
       fieldPath,
     });
@@ -310,16 +281,14 @@ export class UserService extends PaginatedService {
       await auth().updateUser(item.firebaseUid, firebaseUserFields);
     }
 
-    return this.isEmptyQuery(query)
-      ? {}
-      : await this.getRecord({
-          req,
-          args: { id: item.id },
-          query,
-          fieldPath,
-          isAdmin,
-          data,
-        });
+    return this.getRecord({
+      req,
+      args: { id: item.id },
+      query,
+      fieldPath,
+      isAdmin,
+      data,
+    });
   }
 
   @permissionsCheck("delete")
@@ -340,17 +309,28 @@ export class UserService extends PaginatedService {
       true
     );
 
-    // first, fetch the requested query, if any
-    const requestedResults = this.isEmptyQuery(query)
-      ? {}
-      : await this.getRecord({
-          req,
-          args,
-          query,
-          fieldPath,
-          isAdmin,
-          data,
-        });
+    let requestedResults;
+
+    if (Object.keys(query).length > 0) {
+      // check for get permissions, if fields were requested
+      await this.testPermissions("get", {
+        req,
+        args,
+        query,
+        fieldPath,
+        isAdmin,
+        data,
+      });
+      // fetch the requested query, if any
+      requestedResults = await this.getRecord({
+        req,
+        args,
+        query,
+        fieldPath,
+        isAdmin,
+        data,
+      });
+    }
 
     // delete the type and also any associated services
     await knex.transaction(async (transaction) => {
@@ -375,6 +355,6 @@ export class UserService extends PaginatedService {
     // remove firebase auth user
     await auth().deleteUser(item.firebaseUid);
 
-    return requestedResults;
+    return requestedResults ?? {};
   }
 }

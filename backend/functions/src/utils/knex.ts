@@ -1,9 +1,14 @@
 import * as knexBuilder from "knex";
 import { pgOptions, isDev } from "../config";
 
-export const knex = knexBuilder({
+// set up knex with the default params
+export let knex = knexBuilder({
   ...pgOptions,
 });
+
+export function initializeKnex(options: any) {
+  knex = knexBuilder(options);
+}
 
 // if dev mode, output raw queries to console
 if (isDev) {

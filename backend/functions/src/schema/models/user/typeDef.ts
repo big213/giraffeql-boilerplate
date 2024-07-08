@@ -61,7 +61,7 @@ export default new GiraffeqlObjectType(
       role: generateEnumField({
         scalarDefinition: Scalars.userRole,
         allowNull: false,
-        defaultValue: userRole.NORMAL.parsed,
+        defaultValue: userRole.NORMAL,
         isKenum: true,
         nestHidden: true,
       }),

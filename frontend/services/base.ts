@@ -4,6 +4,7 @@ import { executeGiraffeql } from '~/services/giraffeql'
 import * as models from '~/models/base'
 import { CrudInputObject, CrudRawFilterObject } from '~/types/misc'
 import { Root } from '../../schema'
+import { PriceObject } from '~/types'
 
 type StringKeyObject = { [x: string]: any }
 
@@ -12,7 +13,11 @@ export function getIcon(typename: string | undefined) {
 }
 
 export function formatAsCurrency(input: number | null) {
-  return `$${(input ?? 0).toFixed(2)}`
+  const validatedInput = input ?? 0
+
+  return validatedInput < 0
+    ? `-$${(validatedInput * -1).toFixed(2)}`
+    : `$${validatedInput.toFixed(2)}`
 }
 
 export function timeout(ms: number): Promise<void> {
@@ -470,12 +475,12 @@ export function generateCrudRecordRoute(
   }).href
 }
 
-// either path or typename/routeType required
+// either path or routeKey/routeType required
 export function generateViewRecordRoute(
   that,
   {
     path,
-    typename,
+    routeKey,
     routeType,
     queryParams,
     id,
@@ -484,22 +489,22 @@ export function generateViewRecordRoute(
     showComments = false,
   }: {
     path?: string
-    typename?: string
+    routeKey?: string
     routeType?: string
     queryParams?: any
-    id: string
+    id?: string
     expandKey?: string | null
     miniMode?: boolean
     showComments?: boolean
   }
 ) {
   // either path or typename/routeType required
-  if (!path && !(typename && routeType)) {
+  if (!path && !(routeKey && routeType)) {
     throw new Error('One of path or typename/routeType required')
   }
 
   return that.$router.resolve({
-    path: path ?? `/${routeType!}/view/${camelToKebabCase(typename!)}`,
+    path: path ?? `/${routeType!}/view/${camelToKebabCase(routeKey!)}`,
     query: {
       id,
       e: expandKey,
@@ -690,20 +695,43 @@ export function populateInputObject(
       inputObject.inputType === 'stripe-pi' ||
       inputObject.inputType === 'stripe-pi-editable'
     ) {
-      if (!inputObject.inputOptions?.getPaymentIntent) {
+      if (!inputObject.inputOptions?.paymentOptions) {
         throw new Error(`Stripe payments misconfigured`)
       }
 
-      const initialPrice = inputObject.inputOptions.getPrice?.(that, item)
+      const initialQuantity =
+        inputObject.inputOptions.paymentOptions.quantityOptions?.default?.()
+
+      const initialPriceObject =
+        inputObject.inputOptions.paymentOptions.getPriceObject?.(
+          that,
+          item,
+          initialQuantity,
+          inputObject.inputOptions.paymentOptions.quantityOptions?.getDiscountScheme?.(
+            that,
+            item
+          )
+        )
+
+      const finalPrice =
+        initialPriceObject.price - (initialPriceObject.discount ?? 0)
 
       promisesArray.push(
-        inputObject.inputOptions
-          .getPaymentIntent(that, inputObject, selectedItem, initialPrice)
+        inputObject.inputOptions.paymentOptions
+          .getPaymentIntent(
+            that,
+            inputObject,
+            selectedItem,
+            initialQuantity,
+            finalPrice
+          )
           .then((res) => (inputObject.inputData = res))
       )
 
       // also set the initial value
-      inputObject.inputValue = initialPrice
+      inputObject.inputValue = finalPrice
+
+      inputObject.secondaryInputValue = initialQuantity
     }
 
     if (loadOptions && inputObject.getOptions) {
@@ -1120,6 +1148,14 @@ export function userHasPermissions(that, requiredPermissions: string[]) {
   )
 }
 
+export function userHasRole(that, role: string) {
+  if (!that.$store.getters['auth/user']) {
+    return false
+  }
+
+  return that.$store.getters['auth/user'].role === role
+}
+
 export function loadTypeSearchResults(that, inputObject) {
   return executeGiraffeql(that, <any>{
     [`get${capitalizeString(inputObject.inputOptions.typename)}Paginator`]: {
@@ -1155,13 +1191,13 @@ export function loadTypeSearchResults(that, inputObject) {
 export function generateShareUrl(
   that,
   {
-    typename,
+    routeKey,
     routeType = 'i',
     id,
     showComments,
     miniMode,
   }: {
-    typename: string
+    routeKey: string
     routeType?: string
     id: string
     showComments?: boolean
@@ -1171,11 +1207,57 @@ export function generateShareUrl(
   return (
     window.location.origin +
     generateViewRecordRoute(that, {
-      typename,
+      routeKey,
       routeType,
       id,
       showComments,
       miniMode,
     })
   )
+}
+
+// 2_5,5_10,10_15
+export function parseDiscountScheme(discountScheme: string | null | undefined) {
+  if (!discountScheme) return []
+
+  const parts = discountScheme.split(',')
+
+  return parts.map((part) => {
+    const subPart = part.split('_')
+    return {
+      quantity: Number(subPart[0]),
+      discount: Number(subPart[1]),
+    }
+  })
+}
+
+export function getPriceObjectFromDiscountScheme({
+  discountScheme,
+  quantity,
+  unitPrice,
+}: {
+  discountScheme?: string | null | undefined
+  quantity: number
+  unitPrice: number
+}): PriceObject {
+  const discountSchemeArray = parseDiscountScheme(discountScheme)
+
+  const fullPrice = unitPrice * quantity
+
+  for (const ele of discountSchemeArray.reverse()) {
+    if (quantity >= ele.quantity) {
+      return {
+        price: fullPrice,
+        discount: Math.round(100 * fullPrice * (ele.discount / 100)) / 100,
+        discountPercent: ele.discount,
+        quantity,
+      }
+    }
+  }
+
+  // if still not returned, just return the price * quantity
+  return {
+    price: fullPrice,
+    quantity,
+  }
 }

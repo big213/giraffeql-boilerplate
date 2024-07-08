@@ -284,7 +284,7 @@ export default {
       title:
         this.elementTitle ??
         this.recordInfo.title ??
-        'Manage ' + this.recordInfo.pluralName,
+        `Manage ${this.recordInfo.pluralName}`,
     }
   },
 }

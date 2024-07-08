@@ -7,9 +7,6 @@ export class {{ capitalizedTypename }}Service extends PaginatedService {
 
   defaultQuery: ExternalQuery = {
     id: lookupSymbol,
-    name: lookupSymbol,
-    avatarUrl: lookupSymbol,
-    description: lookupSymbol,
   };
 
   filterFieldsMap = {

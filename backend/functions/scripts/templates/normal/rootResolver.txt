@@ -4,7 +4,7 @@ import { generateBaseRootResolvers } from "../../core/helpers/rootResolver";
 export default {
   ...generateBaseRootResolvers({
     service: {{ capitalizedTypename }},
-    methods: ["get", "getMultiple", "delete", "create", "update"],
-    restMethods: ["get", "getMultiple"],
+    methods: ["get", "getPaginator", "delete", "create", "update"],
+    restMethods: ["get", "getPaginator"],
   }),
 };

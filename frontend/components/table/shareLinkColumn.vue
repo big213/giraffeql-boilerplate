@@ -17,7 +17,7 @@ export default {
   computed: {
     shareUrl() {
       return generateShareUrl(this, {
-        typename: this.item.__typename,
+        routeKey: this.item.__typename,
         id: this.item.id,
         showComments: true,
       })

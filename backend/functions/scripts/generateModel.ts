@@ -86,7 +86,7 @@ const templateFiles = [
 // write the necessary files
 templateFiles.forEach((templateFileObject) => {
   const template = fs.readFileSync(
-    `src/scripts/templates/${isLink ? "link" : "normal"}/${
+    `scripts/templates/${isLink ? "link" : "normal"}/${
       templateFileObject.templateFilename
     }`,
     "utf8"

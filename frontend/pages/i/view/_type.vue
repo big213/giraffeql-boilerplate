@@ -1,8 +1,10 @@
 <template>
-  <ViewRecordPage
+  <component
     v-if="currentModel"
+    :is="pageComponent"
     :record-info="currentModel"
-  ></ViewRecordPage>
+    :lookup-params="lookupParams"
+  ></component>
   <v-container v-else fill-height>
     <v-layout align-center justify-center>
       <div>
@@ -23,13 +25,23 @@ export default {
     return { type }
   },
 
-  components: {
-    ViewRecordPage,
-  },
-
   computed: {
+    pageComponent() {
+      return this.currentModel?.pageOptions?.component ?? ViewRecordPage
+    },
+
     currentModel() {
       return publicModels[`Public${capitalizeString(this.type)}`]
+    },
+
+    lookupParams() {
+      const getLookupParams = this.currentModel?.pageOptions?.getLookupParams
+
+      return getLookupParams
+        ? getLookupParams(this)
+        : {
+            id: this.$store.getters['auth/user'].id,
+          }
     },
   },
 }

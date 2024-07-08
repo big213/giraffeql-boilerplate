@@ -14,20 +14,18 @@ import { PaginatedService, EnumService } from "../services";
 import {
   generatePaginatorPivotResolverObject,
   generateStatsResolverObject,
+  generateAggregatorResolverObject,
 } from "../helpers/typeDef";
 import { capitalizeString, isObject } from "../helpers/shared";
 import { Request } from "express";
 type BaseRootResolverTypes =
   | "get"
-  | "getMultiple"
+  | "getPaginator"
+  | "getAggregator"
   | "stats"
   | "delete"
   | "create"
-  | "update"
-  | "created"
-  | "deleted"
-  | "updated"
-  | "listUpdated";
+  | "update";
 
 export function transformGetMultipleRestArgs(req: Request) {
   // is req.query.__args defined? if so, snapshot it, delete it, and merge it in last
@@ -149,11 +147,9 @@ export function generateBaseRootResolvers({
         });
         break;
       }
-      case "getMultiple": {
+      case "stats": {
         if (service instanceof PaginatedService) {
-          const methodName = `get${capitalizeString(
-            service.paginator.typename
-          )}`;
+          const methodName = `get${capitalizeString(service.typename)}Stats`;
           rootResolvers[methodName] = new GiraffeqlRootResolverType(<
             RootResolverDefinition
           >{
@@ -161,7 +157,34 @@ export function generateBaseRootResolvers({
             ...(restMethodsArray.includes(method) && {
               restOptions: {
                 method: "get",
-                route: "/" + service.typename,
+                route: `/${service.typename}:count`,
+                query: {
+                  count: lookupSymbol,
+                },
+                // argsTransformer: transformGetMultipleRestArgs,
+                ...restMethods[method],
+              },
+            }),
+            ...generateStatsResolverObject({
+              pivotService: service,
+            }),
+          });
+        }
+        break;
+      }
+      case "getPaginator": {
+        if (service instanceof PaginatedService) {
+          const methodName = `get${capitalizeString(
+            service.typename
+          )}Paginator`;
+          rootResolvers[methodName] = new GiraffeqlRootResolverType(<
+            RootResolverDefinition
+          >{
+            name: methodName,
+            ...(restMethodsArray.includes(method) && {
+              restOptions: {
+                method: "get",
+                route: `/${service.typename}`,
                 query: {
                   paginatorInfo: {
                     total: lookupSymbol,
@@ -183,9 +206,11 @@ export function generateBaseRootResolvers({
         }
         break;
       }
-      case "stats": {
+      case "getAggregator": {
         if (service instanceof PaginatedService) {
-          const methodName = `get${capitalizeString(service.typename)}Stats`;
+          const methodName = `get${capitalizeString(
+            service.typename
+          )}Aggregator`;
           rootResolvers[methodName] = new GiraffeqlRootResolverType(<
             RootResolverDefinition
           >{
@@ -193,15 +218,15 @@ export function generateBaseRootResolvers({
             ...(restMethodsArray.includes(method) && {
               restOptions: {
                 method: "get",
-                route: `/${service.typename}:count`,
+                route: `/${service.typename}:aggregator`,
                 query: {
-                  count: lookupSymbol,
+                  // count: lookupSymbol,
                 },
                 // argsTransformer: transformGetMultipleRestArgs,
                 ...restMethods[method],
               },
             }),
-            ...generateStatsResolverObject({
+            ...generateAggregatorResolverObject({
               pivotService: service,
             }),
           });
@@ -387,145 +412,10 @@ export function generateBaseRootResolvers({
         });
         break;
       }
-      case "created": {
-        const methodName = service.typename + capitalizedMethod;
-        rootResolvers[methodName] = new GiraffeqlRootResolverType({
-          name: methodName,
-          ...(restMethodsArray.includes(method) && {
-            restOptions: {
-              method: "post",
-              route: "/subscribe/" + service.typename + capitalizedMethod,
-              query: service.defaultQuery,
-            },
-          }),
-          type: service.typeDefLookup,
-          allowNull: false,
-          resolver: ({ req, query, args, fieldPath }) =>
-            service.subscribeToMultipleItem(
-              service.typename + capitalizedMethod,
-              {
-                req,
-                query,
-                args,
-                fieldPath,
-              }
-            ),
-        });
-        break;
-      }
-      case "deleted": {
-        const methodName = service.typename + capitalizedMethod;
-        rootResolvers[methodName] = new GiraffeqlRootResolverType({
-          name: methodName,
-          ...(restMethodsArray.includes(method) && {
-            restOptions: {
-              method: "post",
-              route: "/subscribe/" + service.typename + capitalizedMethod,
-              query: service.defaultQuery,
-            },
-          }),
-          type: service.typeDefLookup,
-          allowNull: false,
-          resolver: ({ req, query, args, fieldPath }) =>
-            service.subscribeToSingleItem(
-              service.typename + capitalizedMethod,
-              {
-                req,
-                query,
-                args,
-                fieldPath,
-              }
-            ),
-        });
-        break;
-      }
-      case "updated": {
-        const methodName = service.typename + capitalizedMethod;
-        rootResolvers[methodName] = new GiraffeqlRootResolverType({
-          name: methodName,
-          ...(restMethodsArray.includes(method) && {
-            restOptions: {
-              method: "post",
-              route: "/subscribe/" + service.typename + capitalizedMethod,
-              query: service.defaultQuery,
-            },
-          }),
-          type: service.typeDefLookup,
-          allowNull: false,
-          resolver: ({ req, query, args, fieldPath }) =>
-            service.subscribeToSingleItem(
-              service.typename + capitalizedMethod,
-              {
-                req,
-                query,
-                args,
-                fieldPath,
-              }
-            ),
-        });
-        break;
-      }
-      case "listUpdated": {
-        const methodName = service.typename + capitalizedMethod;
-        rootResolvers[methodName] = new GiraffeqlRootResolverType({
-          name: methodName,
-          ...(restMethodsArray.includes(method) && {
-            restOptions: {
-              method: "post",
-              route: "/subscribe/" + service.typename + capitalizedMethod,
-              query: service.defaultQuery,
-            },
-          }),
-          type: service.typeDefLookup,
-          allowNull: false,
-          resolver: ({ req, query, args, fieldPath }) =>
-            service.subscribeToMultipleItem(
-              service.typename + capitalizedMethod,
-              {
-                req,
-                query,
-                args,
-                fieldPath,
-              }
-            ),
-        });
-        break;
-      }
-
       default:
         throw new Error(`Unknown root resolver method requested: '${method}'`);
     }
   });
-
-  return rootResolvers;
-}
-
-export function generateEnumRootResolver(enumService: EnumService): {
-  [x: string]: GiraffeqlRootResolverType;
-} {
-  const capitalizedClass = capitalizeString(enumService.paginator.typename);
-  const methodName = "get" + capitalizedClass;
-  const rootResolvers = {
-    [methodName]: new GiraffeqlRootResolverType({
-      name: methodName,
-      ...(enumService.defaultQuery && {
-        restOptions: {
-          method: "get",
-          route: "/" + enumService.paginator.typename,
-          query: enumService.defaultQuery,
-        },
-      }),
-      allowNull: false,
-      type: enumService.paginator.typeDef,
-      resolver: ({ req, args, query, fieldPath }) =>
-        enumService.paginator.getRecord({
-          req,
-          args,
-          query,
-          fieldPath,
-        }),
-    }),
-  };
 
   return rootResolvers;
 }
