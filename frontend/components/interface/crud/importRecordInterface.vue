@@ -137,9 +137,22 @@ export default {
 
   created() {
     this.reset()
+
+    window.addEventListener('beforeunload', this.onBeforeUnload)
   },
 
   methods: {
+    onBeforeUnload(e) {
+      // if currently importing, have a warning alert when navigating away from page
+      if (this.loading.importing) {
+        e.preventDefault()
+        e.returnValue = ''
+        return
+      }
+
+      delete e['returnValue']
+    },
+
     handleDropEvent(e) {
       try {
         const files = Array.from(e.dataTransfer.files)
@@ -329,6 +342,10 @@ export default {
       // duplicate misc inputs, if any
       this.miscInputs = JSON.parse(JSON.stringify(this.originalMiscInputs))
     },
+  },
+
+  destroyed() {
+    window.removeEventListener('beforeunload', this.onBeforeUnload)
   },
 }
 </script>
