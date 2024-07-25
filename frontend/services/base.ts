@@ -1171,7 +1171,7 @@ export function loadTypeSearchResults(that, inputObject) {
       __args: {
         first: 20,
         search: {
-          query: inputObject.inputValue,
+          query: inputObject.inputValue?.trim(),
           params: inputObject.fieldInfo.inputOptions?.searchParams?.(
             that,
             that.allItems

@@ -1003,7 +1003,7 @@ export default {
     updatePageOptions() {
       this.isChanged = true
       this.$emit('pageOptions-updated', {
-        search: this.searchInput,
+        search: this.searchInput?.trim(),
         filters: this.filterInputsArray
           .filter(
             (crudFilterObject) =>
