@@ -13,7 +13,7 @@ function isEnum(ele: unknown) {
 
 const output = generateMigration();
 
-fs.writeFile("migration.ts", output, function (err) {
+fs.writeFile("db/migration.ts", output, function (err) {
   if (err) console.log(err);
   console.log("Migration file written > migration.ts");
 });
@@ -131,7 +131,7 @@ function generateMigration(initSubscriptions = true, force = false) {
       .join("")} }),\n`;
   });
 
-  return `import * as Knex from "knex";
+  return `import type { Knex } from "knex";
 
 export async function up(knex: Knex): Promise<void[]> {
   return Promise.all([

@@ -201,7 +201,7 @@ export default {
     })
 
     /*
-     ** Expecting actionOptions, item, selectedItem?
+     ** Expecting actionOptions, item?, selectedItem?
      ** if actionOptions.selectedItemModifier is set, use that to generate the selectedItem
      */
     this.$root.$on('openExecuteActionDialog', (params, loginDialog = false) => {

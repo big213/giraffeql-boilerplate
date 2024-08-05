@@ -14,6 +14,7 @@ import {
   processInputObject,
   processQuery,
   timeout,
+  buildQueryFromFieldPathArray,
 } from '~/services/base'
 import GenericInput from '~/components/input/genericInput.vue'
 import CircularLoader from '~/components/common/circularLoader.vue'
@@ -251,6 +252,11 @@ export default {
               id: true,
               __typename: true,
               ...this.returnFields,
+              ...(this.recordInfo.addOptions.returnFields
+                ? buildQueryFromFieldPathArray(
+                    this.recordInfo.addOptions.returnFields
+                  )
+                : undefined),
               __args: collapseObject(inputs),
             },
           }
@@ -266,6 +272,11 @@ export default {
               id: true,
               __typename: true,
               ...this.returnFields,
+              ...(this.recordInfo.editOptions.returnFields
+                ? buildQueryFromFieldPathArray(
+                    this.recordInfo.editOptions.returnFields
+                  )
+                : undefined),
               __args: {
                 item: {
                   id: this.selectedItem.id,
@@ -400,6 +411,10 @@ export default {
                 typeof fieldElement === 'string'
                   ? undefined
                   : fieldElement.hideIf,
+              watch:
+                typeof fieldElement === 'string'
+                  ? undefined
+                  : fieldElement.watch,
             }
 
             // if copy mode and fieldKey not in original fields, use default
@@ -449,6 +464,21 @@ export default {
         }
         // wait for all dropdown-related promises to complete
         await Promise.all(dropdownPromises)
+
+        // add the watchers *after* initial inputs finished loading
+        this.inputsArray.forEach((inputObject) => {
+          // should there be a watcher on this input?
+          if (inputObject.watch) {
+            this.$watch(
+              function () {
+                return this.getInputValue(inputObject.fieldKey)
+              },
+              function (val, prev) {
+                return inputObject.watch(this, val, prev)
+              }
+            )
+          }
+        })
       } catch (err) {
         handleError(this, err)
       }
@@ -536,6 +566,10 @@ export default {
                 typeof fieldElement === 'string'
                   ? undefined
                   : fieldElement.hideIf,
+              watch:
+                typeof fieldElement === 'string'
+                  ? undefined
+                  : fieldElement.watch,
             }
 
             // is the field in selectedItem? if so, use that and set field to readonly
@@ -574,6 +608,22 @@ export default {
             return inputObject
           })
         )
+
+        // add the watchers *after* initial inputs finished loading
+        this.inputsArray.forEach((inputObject) => {
+          // should there be a watcher on this input?
+          if (inputObject.watch) {
+            this.$watch(
+              function () {
+                return this.getInputValue(inputObject.fieldKey)
+              },
+              function (val, prev) {
+                return inputObject.watch(this, val, prev)
+              }
+            )
+          }
+        })
+
         this.loading.initInputs = false
       } catch (err) {
         // if there is an error, keep the loading state

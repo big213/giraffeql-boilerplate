@@ -125,9 +125,22 @@ export default {
 
   created() {
     this.reset()
+
+    window.addEventListener('beforeunload', this.onBeforeUnload)
   },
 
   methods: {
+    onBeforeUnload(e) {
+      // if currently importing, have a warning alert when navigating away from page
+      if (this.loading.executeAction) {
+        e.preventDefault()
+        e.returnValue = ''
+        return
+      }
+
+      delete e['returnValue']
+    },
+
     setInputValue(key, value) {
       return setInputValue(this.inputsArray, key, value)
     },
@@ -327,6 +340,10 @@ export default {
     reset() {
       this.initializeInputs()
     },
+  },
+
+  destroyed() {
+    window.removeEventListener('beforeunload', this.onBeforeUnload)
   },
 }
 </script>

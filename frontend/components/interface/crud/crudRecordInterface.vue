@@ -485,6 +485,7 @@
                             :field-path="headerItem.path"
                             :options="headerItem.fieldInfo.columnOptions"
                             display-mode="crud"
+                            @edit-item="openEditItemDialog"
                           ></component>
                           <span v-else>
                             {{ getTableRowData(headerItem, item) }}
@@ -637,6 +638,7 @@
                       :field-path="headerItem.path"
                       :options="headerItem.fieldInfo.columnOptions"
                       display-mode="crud"
+                      @edit-item="openEditItemDialog"
                     ></component>
                     <span v-else>
                       {{ getTableRowData(headerItem, props.item) }}
@@ -686,6 +688,7 @@
                     :field-path="headerItem.path"
                     :options="headerItem.fieldInfo.columnOptions"
                     display-mode="crud"
+                    @edit-item="openEditItemDialog"
                   ></component>
                   <span v-else>
                     {{ getTableRowData(headerItem, props.item) }}
@@ -773,6 +776,7 @@
         :record-info="recordInfo"
         :selected-item="dialogs.selectedItem"
         :mode="dialogs.editMode"
+        :custom-fields="dialogs.customFields"
         @reload-parent="reset({ resetExpanded: true })"
         @close="dialogs.editRecord = false"
       ></EditRecordDialog>

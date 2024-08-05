@@ -7,12 +7,12 @@ import {
   ObjectTypeDefinitionField,
   objectTypeDefs,
 } from "giraffeql";
-import Knex = require("knex");
 import { isDev } from "../../../config";
 import { SpecialJoinFunction } from "../../../types";
 import { executeDBQuery, knex } from "../../../utils/knex";
 import { linkDefs } from "../../links";
 import { generateSqlSingleFieldObject } from "./sqlHelper";
+import { Knex } from "knex";
 
 function isSqlWhereObject(
   obj: SqlWhereFieldObject | SqlWhereObject | SqlRawWhereStatement

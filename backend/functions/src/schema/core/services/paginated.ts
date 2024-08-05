@@ -60,11 +60,10 @@ import {
   getObjectType,
   updateObjectType,
 } from "../helpers/resolver";
-import { Transaction } from "knex";
 import { Scalars } from "../..";
 import { knex } from "../../../utils/knex";
 import { generateSqlSingleFieldObject } from "../helpers/sqlHelper";
-import Knex = require("knex");
+import { Knex } from "knex";
 
 export type FieldObject = {
   field?: string;
@@ -938,7 +937,7 @@ export class PaginatedService extends BaseService {
 
   // generates a valid unique ID for this record
   // will try 3 times before calling it quits
-  async generateRecordId(transaction?: Transaction, attempt = 0) {
+  async generateRecordId(transaction?: Knex.Transaction, attempt = 0) {
     // if 3 or more tries, throw err
     if (attempt > 2) {
       throw new Error(
@@ -1043,29 +1042,33 @@ export class PaginatedService extends BaseService {
     // convert any lookup/joined fields into IDs
     await this.handleLookupArgs(args.fields);
 
-    await updateObjectType({
-      typename: this.typename,
-      id: item.id,
-      updateFields: {
-        ...args.fields,
-        updatedAt: 1,
-      },
-      req,
-      fieldPath,
-    });
-
-    // do post-update fn, if any
-    await this.afterUpdateProcess(
-      {
+    await knex.transaction(async (transaction) => {
+      await updateObjectType({
+        typename: this.typename,
+        id: item.id,
+        updateFields: {
+          ...args.fields,
+          updatedAt: 1,
+        },
         req,
         fieldPath,
-        args,
-        query,
-        data,
-        isAdmin,
-      },
-      item.id
-    );
+        transaction,
+      });
+
+      // do post-update fn, if any
+      await this.afterUpdateProcess(
+        {
+          req,
+          fieldPath,
+          args,
+          query,
+          data,
+          isAdmin,
+        },
+        item.id,
+        transaction
+      );
+    });
 
     return this.getRecord({
       req,
@@ -1077,7 +1080,11 @@ export class PaginatedService extends BaseService {
     });
   }
 
-  async afterUpdateProcess(inputs: ServiceFunctionInputs, itemId: string) {}
+  async afterUpdateProcess(
+    inputs: ServiceFunctionInputs,
+    itemId: string,
+    transaction?: Knex.Transaction
+  ) {}
 
   // retrieves the related services that should also be deleted when this record is also delated
   getOnDeleteEntries(): {
@@ -1146,10 +1153,30 @@ export class PaginatedService extends BaseService {
           transaction,
         });
       }
+
+      // do post-delete fn, if any
+      await this.afterDeleteProcess(
+        {
+          req,
+          fieldPath,
+          args,
+          query,
+          data,
+          isAdmin,
+        },
+        item.id,
+        transaction
+      );
     });
 
     return requestedResults ?? {};
   }
+
+  async afterDeleteProcess(
+    inputs: ServiceFunctionInputs,
+    itemId: string,
+    transaction?: Knex.Transaction
+  ) {}
 
   processArgs(
     args: any,

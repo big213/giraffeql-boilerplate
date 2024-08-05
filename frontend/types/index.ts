@@ -279,6 +279,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
     // custom action when the "new" button is clicked, if any. item refers to parentItem, if any
     customAction?: (that, parentItem) => void
 
+    // fields to return after editing (for use in onSuccess, etc) -- array in dot notation
+    returnFields?: string[]
+
     // function that runs when record is successfully added
     onSuccess?: (that, item) => void
 
@@ -332,6 +335,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
     // custom function to modify the inputs in-place before they get sent as args
     inputsModifier?: (that, inputs) => void
+
+    // fields to return after editing (for use in onSuccess, etc) -- array in dot notation
+    returnFields?: string[]
 
     // function that runs when recorded is successfully edited
     onSuccess?: (that, item) => void
@@ -758,6 +764,7 @@ export type EditFieldDefinition = {
   cols?: number
   handleFileAdded?: (that, inputsArray, inputObject, fileRecord) => void
   hideIf?: (that, inputsArray) => boolean
+  watch?: (that, val, prev) => void
 }
 
 export type ViewFieldDefinition = {

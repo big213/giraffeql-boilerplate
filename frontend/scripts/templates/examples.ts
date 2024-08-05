@@ -6,6 +6,7 @@ import {
   generateClickRowToExpandOptions,
   generateClickRowToOpenOptions,
   generateJoinableField,
+  generatePreviewableFilesColumn,
   generatePreviewableJoinableField,
   generatePreviewableRecordField,
   generateSortOptions,
@@ -85,12 +86,22 @@ export const Event = {
       text: 'Ended At',
       component: TimeagoColumn,
     },
-    files: {
+    // ONE file only (single file joined field)
+    ...generatePreviewableFilesColumn({
+      fieldname: 'file',
+      text: 'File',
+      inputType: 'multiple-file',
+      soloMode: true,
+      limit: 1,
+    }),
+    // multiple files (media mode)
+    ...generatePreviewableFilesColumn({
+      fieldname: 'files',
       text: 'Files',
       inputType: 'multiple-file',
-      default: () => [],
-      component: PreviewableFilesColumn,
-    },
+      hideDownload: true,
+      mediaMode: true,
+    }),
     role: {
       text: 'User Role',
       getOptions: getUserRoles,

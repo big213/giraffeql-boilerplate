@@ -312,6 +312,16 @@ export function collapseObject(obj: StringKeyObject): StringKeyObject | null {
   return returnObject
 }
 
+// accepts dot notation, outputs collapsed object
+export function buildQueryFromFieldPathArray(fieldPathArray: string[]) {
+  return collapseObject(
+    fieldPathArray.reduce((total, val) => {
+      total[val] = true
+      return total
+    }, {})
+  )
+}
+
 export function collapseObjectArray(objArray: StringKeyObject[]) {
   return objArray.map((obj) => collapseObject(obj))
 }

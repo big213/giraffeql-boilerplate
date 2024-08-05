@@ -162,6 +162,7 @@ export default {
         expandRecord: false,
         selectedItem: null,
         editMode: 'view',
+        customFields: null,
       },
 
       loading: {
@@ -1071,15 +1072,20 @@ export default {
       this.openEditDialog('import', initializedRecord)
     },
 
-    openEditDialog(mode, selectedItem) {
-      this.dialogs.editMode = mode
-      this.openDialog('editRecord', selectedItem)
+    openEditItemDialog(selectedItem, customFields) {
+      this.openEditDialog('edit', selectedItem, customFields)
     },
 
-    openDialog(dialogName, item) {
+    openEditDialog(mode, selectedItem, customFields) {
+      this.dialogs.editMode = mode
+      this.openDialog('editRecord', selectedItem, customFields)
+    },
+
+    openDialog(dialogName, item, customFields) {
       if (dialogName in this.dialogs) {
         this.dialogs[dialogName] = true
         this.dialogs.selectedItem = item
+        this.dialogs.customFields = customFields
       }
     },
 
