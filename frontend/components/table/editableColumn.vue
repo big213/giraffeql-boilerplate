@@ -1,7 +1,12 @@
 <template>
   <div>
-    <v-icon small left @click.stop="openEditFieldDialog()">mdi-pencil</v-icon>
+    <v-icon v-if="isLeftSide" small left @click.stop="openEditFieldDialog()"
+      >mdi-pencil</v-icon
+    >
     {{ currentValue }}
+    <v-icon v-if="!isLeftSide" small right @click.stop="openEditFieldDialog()"
+      >mdi-pencil</v-icon
+    >
   </div>
 </template>
 
@@ -9,7 +14,13 @@
 import columnMixin from '~/mixins/column'
 export default {
   mixins: [columnMixin],
-  computed: {},
+  computed: {
+    // expected options: leftSide?: boolean
+
+    isLeftSide() {
+      return this.options?.leftSide
+    },
+  },
 
   methods: {
     openEditFieldDialog() {

@@ -1,6 +1,7 @@
 <template>
   <v-chip :color="color" v-bind="$attrs" v-on="$listeners">
     <span :class="textClass">{{ title }}</span>
+    <slot name="right-icon"></slot>
   </v-chip>
 </template>
 

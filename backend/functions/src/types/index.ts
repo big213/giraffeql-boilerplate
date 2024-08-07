@@ -1,5 +1,5 @@
 import type { Request } from "express";
-import Knex = require("knex");
+import type { Knex } from "knex";
 import {
   SpecialJoinDefinition,
   SqlFieldGetter,

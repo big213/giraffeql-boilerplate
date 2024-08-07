@@ -10,12 +10,21 @@
         :small="smallMode"
         :value="element"
         :values-map="valuesMap"
-      ></MappedChip>
+      >
+      </MappedChip>
       <v-chip v-else-if="emptyText" small
         ><i>{{ emptyText }}</i></v-chip
       >
     </span>
     <i v-if="!elements.length && emptyText">{{ emptyText }}</i>
+    <v-icon
+      v-if="editable"
+      small
+      right
+      slot="right-icon"
+      @click.stop="openEditFieldDialog()"
+      >mdi-pencil</v-icon
+    >
   </div>
 </template>
 
@@ -38,6 +47,7 @@ export default {
       textColor?: string // defaults to black
     }
   }
+  editable?: boolean;
   */
 
   mixins: [columnMixin],
@@ -59,6 +69,16 @@ export default {
 
     valuesMap() {
       return this.options?.valuesMap
+    },
+
+    editable() {
+      return this.options?.editable
+    },
+  },
+
+  methods: {
+    openEditFieldDialog() {
+      this.$emit('edit-item', this.item, [this.fieldPath])
     },
   },
 }
