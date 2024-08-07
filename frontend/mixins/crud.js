@@ -1166,7 +1166,7 @@ export default {
       )
 
       if (itemId) {
-        const result = await executeGiraffeql(this, {
+        const result = await executeGiraffeql({
           [`get${this.capitalizedType}`]: {
             ...query,
             __args: {

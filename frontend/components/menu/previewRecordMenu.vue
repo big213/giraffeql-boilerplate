@@ -250,7 +250,7 @@ export default {
           this.recordInfo &&
           (await processQuery(this, this.recordInfo, this.fields))
 
-        this.itemData = await executeGiraffeql(this, {
+        this.itemData = await executeGiraffeql({
           ['get' + this.capitalizedType]: {
             id: true,
             __typename: true,

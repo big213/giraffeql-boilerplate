@@ -536,7 +536,7 @@ export function enterRoute(that, route: string, openInNew = false) {
 }
 
 export function getPaginatorData(that, operation, query, args) {
-  return executeGiraffeql(that, <any>{
+  return executeGiraffeql(<any>{
     [operation]: {
       paginatorInfo: {
         total: true,
@@ -779,7 +779,7 @@ export function populateInputObject(
       } else {
         if (originalFieldValue && originalFieldValue !== '__undefined') {
           promisesArray.push(
-            executeGiraffeql(that, <any>{
+            executeGiraffeql(<any>{
               [`get${capitalizeString(inputObject.inputOptions?.typename)}`]: {
                 id: true,
                 name: true,
@@ -1027,7 +1027,7 @@ export async function processInputObject(that, inputObject, inputObjectArray) {
       ) {
         // expecting either string or obj
         // create the item, get its id.
-        const results = <any>await executeGiraffeql(null, <any>{
+        const results = <any>await executeGiraffeql(<any>{
           ['create' + capitalizeString(inputObject.inputOptions.typename)]: {
             id: true,
             name: true,
@@ -1136,7 +1136,7 @@ export function generateMemoizedGetter(operation: string, fields: string[]) {
 
 export function generateMemoizedEnumGetter(operation: keyof Root) {
   return <any>memoize(async function (that, _forceReload) {
-    return executeGiraffeql<any>(that, {
+    return executeGiraffeql<any>({
       [operation]: {
         values: true,
       },
@@ -1167,7 +1167,7 @@ export function userHasRole(that, role: string) {
 }
 
 export function loadTypeSearchResults(that, inputObject) {
-  return executeGiraffeql(that, <any>{
+  return executeGiraffeql(<any>{
     [`get${capitalizeString(inputObject.inputOptions.typename)}Paginator`]: {
       edges: {
         node: {

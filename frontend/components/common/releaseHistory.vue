@@ -48,7 +48,6 @@ export default {
       this.loading.loadData = true
       try {
         this.releases = await executeGiraffeql(
-          this,
           {
             getRepositoryReleases: {
               __args: {
@@ -56,7 +55,9 @@ export default {
               },
             },
           },
-          true
+          {
+            omitIdToken: true,
+          }
         )
       } catch (err) {
         // do nothing

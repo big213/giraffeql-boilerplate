@@ -287,7 +287,7 @@ export default {
           // skip if skipped
           if (recordData.isSkipped) continue
 
-          recordData.record = await executeGiraffeql(this, {
+          recordData.record = await executeGiraffeql({
             [this.recordInfo.addOptions.operationName ??
             'create' + capitalizeString(this.recordInfo.typename)]: {
               id: true,

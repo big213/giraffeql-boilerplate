@@ -226,7 +226,7 @@ export default {
 
     async deletePost(props) {
       try {
-        await executeGiraffeql(this, {
+        await executeGiraffeql({
           [`delete${this.capitalizedType}`]: {
             __args: {
               id: props.item.id,
@@ -266,7 +266,7 @@ export default {
 
     // the query can be overriden and customized based on the requirements
     fetchMorePosts() {
-      return executeGiraffeql(this, {
+      return executeGiraffeql({
         [`get${this.capitalizedType}Paginator`]: {
           paginatorInfo: {
             endCursor: true,

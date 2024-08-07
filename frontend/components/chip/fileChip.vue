@@ -84,7 +84,7 @@ export default {
           variant: 'success',
         })
 
-        const data = await executeGiraffeql(this, {
+        const data = await executeGiraffeql({
           getFile: {
             signedUrl: true,
             __args: {

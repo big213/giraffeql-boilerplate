@@ -58,11 +58,12 @@ export default {
   created() {
     this.currentVersion = getBuildVersion()
     executeGiraffeql(
-      this,
       {
         getRepositoryLatestVersion: true,
       },
-      true
+      {
+        omitIdToken: true,
+      }
     ).then((res) => {
       this.latestVersion = res.tagName
       if (this.hasNewerVersion) {

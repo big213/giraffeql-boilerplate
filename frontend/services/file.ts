@@ -79,7 +79,7 @@ export function uploadFile(
     async () => {
       try {
         // finished uploading. register file with API.
-        const fileRecord = await executeGiraffeql<'createFile'>(that, {
+        const fileRecord = await executeGiraffeql<'createFile'>({
           createFile: {
             id: true,
             name: true,

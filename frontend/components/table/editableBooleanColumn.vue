@@ -85,7 +85,7 @@ export default {
     async updateBooleanField(value) {
       this.loading.submit = true
       try {
-        await executeGiraffeql(this, {
+        await executeGiraffeql({
           [`update${capitalizeString(this.item.__typename)}`]: {
             __args: {
               fields: {

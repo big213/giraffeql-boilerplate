@@ -60,7 +60,7 @@ export default {
     async deleteRecord() {
       this.loading.deleteRecord = true
       try {
-        const data = await executeGiraffeql(this, {
+        const data = await executeGiraffeql({
           [this.recordInfo.deleteOptions.operationName ??
           'delete' + this.capitalizedTypename]: {
             id: true,

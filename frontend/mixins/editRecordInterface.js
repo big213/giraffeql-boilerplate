@@ -239,36 +239,41 @@ export default {
         }
 
         // add/copy mode
-        let query
+        let data
         if (this.mode === 'add' || this.mode === 'copy') {
           // run the inputsModifier, if any
           if (this.recordInfo.addOptions.inputsModifier) {
             this.recordInfo.addOptions.inputsModifier(this, inputs)
           }
 
-          query = {
-            [this.recordInfo.addOptions.operationName ??
-            'create' + this.capitalizedType]: {
-              id: true,
-              __typename: true,
-              ...this.returnFields,
-              ...(this.recordInfo.addOptions.returnFields
-                ? buildQueryFromFieldPathArray(
-                    this.recordInfo.addOptions.returnFields
-                  )
-                : undefined),
-              __args: collapseObject(inputs),
+          data = await executeGiraffeql(
+            {
+              [this.recordInfo.addOptions.operationName ??
+              `create${this.capitalizedType}`]: {
+                id: true,
+                __typename: true,
+                ...this.returnFields,
+                ...(this.recordInfo.addOptions.returnFields
+                  ? buildQueryFromFieldPathArray(
+                      this.recordInfo.addOptions.returnFields
+                    )
+                  : undefined),
+                __args: collapseObject(inputs),
+              },
             },
-          }
+            {
+              maxAttempts: 1, // at most 1 attempt at a time for create operations
+            }
+          )
         } else {
           // run the inputsModifier, if any
           if (this.recordInfo.editOptions.inputsModifier) {
             this.recordInfo.editOptions.inputsModifier(this, inputs)
           }
 
-          query = {
+          data = await executeGiraffeql({
             [this.recordInfo.editOptions.operationName ??
-            'update' + this.capitalizedType]: {
+            `update${this.capitalizedType}`]: {
               id: true,
               __typename: true,
               ...this.returnFields,
@@ -284,16 +289,13 @@ export default {
                 fields: collapseObject(inputs),
               },
             },
-          }
+          })
         }
-        const data = await executeGiraffeql(this, query)
 
         this.$notifier.showSnackbar({
-          message:
-            this.recordInfo.name +
-            (this.mode === 'add' || this.mode === 'copy'
-              ? ' Added'
-              : ' Updated'),
+          message: `${this.recordInfo.name} ${
+            this.mode === 'add' || this.mode === 'copy' ? 'Added' : 'Updated'
+          }`,
           variant: 'success',
         })
 
@@ -333,7 +335,7 @@ export default {
           this.rawFields
         )
 
-        const data = await executeGiraffeql(this, {
+        const data = await executeGiraffeql({
           [`get${this.capitalizedType}`]: {
             ...query,
             __args: {

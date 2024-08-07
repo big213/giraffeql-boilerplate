@@ -42,7 +42,7 @@ export default {
 
         const capitalizedLinkModel = capitalizeString(this.followLinkModel)
         if (!this.item.currentUserFollowLink) {
-          const data = await executeGiraffeql(this, {
+          const data = await executeGiraffeql({
             [`create${capitalizedLinkModel}`]: {
               id: true,
               __args: {
@@ -57,7 +57,7 @@ export default {
           })
           this.item.currentUserFollowLink = data
         } else {
-          await executeGiraffeql(this, {
+          await executeGiraffeql({
             [`delete${capitalizedLinkModel}`]: {
               __args: {
                 id: this.item.currentUserFollowLink.id,

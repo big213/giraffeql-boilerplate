@@ -305,7 +305,7 @@ export const Event = {
 /*
 export const pauseSeries = async (that, item) => {
   try {
-    await executeGiraffeql(that, {
+    await executeGiraffeql({
       updateHttpRequestSeries: {
         __args: {
           item: {

@@ -7,10 +7,9 @@ const prodResource = axios.create({
 })
 
 export async function executeGiraffeql<Key extends keyof Root>(
-  that,
   query: GetQuery<Key>,
-  omitIdToken = false,
-  attempts = 0
+  { omitIdToken = false, maxAttempts = 3 } = {},
+  attempt = 1
 ): Promise<GetResponse<Key>> {
   // fetches the idToken
   const currentUser = auth.currentUser
@@ -30,10 +29,17 @@ export async function executeGiraffeql<Key extends keyof Root>(
 
     return data.data
   } catch (err: any) {
-    // if err.response is undefined, must be cors error. try again up to 3 times before giving up
-    if (attempts < 3 && err.response === undefined) {
-      console.log(`Failed due to CORS/network error. Attempt: ${attempts}`)
-      return executeGiraffeql(that, query, omitIdToken, attempts + 1)
+    // if err.response is undefined, must be cors error. try again up to maxAttempts times before stopping
+    if (attempt < maxAttempts && err.response === undefined) {
+      console.log(`Failed due to CORS/network error. Attempt: ${attempt}`)
+      return executeGiraffeql(
+        query,
+        {
+          omitIdToken,
+          maxAttempts,
+        },
+        attempt + 1
+      )
     }
 
     // else, throw the err

@@ -200,7 +200,10 @@ export default {
             },
           }
 
-          const data = await executeGiraffeql(this, query)
+          // max 1 attempt, in case of some weird edge cases with firebase functions that could result in the request going through multiple times
+          const data = await executeGiraffeql(query, {
+            maxAttempts: 1,
+          })
           this.handleSubmitSuccess(data)
         } else if (this.actionOptions.onSubmit) {
           // if no operationName, must have onSubmit function

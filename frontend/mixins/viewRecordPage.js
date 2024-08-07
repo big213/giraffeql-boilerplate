@@ -523,7 +523,7 @@ export default {
           fields
         )
 
-        const data = await executeGiraffeql(this, {
+        const data = await executeGiraffeql({
           [`get${this.capitalizedTypename}`]: {
             ...query,
             __args: {

@@ -155,7 +155,7 @@ export default {
           await updateEmail(this.currentUser, this.inputs.newEmail)
 
           // also update email on the api
-          await executeGiraffeql(this, {
+          await executeGiraffeql({
             syncCurrentUser: {
               id: true,
             },

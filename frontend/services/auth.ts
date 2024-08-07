@@ -11,7 +11,7 @@ export async function handleLogin(that, store, authPayload) {
 
   try {
     // get the current user from the API
-    const currentUser = await executeGiraffeql<'getCurrentUser'>(null, {
+    const currentUser = await executeGiraffeql<'getCurrentUser'>({
       getCurrentUser: {
         id: true,
         email: true,

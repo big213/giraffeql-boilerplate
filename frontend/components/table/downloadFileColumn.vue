@@ -63,7 +63,7 @@ export default {
 
         // if there is custom downloadFile logic, use that
         const fileRecord = await (this.options?.getFile?.(this, this.item) ??
-          executeGiraffeql(this, {
+          executeGiraffeql({
             getFile: {
               name: true,
               signedUrl: true,

@@ -174,7 +174,7 @@ export default {
             .concat(this.recordInfo.requiredFields ?? [])
             .concat(this.recordInfo.viewOptions.requiredFields ?? [])
         )
-        const data = await executeGiraffeql(this, {
+        const data = await executeGiraffeql({
           ['get' + this.capitalizedType]: {
             ...query,
             __args: {
