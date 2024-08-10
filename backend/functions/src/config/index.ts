@@ -1,7 +1,11 @@
-import { defineInt, defineString } from "firebase-functions/params";
+import {
+  defineBoolean,
+  defineInt,
+  defineString,
+} from "firebase-functions/params";
 
 // in dev mode, SQL errors are not masked, and SQL queries/errors are logged
-export const isDev = !!(process.env.FUNCTIONS_EMULATOR ?? process.env.DEV);
+export const isDev = !!(process.env.DEV ?? defineBoolean("DEV").value());
 
 export const projectPath = process.env.PROJECT_PATH;
 

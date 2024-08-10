@@ -412,18 +412,10 @@ function retrieveAllRequiredFields(
   nestedResolverNodeMap: {
     [x: string]: GiraffeqlResolverNode;
   },
-  // going to assume the base level is always a sql field
-  isSqlField = true,
   isDataloader = false,
-  isJoinable = true,
   fieldPath: string[] = []
 ) {
   const requiredFields: Set<string> = new Set();
-
-  // if it is a sql field, not a dataloader, is joinable always add fieldPath + "id" as a required field
-  if (isSqlField && !isDataloader && isJoinable) {
-    requiredFields.add(fieldPath.length ? `${fieldPath.join(".")}.id` : "id");
-  }
 
   Object.entries(nestedResolverNodeMap).forEach(([field, resolverNode]) => {
     if (isRootResolverDefinition(resolverNode.typeDef)) {
@@ -448,9 +440,7 @@ function retrieveAllRequiredFields(
     if (resolverNode.nested && !isDataloader) {
       retrieveAllRequiredFields(
         resolverNode.nested,
-        !!resolverNode.typeDef.sqlOptions,
         !!resolverNode.typeDef.dataloader,
-        !!resolverNode.typeDef.sqlOptions?.joinType,
         fieldPath.concat(field)
       ).forEach((ele) => requiredFields.add(ele));
     }
@@ -514,6 +504,18 @@ function generateSqlSingleFieldObjectArray({
           singleFieldsObjects,
           fieldPath: fieldPath.concat(field),
         });
+
+        // if the nested map doesn't include id, add it manually (as ID field is required for proper processing of SQL fields)
+        if (!resolverNode.nested.id) {
+          singleFieldsObjects.push(
+            generateSqlSingleFieldObjectFromArray(
+              currentFieldInfoArray.concat({
+                field: "id",
+                args: null,
+              })
+            )
+          );
+        }
       } else {
         // if no, it's a leaf node. build the singleFieldObject and add to return array
         singleFieldsObjects.push(

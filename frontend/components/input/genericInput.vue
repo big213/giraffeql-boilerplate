@@ -17,7 +17,7 @@
           <MediaChip
             v-if="item.inputOptions && item.inputOptions.mediaMode"
             v-for="(file, index) in filesData"
-            :key="index"
+            :key="file.id"
             :file="file"
             draggable
             close
@@ -27,9 +27,8 @@
             @handleCloseClick="removeFileByIndex(index)"
           ></MediaChip>
           <FileChip
-            v-else
             v-for="(file, index) in filesData"
-            :key="index"
+            :key="file.id"
             :file="file"
             downloadable
             small

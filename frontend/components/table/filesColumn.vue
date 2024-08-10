@@ -9,6 +9,7 @@
         :key="index"
         :file="file"
         :downloadable="isDownloadable"
+        openable
         small
         label
         :close="false"
