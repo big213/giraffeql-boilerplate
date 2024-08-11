@@ -661,7 +661,10 @@ export type FilterObject = {
   operator: keyof FilterByField<any>
   inputType?: InputType
   preset?: boolean // should this filter show up as a preset
-  chips?: boolean // should this filter show up in the special chip filters section? (only certain types supported)
+  // should this filter show up in the special chip filters section? (only certain types supported)
+  chipOptions?: {
+    component?: any // a custom component for the chips, if any
+  }
 }
 
 type HeaderObject = {

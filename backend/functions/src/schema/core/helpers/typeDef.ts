@@ -781,6 +781,11 @@ export function generateDataloadableField(
           typename: service.typename,
           req,
           fieldPath,
+          additionalSelect: [
+            {
+              field: "id", // always add the required id field, in case it wasn't requested in the query
+            },
+          ],
           externalQuery: query,
           sqlParams: {
             where: [{ field: "id", operator: "in", value: idArray }],

@@ -106,7 +106,11 @@
               >Show All</v-chip
             >
             |
-            <PreviewRecordChip
+            <component
+              :is="
+                crudFilterObject.filterObject.chipOptions.component ||
+                'PreviewRecordChip'
+              "
               v-for="(inputOption, j) in crudFilterObject.inputObject.options"
               :key="j"
               :value="inputOption"
@@ -119,7 +123,7 @@
               @click.stop="
                 applyChipFilter(crudFilterObject.inputObject, inputOption)
               "
-            ></PreviewRecordChip>
+            ></component>
           </div>
         </div>
       </div>

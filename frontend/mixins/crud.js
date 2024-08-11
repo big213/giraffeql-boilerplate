@@ -375,7 +375,7 @@ export default {
     visibleChipsFiltersArray() {
       return this.filterInputsArray.filter(
         (ele) =>
-          ele.filterObject.chips &&
+          ele.filterObject.chipOptions &&
           !this.hiddenFilters.includes(ele.filterObject.field)
       )
     },
