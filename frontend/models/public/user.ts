@@ -15,10 +15,10 @@ export const PublicUser = {
         },
       ]
     },
+    importOptions: undefined,
   },
   addOptions: undefined,
   editOptions: undefined,
   deleteOptions: undefined,
-  importOptions: undefined,
   enterOptions: {},
 }

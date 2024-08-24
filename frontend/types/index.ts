@@ -211,6 +211,34 @@ export type RecordInfo<T extends keyof MainTypes> = {
       fields: ExportFieldDefinition[]
     }
 
+    // can results be imported?
+    importOptions?: {
+      // required: fields that can be added
+      fields: ImportFieldDefinition[]
+      // custom component
+      component?: any
+      // if not createX, the custom create operation name
+      operationName?: string
+
+      // custom function to modify the inputs in-place before they get sent as args
+      inputsModifier?: (that, inputs) => void
+
+      // skip the import row if this is true
+      skipIf?: (that, inputs) => boolean
+
+      // function that runs when import is successfully run on at least one record
+      onSuccess?: (that) => void
+
+      // function that runs when an import operation throws an error. it is a way to ignore (catch) the error if it should be caught
+      onError?: (that, err) => void
+
+      // if a custom title, what should it be?
+      title?: string
+
+      // if a custom icon, what should it be?
+      icon?: string
+    }
+
     // this option, if defined, will override the default grid/list option set by the user
     overrideViewMode?: 'grid' | 'list'
 
@@ -298,33 +326,6 @@ export type RecordInfo<T extends keyof MainTypes> = {
     icon?: string
   }
 
-  importOptions?: {
-    // required: fields that can be added
-    fields: ImportFieldDefinition[]
-    // custom component
-    component?: any
-    // if not createX, the custom create operation name
-    operationName?: string
-
-    // custom function to modify the inputs in-place before they get sent as args
-    inputsModifier?: (that, inputs) => void
-
-    // skip the import row if this is true
-    skipIf?: (that, inputs) => boolean
-
-    // function that runs when import is successfully run on at least one record
-    onSuccess?: (that) => void
-
-    // function that runs when an import operation throws an error. it is a way to ignore (catch) the error if it should be caught
-    onError?: (that, err) => void
-
-    // if a custom title, what should it be?
-    title?: string
-
-    // if a custom icon, what should it be?
-    icon?: string
-  }
-
   editOptions?: {
     // required: fields that can be added
     fields: (string | EditFieldDefinition)[]
@@ -361,6 +362,10 @@ export type RecordInfo<T extends keyof MainTypes> = {
     component?: any
     // if not createX, the custom create operation name
     operationName?: string
+
+    // fields to return after deleting (for use in onSuccess, etc) -- array in dot notation
+    returnFields?: string[]
+
     // function that runs when recorded is successfully deleted
     onSuccess?: (that, item) => void
 
@@ -653,6 +658,10 @@ type SortObject = {
   text?: string
   field: string
   desc: boolean
+  additionalSortObjects?: {
+    field: string
+    desc: boolean
+  }[]
 }
 
 export type FilterObject = {
@@ -720,7 +729,7 @@ export type ActionOptions = {
   submitButtonText?: string
 
   // hide the actions bar entirely (since stripe-pi has its own button)
-  hideActions?: boolean
+  hideActionsIf?: (that, item) => any
 
   // custom component, if any
   component?: any
@@ -786,7 +795,7 @@ export type ImportFieldDefinition = {
   path?: string
 
   // for parsing CSV imports
-  parseValue?: (val: unknown) => unknown
+  parseValue?: (val: any) => unknown
 }
 
 export type ExportFieldDefinition = {

@@ -6,6 +6,7 @@ import {
 
 // in dev mode, SQL errors are not masked, and SQL queries/errors are logged
 export const isDev = !!(process.env.DEV ?? defineBoolean("DEV").value());
+export const debugMode = defineBoolean("DEBUG_MODE").value();
 
 export const projectPath = process.env.PROJECT_PATH;
 

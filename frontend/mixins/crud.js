@@ -144,7 +144,7 @@ export default {
       isGrid: false,
 
       // type: CrudSortObject | null
-      currentSort: null,
+      currentSortObject: null,
 
       // type: CrudFilterObject[]
       filterInputsArray: [],
@@ -226,6 +226,7 @@ export default {
             })`,
           field: sortObject.field,
           desc: sortObject.desc,
+          additionalSortObjects: sortObject.additionalSortObjects,
         }
       })
     },
@@ -651,9 +652,9 @@ export default {
       this.updatePageOptions()
     },
 
-    setCurrentSort(sortObject) {
+    setcurrentSortObject(sortObject) {
       this.isChanged = true
-      this.currentSort = sortObject
+      this.currentSortObject = sortObject
       this.updatePageOptions()
     },
 
@@ -851,18 +852,27 @@ export default {
     },
 
     generatePaginatorArgs(pagination = true) {
-      const sortBy = this.currentSort
-        ? [{ field: this.currentSort.field, desc: this.currentSort.desc }]
-        : []
+      const sortBy = (
+        this.currentSortObject
+          ? [
+              {
+                field: this.currentSortObject.field,
+                desc: this.currentSortObject.desc,
+              },
+            ]
+          : []
+      ).concat(this.currentSortObject?.additionalSortObjects ?? [])
 
       // append any additionalSortParams IF they are unique fields
       if (this.recordInfo.paginationOptions.additionalSortParams) {
         this.recordInfo.paginationOptions.additionalSortParams.forEach(
           (sortObject) => {
             // if field already exists, skip
-            if (this.currentSort && sortObject.field === this.currentSort.field)
-              return
-            sortBy.push(sortObject)
+            if (
+              this.currentSortObject &&
+              sortObject.field === this.currentSortObject.field
+            )
+              return sortBy.push(sortObject)
           }
         )
       }
@@ -1033,8 +1043,11 @@ export default {
             gt: crudDistanceObject.gtValue,
             lt: crudDistanceObject.ltValue,
           })),
-        sort: this.currentSort
-          ? { field: this.currentSort.field, desc: this.currentSort.desc }
+        sort: this.currentSortObject
+          ? {
+              field: this.currentSortObject.field,
+              desc: this.currentSortObject.desc,
+            }
           : null,
       })
       this.filterChanged = false
@@ -1228,7 +1241,7 @@ export default {
 
       // sync the sort
       const sort = this.pageOptions?.sort
-      this.currentSort =
+      this.currentSortObject =
         this.sortOptions.find(
           (sortObject) =>
             sortObject.field === sort?.field && sortObject.desc === sort?.desc

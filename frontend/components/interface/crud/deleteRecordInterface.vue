@@ -22,7 +22,11 @@
 
 <script>
 import { executeGiraffeql } from '~/services/giraffeql'
-import { capitalizeString, handleError } from '~/services/base'
+import {
+  capitalizeString,
+  handleError,
+  buildQueryFromFieldPathArray,
+} from '~/services/base'
 
 export default {
   props: {
@@ -50,10 +54,6 @@ export default {
         ? this.recordInfo.renderItem(this.selectedItem)
         : this.selectedItem.name || this.selectedItem.id
     },
-
-    capitalizedTypename() {
-      return capitalizeString(this.recordInfo.typename)
-    },
   },
 
   methods: {
@@ -62,8 +62,13 @@ export default {
       try {
         const data = await executeGiraffeql({
           [this.recordInfo.deleteOptions.operationName ??
-          'delete' + this.capitalizedTypename]: {
+          `delete${capitalizeString(this.recordInfo.typename)}`]: {
             id: true,
+            ...(this.recordInfo.deleteOptions.returnFields
+              ? buildQueryFromFieldPathArray(
+                  this.recordInfo.editOptions.returnFields
+                )
+              : undefined),
             __args: {
               id: this.selectedItem.id,
             },
@@ -71,7 +76,7 @@ export default {
         })
 
         this.$notifier.showSnackbar({
-          message: this.recordInfo.name + ' Deleted',
+          message: `${this.recordInfo.name}Deleted`,
           variant: 'success',
         })
 
@@ -79,7 +84,7 @@ export default {
         const onSuccess = this.recordInfo.deleteOptions.onSuccess
 
         if (onSuccess) {
-          onSuccess(this, this.selectedItem)
+          onSuccess(this, data)
         } else {
           // else emit the generic refresh-interface event
           this.$root.$emit('refresh-interface', this.recordInfo.typename)

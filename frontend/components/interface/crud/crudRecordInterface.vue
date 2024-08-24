@@ -238,7 +238,7 @@
             >
               <v-icon :left="!isXsViewport">mdi-sort</v-icon>
               <span v-if="!isXsViewport">{{
-                currentSort ? currentSort.text : 'None'
+                currentSortObject ? currentSortObject.text : 'None'
               }}</span></v-btn
             >
           </template>
@@ -246,8 +246,8 @@
             <v-list-item
               v-for="(crudSortObject, index) in sortOptions"
               :key="index"
-              :class="{ 'selected-bg': currentSort === crudSortObject }"
-              @click="setCurrentSort(crudSortObject)"
+              :class="{ 'selected-bg': currentSortObject === crudSortObject }"
+              @click="setcurrentSortObject(crudSortObject)"
             >
               <v-list-item-title>{{ crudSortObject.text }}</v-list-item-title>
             </v-list-item>
@@ -283,7 +283,7 @@
           <v-icon>{{ isGrid ? 'mdi-view-list' : 'mdi-view-grid' }}</v-icon>
         </v-btn>
         <v-btn
-          v-if="recordInfo.importOptions"
+          v-if="recordInfo.paginationOptions.importOptions"
           icon
           title="Import Records"
           @click="openImportRecordDialog()"

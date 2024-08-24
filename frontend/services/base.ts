@@ -970,6 +970,16 @@ export function generateFilterByObjectArray(
       value = rawFilterObject.value
     }
 
+    // if the operator is in/nin, need to properly map inputs into an array of ids
+    if (
+      rawFilterObject.operator === 'in' ||
+      rawFilterObject.operator === 'nin'
+    ) {
+      if (Array.isArray(value)) {
+        value = value.map((ele) => (typeof ele === 'string' ? ele : ele.id))
+      }
+    }
+
     // apply parseValue function, if any
     total[primaryField][rawFilterObject.operator] = fieldInfo.parseValue
       ? fieldInfo.parseValue(value)

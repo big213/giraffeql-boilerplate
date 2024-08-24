@@ -60,7 +60,8 @@ export type SqlType =
   | "decimal"
   | "boolean"
   | "json"
-  | "jsonb";
+  | "jsonb"
+  | "bigInteger";
 
 export type ExternalQuery = {
   [x: string]: any;

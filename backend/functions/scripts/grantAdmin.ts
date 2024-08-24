@@ -15,7 +15,7 @@ const argv = yargs(process.argv.slice(2))
 if (argv.prod) {
   delete process.env.DEV;
 } else {
-  process.env.DEV = "1";
+  process.env.DEV = "true";
 }
 
 import { pgOptions } from "../src/config";

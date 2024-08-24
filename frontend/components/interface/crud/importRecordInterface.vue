@@ -113,7 +113,7 @@ export default {
         []
       )
 
-      return this.recordInfo.importOptions.fields.filter(
+      return this.recordInfo.paginationOptions.importOptions.fields.filter(
         (importFieldObject) => {
           if (!importFieldObject.field) return true
 
@@ -194,9 +194,10 @@ export default {
 
           const lockedFieldsMap = new Map()
           for (const field in this.selectedItem) {
-            const fieldObject = this.recordInfo.importOptions.fields.find(
-              (innerFieldObject) => innerFieldObject.field === field
-            )
+            const fieldObject =
+              this.recordInfo.paginationOptions.importOptions.fields.find(
+                (innerFieldObject) => innerFieldObject.field === field
+              )
             if (fieldObject) {
               lockedFieldsMap.set(
                 fieldObject.path ?? fieldObject.field,
@@ -224,7 +225,7 @@ export default {
           this.acceptedFieldObjects.forEach((importFieldObject) => {
             if (importFieldObject.parseValue) {
               parseValueMap.set(
-                importFieldObject.path,
+                importFieldObject.field,
                 importFieldObject.parseValue
               )
             }
@@ -244,8 +245,10 @@ export default {
             }
 
             // run the inputsModifier, if any
-            if (this.recordInfo.importOptions.inputsModifier) {
-              this.recordInfo.importOptions.inputsModifier(
+            if (
+              this.recordInfo.paginationOptions.importOptions.inputsModifier
+            ) {
+              this.recordInfo.paginationOptions.importOptions.inputsModifier(
                 this,
                 recordData.data
               )
@@ -253,8 +256,11 @@ export default {
 
             // if there is a skipIf function, check it to see if this entry should be skippeed
             if (
-              this.recordInfo.importOptions.skipIf &&
-              this.recordInfo.importOptions.skipIf(this, recordData.data)
+              this.recordInfo.paginationOptions.importOptions.skipIf &&
+              this.recordInfo.paginationOptions.importOptions.skipIf(
+                this,
+                recordData.data
+              )
             ) {
               recordData.isSkipped = true
             }
@@ -295,8 +301,8 @@ export default {
             },
           }).catch((err) => {
             // if there is an error and there is a custom onError function, run that. else throw
-            if (this.recordInfo.importOptions.onError) {
-              this.recordInfo.importOptions.onError(this, err)
+            if (this.recordInfo.paginationOptions.importOptions.onError) {
+              this.recordInfo.paginationOptions.importOptions.onError(this, err)
 
               // if the error is caught, mark the record as skipped
               recordData.isSkipped = true
@@ -328,7 +334,8 @@ export default {
 
     handleSuccess() {
       // run any custom onSuccess functions
-      const onSuccess = this.recordInfo.importOptions.onSuccess
+      const onSuccess =
+        this.recordInfo.paginationOptions.importOptions.onSuccess
 
       if (onSuccess) {
         onSuccess(this)

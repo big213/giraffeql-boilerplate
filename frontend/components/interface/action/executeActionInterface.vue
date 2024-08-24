@@ -28,7 +28,7 @@
       </v-container>
     </v-card-text>
 
-    <v-card-actions v-if="!isLoading && !actionOptions.hideActions">
+    <v-card-actions v-if="!isLoading && !hideActions">
       <v-spacer></v-spacer>
       <slot name="footer-action"></slot>
       <v-btn
@@ -113,6 +113,10 @@ export default {
 
     submitButtonText() {
       return this.actionOptions.submitButtonText ?? 'Submit'
+    },
+
+    hideActions() {
+      return !!this.actionOptions.hideActionsIf?.(this, this.item)
     },
   },
 

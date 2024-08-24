@@ -1335,7 +1335,8 @@ export default {
     },
 
     applyDatePickerInput(val) {
-      this.item.value = val + ' 12:00:00 AM'
+      this.item.value = val
+      this.$emit('change', this.item.value)
     },
 
     // parse from date and time inputs to unixTimestamp

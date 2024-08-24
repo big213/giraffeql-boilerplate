@@ -25,6 +25,7 @@ export default new GiraffeqlObjectType(
       size: generateIntegerField({
         allowNull: false,
         typeDefOptions: { addable: false, updateable: false },
+        bigInt: true,
       }),
       location: generateStringField({
         allowNull: false,

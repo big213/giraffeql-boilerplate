@@ -7,9 +7,9 @@ import {
   ObjectTypeDefinitionField,
   objectTypeDefs,
 } from "giraffeql";
-import { isDev } from "../../../config";
+import { debugMode } from "../../../config";
 import { SpecialJoinFunction } from "../../../types";
-import { executeDBQuery, knex } from "../../../utils/knex";
+import { knex } from "../../../utils/knex";
 import { linkDefs } from "../../links";
 import { generateSqlSingleFieldObject } from "./sqlHelper";
 import { Knex } from "knex";
@@ -231,9 +231,9 @@ function handleSqlError(err: unknown) {
   // double check if err is type Error
   let errMessage: string;
   if (err instanceof Error) {
-    errMessage = isDev ? err.message : "A SQL error has occurred";
+    errMessage = debugMode ? err.message : "A SQL error has occurred";
     // if in dev mode, also log the SQL error
-    if (isDev) {
+    if (debugMode) {
       console.log(err);
     }
   } else {
@@ -1428,5 +1428,3 @@ export async function deleteTableRow(sqlQuery: SqlDeleteQuery) {
     throw handleSqlError(err);
   }
 }
-
-export { executeDBQuery };

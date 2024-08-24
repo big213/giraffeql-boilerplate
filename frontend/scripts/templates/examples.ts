@@ -36,6 +36,11 @@ export const Event = {
         cols: 6,
       },
     },
+    postedDate: {
+      text: 'Posted Date',
+      inputType: 'datepicker',
+      default: () => new Date().toISOString().split('T')[0],
+    },
     standardTextField: {
       text: 'Title',
     },
@@ -102,6 +107,12 @@ export const Event = {
       hideDownload: true,
       mediaMode: true,
     }),
+    // multiple files (file chip mode)
+    ...generatePreviewableFilesColumn({
+      fieldname: 'files',
+      text: 'Files',
+      inputType: 'multiple-file',
+    }),
     role: {
       text: 'User Role',
       getOptions: getUserRoles,
@@ -113,6 +124,18 @@ export const Event = {
       parseValue: (val: string) =>
         val ? val.split(',').filter((ele) => ele) : [],
     },
+    /*
+    status: {
+      text: 'Status',
+      getOptions: getOrderStatuses,
+      inputType: 'select',
+      component: ChipColumn,
+      columnOptions: {
+        smallMode: true,
+        valuesMap: orderStatusMap,
+      },
+    },
+    */
   },
   paginationOptions: {
     searchOptions: {},
@@ -164,6 +187,33 @@ export const Event = {
         width: '150px',
       },
     ],
+    importOptions: {
+      fields: [
+        {
+          field: 'collectibleType',
+          path: 'collectibleType.id',
+        },
+        {
+          field: 'sortIndex',
+        },
+        {
+          field: 'name',
+        },
+      ],
+    },
+    downloadOptions: {
+      fields: [
+        {
+          field: 'thing.id',
+        },
+        {
+          field: 'thing.name',
+        },
+        {
+          field: 'quantity',
+        },
+      ],
+    },
   },
   addOptions: {
     fields: [
@@ -200,20 +250,6 @@ export const Event = {
       'totalCost',
       'paymentInstructions',
       'participantsLimit',
-    ],
-  },
-  importOptions: {
-    fields: [
-      {
-        field: 'collectibleType',
-        path: 'collectibleType.id',
-      },
-      {
-        field: 'sortIndex',
-      },
-      {
-        field: 'name',
-      },
     ],
   },
   editOptions: {

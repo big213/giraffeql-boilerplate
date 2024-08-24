@@ -249,9 +249,11 @@ export function generateTextField(params: GenerateFieldParams) {
   });
 }
 
+// only goes up to 2.1 billion
 export function generateIntegerField(
   params: GenerateFieldParams & {
     type?: GiraffeqlScalarType;
+    bigInt?: boolean;
   }
 ) {
   const {
@@ -264,6 +266,7 @@ export function generateIntegerField(
     sqlOptions,
     typeDefOptions,
     type = Scalars.number,
+    bigInt = false,
   } = params;
   return generateStandardField({
     description,
@@ -272,7 +275,7 @@ export function generateIntegerField(
     defaultValue,
     hidden,
     nestHidden,
-    sqlType: "integer",
+    sqlType: bigInt ? "bigInteger" : "integer",
     type,
     sqlOptions: {
       // detect NaN and convert to undefined

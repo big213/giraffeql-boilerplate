@@ -232,6 +232,17 @@ export default {
         this.dialogs.executeAction = params
       }
     })
+
+    // opens a simple login dialog
+    this.$root.$on('openLoginDialog', () => {
+      if (!this.$store.getters['auth/user']) {
+        this.dialogs.login = {
+          status: true,
+        }
+
+        return
+      }
+    })
   },
 
   methods: {
@@ -244,6 +255,14 @@ export default {
       // close the dialog
       this.dialogs.login = null
     },
+  },
+
+  destroyed() {
+    // need to clean up event listeners on destroy
+    this.$root.$off('openEditRecordDialog')
+    this.$root.$off('openCrudRecordDialog')
+    this.$root.$off('openExecuteActionDialog')
+    this.$root.$off('openLoginDialog')
   },
 }
 </script>
