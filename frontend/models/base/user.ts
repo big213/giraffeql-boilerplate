@@ -1,10 +1,10 @@
-import { getUserRoles } from '~/services/dropdown'
+import { getUserPermissions, getUserRoles } from '~/services/dropdown'
 import type { RecordInfo } from '~/types'
 import BooleanColumn from '~/components/table/booleanColumn.vue'
 import FollowColumn from '~/components/table/followColumn.vue'
 import {
   generateBaseFields,
-  generateClickRowToOpenOptions,
+  generateClickRowToOpenDialogOptions,
   generateIsPublicField,
   generateSortOptions,
 } from '~/services/recordInfo'
@@ -37,9 +37,8 @@ export const User = <RecordInfo<'user'>>{
     },
     permissions: {
       text: 'Custom Permissions',
-      serialize: (val: string[]) => val && val.join(','),
-      parseValue: (val: string) =>
-        val ? val.split(',').filter((ele) => ele) : [],
+      inputType: 'multiple-select',
+      getOptions: getUserPermissions,
     },
     ...generateIsPublicField(),
     allowEmailNotifications: {
@@ -63,7 +62,7 @@ export const User = <RecordInfo<'user'>>{
         operator: 'eq',
       },
     ],
-    ...generateClickRowToOpenOptions(),
+    ...generateClickRowToOpenDialogOptions(),
     sortOptions: [
       ...generateSortOptions('createdAt'),
       ...generateSortOptions('updatedAt'),

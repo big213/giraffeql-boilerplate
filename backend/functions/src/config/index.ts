@@ -6,7 +6,9 @@ import {
 
 // in dev mode, SQL errors are not masked, and SQL queries/errors are logged
 export const isDev = !!(process.env.DEV ?? defineBoolean("DEV").value());
-export const debugMode = defineBoolean("DEBUG_MODE").value();
+export const debugMode = !!(
+  process.env.DEBUG_MODE ?? defineBoolean("DEBUG_MODE").value()
+);
 
 export const projectPath = process.env.PROJECT_PATH;
 
@@ -50,6 +52,7 @@ export const baseTimeoutSeconds = defineInt("BASE_TIMEOUT_SECONDS", {
 export const baseVersion = defineString("BASE_VERSION");
 
 export const baseServiceAccount = defineString("BASE_SERVICE_ACCOUNT");
+export const baseTimezone = defineString("BASE_TIMEZONE");
 
 // add any additional origins
 export const allowedOrigins = baseOrigins.value()

@@ -887,9 +887,18 @@ export class PaginatedService extends BaseService {
     return record;
   }
 
-  async updateSqlRecord(sqlQuery: Omit<SqlUpdateQuery, "table">) {
+  async updateSqlRecord(
+    sqlQuery: Omit<SqlUpdateQuery, "table">,
+    updateUpdatedAt = false
+  ) {
     return updateTableRow({
       ...sqlQuery,
+      fields: {
+        ...sqlQuery.fields,
+        ...(updateUpdatedAt && {
+          updatedAt: knex.fn.now(),
+        }),
+      },
       table: this.typename,
     });
   }
@@ -916,7 +925,7 @@ export class PaginatedService extends BaseService {
           await updateTableRow({
             ...sqlQuery,
             fields: {
-              updatedAt: 1,
+              updatedAt: knex.fn.now(),
             },
             table: this.typename,
           });
@@ -1048,7 +1057,7 @@ export class PaginatedService extends BaseService {
         id: item.id,
         updateFields: {
           ...args.fields,
-          updatedAt: 1,
+          updatedAt: knex.fn.now(),
         },
         req,
         fieldPath,

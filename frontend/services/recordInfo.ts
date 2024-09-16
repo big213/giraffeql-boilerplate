@@ -30,12 +30,12 @@ export function generatePreviewableJoinableField({
   fieldname,
   typename,
   text,
-  inputType = 'server-autocomplete',
+  inputType = 'type-autocomplete',
   fieldOptions = {},
   alias,
 }: {
   fieldname: string
-  typename: string
+  typename?: string
   text: string
   inputType?: InputType
   fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
@@ -59,18 +59,18 @@ export function generatePreviewableJoinableField({
 }
 
 export function generatePreviewableRecordField({
-  typename,
   fieldname,
+  typename,
   text,
   fieldOptions,
 }: {
-  typename: string
-  fieldname?: string
+  fieldname: string
+  typename?: string
   text: string
   fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
 }) {
   const fieldnamePrefix = fieldname ? fieldname + '.' : ''
-  const simpleModel = getSimpleModel(typename)
+  const simpleModel = getSimpleModel(typename ?? fieldname)
   return {
     text,
     fields: [
@@ -89,17 +89,16 @@ export function generateJoinableField({
   fieldname,
   typename,
   text,
-  inputType = 'server-autocomplete',
+  inputType = 'type-autocomplete',
   fieldOptions = {},
 }: {
   fieldname: string
-  typename: string
+  typename?: string
   text: string
-  hasAvatar?: boolean
   inputType?: InputType
   fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
 }) {
-  const simpleModel = getSimpleModel(typename)
+  const simpleModel = getSimpleModel(typename ?? fieldname)
   return {
     text,
     fields: [`${fieldname}.id`],
@@ -107,7 +106,8 @@ export function generateJoinableField({
     ...fieldOptions,
     inputOptions: {
       hasAvatar: simpleModel.hasAvatar,
-      typename,
+      hasName: simpleModel.hasName,
+      typename: typename ?? fieldname,
       ...fieldOptions.inputOptions,
     },
   }
@@ -157,7 +157,7 @@ export function generateBaseFields(simpleModel: SimpleRecordInfo<any>) {
         },
         record: generatePreviewableRecordField({
           text: 'Record',
-          typename: simpleModel.typename,
+          fieldname: simpleModel.typename,
         }),
       }),
     ...generatePreviewableJoinableField({
@@ -386,13 +386,15 @@ export function generatePreviewableFilesColumn({
 }
 
 // paginationOption helpers
-export function generateClickRowToOpenOptions() {
+export function generateClickRowToOpenDialogOptions(
+  action: 'view' | 'edit' | 'delete' | 'share' | 'copy' = 'view'
+) {
   return {
     handleRowClick: (that, props) => {
-      that.openEditDialog('view', props.item)
+      that.openEditDialog(action, props.item)
     },
     handleGridElementClick: (that, item) => {
-      that.openEditDialog('view', item)
+      that.openEditDialog(action, item)
     },
   }
 }
@@ -400,7 +402,10 @@ export function generateClickRowToOpenOptions() {
 export function generateClickRowToExpandOptions() {
   return {
     handleRowClick: (that, props) => {
-      if (that.recordInfo.expandTypes[0]) {
+      // if already expanded, close it
+      if (props.isExpanded) {
+        that.closeExpandedItems()
+      } else if (that.recordInfo.expandTypes[0]) {
         that.toggleItemExpanded(props, that.recordInfo.expandTypes[0])
       }
     },
@@ -414,8 +419,9 @@ export function generateClickRowToExpandOptions() {
 
 export function generateClickRowToEnterOptions({
   expandKey,
+  miniMode,
   queryParams,
-}: { expandKey?: string | null; queryParams?: any } = {}) {
+}: { expandKey?: string | null; miniMode?: boolean; queryParams?: any } = {}) {
   return {
     handleRowClick: (that, props) => {
       enterRoute(
@@ -425,6 +431,7 @@ export function generateClickRowToEnterOptions({
           routeType: that.recordInfo.routeType,
           id: props.item.id,
           showComments: true,
+          miniMode,
           expandKey,
           queryParams,
         }),
@@ -439,6 +446,7 @@ export function generateClickRowToEnterOptions({
           routeType: that.recordInfo.routeType,
           id: item.id,
           showComments: true,
+          miniMode,
           expandKey,
           queryParams,
         }),
@@ -580,25 +588,6 @@ export function generateSortOptions(field: string) {
 }
 
 // custom functions
-export function generateThingSkuLookupSearchOptions(prefix?: string) {
-  return {
-    getParams: (that, _searchQuery) => {
-      const dictionaryIds = [
-        that.$store.getters['dictionary/current']?.id,
-        that.$store.getters['dictionary/foreign']?.id,
-      ].filter((e) => e)
-
-      // generate the params
-      return dictionaryIds.length
-        ? {
-            [`${prefix ? `${prefix}.` : ''}dictionaryItem.dictionary.id_in`]:
-              dictionaryIds,
-          }
-        : undefined
-    },
-  }
-}
-
 export function generateHomePageRecordInfo({
   recordInfo,
   title,
@@ -691,7 +680,7 @@ export function generateMultipleJoinableField({
   fieldname,
   text,
   typename,
-  inputType = 'server-autocomplete',
+  inputType = 'type-autocomplete-multiple',
   fieldOptions = {},
 }: {
   fieldname: string

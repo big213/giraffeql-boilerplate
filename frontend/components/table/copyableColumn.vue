@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div v-if="currentValue">
     {{ currentValue }}
     <v-icon small @click.stop="copyToClipboard(currentValue)"
       >mdi-content-copy</v-icon

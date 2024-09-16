@@ -33,10 +33,11 @@
 </template>
 
 <script>
-import { handleError, timeout } from '~/services/base'
+import { handleError } from '~/services/base'
 import { auth } from '~/services/fireinit'
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { logAnalyticsEvent } from '~/services/analytics'
+import { waitForLoginSuccess } from '~/services/auth'
 
 export default {
   components: {},
@@ -69,11 +70,7 @@ export default {
         logAnalyticsEvent('login')
 
         // wait for handleLogin to finish (detected when this.$store.getters['auth/user'] has been set)
-        while (true) {
-          if (this.$store.getters['auth/user']) break
-
-          await timeout(500)
-        }
+        await waitForLoginSuccess(this)
 
         this.$emit('success')
       } catch (err) {

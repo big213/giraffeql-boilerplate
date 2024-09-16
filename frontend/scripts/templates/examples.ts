@@ -4,8 +4,9 @@ import PreviewableFilesColumn from '~/components/table/previewableFilesColumn.vu
 import {
   generateBaseFields,
   generateClickRowToExpandOptions,
-  generateClickRowToOpenOptions,
+  generateClickRowToOpenDialogOptions,
   generateJoinableField,
+  generateMultipleJoinableField,
   generatePreviewableFilesColumn,
   generatePreviewableJoinableField,
   generatePreviewableRecordField,
@@ -13,6 +14,7 @@ import {
 } from '~/services/recordInfo'
 import TimeagoColumn from '~/components/table/timeagoColumn.vue'
 import { getUserRoles } from '~/services/dropdown'
+import ChipColumn from '~/components/table/chipColumn.vue'
 
 export const Event = {
   typename: 'event',
@@ -55,9 +57,6 @@ export const Event = {
       ...generateJoinableField({
         text: 'Locale',
         fieldname: 'locale',
-        typename: 'locale',
-        hasAvatar: true,
-        // inputType: 'autocomplete',
         fieldOptions: {
           // getOptions: getLocales
           /*
@@ -77,13 +76,11 @@ export const Event = {
     localeRecord: generatePreviewableRecordField({
       fieldname: 'locale',
       text: 'Locale',
-      typename: 'locale',
     }),
     // OR, joinable and previewable fields, combined
     ...generatePreviewableJoinableField({
       text: 'Locale',
       fieldname: 'locale',
-      typename: 'locale',
       // inputType: 'autocomplete',
       // fieldOptions: { getOptions: getLocales },
     }),
@@ -136,6 +133,33 @@ export const Event = {
       },
     },
     */
+    events: generateMultipleJoinableField({
+      fieldname: 'events',
+      text: 'Events',
+      typename: 'event',
+      inputType: 'multiple-select',
+      fieldOptions: {
+        /*
+        getOptions: (that) =>
+          getEvents(that, false, {
+            sortBy: [
+              {
+                field: 'sortIndex',
+                desc: false,
+              },
+            ],
+          }),
+        */
+        inputOptions: {
+          hasAvatar: true,
+          typename: 'productTag',
+          hasName: true,
+        },
+        columnOptions: {
+          disablePreview: true,
+        },
+      },
+    }),
   },
   paginationOptions: {
     searchOptions: {},
@@ -154,7 +178,7 @@ export const Event = {
       },
     ],
     heroOptions: {},
-    ...generateClickRowToOpenOptions(),
+    ...generateClickRowToOpenDialogOptions(),
     ...generateClickRowToExpandOptions(),
     sortOptions: [
       ...generateSortOptions('createdAt'),

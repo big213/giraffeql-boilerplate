@@ -240,15 +240,17 @@ export class UserService extends PaginatedService {
 
     // if email is different, sync it
     if (item.email !== userRecord.email) {
-      await this.updateSqlRecord({
-        fields: {
-          email: userRecord.email,
-          updatedAt: "knex.fn.now()",
+      await this.updateSqlRecord(
+        {
+          fields: {
+            email: userRecord.email,
+          },
+          where: {
+            id: req.user.id,
+          },
         },
-        where: {
-          id: req.user.id,
-        },
-      });
+        true
+      );
     }
 
     return this.getRecord({
@@ -285,7 +287,7 @@ export class UserService extends PaginatedService {
       id: item.id,
       updateFields: {
         ...args.fields,
-        updatedAt: 1,
+        updatedAt: knex.fn.now(),
       },
       req,
       fieldPath,

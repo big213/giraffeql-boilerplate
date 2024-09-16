@@ -1,44 +1,68 @@
 import { GiraffeqlBaseError } from "giraffeql";
 
 export class PermissionsError extends GiraffeqlBaseError {
-  constructor(params: { message?: string; fieldPath?: string[] }) {
-    const { message = "Insufficient permissions" } = params;
+  constructor({
+    message,
+    fieldPath,
+  }: {
+    message?: string;
+    fieldPath?: string[];
+  }) {
     super({
       errorName: "PermissionsError",
-      message,
+      message: message ?? "Insufficient permissions",
+      fieldPath,
       statusCode: 403,
     });
   }
 }
 
 export class TimeoutError extends GiraffeqlBaseError {
-  constructor(params: { message?: string; fieldPath?: string[] }) {
-    const { message = "Request timed out" } = params;
+  constructor({
+    message,
+    fieldPath,
+  }: {
+    message?: string;
+    fieldPath?: string[];
+  }) {
     super({
       errorName: "TimeoutError",
-      message,
+      message: message ?? "Request timed out",
+      fieldPath,
       statusCode: 500,
     });
   }
 }
 
 export class AuthenticationError extends GiraffeqlBaseError {
-  constructor(params: { message?: string; fieldPath?: string[] }) {
-    const { message = "Error authenticating" } = params;
+  constructor({
+    message,
+    fieldPath,
+  }: {
+    message?: string;
+    fieldPath?: string[];
+  }) {
     super({
       errorName: "AuthenticationError",
-      message,
+      message: message ?? "Error authenticating",
+      fieldPath,
       statusCode: 401,
     });
   }
 }
 
 export class DuplicateError extends GiraffeqlBaseError {
-  constructor(params: { message?: string; fieldPath?: string[] }) {
-    const { message = "Duplicate entry" } = params;
+  constructor({
+    message,
+    fieldPath,
+  }: {
+    message?: string;
+    fieldPath?: string[];
+  }) {
     super({
       errorName: "DuplicateError",
-      message,
+      message: message ?? "Duplicate Entry",
+      fieldPath,
       statusCode: 400,
     });
   }

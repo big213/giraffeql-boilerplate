@@ -25,7 +25,7 @@ async function generateAccessToken() {
   }
 }
 
-async function executePaypalRequest({
+export async function executePaypalRequest({
   path,
   method,
   payload,

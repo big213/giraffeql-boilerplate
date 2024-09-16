@@ -27,6 +27,7 @@
             @handleCloseClick="removeFileByIndex(index)"
           ></MediaChip>
           <FileChip
+            v-else
             v-for="(file, index) in filesData"
             :key="file.id"
             :file="file"
@@ -337,86 +338,12 @@
       @input="handleDateTimeInputChange($event) || triggerInput()"
     ></v-text-field>
     <v-combobox
-      v-else-if="item.inputType === 'combobox'"
+      v-else-if="item.inputType === 'type-combobox'"
       ref="combobox"
       v-model="item.value"
       :search-input.sync="item.inputValue"
       :items="item.options"
-      item-text="name"
-      item-value="id"
-      :label="item.label + (item.optional ? ' (optional)' : '')"
-      :readonly="isReadonly"
-      :append-icon="appendIcon"
-      :append-outer-icon="item.closeable ? 'mdi-close' : null"
-      :hint="item.hint"
-      :loading="item.loading"
-      persistent-hint
-      filled
-      class="py-0"
-      v-on="$listeners"
-      @blur="item.focused = false"
-      @focus="item.focused = true"
-      @click:append="handleClear()"
-      @click:append-outer="handleClose()"
-    >
-      <template
-        v-if="
-          item.inputOptions &&
-          (item.inputOptions.hasAvatar || item.inputOptions.selectionComponent)
-        "
-        v-slot:item="data"
-      >
-        <component
-          v-if="item.inputOptions.selectionComponent"
-          :is="item.inputOptions.selectionComponent"
-          :value="data.item"
-        >
-        </component>
-        <v-chip v-else pill>
-          <v-avatar left>
-            <v-img
-              v-if="data.item.avatar"
-              :src="data.item.avatar"
-              contain
-            ></v-img
-            ><v-icon v-else>{{ icon }} </v-icon>
-          </v-avatar>
-          {{ data.item.name }}
-        </v-chip>
-      </template>
-      <template
-        v-if="
-          item.inputOptions &&
-          (item.inputOptions.hasAvatar || item.inputOptions.selectionComponent)
-        "
-        v-slot:selection="data"
-      >
-        <component
-          v-if="item.inputOptions.selectionComponent"
-          :is="item.inputOptions.selectionComponent"
-          :value="data.item"
-        >
-        </component>
-        <v-chip v-else v-bind="data.attrs" pill>
-          <v-avatar left>
-            <v-img
-              v-if="data.item.avatar"
-              :src="data.item.avatar"
-              contain
-            ></v-img
-            ><v-icon v-else>{{ icon }}</v-icon>
-          </v-avatar>
-          {{ standardizeComboboxName(data.item) }}
-        </v-chip>
-      </template>
-    </v-combobox>
-    <v-combobox
-      v-else-if="item.inputType === 'server-combobox'"
-      ref="combobox"
-      v-model="item.value"
-      :search-input.sync="item.inputValue"
-      :items="item.options"
-      item-text="name"
+      :item-text="item.inputOptions.hasName ? 'name' : 'id'"
       item-value="id"
       :label="item.label + (item.optional ? ' (optional)' : '')"
       :readonly="isReadonly"
@@ -427,9 +354,9 @@
       persistent-hint
       filled
       hide-no-data
-      no-filter
+      :no-filter="!item.getOptions || item.inputOptions?.loadServerResults"
       class="py-0"
-      :chips="item.inputOptions && item.inputOptions.hasAvatar"
+      :chips="item.inputOptions?.hasAvatar"
       v-on="$listeners"
       @update:search-input="handleSearchUpdate(item)"
       @blur="item.focused = false"
@@ -453,8 +380,8 @@
         <v-chip v-else pill>
           <v-avatar left>
             <v-img
-              v-if="data.item.avatar"
-              :src="data.item.avatar"
+              v-if="data.item.avatarUrl"
+              :src="data.item.avatarUrl"
               contain
             ></v-img
             ><v-icon v-else>{{ icon }} </v-icon>
@@ -478,8 +405,8 @@
         <v-chip v-else v-bind="data.attrs" pill>
           <v-avatar left>
             <v-img
-              v-if="data.item.avatar"
-              :src="data.item.avatar"
+              v-if="data.item.avatarUrl"
+              :src="data.item.avatarUrl"
               contain
             ></v-img
             ><v-icon v-else>{{ icon }}</v-icon>
@@ -490,88 +417,14 @@
     </v-combobox>
     <v-autocomplete
       v-else-if="
-        item.inputType === 'autocomplete' ||
-        item.inputType === 'autocomplete-multiple'
+        item.inputType === 'type-autocomplete' ||
+        item.inputType === 'type-autocomplete-multiple'
       "
-      v-model="item.value"
-      :items="item.options"
-      :multiple="item.inputType === 'autocomplete-multiple'"
-      item-text="name"
-      item-value="id"
-      :label="item.label + (item.optional ? ' (optional)' : '')"
-      :readonly="isReadonly"
-      :append-icon="appendIcon"
-      :append-outer-icon="item.closeable ? 'mdi-close' : null"
-      :hint="item.hint"
-      :loading="item.loading"
-      persistent-hint
-      filled
-      return-object
-      class="py-0"
-      :chips="item.inputOptions && item.inputOptions.hasAvatar"
-      v-on="$listeners"
-      @blur="item.focused = false"
-      @focus="item.focused = true"
-      @click:append="handleClear()"
-      @click:append-outer="handleClose()"
-    >
-      <template
-        v-if="
-          item.inputOptions &&
-          (item.inputOptions.hasAvatar || item.inputOptions.selectionComponent)
-        "
-        v-slot:item="data"
-      >
-        <component
-          v-if="item.inputOptions.selectionComponent"
-          :is="item.inputOptions.selectionComponent"
-          :value="data.item"
-        >
-        </component>
-        <v-chip v-else pill>
-          <v-avatar left>
-            <v-img
-              v-if="data.item.avatar"
-              :src="data.item.avatar"
-              contain
-            ></v-img
-            ><v-icon v-else>{{ icon }} </v-icon>
-          </v-avatar>
-          {{ data.item.name }}
-        </v-chip>
-      </template>
-      <template
-        v-if="
-          item.inputOptions &&
-          (item.inputOptions.hasAvatar || item.inputOptions.selectionComponent)
-        "
-        v-slot:selection="data"
-      >
-        <component
-          v-if="item.inputOptions.selectionComponent"
-          :is="item.inputOptions.selectionComponent"
-          :value="data.item"
-        >
-        </component>
-        <v-chip v-else v-bind="data.attrs" pill>
-          <v-avatar left>
-            <v-img
-              v-if="data.item.avatar"
-              :src="data.item.avatar"
-              contain
-            ></v-img
-            ><v-icon v-else>{{ icon }}</v-icon>
-          </v-avatar>
-          {{ data.item.name }}
-        </v-chip>
-      </template>
-    </v-autocomplete>
-    <v-autocomplete
-      v-else-if="item.inputType === 'server-autocomplete'"
       v-model="item.value"
       :search-input.sync="item.inputValue"
       :items="item.options"
-      item-text="name"
+      :multiple="item.inputType === 'type-autocomplete-multiple'"
+      :item-text="item.inputOptions.hasName ? 'name' : 'id'"
       item-value="id"
       :label="item.label + (item.optional ? ' (optional)' : '')"
       :readonly="isReadonly"
@@ -583,9 +436,9 @@
       filled
       hide-no-data
       return-object
-      no-filter
+      :no-filter="!item.getOptions || item.inputOptions?.loadServerResults"
       class="py-0"
-      :chips="item.inputOptions && item.inputOptions.hasAvatar"
+      :chips="item.inputOptions?.hasAvatar"
       v-on="$listeners"
       @update:search-input="handleSearchUpdate(item)"
       @blur="item.focused = false"
@@ -609,8 +462,8 @@
         <v-chip v-else pill>
           <v-avatar left>
             <v-img
-              v-if="data.item.avatar"
-              :src="data.item.avatar"
+              v-if="data.item.avatarUrl"
+              :src="data.item.avatarUrl"
               contain
             ></v-img
             ><v-icon v-else>{{ icon }} </v-icon>
@@ -634,8 +487,8 @@
         <v-chip v-else v-bind="data.attrs" pill>
           <v-avatar left>
             <v-img
-              v-if="data.item.avatar"
-              :src="data.item.avatar"
+              v-if="data.item.avatarUrl"
+              :src="data.item.avatarUrl"
               contain
             ></v-img
             ><v-icon v-else>{{ icon }}</v-icon>
@@ -659,7 +512,7 @@
       filled
       hide-no-data
       return-object
-      no-filter
+      :no-filter="!item.getOptions || item.inputOptions?.loadServerResults"
       class="py-0"
       v-on="$listeners"
       @update:search-input="handleSearchUpdate(item)"
@@ -685,7 +538,7 @@
       persistent-hint
       filled
       hide-no-data
-      no-filter
+      :no-filter="!item.getOptions || item.inputOptions?.loadServerResults"
       class="py-0"
       v-on="$listeners"
       @update:search-input="handleSearchUpdate(item)"
@@ -714,7 +567,7 @@
       item-text="name"
       item-value="id"
       class="py-0"
-      :chips="item.inputOptions && item.inputOptions.hasAvatar"
+      :chips="item.inputOptions?.hasAvatar"
       v-on="$listeners"
       @click:append="handleClear()"
       @click:append-outer="handleClose()"
@@ -735,8 +588,8 @@
         <v-chip v-else pill>
           <v-avatar left>
             <v-img
-              v-if="data.item.avatar"
-              :src="data.item.avatar"
+              v-if="data.item.avatarUrl"
+              :src="data.item.avatarUrl"
               contain
             ></v-img
             ><v-icon v-else>{{ icon }} </v-icon>
@@ -760,8 +613,8 @@
         <v-chip v-else v-bind="data.attrs" pill>
           <v-avatar left>
             <v-img
-              v-if="data.item.avatar"
-              :src="data.item.avatar"
+              v-if="data.item.avatarUrl"
+              :src="data.item.avatarUrl"
               contain
             ></v-img
             ><v-icon v-else>{{ icon }}</v-icon>
@@ -1340,14 +1193,19 @@ export default {
     },
 
     // parse from date and time inputs to unixTimestamp
-    handleDateTimeInputChange(val) {
-      if (!val) {
+    handleDateTimeInputChange(_val) {
+      if (!this.tempInput) {
         this.item.value = null
         return
       }
 
-      // always set the input to the start of the day
-      this.tempInput = val.replace(/T(\d{2}):(\d{2})$/, 'T00:00')
+      // always set the input to the start of the day (only if the current input is null
+      // no longer doing this
+      /*
+      if (!this.item.value) {
+        this.tempInput = this.tempInput.replace(/T(\d{2}):(\d{2})$/, 'T00:00')
+      }
+      */
 
       const dateTimeMatch = this.tempInput.match(
         /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/
@@ -1409,38 +1267,66 @@ export default {
     },
 
     handleSearchUpdate(inputObject) {
-      // if empty input, don't do the update
-      if (!inputObject.inputValue) return
+      try {
+        // if getOptions already provided, no need to handle this
+        if (
+          inputObject.getOptions &&
+          !inputObject.inputOptions?.loadServerResults
+        )
+          return
 
-      // if inputObject is object and search === value.name, or if the value is equal to inputValue, skip (this usually happens when an item is selected, and it will trigger this function again)
-      if (
-        inputObject.inputValue === inputObject.value ||
-        (isObject(inputObject.value) &&
-          inputObject.inputValue === inputObject.value.name)
-      ) {
-        return
-      }
+        // if empty input, don't do the update
+        if (!inputObject.inputValue) return
 
-      // cancel pending call, if any
-      clearTimeout(this._timerId)
-
-      // set the load search result function if it is a text-autocomplete type
-      const loadSearchResultsFn =
-        inputObject.inputType === 'text-autocomplete' ||
-        inputObject.inputType === 'text-combobox'
-          ? inputObject.inputOptions.getSuggestions
-          : loadTypeSearchResults
-
-      // delay new call 500ms
-      this._timerId = setTimeout(async () => {
-        inputObject.loading = true
-        try {
-          inputObject.options = await loadSearchResultsFn(this, inputObject)
-        } catch (err) {
-          handleError(this, err)
+        // if inputObject is object and search === value.name, or if the value is equal to inputValue, skip (this usually happens when an item is selected, and it will trigger this function again)
+        if (
+          inputObject.inputValue === inputObject.value ||
+          (isObject(inputObject.value) &&
+            inputObject.inputValue === inputObject.value.name)
+        ) {
+          return
         }
-        inputObject.loading = false
-      }, 500)
+
+        // if the input type does not have a name, do a slightly different check
+        if (
+          !inputObject.inputOptions.hasName &&
+          (inputObject.value?.id ?? null) === inputObject.inputValue
+        ) {
+          return
+        }
+
+        // cancel pending call, if any
+        clearTimeout(this._timerId)
+
+        // if it is a text-autocomplete/combobox type and no getSuggestions function, throw err
+        if (
+          inputObject.inputType === 'text-autocomplete' ||
+          (inputObject.inputType === 'text-combobox' &&
+            !inputObject.inputOptions.getSuggestions)
+        ) {
+          throw new Error(`getSuggestions function required`)
+        }
+
+        // set the load search result function if it is a text-autocomplete type
+        const loadSearchResultsFn =
+          inputObject.inputType === 'text-autocomplete' ||
+          inputObject.inputType === 'text-combobox'
+            ? inputObject.inputOptions.getSuggestions
+            : loadTypeSearchResults
+
+        // delay new call 500ms
+        this._timerId = setTimeout(async () => {
+          inputObject.loading = true
+          try {
+            inputObject.options = await loadSearchResultsFn(this, inputObject)
+          } catch (err) {
+            handleError(this, err)
+          }
+          inputObject.loading = false
+        }, 500)
+      } catch (err) {
+        handleError(this, err)
+      }
     },
 
     removeFileByIndex(index) {

@@ -13,6 +13,7 @@ import * as Scalars from "../../scalars";
 import { storage } from "firebase-admin";
 import { getDownloadURL } from "firebase-admin/storage";
 import { serveImageCdnUrl, serveImageSourcePath } from "../../../config";
+import { generateServingUrl } from "../../helpers/file";
 
 export default new GiraffeqlObjectType(
   <ObjectTypeDefinition>processTypeDef({
@@ -39,9 +40,7 @@ export default new GiraffeqlObjectType(
         type: Scalars.url,
         allowNull: false,
         requiredSqlFields: ["location"],
-        resolver: ({ parentValue }) => {
-          return `${serveImageCdnUrl.value()}/${parentValue.location}`;
-        },
+        resolver: ({ parentValue }) => generateServingUrl(parentValue.location),
       },
       downloadUrl: {
         type: Scalars.url,

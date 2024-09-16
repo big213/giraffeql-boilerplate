@@ -60,7 +60,7 @@
         }}</v-list-item-title>
       </v-list-item>
       <v-list-item
-        v-if="recordInfo.copyOptions"
+        v-if="recordInfo.copyOptions && recordInfo.addOptions"
         key="copy"
         @click="openEditDialog('copy')"
       >

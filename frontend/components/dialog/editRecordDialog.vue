@@ -22,6 +22,26 @@
     >
       <template v-slot:toolbar>
         <v-toolbar flat color="accent">
+          <PreviewRecordChip
+            v-if="
+              selectedItem &&
+              computedMode !== 'add' &&
+              computedMode !== 'import'
+            "
+            :value="selectedItem"
+            class="pointer-cursor"
+          >
+          </PreviewRecordChip>
+          <v-divider
+            v-if="
+              selectedItem &&
+              computedMode !== 'add' &&
+              computedMode !== 'import'
+            "
+            class="mx-4"
+            inset
+            vertical
+          ></v-divider>
           <v-icon left v-if="!hideTitleMode">{{ icon }}</v-icon>
           <v-toolbar-title v-if="!hideTitleMode">
             <span class="headline">{{ title }}</span>
@@ -85,6 +105,7 @@ import ShareRecordInterface from '~/components/interface/crud/shareRecordInterfa
 import ViewRecordInterface from '~/components/interface/crud/viewRecordInterface.vue'
 import RecordActionMenu from '~/components/menu/recordActionMenu.vue'
 import CrudPostInterface from '~/components/interface/crud/crudPostInterface.vue'
+import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 
 const modesMap = {
   add: {
@@ -134,6 +155,7 @@ const modesMap = {
 export default {
   components: {
     RecordActionMenu,
+    PreviewRecordChip,
   },
 
   props: {

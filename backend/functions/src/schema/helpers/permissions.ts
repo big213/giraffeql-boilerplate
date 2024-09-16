@@ -117,6 +117,18 @@ export function queryOnlyHasFields(
   return objectOnlyHasFields(query, fields, allFieldsRequired);
 }
 
+export function queryExcludesFields(
+  query: StringKeyObject | null | undefined,
+  fields: string[]
+) {
+  // if query is falsey, return false
+  if (!query) {
+    return false;
+  }
+
+  return !fields.some((field) => field in query);
+}
+
 export function allowIfRecordFieldIsCurrentUserFn(
   service: PaginatedService,
   fieldPath: string
@@ -192,5 +204,13 @@ export function allowIfPublicOrCreatedByCurrentUser(
       return true;
 
     return false;
+  };
+}
+
+export function allowIfUserHasPermissions(requiredPermission: userPermission) {
+  return async function ({ req }) {
+    if (!req.user) throw new Error("Login Required");
+
+    return req.user.permissions.includes(requiredPermission);
   };
 }

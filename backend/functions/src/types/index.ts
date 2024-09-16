@@ -46,6 +46,12 @@ export type ObjectTypeDefSqlOptions = {
 
   // sql definition
   type?: SqlType;
+  // only used for decimal sqlType
+  decimalOptions?: {
+    precision: number;
+    scale: number;
+  };
+
   defaultValue?: any;
   unique?: boolean | string;
 };

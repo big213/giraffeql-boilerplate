@@ -1,5 +1,5 @@
 import { executeGiraffeql } from '~/services/giraffeql'
-import { handleError } from './base'
+import { handleError, timeout } from './base'
 import { auth } from './fireinit'
 
 export async function handleLogin(that, store, authPayload) {
@@ -47,4 +47,26 @@ export async function handleUserRefreshed(that) {
 
 export function handleLogout(that, store) {
   store.commit('auth/unsetUser')
+}
+
+// promise that will return when this.$store.getters['auth/user'] has been set, and reject if it hasn't returned within 5 seconds
+export function waitForLoginSuccess(that) {
+  return new Promise(async (resolve, reject) => {
+    let cycle = 0
+    while (true) {
+      cycle++
+      if (that.$store.getters['auth/user']) {
+        resolve(true)
+        break
+      }
+
+      await timeout(500)
+
+      // if reached 10 cycles, throw an err
+      if (cycle === 10) {
+        reject(new Error(`An error occurred during login, please try again`))
+        break
+      }
+    }
+  })
 }

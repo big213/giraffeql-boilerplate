@@ -80,7 +80,7 @@ export type RecordInfo<T extends keyof MainTypes> = {
   requiredFields?: string[]
 
   // all of the "known" fields of the type. could be nested types (not included in type hints)
-  fields?: {
+  fields: {
     [K in string]?: FieldDefinition
   }
 
@@ -566,10 +566,14 @@ export type RecordInfo<T extends keyof MainTypes> = {
 }
 
 type InputOptions = {
-  // for server-autocomplete and server-combobox, multiple-select -- a simple way to get an avatar/name chip.
+  // for type-autocomplete and type-combobox, multiple-select -- a simple way to get an avatar/name chip.
   hasAvatar?: boolean
+  hasName?: boolean
 
-  // for server-autocomplete, server-combobox, multiple-select -- a way to fully customize the chip appearance. will override the hasAvatar
+  // for type-autocomplete, whether or not to load results from the server if getOptions is provided
+  loadServerResults?: boolean
+
+  // for type-autocomplete, type-combobox, multiple-select -- a way to fully customize the chip appearance. will override the hasAvatar
   selectionComponent?: any
   // for avatar
   // fallbackIcon?: string
@@ -703,13 +707,11 @@ export type InputType =
   | 'stripe-pi'
   | 'stripe-pi-editable'
   | 'textarea'
-  | 'combobox' // combobox allows the user to add new inputs on the fly (will change to autocomplete in filter interfaces)
-  | 'server-combobox' // server-combobox allows the user to add new inputs on the fly with getOptions optional, and fetching results from server (will change to autocomplete in filter interfaces)
-  | 'autocomplete' // same as combobox but cannot add new inputs
-  | 'autocomplete-multiple' // same as combobox but cannot add new inputs
-  | 'server-autocomplete' // if there's lots of entries, may not want to fetch all of the entries at once. getOptions will be optional
-  | 'select' // standard select
-  | 'multiple-select' // multiple select
+  | 'type-combobox' // type-combobox allows the user to add new type inputs on the fly. if getOptions is provided, it will not fetch from server and instead just use the getOptions results
+  | 'type-autocomplete' // type-autocomplete allows user to type in stuff and get suggestions from the server. if getOptions is provided, those will be the initial search results only
+  | 'type-autocomplete-multiple' // same as type-autocomplete but allows for multiple inputs
+  | 'select' // standard select -- works with text or types
+  | 'multiple-select' // multiple select -- works with text or types
   | 'text-autocomplete' // validate text input using server-side calls
   | 'text-combobox' // validate text input using server-side calls, but selection not required
   | 'rating' // rating from 1 to 5

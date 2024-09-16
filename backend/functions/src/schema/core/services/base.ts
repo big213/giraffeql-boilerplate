@@ -83,10 +83,11 @@ export abstract class BaseService {
           : false;
       }
 
-      if (!allowed)
+      if (!allowed) {
         throw new PermissionsError({
           fieldPath,
         });
+      }
 
       return allowed;
     } catch (err: unknown) {

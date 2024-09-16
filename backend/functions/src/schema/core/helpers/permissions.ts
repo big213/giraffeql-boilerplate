@@ -18,8 +18,7 @@ export function permissionsCheck(methodKey: string) {
       data,
       isAdmin = false,
     }: ServiceFunctionInputs) {
-      //if it does not pass the access control, throw an error
-
+      // if it does not pass the access control, throw an error
       if (
         !(await target.testPermissions.apply(this, [
           methodKey,

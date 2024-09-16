@@ -29,3 +29,7 @@ export const getUsers = generateMemoizedGetter('getUserPaginator', [
 export const getUserRoles = generateMemoizedEnumGetter(
   'getUserRoleEnumPaginator'
 )
+
+export const getUserPermissions = generateMemoizedEnumGetter(
+  'getUserPermissionEnumPaginator'
+)

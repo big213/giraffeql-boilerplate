@@ -39,8 +39,8 @@
 </template>
 
 <script>
-import { handleError, timeout } from '~/services/base'
-import { handleUserRefreshed } from '~/services/auth'
+import { handleError } from '~/services/base'
+import { handleUserRefreshed, waitForLoginSuccess } from '~/services/auth'
 import { auth } from '~/services/fireinit'
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
 import { logAnalyticsEvent } from '~/services/analytics'
@@ -81,11 +81,7 @@ export default {
         logAnalyticsEvent('sign_up')
 
         // wait for handleLogin to finish (detected when this.$store.getters['auth/user'] has been set)
-        while (true) {
-          if (this.$store.getters['auth/user']) break
-
-          await timeout(500)
-        }
+        await waitForLoginSuccess(this)
 
         this.$emit('success')
       } catch (err) {

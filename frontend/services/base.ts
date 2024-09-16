@@ -753,12 +753,15 @@ export function populateInputObject(
 
           // if autocomplete or combobox, attempt to translate the inputObject.value based on the options
           if (
-            inputObject.inputType === 'autocomplete' ||
-            inputObject.inputType === 'combobox'
+            inputObject.inputType === 'type-autocomplete' ||
+            inputObject.inputType === 'type-combobox'
           ) {
             inputObject.value =
               inputObject.options.find((ele) => ele.id === inputObject.value) ??
               null
+          } else if (inputObject.inputType === 'type-autocomplete-multiple') {
+            // for multiple types, inputObject.value should contain the values already
+            inputObject.value = inputObject.value ?? []
           }
 
           inputObject.loading = false
@@ -766,8 +769,12 @@ export function populateInputObject(
       )
     }
 
-    // if no getOptions and has a typename, populate the options/value with the specific entry
-    if (inputObject.inputOptions?.typename && !inputObject.getOptions) {
+    // if no getOptions and has a typename, populate the options/value with the specific entry (if not already populated previously, i.e. converted from string to obj)
+    if (
+      inputObject.inputOptions?.typename &&
+      !inputObject.getOptions &&
+      (!inputObject.value || !isObject(inputObject.value))
+    ) {
       const originalFieldValue = inputObject.value
       inputObject.value = null // set this to null initially while the results load, to prevent console error
 
@@ -778,26 +785,39 @@ export function populateInputObject(
         }
       } else {
         if (originalFieldValue && originalFieldValue !== '__undefined') {
-          promisesArray.push(
-            executeGiraffeql(<any>{
-              [`get${capitalizeString(inputObject.inputOptions?.typename)}`]: {
-                id: true,
-                name: true,
-                ...(inputObject.inputOptions?.hasAvatar && {
-                  avatarUrl: true,
-                }),
-                __args: {
-                  id: originalFieldValue,
-                },
-              },
-            })
-              .then((res) => {
-                // change value to object
-                inputObject.value = res
-                inputObject.options = [res]
+          // if no name or avatar, just use the id
+          if (
+            !inputObject.inputOptions?.hasName &&
+            inputObject.inputOptions?.hasAvatar
+          ) {
+            inputObject.value = {
+              id: originalFieldValue,
+            }
+          } else {
+            promisesArray.push(
+              executeGiraffeql(<any>{
+                [`get${capitalizeString(inputObject.inputOptions?.typename)}`]:
+                  {
+                    id: true,
+                    ...(inputObject.inputOptions?.hasName && {
+                      name: true,
+                    }),
+                    ...(inputObject.inputOptions?.hasAvatar && {
+                      avatarUrl: true,
+                    }),
+                    __args: {
+                      id: originalFieldValue,
+                    },
+                  },
               })
-              .catch((e) => e)
-          )
+                .then((res) => {
+                  // change value to object
+                  inputObject.value = res
+                  inputObject.options = [res]
+                })
+                .catch((e) => e)
+            )
+          }
         }
       }
     }
@@ -1021,10 +1041,9 @@ export async function processInputObject(that, inputObject, inputObjectArray) {
       value.push(obj)
     }
   } else {
-    // if the fieldInfo.inputType === 'combobox' | 'server-combobox', it came from a combo box. need to handle accordingly
+    // if the fieldInfo.inputType === 'type-combobox', it came from a combo box. need to handle accordingly
     if (
-      (inputObject.inputType === 'combobox' ||
-        inputObject.inputType === 'server-combobox') &&
+      inputObject.inputType === 'type-combobox' &&
       inputObject.inputOptions?.typename
     ) {
       // if value is string OR value is null and inputValue is string, create the object
@@ -1065,8 +1084,8 @@ export async function processInputObject(that, inputObject, inputObjectArray) {
         value = inputObject.value.id
       }
     } else if (
-      inputObject.inputType === 'autocomplete' ||
-      inputObject.inputType === 'server-autocomplete' ||
+      inputObject.inputType === 'type-autocomplete' ||
+      inputObject.inputType === 'type-autocomplete-multiple' ||
       inputObject.inputType === 'select'
     ) {
       // as we are using return-object option, the entire object will be returned for autocompletes/selects, unless it is null or a number
@@ -1076,7 +1095,11 @@ export async function processInputObject(that, inputObject, inputObjectArray) {
         ? null
         : inputObject.value
     } else {
-      value = inputObject.value
+      // trim input strings by default
+      value =
+        typeof inputObject.value === 'string'
+          ? inputObject.value.trim()
+          : inputObject.value
     }
 
     // convert '__null' to null
@@ -1191,7 +1214,7 @@ export function loadTypeSearchResults(that, inputObject) {
       __args: {
         first: 20,
         search: {
-          query: inputObject.inputValue?.trim(),
+          query: inputObject.inputValue?.trim(), // trim spaces
           params: inputObject.fieldInfo.inputOptions?.searchParams?.(
             that,
             that.allItems

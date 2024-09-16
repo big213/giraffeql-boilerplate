@@ -742,12 +742,12 @@ export default {
 
     // toggle the expand state. if it is mobile view (or forceDialog), use dialog
     toggleItemExpanded(props, expandTypeObject) {
-      // if this item is already expanded, close it
+      // if this item is already expanded, do nothing
       if (
         this.expandTypeObject === expandTypeObject &&
         props.item === this.expandedItem
       ) {
-        this.closeExpandedItems()
+        // this.closeExpandedItems()
         return
       }
 

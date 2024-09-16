@@ -323,6 +323,8 @@ export function generateFloatField(
 export function generateDecimalField(
   params: GenerateFieldParams & {
     type?: GiraffeqlScalarType;
+    scale?: number;
+    precision?: number;
   }
 ) {
   const {
@@ -334,6 +336,8 @@ export function generateDecimalField(
     nestHidden,
     sqlOptions,
     typeDefOptions,
+    scale = 2,
+    precision = 8,
     type = Scalars.number,
   } = params;
   return generateStandardField({
@@ -348,6 +352,10 @@ export function generateDecimalField(
     sqlOptions: {
       // detect NaN and convert to undefined
       parseValue: (val) => (Number.isNaN(val) ? undefined : val),
+      decimalOptions: {
+        precision,
+        scale,
+      },
       ...sqlOptions,
     },
     typeDefOptions,

@@ -24,6 +24,7 @@ initializeApp();
 
 const app = express();
 
+// app.enable("trust proxy"); -- uncomment this to allow req.ip to show current user IP
 // app.use(express.json()); -- apparently not needed on cloud functions
 
 // extract the user ID from all requests.

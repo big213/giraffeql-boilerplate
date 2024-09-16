@@ -66,7 +66,14 @@ function generateMigration(initSubscriptions = true, force = false) {
           return;
         }
 
-        let operationString = `table.${typeDefField.sqlOptions.type}("${sqlFieldName}")`;
+        let operationString = `table.${
+          typeDefField.sqlOptions.type
+        }("${sqlFieldName}"${
+          typeDefField.sqlOptions.type === "decimal" &&
+          typeDefField.sqlOptions.decimalOptions
+            ? `,${typeDefField.sqlOptions.decimalOptions.precision},${typeDefField.sqlOptions.decimalOptions.scale}`
+            : ""
+        })`;
 
         // handle (not) nullable
         operationString +=

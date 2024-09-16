@@ -4,10 +4,10 @@
       <v-img v-if="avatarUrl" :src="avatarUrl" contain></v-img
       ><v-icon v-else>{{ fallbackIcon }} </v-icon>
     </v-avatar>
-    <i v-if="value.name === undefined">{{ value.id }}</i>
-    <span v-else-if="name">
+    <span v-if="name">
       {{ name }}
     </span>
+    <i v-else-if="value.name === undefined">{{ value.id }}</i>
     <i v-else> (Untitled) </i>
     <slot name="rightIcon" />
   </v-chip>
