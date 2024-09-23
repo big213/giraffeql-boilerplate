@@ -109,7 +109,17 @@ export default {
     },
 
     fields() {
-      return this.customFields ?? this.recordInfo[`${this.mode}Options`].fields
+      if (this.customFields) return this.customFields
+
+      // for edit, fields could be a dynamic function
+      if (
+        this.mode === 'edit' &&
+        typeof this.recordInfo.editOptions.fields === 'function'
+      ) {
+        return this.recordInfo.editOptions.fields(this, this.selectedItem)
+      }
+
+      return this.recordInfo[`${this.mode}Options`].fields
     },
 
     // extracts the field from any EditFieldDefinitions

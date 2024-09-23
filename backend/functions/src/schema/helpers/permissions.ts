@@ -129,18 +129,28 @@ export function queryExcludesFields(
   return !fields.some((field) => field in query);
 }
 
+// if fieldPath is an array, only one of those needs to pass
 export function allowIfRecordFieldIsCurrentUserFn(
   service: PaginatedService,
-  fieldPath: string
+  fieldPath: string | string[],
+  argsPath?: string // no dot notation
 ) {
-  return async function ({ req, args }) {
-    const record = await service.getFirstSqlRecord({
-      select: [fieldPath],
-      where: args,
-    });
+  const fieldPathArray =
+    typeof fieldPath === "string" ? [fieldPath] : fieldPath;
 
-    if (isCurrentUser(req, record[fieldPath])) {
-      return true;
+  return async function ({ req, args }) {
+    const record = await service.getFirstSqlRecord(
+      {
+        select: fieldPathArray,
+        where: argsPath ? args[argsPath] : args,
+      },
+      true
+    );
+
+    for (const currentPath of fieldPathArray) {
+      if (isCurrentUser(req, record[currentPath])) {
+        return true;
+      }
     }
 
     return false;

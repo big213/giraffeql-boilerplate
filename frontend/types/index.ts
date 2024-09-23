@@ -328,7 +328,10 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
   editOptions?: {
     // required: fields that can be added
-    fields: (string | EditFieldDefinition)[]
+    // a function can be provided instead, which will determine the fields dynamically based on that/item
+    fields:
+      | (string | EditFieldDefinition)[]
+      | ((that, item) => (string | EditFieldDefinition)[])
     // custom component
     component?: any
     // if not createX, the custom create operation name

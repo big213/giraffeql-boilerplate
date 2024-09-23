@@ -1,7 +1,6 @@
 import { ServiceFunctionInputs } from "../../../types";
 import { linkDefs } from "../../links";
 import { permissionsCheck } from "../helpers/permissions";
-import { createObjectType } from "../helpers/resolver";
 import { camelToSnake } from "../helpers/shared";
 import { ServicesObjectMap } from "../helpers/typeDef";
 import { PaginatedService } from "./paginated";
@@ -30,13 +29,8 @@ export class LinkService extends PaginatedService {
 
     const fields = Object.keys(this.servicesObjectMap);
 
-    const addResults = await createObjectType({
-      typename: this.typename,
-      addFields: {
-        // only add the id field if the id field is a string (not auto-increment)
-        ...(!this.primaryKeyAutoIncrement && {
-          id: await this.generateRecordId(),
-        }),
+    const addResults = await this.createSqlRecord({
+      fields: {
         ...args,
         createdBy: req.user!.id,
       },
@@ -45,8 +39,6 @@ export class LinkService extends PaginatedService {
           .onConflict(fields.map((field) => camelToSnake(field)))
           .ignore();
       },
-      req,
-      fieldPath,
     });
 
     // if addResults falsey, there was a conflict

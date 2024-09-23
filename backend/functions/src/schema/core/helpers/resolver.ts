@@ -34,6 +34,7 @@ import {
   generateSqlSingleFieldObjectFromArray,
 } from "./sqlHelper";
 import { Knex } from "knex";
+import { knex } from "../../../utils/knex";
 
 type CustomResolver = {
   resolver: CustomResolverFunction;
@@ -181,7 +182,10 @@ export async function updateObjectType({
   if (Object.keys(sqlFields).length > 0) {
     await updateTableRow({
       table: typename,
-      fields: sqlFields,
+      fields: {
+        ...sqlFields,
+        updatedAt: knex.fn.now(),
+      },
       where: {
         id,
       },

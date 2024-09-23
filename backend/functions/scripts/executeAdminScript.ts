@@ -2,7 +2,7 @@ import yargs from "yargs";
 const argv = yargs(process.argv.slice(2))
   .options({
     prod: { type: "boolean", default: false },
-    function: { type: "string", demandOption: true },
+    name: { type: "string", demandOption: true },
   })
   .parseSync();
 
@@ -19,20 +19,15 @@ process.env.DEBUG_MODE = "true";
 import "../src/schema";
 import { initializeKnex } from "../src/utils/knex";
 import { development, production } from "../knexfile";
-import * as adminScripts from "./adminScripts";
 
 initializeKnex(argv.prod ? production : development);
 
-console.log(`Executing script on: ${argv.prod ? "production" : "development"}`);
+console.log(
+  `Executing script '${argv.name}' on: ${
+    argv.prod ? "production" : "development"
+  }`
+);
 
-(async () => {
-  if (typeof adminScripts[argv.function] === "function") {
-    await adminScripts[argv.function]();
-  } else {
-    throw new Error(
-      `Admin script not found in /scripts/adminScript/index.ts: '${argv.function}'`
-    );
-  }
+require(`./adminScripts/${argv.name}`);
 
-  console.log("done");
-})();
+console.log(`Called script successfully`);

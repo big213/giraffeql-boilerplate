@@ -116,6 +116,9 @@ export type FilterByField<T> = {
   neq?: T
   gt?: T
   lt?: T
+  gtornull?: T
+  gte?: T
+  lte?: T
   in?: T[]
   nin?: T[]
   regex?: Scalars['regex']

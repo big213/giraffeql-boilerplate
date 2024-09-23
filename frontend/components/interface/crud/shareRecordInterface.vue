@@ -2,9 +2,6 @@
   <v-card flat>
     <slot name="toolbar"></slot>
     <v-card-text class="py-0 mt-3">
-      <v-alert v-if="itemIdentifier" type="info">
-        {{ itemIdentifier }}
-      </v-alert>
       <v-container>
         <v-row>
           <v-col xs="12" class="py-0">

@@ -10,7 +10,7 @@ initializeApp({
 });
 
 // reviews all files in the storage bucket and compares against files in the SQL database, determining which ones have been "orphaned"
-export async function auditFiles(isLiveRun = false) {
+(async function auditFiles(isLiveRun = false) {
   // build the set of all known files
   const knownFiles = await File.getAllSqlRecord({
     select: ["location"],
@@ -51,4 +51,4 @@ export async function auditFiles(isLiveRun = false) {
   }
 
   console.log(filesDeleted);
-}
+})();

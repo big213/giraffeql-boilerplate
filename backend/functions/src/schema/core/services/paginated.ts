@@ -53,13 +53,7 @@ import {
   generateCursorFromNode,
   btoa,
 } from "../helpers/shared";
-import {
-  countObjectType,
-  createObjectType,
-  deleteObjectType,
-  getObjectType,
-  updateObjectType,
-} from "../helpers/resolver";
+import { getObjectType } from "../helpers/resolver";
 import { Scalars } from "../..";
 import { knex } from "../../../utils/knex";
 import { generateSqlSingleFieldObject } from "../helpers/sqlHelper";
@@ -411,12 +405,11 @@ export class PaginatedService extends BaseService {
 
     return {
       ...(query?.count !== undefined && {
-        count: await countObjectType(
-          this.typename,
-          fieldPath,
-          [whereObject],
-          true
-        ),
+        count: await this.countSqlRecord({
+          field: "id",
+          where: [whereObject],
+          distinct: true,
+        }),
       }),
     };
   }
@@ -985,18 +978,11 @@ export class PaginatedService extends BaseService {
 
     let addResults;
     await knex.transaction(async (transaction) => {
-      addResults = await createObjectType({
-        typename: this.typename,
-        addFields: {
-          // only add the id field if the id field is a string (not auto-increment)
-          ...(!this.primaryKeyAutoIncrement && {
-            id: await this.generateRecordId(transaction),
-          }),
+      addResults = await this.createSqlRecord({
+        fields: {
           ...args,
           createdBy: req.user!.id,
         },
-        req,
-        fieldPath,
         transaction,
       });
 
@@ -1052,17 +1038,18 @@ export class PaginatedService extends BaseService {
     await this.handleLookupArgs(args.fields);
 
     await knex.transaction(async (transaction) => {
-      await updateObjectType({
-        typename: this.typename,
-        id: item.id,
-        updateFields: {
-          ...args.fields,
-          updatedAt: knex.fn.now(),
+      await this.updateSqlRecord(
+        {
+          fields: {
+            ...args.fields,
+          },
+          where: {
+            id: item.id,
+          },
+          transaction,
         },
-        req,
-        fieldPath,
-        transaction,
-      });
+        true
+      );
 
       // do post-update fn, if any
       await this.afterUpdateProcess(
@@ -1146,11 +1133,10 @@ export class PaginatedService extends BaseService {
 
     // delete the type and also any associated services
     await knex.transaction(async (transaction) => {
-      await deleteObjectType({
-        typename: this.typename,
-        id: item.id,
-        req,
-        fieldPath,
+      await this.deleteSqlRecord({
+        where: {
+          id: item.id,
+        },
         transaction,
       });
 

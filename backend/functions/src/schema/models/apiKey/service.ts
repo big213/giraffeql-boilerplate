@@ -2,12 +2,12 @@ import { PaginatedService } from "../../core/services";
 import { permissionsCheck } from "../../core/helpers/permissions";
 import { ServiceFunctionInputs, AccessControlMap } from "../../../types";
 import { nanoid } from "nanoid";
-import { createObjectType } from "../../core/helpers/resolver";
 import {
   allowIfArgsFieldIsCurrentUserFn,
   allowIfRecordFieldIsCurrentUserFn,
   allowIfFilteringByCurrentUserFn,
 } from "../../helpers/permissions";
+import { knex } from "../../../utils/knex";
 
 export class ApiKeyService extends PaginatedService {
   defaultTypename = "apiKey";
@@ -71,23 +71,35 @@ export class ApiKeyService extends PaginatedService {
     fieldPath,
     args,
     query,
+    data = {},
     isAdmin = false,
   }: ServiceFunctionInputs) {
-    // args should be validated already
-    const validatedArgs = <any>args;
-
     await this.handleLookupArgs(args);
 
-    const addResults = await createObjectType({
-      typename: this.typename,
-      addFields: {
-        id: await this.generateRecordId(),
-        ...validatedArgs,
-        code: nanoid(),
-        createdBy: req.user!.id,
-      },
-      req,
-      fieldPath,
+    let addResults;
+    await knex.transaction(async (transaction) => {
+      addResults = await this.createSqlRecord({
+        fields: {
+          ...args,
+          code: nanoid(),
+          createdBy: req.user!.id,
+        },
+        transaction,
+      });
+
+      // do post-create fn, if any
+      await this.afterCreateProcess(
+        {
+          req,
+          fieldPath,
+          args,
+          query,
+          data,
+          isAdmin,
+        },
+        addResults.id,
+        transaction
+      );
     });
 
     return this.getRecord({

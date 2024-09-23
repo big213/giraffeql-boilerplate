@@ -200,9 +200,25 @@ export default {
 
   created() {
     this.reset(true)
+
+    // listen for root refresh events
+    this.$root.$on('refresh-interface', this.refreshCb)
+  },
+
+  destroyed() {
+    this.$root.$off('refresh-interface', this.refreshCb)
   },
 
   methods: {
+    refreshCb(typename, { id } = {}) {
+      if (this.recordInfo.typename === typename) {
+        // if ID is provided and it is equal to the current selectedItem id, do hard refresh
+        if (id && id === this.selectedItem.id) {
+          this.reset(true)
+        }
+      }
+    },
+
     getExpandTypeComponent(expandTypeObject) {
       return (
         expandTypeObject.component ||
@@ -439,13 +455,15 @@ export default {
 
         this.expandTypeObject = expandTypeObject
 
-        // if breadcrumb mode and init, also set the initial item
+        // if breadcrumb mode and init, also set the initial item (reset breadcrumbs)
         if (init && this.expandTypeObject.breadcrumbOptions) {
-          this.breadcrumbItems.push({
-            expandTypeObject: this.expandTypeObject,
-            item: this.selectedItem,
-            isRoot: true,
-          })
+          this.breadcrumbItems = [
+            {
+              expandTypeObject: this.expandTypeObject,
+              item: this.selectedItem,
+              isRoot: true,
+            },
+          ]
         }
 
         // when item expanded, initialize the filters if not init, or if init and pageOptions not defined

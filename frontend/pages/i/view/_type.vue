@@ -37,11 +37,7 @@ export default {
     lookupParams() {
       const getLookupParams = this.currentModel?.pageOptions?.getLookupParams
 
-      return getLookupParams
-        ? getLookupParams(this)
-        : {
-            id: this.$store.getters['auth/user'].id,
-          }
+      return getLookupParams ? getLookupParams(this) : undefined
     },
   },
 }

@@ -13,11 +13,6 @@ import {
   queryOnlyHasFields,
 } from "../../helpers/permissions";
 import { objectOnlyHasFields } from "../../core/helpers/shared";
-import {
-  createObjectType,
-  deleteObjectType,
-  updateObjectType,
-} from "../../core/helpers/resolver";
 import { lookupSymbol } from "giraffeql";
 import { knex } from "../../../utils/knex";
 
@@ -191,16 +186,30 @@ export class UserService extends PaginatedService {
       photoURL: args.avatarUrl,
     });
 
-    const addResults = await createObjectType({
-      typename: this.typename,
-      addFields: {
-        id: await this.generateRecordId(),
-        ...args,
-        firebaseUid: firebaseUser.uid,
-        createdBy: req.user!.id,
-      },
-      req,
-      fieldPath,
+    let addResults;
+    await knex.transaction(async (transaction) => {
+      addResults = await this.createSqlRecord({
+        fields: {
+          ...args,
+          firebaseUid: firebaseUser.uid,
+          createdBy: req.user!.id,
+        },
+        transaction,
+      });
+
+      // do post-create fn, if any
+      await this.afterCreateProcess(
+        {
+          req,
+          fieldPath,
+          args,
+          query,
+          data,
+          isAdmin,
+        },
+        addResults.id,
+        transaction
+      );
     });
 
     return this.getRecord({
@@ -282,15 +291,33 @@ export class UserService extends PaginatedService {
     // convert any lookup/joined fields into IDs
     await this.handleLookupArgs(args.fields);
 
-    await updateObjectType({
-      typename: this.typename,
-      id: item.id,
-      updateFields: {
-        ...args.fields,
-        updatedAt: knex.fn.now(),
-      },
-      req,
-      fieldPath,
+    await knex.transaction(async (transaction) => {
+      await this.updateSqlRecord(
+        {
+          fields: {
+            ...args.fields,
+          },
+          where: {
+            id: item.id,
+          },
+          transaction,
+        },
+        true
+      );
+
+      // do post-update fn, if any
+      await this.afterUpdateProcess(
+        {
+          req,
+          fieldPath,
+          args,
+          query,
+          data,
+          isAdmin,
+        },
+        item.id,
+        transaction
+      );
     });
 
     // update firebase user fields
@@ -366,11 +393,10 @@ export class UserService extends PaginatedService {
 
     // delete the type and also any associated services
     await knex.transaction(async (transaction) => {
-      await deleteObjectType({
-        typename: this.typename,
-        id: item.id,
-        req,
-        fieldPath,
+      await this.deleteSqlRecord({
+        where: {
+          id: item.id,
+        },
         transaction,
       });
 

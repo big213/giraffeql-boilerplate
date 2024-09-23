@@ -1,6 +1,10 @@
 <template>
   <div>
-    <div v-if="item.inputType === 'html'" class="mb-4">
+    <div
+      v-if="item.inputType === 'html'"
+      class="mb-4"
+      style="background-color: white; color: black"
+    >
       <wysiwyg v-model="item.value" />
     </div>
     <div
@@ -14,31 +18,33 @@
           :disabled="item.readonly"
           @change="handleFilesDataUpdate()"
         >
-          <MediaChip
-            v-if="item.inputOptions && item.inputOptions.mediaMode"
-            v-for="(file, index) in filesData"
-            :key="file.id"
-            :file="file"
-            draggable
-            close
-            openable
-            :readonly="item.readonly"
-            class="xs3"
-            @handleCloseClick="removeFileByIndex(index)"
-          ></MediaChip>
-          <FileChip
-            v-else
-            v-for="(file, index) in filesData"
-            :key="file.id"
-            :file="file"
-            downloadable
-            small
-            label
-            :close="!item.readonly"
-            close-icon="mdi-close-outline"
-            class="mr-2"
-            @handleCloseClick="removeFileByIndex(index)"
-          ></FileChip>
+          <div v-if="item.inputOptions?.mediaMode">
+            <MediaChip
+              v-for="(file, index) in filesData"
+              :key="file.id"
+              :file="file"
+              draggable
+              close
+              openable
+              :readonly="item.readonly"
+              class="xs3"
+              @handleCloseClick="removeFileByIndex(index)"
+            ></MediaChip>
+          </div>
+          <div v-else>
+            <FileChip
+              v-for="(file, index) in filesData"
+              :key="file.id"
+              :file="file"
+              downloadable
+              small
+              label
+              :close="!item.readonly"
+              close-icon="mdi-close-outline"
+              class="mr-2"
+              @handleCloseClick="removeFileByIndex(index)"
+            ></FileChip>
+          </div>
         </Draggable>
       </v-container>
       <div v-cloak @drop.prevent="handleMultipleDropFile" @dragover.prevent>
@@ -73,71 +79,6 @@
         </v-file-input>
       </div>
     </div>
-    <!--
-    <div
-      v-else-if="item.inputType === 'multiple-image'"
-      class="mb-4 text-center"
-    >
-      <v-container fluid grid-list-xs class="px-0">
-        <Draggable
-          v-model="item.value"
-          class="layout row wrap"
-          :disabled="item.readonly"
-        >
-          <v-flex
-            v-for="(imageUrl, imageIndex) in item.value"
-            :key="imageIndex"
-            :class="'xs3'"
-          >
-            <v-card flat>
-              <v-system-bar v-if="!item.readonly" lights-out>
-                <v-icon @click="void 0">mdi-arrow-all</v-icon>
-                <v-spacer></v-spacer>
-                <v-btn icon @click.native="removeFileByIndex(imageIndex)">
-                  <v-icon color="error">mdi-close</v-icon>
-                </v-btn>
-              </v-system-bar>
-              <v-img :src="imageUrl" aspect-ratio="1" contain></v-img>
-            </v-card>
-          </v-flex>
-        </Draggable>
-      </v-container>
-      <div v-cloak @drop.prevent="handleMultipleDropFile" @dragover.prevent>
-        <v-file-input
-          v-model="item.inputValue"
-          :label="
-            item.label +
-            ' (Drag and Drop)' +
-            (item.optional ? ' (optional)' : '')
-          "
-          multiple
-          :hint="item.hint"
-          :loading="item.loading"
-          persistent-hint
-          :clearable="false"
-          @change="handleMultipleFileInputChange(item)"
-        >
-          <template v-slot:selection="{ file, text }">
-            <v-chip
-              small
-              label
-              color="primary"
-              close
-              close-icon="mdi-close-outline"
-              @click:close="handleMultipleFileInputClear(item, file)"
-            >
-              {{ text }} -
-              {{
-                file.fileUploadObject
-                  ? file.fileUploadObject.progress.toFixed(1)
-                  : ''
-              }}%
-            </v-chip>
-          </template>
-        </v-file-input>
-      </div>
-    </div>
-    -->
     <div
       v-else-if="item.inputType === 'single-file-url'"
       class="mb-4 highlighted-bg"

@@ -88,46 +88,43 @@ export function transformGetMultipleRestArgs(req: Request) {
 export function generateBaseRootResolvers({
   service,
   methods,
-  restMethods = [],
 }: {
   service: PaginatedService;
-  methods: BaseRootResolverTypes[];
-  restMethods?:
-    | BaseRootResolverTypes[]
-    | {
-        [x in BaseRootResolverTypes]?: Partial<
-          RootResolverDefinition["restOptions"]
-        >;
-      };
+  methods: {
+    type: BaseRootResolverTypes;
+    restOptions?: Partial<RootResolverDefinition["restOptions"]>;
+    additionalArgs?: {
+      [x in string]: GiraffeqlInputFieldType | GiraffeqlInputTypeLookup;
+    };
+  }[];
 }): { [x: string]: GiraffeqlRootResolverType } {
   const capitalizedClass = capitalizeString(service.typename);
 
   const rootResolvers = {};
 
-  const restMethodsArray = Array.isArray(restMethods)
-    ? restMethods
-    : Object.keys(restMethods);
-
   // if more than one rest method and no defaultQuery, throw err
-  if (restMethodsArray.length > 0 && !service.defaultQuery) {
+  if (
+    Object.values(methods).some((ele) => ele.restOptions) &&
+    !service.defaultQuery
+  ) {
     throw new GiraffeqlInitializationError({
       message: `Default REST Query must be defined for '${service.typename}'`,
     });
   }
 
   methods.forEach((method) => {
-    const capitalizedMethod = capitalizeString(method);
-    switch (method) {
+    const capitalizedMethod = capitalizeString(method.type);
+    switch (method.type) {
       case "get": {
-        const methodName = method + capitalizedClass;
+        const methodName = `${method.type}${capitalizedClass}`;
         rootResolvers[methodName] = new GiraffeqlRootResolverType({
           name: methodName,
-          ...(restMethodsArray.includes(method) && {
+          ...(method.restOptions && {
             restOptions: {
               method: "get",
               route: `/${service.typename}/:id`,
               query: service.defaultQuery,
-              ...restMethods[method],
+              ...method.restOptions,
             },
           }),
           type: service.typeDefLookup,
@@ -154,7 +151,7 @@ export function generateBaseRootResolvers({
             RootResolverDefinition
           >{
             name: methodName,
-            ...(restMethodsArray.includes(method) && {
+            ...(method.restOptions && {
               restOptions: {
                 method: "get",
                 route: `/${service.typename}:count`,
@@ -162,7 +159,7 @@ export function generateBaseRootResolvers({
                   count: lookupSymbol,
                 },
                 // argsTransformer: transformGetMultipleRestArgs,
-                ...restMethods[method],
+                ...method.restOptions,
               },
             }),
             ...generateStatsResolverObject({
@@ -181,7 +178,7 @@ export function generateBaseRootResolvers({
             RootResolverDefinition
           >{
             name: methodName,
-            ...(restMethodsArray.includes(method) && {
+            ...(method.restOptions && {
               restOptions: {
                 method: "get",
                 route: `/${service.typename}`,
@@ -196,7 +193,7 @@ export function generateBaseRootResolvers({
                   },
                 },
                 argsTransformer: transformGetMultipleRestArgs,
-                ...restMethods[method],
+                ...method.restOptions,
               },
             }),
             ...generatePaginatorPivotResolverObject({
@@ -215,7 +212,7 @@ export function generateBaseRootResolvers({
             RootResolverDefinition
           >{
             name: methodName,
-            ...(restMethodsArray.includes(method) && {
+            ...(method.restOptions && {
               restOptions: {
                 method: "get",
                 route: `/${service.typename}:aggregator`,
@@ -223,7 +220,7 @@ export function generateBaseRootResolvers({
                   // count: lookupSymbol,
                 },
                 // argsTransformer: transformGetMultipleRestArgs,
-                ...restMethods[method],
+                ...method.restOptions,
               },
             }),
             ...generateAggregatorResolverObject({
@@ -234,15 +231,15 @@ export function generateBaseRootResolvers({
         break;
       }
       case "delete": {
-        const methodName = method + capitalizedClass;
+        const methodName = `${method.type}${capitalizedClass}`;
         rootResolvers[methodName] = new GiraffeqlRootResolverType({
           name: methodName,
-          ...(restMethodsArray.includes(method) && {
+          ...(method.restOptions && {
             restOptions: {
               method: "delete",
-              route: "/" + service.typename + "/:id",
+              route: `/${service.typename}/:id`,
               query: service.defaultQuery,
-              ...restMethods[method],
+              ...method.restOptions,
             },
           }),
           type: service.typeDefLookup,
@@ -263,7 +260,7 @@ export function generateBaseRootResolvers({
       }
       case "update": {
         const updateArgs = {};
-        const methodName = method + capitalizedClass;
+        const methodName = `${method.type}${capitalizedClass}`;
         Object.entries(service.getTypeDef().definition.fields).forEach(
           ([key, typeDefField]) => {
             let typeField = typeDefField.type;
@@ -289,12 +286,18 @@ export function generateBaseRootResolvers({
             }
           }
         );
+
+        // add any additional or override args
+        if (method.additionalArgs) {
+          Object.assign(updateArgs, method.additionalArgs);
+        }
+
         rootResolvers[methodName] = new GiraffeqlRootResolverType({
           name: methodName,
-          ...(restMethodsArray.includes(method) && {
+          ...(method.restOptions && {
             restOptions: {
               method: "put",
-              route: "/" + service.typename + "/:id",
+              route: `/${service.typename}/:id`,
               query: service.defaultQuery,
               argsTransformer: (req) => {
                 return {
@@ -304,7 +307,7 @@ export function generateBaseRootResolvers({
                   },
                 };
               },
-              ...restMethods[method],
+              ...method.restOptions,
             },
           }),
           type: service.typeDefLookup,
@@ -320,7 +323,7 @@ export function generateBaseRootResolvers({
                 }),
                 fields: new GiraffeqlInputFieldType({
                   type: new GiraffeqlInputType({
-                    name: "update" + capitalizedClass + "Fields",
+                    name: `update${capitalizedClass}Fields`,
                     fields: updateArgs,
                     inputsValidator: (args, fieldPath) => {
                       // check if at least 1 valid update field provided
@@ -351,7 +354,7 @@ export function generateBaseRootResolvers({
       }
       case "create": {
         const createArgs = {};
-        const methodName = method + capitalizedClass;
+        const methodName = `${method.type}${capitalizedClass}`;
         Object.entries(service.getTypeDef().definition.fields).forEach(
           ([key, typeDefField]) => {
             let typeField = typeDefField.type;
@@ -377,12 +380,18 @@ export function generateBaseRootResolvers({
             }
           }
         );
+
+        // add any additional or override args
+        if (method.additionalArgs) {
+          Object.assign(createArgs, method.additionalArgs);
+        }
+
         rootResolvers[methodName] = new GiraffeqlRootResolverType({
           name: methodName,
-          ...(restMethodsArray.includes(method) && {
+          ...(method.restOptions && {
             restOptions: {
               method: "post",
-              route: "/" + service.typename,
+              route: `/${service.typename}`,
               query: service.defaultQuery,
               argsTransformer: (req) => {
                 return {
@@ -390,7 +399,7 @@ export function generateBaseRootResolvers({
                   ...req.params,
                 };
               },
-              ...restMethods[method],
+              ...method.restOptions,
             },
           }),
           type: service.typeDefLookup,
@@ -413,7 +422,9 @@ export function generateBaseRootResolvers({
         break;
       }
       default:
-        throw new Error(`Unknown root resolver method requested: '${method}'`);
+        throw new Error(
+          `Unknown root resolver method requested: '${method.type}'`
+        );
     }
   });
 

@@ -1,11 +1,6 @@
 import { User } from "../../services";
 import { generateBaseRootResolvers } from "../../core/helpers/rootResolver";
-import {
-  GiraffeqlInputFieldType,
-  GiraffeqlInputType,
-  GiraffeqlRootResolverType,
-} from "giraffeql";
-import { Scalars } from "../..";
+import { GiraffeqlRootResolverType } from "giraffeql";
 
 export default {
   getCurrentUser: new GiraffeqlRootResolverType({
@@ -49,7 +44,13 @@ export default {
 
   ...generateBaseRootResolvers({
     service: User,
-    methods: ["get", "getPaginator", "stats", "delete", "create", "update"],
-    restMethods: ["get", "getPaginator"],
+    methods: [
+      { type: "get", restOptions: {} },
+      { type: "getPaginator", restOptions: {} },
+      { type: "delete" },
+      { type: "create" },
+      { type: "update" },
+      { type: "stats" },
+    ],
   }),
 };

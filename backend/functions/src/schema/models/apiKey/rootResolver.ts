@@ -4,6 +4,12 @@ import { generateBaseRootResolvers } from "../../core/helpers/rootResolver";
 export default {
   ...generateBaseRootResolvers({
     service: ApiKey,
-    methods: ["get", "getPaginator", "stats", "delete", "create", "update"],
+    methods: [
+      { type: "get", restOptions: {} },
+      { type: "getPaginator", restOptions: {} },
+      { type: "delete" },
+      { type: "create" },
+      { type: "update" },
+    ],
   }),
 };

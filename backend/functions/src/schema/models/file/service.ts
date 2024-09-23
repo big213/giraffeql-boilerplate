@@ -3,15 +3,12 @@ import { permissionsCheck } from "../../core/helpers/permissions";
 import { ServiceFunctionInputs, AccessControlMap } from "../../../types";
 import { storage } from "firebase-admin";
 import {
-  createObjectType,
-  deleteObjectType,
-} from "../../core/helpers/resolver";
-import {
   allowIfRecordFieldIsCurrentUserFn,
   allowIfFilteringByCurrentUserFn,
   allowIfLoggedInFn,
 } from "../../helpers/permissions";
 import { serveImageSourcePath, serveImageTempPath } from "../../../config";
+import { knex } from "../../../utils/knex";
 
 export class FileService extends PaginatedService {
   defaultTypename = "file";
@@ -152,17 +149,31 @@ export class FileService extends PaginatedService {
 
     await file.move(`${serveImageSourcePath.value()}/${args.location}`);
 
-    const addResults = await createObjectType({
-      typename: this.typename,
-      addFields: {
-        id: await this.generateRecordId(),
-        ...args,
-        size: metadata.size,
-        contentType: metadata.contentType,
-        createdBy: req.user!.id,
-      },
-      req,
-      fieldPath,
+    let addResults;
+    await knex.transaction(async (transaction) => {
+      addResults = await this.createSqlRecord({
+        fields: {
+          ...args,
+          size: metadata.size,
+          contentType: metadata.contentType,
+          createdBy: req.user!.id,
+        },
+        transaction,
+      });
+
+      // do post-create fn, if any
+      await this.afterCreateProcess(
+        {
+          req,
+          fieldPath,
+          args,
+          query,
+          data,
+          isAdmin,
+        },
+        addResults.id,
+        transaction
+      );
     });
 
     return this.getRecord({
@@ -224,11 +235,10 @@ export class FileService extends PaginatedService {
       });
     }
 
-    await deleteObjectType({
-      typename: this.typename,
-      id: item.id,
-      req,
-      fieldPath,
+    await this.deleteSqlRecord({
+      where: {
+        id: item.id,
+      },
     });
 
     return requestedResults ?? {};
