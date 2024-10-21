@@ -15,9 +15,9 @@
                 <li>
                   By default, your profile page will be visible for others to
                   see. However, you can adjust this behavior in the
-                  <nuxt-link to="/my-profile">My Profile page</nuxt-link> (click
-                  <v-icon small>mdi-pencil</v-icon> Edit on the top-right of
-                  that page).
+                  <nuxt-link to="/my/view/profile">My Profile page</nuxt-link>
+                  (click <v-icon small>mdi-pencil</v-icon> Edit on the top-right
+                  of that page).
                 </li>
               </ul>
             </div>

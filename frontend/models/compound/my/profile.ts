@@ -1,5 +1,5 @@
 import { handleUserRefreshed } from '~/services/auth'
-import { User } from '../base/user'
+import { User } from '../../base/user'
 
 export const MyProfile = {
   ...User,

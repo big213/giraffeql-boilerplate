@@ -13,7 +13,7 @@ import {
   generateSortOptions,
 } from '~/services/recordInfo'
 import TimeagoColumn from '~/components/table/timeagoColumn.vue'
-import { getUserRoles } from '~/services/dropdown'
+import { getUserRoleEnumValues } from '~/services/dropdown'
 import ChipColumn from '~/components/table/chipColumn.vue'
 
 export const Event = {
@@ -112,7 +112,7 @@ export const Event = {
     }),
     role: {
       text: 'User Role',
-      getOptions: getUserRoles,
+      getOptions: getUserRoleEnumValues,
       inputType: 'select',
     },
     permissions: {
@@ -124,7 +124,7 @@ export const Event = {
     /*
     status: {
       text: 'Status',
-      getOptions: getOrderStatuses,
+      getOptions: getOrderStatusEnumValues,
       inputType: 'select',
       component: ChipColumn,
       columnOptions: {

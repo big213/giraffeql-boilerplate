@@ -16,7 +16,9 @@ export default {
       return generateDateLocaleString(this.currentValue) ?? 'None'
     },
     dateString() {
-      return this.timeString.split(' ')[0]
+      return (
+        generateDateLocaleString(this.currentValue)?.split(' ')[0] ?? 'None'
+      )
     },
   },
 }

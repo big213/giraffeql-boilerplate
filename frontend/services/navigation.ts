@@ -3,10 +3,9 @@ import {
   generateNavRouteObject,
   userHasPermissions,
 } from './base'
-import * as publicModels from '../models/public'
-import * as myModels from '../models/my'
-import * as baseModels from '~/models/base'
-import * as actions from '~/models/actions'
+import * as models from '../models'
+import * as actions from '../models/actions'
+import * as baseModels from '../models/base'
 
 export function generateNavDrawerItems(that) {
   return [
@@ -24,7 +23,7 @@ export function generateNavDrawerItems(that) {
       title: 'Explore',
       items: [
         generateNavRouteObject(that, {
-          recordInfo: publicModels.PublicUser,
+          recordInfo: models.PublicUser,
           pageOptions: {
             sort: {
               field: 'createdAt',
@@ -39,7 +38,7 @@ export function generateNavDrawerItems(that) {
           title: 'My Account',
           items: [
             generateNavRouteObject(that, {
-              recordInfo: myModels.MyApiKey,
+              recordInfo: models.MyApiKey,
               pageOptions: {
                 sort: {
                   field: 'createdAt',
@@ -48,7 +47,7 @@ export function generateNavDrawerItems(that) {
               },
             }),
             generateNavRouteObject(that, {
-              recordInfo: myModels.MyFile,
+              recordInfo: models.MyFile,
               pageOptions: {
                 sort: {
                   field: 'createdAt',
@@ -59,7 +58,7 @@ export function generateNavDrawerItems(that) {
             {
               icon: 'mdi-account',
               title: 'My Profile',
-              to: '/my-profile',
+              to: '/my/view/profile',
             },
           ],
         }
@@ -109,7 +108,7 @@ export function generateNavDrawerItems(that) {
 
 export function generateUserMenuItems(that) {
   return [
-    { icon: 'mdi-account', title: 'My Profile', to: '/my-profile' },
+    { icon: 'mdi-account', title: 'My Profile', to: '/my/view/profile' },
     { icon: 'mdi-cog', title: 'Settings', to: '/settings' },
   ]
 }

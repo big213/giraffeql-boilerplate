@@ -27,7 +27,7 @@
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn v-if="user" color="primary" nuxt to="/my-profile">
+          <v-btn v-if="user" color="primary" nuxt to="/my/view/profile">
             <v-icon left> mdi-account </v-icon>
             My Profile</v-btn
           >
@@ -41,6 +41,7 @@
     <v-container style="max-width: 600px">
       <ReleaseHistory />
     </v-container>
+    <!--
     <v-container fluid style="max-width: 600px">
       <v-layout column justify-left align-left>
         <v-row>
@@ -57,6 +58,7 @@
         </v-row>
       </v-layout>
     </v-container>
+    -->
   </div>
 </template>
 
@@ -65,7 +67,7 @@ import { mapGetters } from 'vuex'
 import CircularLoader from '~/components/common/circularLoader.vue'
 import CrudRecordInterface from '~/components/interface/crud/crudRecordInterface.vue'
 import { generateHomePageRecordInfo } from '~/services/recordInfo'
-import * as publicModels from '~/models/public'
+import * as models from '~/models'
 import {
   siteName,
   siteDescription,
@@ -98,7 +100,7 @@ export default {
       homeModels: {
         user: generateHomeModelObject(
           generateHomePageRecordInfo({
-            recordInfo: publicModels.PublicUser,
+            recordInfo: models.PublicUser,
             title: 'Latest Users',
             columnMode: true,
             limit: 2,

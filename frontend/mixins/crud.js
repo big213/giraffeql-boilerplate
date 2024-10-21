@@ -1003,7 +1003,7 @@ export default {
         downloadCSV(
           this,
           data,
-          'Export' + this.capitalizedType + getCurrentDate()
+          `Export${this.capitalizedType}${getCurrentDate()}`
         )
       } catch (err) {
         handleError(this, err)

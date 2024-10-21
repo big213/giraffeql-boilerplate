@@ -31,6 +31,15 @@
       </v-container>
     </v-card-text>
     <v-card-actions>
+      <v-switch
+        v-if="
+          recordInfo.paginationOptions.importOptions
+            .allowDownloadAfterCompletion
+        "
+        v-model="miscInputs.downloadAfterCompleted"
+        :disabled="recordsDone > 0"
+        label="Download Results Upon Completion"
+      ></v-switch>
       <v-spacer></v-spacer>
       <slot name="footer-action"></slot>
       <v-btn
@@ -51,6 +60,9 @@ import {
   convertCSVToJSON,
   capitalizeString,
   collapseObject,
+  downloadCSV,
+  getCurrentDate,
+  getNestedProperty,
 } from '~/services/base'
 
 export default {
@@ -82,6 +94,7 @@ export default {
       originalMiscInputs: {
         records: [],
         file: null,
+        downloadAfterCompleted: true,
       },
 
       loading: {
@@ -286,6 +299,49 @@ export default {
         if (this.miscInputs.records.length < 1)
           throw new Error('No records to import')
 
+        // if allowDownloadAfterCompletion set, but no downloadOptions, throw err
+        // fields required
+        if (
+          this.recordInfo.paginationOptions.importOptions
+            .allowDownloadAfterCompletion &&
+          this.miscInputs.downloadAfterCompleted &&
+          !this.recordInfo.paginationOptions.downloadOptions
+        ) {
+          throw new Error(`Downloads not configured for this record type`)
+        }
+
+        const query =
+          this.recordInfo.paginationOptions.importOptions
+            .allowDownloadAfterCompletion &&
+          this.miscInputs.downloadAfterCompleted
+            ? collapseObject(
+                this.recordInfo.paginationOptions.downloadOptions.fields.reduce(
+                  (total, fieldObject) => {
+                    if (fieldObject.args) {
+                      // if args has loadIf and if it returns false, skip this field entirely
+                      if (
+                        fieldObject.args.loadIf &&
+                        !fieldObject.args.loadIf(this)
+                      ) {
+                        return total
+                      }
+
+                      // else add the args
+                      // can skip if it has already been set
+                      if (!total[`${fieldObject.args.path}.__args`]) {
+                        total[`${fieldObject.args.path}.__args`] =
+                          fieldObject.args.getArgs(this)
+                      }
+                    }
+
+                    total[fieldObject.field] = true
+                    return total
+                  },
+                  {}
+                )
+              )
+            : { id: true }
+
         for (const recordData of this.miscInputs.records) {
           // skip if already finished
           if (recordData.isFinished) continue
@@ -294,9 +350,9 @@ export default {
           if (recordData.isSkipped) continue
 
           recordData.record = await executeGiraffeql({
-            [this.recordInfo.addOptions.operationName ??
-            'create' + capitalizeString(this.recordInfo.typename)]: {
-              id: true,
+            [this.recordInfo.addOptions?.operationName ??
+            `create${capitalizeString(this.recordInfo.typename)}`]: {
+              ...query,
               __args: collapseObject(recordData.data),
             },
           }).catch((err) => {
@@ -313,6 +369,46 @@ export default {
 
           // if the record was skipped, it must have been due to being caught.
           if (!recordData.isSkipped) recordData.isFinished = true
+        }
+
+        // download the records as CSV
+        if (
+          this.recordInfo.paginationOptions.importOptions
+            .allowDownloadAfterCompletion &&
+          this.miscInputs.downloadAfterCompleted
+        ) {
+          // extract data from results
+          const data = this.miscInputs.records.map((recordData) => {
+            const returnItem = {}
+
+            this.recordInfo.paginationOptions.downloadOptions.fields.forEach(
+              (fieldObject) => {
+                // skip if hideIf returns true
+                if (fieldObject.hideIf && fieldObject.hideIf(this)) {
+                  return
+                }
+
+                returnItem[fieldObject.field] = getNestedProperty(
+                  recordData.record,
+                  fieldObject.field
+                )
+              }
+            )
+
+            return returnItem
+          })
+
+          if (data.length < 1) {
+            throw new Error('No results to export')
+          }
+          // download as CSV
+          downloadCSV(
+            this,
+            data,
+            `Export${capitalizeString(
+              this.recordInfo.typename
+            )}${getCurrentDate()}`
+          )
         }
 
         this.$notifier.showSnackbar({

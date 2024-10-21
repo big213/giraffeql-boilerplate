@@ -1,5 +1,5 @@
 <template>
-  <v-chip pill v-bind="$attrs" v-on="$listeners">
+  <v-chip pill v-bind="$attrs" v-on="$listeners" :title="name">
     <v-avatar left>
       <v-img v-if="avatarUrl" :src="avatarUrl" contain></v-img
       ><v-icon v-else>{{ fallbackIcon }} </v-icon>

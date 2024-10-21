@@ -26,10 +26,11 @@ export const getUsers = generateMemoizedGetter('getUserPaginator', [
   '__typename',
 ])
 
-export const getUserRoles = generateMemoizedEnumGetter(
+/** START Enum Getters */
+export const getUserRoleEnumValues = generateMemoizedEnumGetter(
   'getUserRoleEnumPaginator'
 )
-
-export const getUserPermissions = generateMemoizedEnumGetter(
+export const getUserPermissionEnumValues = generateMemoizedEnumGetter(
   'getUserPermissionEnumPaginator'
 )
+/** END Enum Getters */

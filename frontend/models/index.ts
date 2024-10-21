@@ -1,4 +1,3 @@
-export * from './base'
-export * from './public'
-export * from './my'
-export * from './special'
+export * from './compound/public'
+export * from './compound/my'
+/** END Compound Model Export */

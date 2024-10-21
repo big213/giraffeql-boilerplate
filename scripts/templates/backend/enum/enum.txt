@@ -1,0 +1,5 @@
+import { Enum } from "../core/helpers/enum";
+
+export class {{ enumName }} extends Enum {
+  static readonly VALUE = new {{ enumName }}("VALUE");
+}

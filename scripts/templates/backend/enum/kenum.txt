@@ -1,0 +1,5 @@
+import { Kenum } from "../core/helpers/enum";
+
+export class {{ enumName }} extends Kenum {
+  static readonly VALUE = new {{ enumName }}("VALUE", 1);
+}

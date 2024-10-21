@@ -133,25 +133,20 @@ function generateMigration(initSubscriptions = true, force = false) {
   let upString = "";
 
   upTablesMap.forEach((value, tablename) => {
-    upString += `knex.schema.createTable("${tablename}", function (table) { ${value
+    upString += `await knex.schema.createTable("${tablename}", function (table) { ${value
       .map((val) => val + ";")
-      .join("")} }),\n`;
+      .join("")} });\n`;
   });
 
   return `import type { Knex } from "knex";
 
-export async function up(knex: Knex): Promise<void[]> {
-  return Promise.all([
-    ${upString}
-  ])
+export async function up(knex: Knex): Promise<void> {
+  ${upString}
 }
 
-export async function down(knex: Knex): Promise<void[]> {
-  return Promise.all([
-    ${[...upTablesMap.keys()]
-      .map((tablename) => `knex.schema.dropTable("${tablename}")`)
-      .join(",")}
-  ]);
-}
-`;
+export async function down(knex: Knex): Promise<void> {
+  ${[...upTablesMap.keys()]
+    .map((tablename) => `await knex.schema.dropTable("${tablename}");\n`)
+    .join("")}
+}`;
 }

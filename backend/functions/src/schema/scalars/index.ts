@@ -23,3 +23,4 @@ export { jsonString } from "./jsonString";
 // generate the scalar types
 export const userRole = enums.userRole.generateScalarType();
 export const userPermission = enums.userPermission.generateScalarType();
+/** END ENUM Scalar Types */

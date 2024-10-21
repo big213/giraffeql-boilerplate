@@ -26,14 +26,12 @@ export const routesMap = {
   view: {
     a: ['apiKey', 'file', 'user', 'userUserFollowLink'],
     i: ['user'],
-    my: ['apiKey', 'file'],
-    s: [],
+    my: ['apiKey', 'file', 'user'],
   },
   crud: {
     a: ['apiKey', 'file', 'user', 'userUserFollowLink'],
     i: ['user'],
     my: ['apiKey', 'file'],
-    s: [],
   },
   action: [],
 }

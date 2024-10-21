@@ -1,10 +1,9 @@
 <template>
-  <div v-if="currentValue">
-    {{ currentValue }}
-    <v-icon small @click.stop="copyToClipboard(currentValue)"
-      >mdi-content-copy</v-icon
+  <span v-if="currentValue" @click.stop="copyToClipboard(currentValue)">
+    <v-chip small class="pointer-cursor"
+      >{{ currentValue }}<v-icon small right>mdi-content-copy</v-icon></v-chip
     >
-  </div>
+  </span>
 </template>
 
 <script>

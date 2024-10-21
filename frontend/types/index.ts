@@ -28,7 +28,7 @@ export type FieldDefinition = {
   }
 
   args?: {
-    getArgs: (that) => Promise<any>
+    getArgs: (that) => any
     path: string
     // if provided, only load this field if this returns true
     loadIf?: (that) => boolean
@@ -237,6 +237,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
       // if a custom icon, what should it be?
       icon?: string
+
+      // should the imported records be downloaded after? requires downloadOptions to be set
+      allowDownloadAfterCompletion?: boolean
     }
 
     // this option, if defined, will override the default grid/list option set by the user

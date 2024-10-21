@@ -40,7 +40,7 @@
 <script>
 import UpdateCredentialsInterface from '~/components/interface/auth/updateCredentialsInterface.vue'
 import EditRecordInterface from '~/components/interface/crud/editRecordInterface.vue'
-import { MySettings } from '~/models/special'
+import { MySettings } from '~/models'
 
 export default {
   middleware: ['router-auth'],

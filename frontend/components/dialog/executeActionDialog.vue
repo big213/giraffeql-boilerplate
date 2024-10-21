@@ -18,13 +18,13 @@
     >
       <template v-slot:toolbar>
         <v-toolbar flat color="accent">
-          <PreviewRecordChip v-if="item" :value="item" class="pointer-cursor">
-          </PreviewRecordChip>
-          <v-divider v-if="item" class="mx-4" inset vertical></v-divider>
           <v-icon left>{{ actionOptions.icon }}</v-icon>
           <v-toolbar-title>
             <span class="headline">{{ actionOptions.title }}</span>
           </v-toolbar-title>
+          <v-divider v-if="item" class="mx-4" inset vertical></v-divider>
+          <PreviewRecordChip v-if="item" :value="item" class="pointer-cursor">
+          </PreviewRecordChip>
           <v-spacer></v-spacer>
           <v-btn icon @click="close()">
             <v-icon>mdi-close</v-icon>

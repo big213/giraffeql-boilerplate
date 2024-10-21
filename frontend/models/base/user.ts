@@ -1,4 +1,7 @@
-import { getUserPermissions, getUserRoles } from '~/services/dropdown'
+import {
+  getUserPermissionEnumValues,
+  getUserRoleEnumValues,
+} from '~/services/dropdown'
 import type { RecordInfo } from '~/types'
 import BooleanColumn from '~/components/table/booleanColumn.vue'
 import FollowColumn from '~/components/table/followColumn.vue'
@@ -27,7 +30,7 @@ export const User = <RecordInfo<'user'>>{
     },
     role: {
       text: 'User Role',
-      getOptions: getUserRoles,
+      getOptions: getUserRoleEnumValues,
       inputType: 'select',
       component: ChipColumn,
       columnOptions: {
@@ -38,7 +41,7 @@ export const User = <RecordInfo<'user'>>{
     permissions: {
       text: 'Custom Permissions',
       inputType: 'multiple-select',
-      getOptions: getUserPermissions,
+      getOptions: getUserPermissionEnumValues,
     },
     ...generateIsPublicField(),
     allowEmailNotifications: {

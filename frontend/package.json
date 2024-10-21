@@ -8,8 +8,7 @@
     "start": "nuxt start",
     "generate": "nuxt generate",
     "lint:js": "eslint --ext .js,.vue --ignore-path .gitignore .",
-    "lint": "npm run lint:js",
-    "generate:model": "ts-node scripts/generateModel.ts"
+    "lint": "npm run lint:js"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^1.16.6",
@@ -34,7 +33,6 @@
     "@nuxtjs/eslint-config-typescript": "^3.0.0",
     "@nuxtjs/eslint-module": "^2.0.0",
     "@nuxtjs/vuetify": "^1.11.3",
-    "@types/yargs": "^17.0.8",
     "babel-eslint": "^10.1.0",
     "eslint": "^7.19.0",
     "eslint-config-prettier": "^6.12.0",
@@ -43,10 +41,8 @@
     "fs": "^0.0.1-security",
     "postcss": "^8.4.32",
     "prettier": "^2.1.2",
-    "ts-node": "^10.4.0",
     "typescript": "^4.5.4",
     "vue-stripe-elements-plus": "^1.0.3",
-    "vuetify": "^2.7.1",
-    "yargs": "^17.3.1"
+    "vuetify": "^2.7.1"
   }
 }

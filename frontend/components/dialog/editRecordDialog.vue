@@ -22,16 +22,10 @@
     >
       <template v-slot:toolbar>
         <v-toolbar flat color="accent">
-          <PreviewRecordChip
-            v-if="
-              selectedItem &&
-              computedMode !== 'add' &&
-              computedMode !== 'import'
-            "
-            :value="selectedItem"
-            class="pointer-cursor"
-          >
-          </PreviewRecordChip>
+          <v-icon left v-if="!hideTitleMode">{{ icon }}</v-icon>
+          <v-toolbar-title v-if="!hideTitleMode">
+            <span class="headline">{{ title }}</span>
+          </v-toolbar-title>
           <v-divider
             v-if="
               selectedItem &&
@@ -42,10 +36,16 @@
             inset
             vertical
           ></v-divider>
-          <v-icon left v-if="!hideTitleMode">{{ icon }}</v-icon>
-          <v-toolbar-title v-if="!hideTitleMode">
-            <span class="headline">{{ title }}</span>
-          </v-toolbar-title>
+          <PreviewRecordChip
+            v-if="
+              selectedItem &&
+              computedMode !== 'add' &&
+              computedMode !== 'import'
+            "
+            :value="selectedItem"
+            class="pointer-cursor"
+          >
+          </PreviewRecordChip>
           <v-spacer></v-spacer>
           <v-btn
             v-if="computedMode === 'view' && !hideRefreshMode"

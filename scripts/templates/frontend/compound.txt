@@ -1,0 +1,12 @@
+import { {{ capitalizedTypename }} } from '../../base'
+
+export const {{ capitalizedRouteType }}{{ capitalizedTypename }} = {
+  ...{{ capitalizedTypename }},
+  title: `${{{ capitalizedTypename }}.pluralName}`,
+  routeType: '{{ routeType }}',
+  paginationOptions: {
+    ...{{ capitalizedTypename }}.paginationOptions,
+  },
+  enterOptions: undefined,
+  shareOptions: undefined,
+}

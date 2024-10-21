@@ -16,7 +16,7 @@
 
 <script>
 import ViewRecordPage from '~/components/page/viewRecordPage.vue'
-import * as publicModels from '~/models/public'
+import * as models from '~/models'
 import { capitalizeString, kebabToCamelCase } from '~/services/base'
 
 export default {
@@ -31,7 +31,7 @@ export default {
     },
 
     currentModel() {
-      return publicModels[`Public${capitalizeString(this.type)}`]
+      return models[`Public${capitalizeString(this.type)}`]
     },
 
     lookupParams() {

@@ -1,4 +1,4 @@
-import { File } from '../base'
+import { File } from '../../base'
 
 export const MyFile = {
   ...File,

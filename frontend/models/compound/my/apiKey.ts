@@ -1,4 +1,4 @@
-import { ApiKey } from '../base'
+import { ApiKey } from '../../base'
 
 export const MyApiKey = {
   ...ApiKey,

@@ -15,7 +15,7 @@
 
 <script>
 import CrudRecordPage from '~/components/page/crudRecordPage.vue'
-import * as myModels from '~/models/my'
+import * as models from '~/models'
 import { capitalizeString, kebabToCamelCase } from '~/services/base'
 
 export default {
@@ -32,7 +32,7 @@ export default {
 
   computed: {
     currentModel() {
-      return myModels[`My${capitalizeString(this.type)}`]
+      return models[`My${capitalizeString(this.type)}`]
     },
 
     lockedFilters() {

@@ -23,3 +23,4 @@ export const UserUserFollowLink = new UserUserFollowLinkService();
 
 export const UserRole = new KenumService(userRole);
 export const UserPermission = new EnumService(userPermission);
+/** END ENUM Service Set */

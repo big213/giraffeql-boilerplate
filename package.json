@@ -4,10 +4,20 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "generate:model": "ts-node scripts/generateModel.ts",
+    "generate:enum": "ts-node scripts/generateEnum.ts",
+    "generate:compound-model": "ts-node scripts/generateCompoundModel.ts",
+    "generate:schema": "ts-node scripts/generateSchema.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "giraffeqlBoilerplateVersion": ""
+  "giraffeqlBoilerplateVersion": "",
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.2",
+    "yargs": "^17.7.2"
+  }
 }

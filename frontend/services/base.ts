@@ -424,15 +424,17 @@ export function generateNavRouteObject(
     recordInfo,
     path,
     pageOptions,
+    title,
   }: {
     recordInfo: any
     path?: string
     pageOptions?: any
+    title?: string
   }
 ) {
   return {
     icon: recordInfo.icon,
-    title: recordInfo.title ?? recordInfo.pluralName,
+    title: title ?? recordInfo.title ?? recordInfo.pluralName,
     to: generateCrudRecordRoute(that, {
       path,
       typename: recordInfo.typename,
@@ -756,9 +758,13 @@ export function populateInputObject(
             inputObject.inputType === 'type-autocomplete' ||
             inputObject.inputType === 'type-combobox'
           ) {
-            inputObject.value =
-              inputObject.options.find((ele) => ele.id === inputObject.value) ??
-              null
+            // if the inputObject.value is an object, must already be selected (no need to convert)
+            if (!isObject(inputObject.value)) {
+              inputObject.value =
+                inputObject.options.find(
+                  (ele) => ele.id === inputObject.value
+                ) ?? null
+            }
           } else if (inputObject.inputType === 'type-autocomplete-multiple') {
             // for multiple types, inputObject.value should contain the values already
             inputObject.value = inputObject.value ?? []
