@@ -65,11 +65,16 @@
             expand-mode="openInDialog"
             left
             offset-x
+            :btn-attrs="{ icon: true }"
             @handle-action-click="openEditDialog"
             @handle-custom-action-click="handleCustomActionClick"
             @reload-parent="generation++"
             @close-parent="close()"
-          ></RecordActionMenu>
+          >
+            <template v-slot:btn-content>
+              <v-icon>mdi-dots-vertical</v-icon>
+            </template>
+          </RecordActionMenu>
           <v-btn icon @click="close()">
             <v-icon>mdi-close</v-icon>
           </v-btn>

@@ -13,7 +13,6 @@ import {
 
 import { validateToken, validateApiKey } from "./helpers/auth";
 import {
-  CustomSchemaGenerator,
   generatePromptEmptyPage,
   generatePromptPage,
   generateQueryPage,
@@ -24,8 +23,8 @@ initializeApp();
 
 const app = express();
 
-// app.enable("trust proxy"); -- uncomment this to allow req.ip to show current user IP
-// app.use(express.json()); -- apparently not needed on cloud functions
+// allows req.ip to show current user IP
+app.enable("trust proxy");
 
 // extract the user ID from all requests.
 app.use(async function (req, res, next) {

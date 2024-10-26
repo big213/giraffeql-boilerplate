@@ -21,7 +21,7 @@
           </p>
           <p v-if="siteContactEmail">
             To get in touch with us, please send us an email at
-            <a>{{ siteContactEmail }}</a
+            <a :href="`mailto:${siteContactEmail}`">{{ siteContactEmail }}</a
             >.
           </p>
         </v-card-text>

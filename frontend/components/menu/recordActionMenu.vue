@@ -1,11 +1,21 @@
 <template>
   <v-menu v-bind="$attrs">
     <!-- pass through scoped slots -->
-    <template v-slot:activator="slotData">
+    <template v-slot:activator="{ attrs, on }">
+      <!--
       <slot v-if="$scopedSlots.activator" name="activator" v-bind="slotData" />
       <v-icon v-else v-bind="slotData.attrs" v-on="slotData.on"
         >mdi-dots-vertical</v-icon
       >
+      -->
+      <v-btn v-bind="{ ...attrs, ...btnAttrs }" v-on="on">
+        <v-progress-circular
+          v-if="isActionLoading"
+          indeterminate
+          size="23"
+        ></v-progress-circular>
+        <slot v-else name="btn-content"></slot>
+      </v-btn>
     </template>
 
     <v-list dense>
@@ -167,6 +177,8 @@ export default {
         return ['emit', 'openInNew', 'openInDialog'].includes(value)
       },
     },
+
+    btnAttrs: {},
   },
 
   data() {
@@ -183,6 +195,10 @@ export default {
           ? actionWrapper.actionObject.showIf(this, this.item)
           : true
       )
+    },
+
+    isActionLoading() {
+      return this.customActions.some((actionWrapper) => actionWrapper.isLoading)
     },
   },
 

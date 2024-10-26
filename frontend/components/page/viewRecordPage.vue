@@ -26,22 +26,23 @@
                 expand-mode="emit"
                 left
                 offset-x
+                :btn-attrs="{ icon: true, small: true }"
                 @handle-action-click="openEditDialog"
                 @handle-custom-action-click="handleCustomActionClick"
                 @handle-expand-click="handleExpandClick"
               >
-                <template v-slot:activator="{ on, attrs }">
-                  <v-icon v-bind="attrs" v-on="on" right
-                    >mdi-dots-vertical</v-icon
-                  >
+                <template v-slot:btn-content>
+                  <v-icon>mdi-dots-vertical</v-icon>
                 </template>
               </RecordActionMenu>
-              <v-icon right @click="toggleRecordMinimized(false)"
-                >mdi-arrow-expand</v-icon
-              >
-              <v-icon right @click="openViewRecordDialog()"
-                >mdi-information</v-icon
-              >
+              <v-btn icon small>
+                <v-icon @click="toggleRecordMinimized(false)"
+                  >mdi-arrow-expand</v-icon
+                >
+              </v-btn>
+              <v-btn icon small>
+                <v-icon @click="openViewRecordDialog()">mdi-information</v-icon>
+              </v-btn>
             </template>
           </PreviewRecordChip>
         </v-col>
@@ -49,7 +50,6 @@
           v-else-if="recordMode === 'show'"
           cols="12"
           :md="fullPageMode ? 12 : isExpanded && !showComments ? 4 : 6"
-          class="text-center"
           :offset-md="fullPageMode ? 0 : isExpandOrCommentsOpened ? 0 : 3"
         >
           <v-card class="elevation-12">
@@ -87,10 +87,15 @@
                     expand-mode="emit"
                     left
                     offset-x
+                    :btn-attrs="{ icon: true }"
                     @handle-action-click="openEditDialog"
                     @handle-custom-action-click="handleCustomActionClick"
                     @handle-expand-click="handleExpandClick"
-                  ></RecordActionMenu>
+                  >
+                    <template v-slot:btn-content>
+                      <v-icon>mdi-dots-vertical</v-icon>
+                    </template>
+                  </RecordActionMenu>
                   <v-btn
                     v-if="!hideMinimize"
                     icon

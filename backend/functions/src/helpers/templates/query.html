@@ -5,7 +5,7 @@
     <link
       rel="stylesheet"
       data-name="vs/editor/editor.main"
-      href="https://unpkg.com/monaco-editor/min/vs/editor/editor.main.css"
+      href="https://unpkg.com/monaco-editor@0.52.0/min/vs/editor/editor.main.css"
     />
     <style>
       body {
@@ -102,7 +102,7 @@
     <script>
       var require = {
         paths: {
-          vs: "https://unpkg.com/monaco-editor/min/vs",
+          vs: "https://unpkg.com/monaco-editor@0.52.0/min/vs",
         },
       };
 
@@ -140,15 +140,17 @@
       (async function init() {
         try {
           // load loader first
-          await loadScript("https://unpkg.com/monaco-editor/min/vs/loader.js");
+          await loadScript(
+            "https://unpkg.com/monaco-editor@0.52.0/min/vs/loader.js"
+          );
 
           // then load these 2
           await Promise.all([
             loadScript(
-              "https://unpkg.com/monaco-editor/min/vs/editor/editor.main.nls.js"
+              "https://unpkg.com/monaco-editor@0.52.0/min/vs/editor/editor.main.js"
             ),
             loadScript(
-              "https://unpkg.com/monaco-editor/min/vs/editor/editor.main.js"
+              "https://unpkg.com/monaco-editor@0.52.0/min/vs/language/typescript/tsWorker.js"
             ),
           ]);
 

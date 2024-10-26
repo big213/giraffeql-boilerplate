@@ -526,15 +526,12 @@
                         expand-mode="emit"
                         bottom
                         offset-y
+                        :btn-attrs="{ block: true, text: true }"
                         @handle-action-click="openEditDialog"
                         @handle-expand-click="toggleGridExpand(item, $event)"
                         @handle-custom-action-click="handleCustomActionClick"
                       >
-                        <template v-slot:activator="{ on, attrs }">
-                          <v-btn block text v-bind="attrs" v-on="on">
-                            Actions
-                          </v-btn>
-                        </template>
+                        <template v-slot:btn-content> Actions </template>
                       </RecordActionMenu>
                     </div>
                   </v-card>
@@ -617,15 +614,12 @@
                     expand-mode="emit"
                     bottom
                     offset-y
+                    :btn-attrs="{ block: true, text: true }"
                     @handle-action-click="openEditDialog"
                     @handle-expand-click="toggleItemExpanded(props, $event)"
                     @handle-custom-action-click="handleCustomActionClick"
                   >
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-btn block text v-bind="attrs" v-on="on">
-                        Actions
-                      </v-btn>
-                    </template>
+                    <template v-slot:btn-content> Actions </template>
                   </RecordActionMenu>
                 </div>
                 <template v-else>
@@ -673,14 +667,13 @@
                     expand-mode="emit"
                     left
                     offset-x
+                    :btn-attrs="{ small: true }"
                     @handle-action-click="openEditDialog"
                     @handle-expand-click="toggleItemExpanded(props, $event)"
                     @handle-custom-action-click="handleCustomActionClick"
                   >
-                    <template v-slot:activator="{ on, attrs }">
-                      <v-btn small v-bind="attrs" v-on="on">
-                        <v-icon small>mdi-dots-vertical</v-icon></v-btn
-                      >
+                    <template v-slot:btn-content>
+                      <v-icon small>mdi-dots-vertical</v-icon>
                     </template>
                   </RecordActionMenu>
                 </div>
