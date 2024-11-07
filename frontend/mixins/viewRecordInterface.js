@@ -41,12 +41,17 @@ export default {
       required: true,
     },
 
-    // must be add, edit, view, or copy
+    // custom fields that will override add/edit/view options on recordInfo
+    customFields: {
+      type: Array,
+    },
+
+    // must be view only
     mode: {
       type: String,
       required: true,
       validator: (value) => {
-        return ['add', 'edit', 'view', 'copy'].includes(value)
+        return ['view'].includes(value)
       },
     },
 
@@ -74,6 +79,12 @@ export default {
 
     capitalizedType() {
       return capitalizeString(this.recordInfo.typename)
+    },
+
+    fields() {
+      if (this.customFields) return this.customFields
+
+      return this.recordInfo.viewOptions.fields
     },
 
     visibleInputsArray() {
@@ -163,7 +174,7 @@ export default {
     async loadRecord(showLoader = true) {
       if (showLoader) this.loading.loadRecord = true
       try {
-        const fields = this.recordInfo.viewOptions.fields.map((fieldElement) =>
+        const fields = this.fields.map((fieldElement) =>
           typeof fieldElement === 'string' ? fieldElement : fieldElement.field
         )
 
@@ -205,7 +216,7 @@ export default {
 
         // build inputs Array
         this.inputsArray = await Promise.all(
-          this.recordInfo.viewOptions.fields.map((fieldElement) => {
+          this.fields.map((fieldElement) => {
             const fieldKey =
               typeof fieldElement === 'string'
                 ? fieldElement

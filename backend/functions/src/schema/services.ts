@@ -1,4 +1,4 @@
-import { userPermission, userRole } from "./enums";
+import * as enums from "./enums";
 import { EnumService, KenumService } from "./core/services";
 
 import { UserService } from "./models/user/service";
@@ -21,6 +21,6 @@ export const Admin = new AdminService();
 export const UserUserFollowLink = new UserUserFollowLinkService();
 /** END LINK Service Set */
 
-export const UserRole = new KenumService(userRole);
-export const UserPermission = new EnumService(userPermission);
+export const UserRole = new KenumService(enums.userRole);
+export const UserPermission = new EnumService(enums.userPermission);
 /** END ENUM Service Set */

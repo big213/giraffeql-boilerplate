@@ -295,25 +295,55 @@ export class PaginatedService extends BaseService {
   async handleLookupArgs(args: any): Promise<void> {
     for (const key in args) {
       const typeField = this.getTypeDef().definition.fields[key]?.type;
-      if (
-        typeField instanceof GiraffeqlObjectTypeLookup &&
-        isObject(args[key])
-      ) {
-        // get record ID of type, replace object with the ID
-        const results = await fetchTableRows({
-          select: ["id"],
-          table: typeField.name,
-          where: args[key],
-        });
-
-        if (results.length < 1) {
-          throw new GiraffeqlBaseError({
-            message: `${typeField.name} not found`,
+      if (typeField instanceof GiraffeqlObjectTypeLookup) {
+        if (isObject(args[key])) {
+          // get record ID of type, replace object with the ID
+          const results = await fetchTableRows({
+            select: ["id"],
+            table: typeField.name,
+            where: args[key],
           });
-        }
 
-        // replace args[key] with the item ID
-        args[key] = results[0].id;
+          if (results.length < 1) {
+            throw new GiraffeqlBaseError({
+              message: `${typeField.name} not found`,
+            });
+          }
+
+          // replace args[key] with the item ID
+          args[key] = results[0].id;
+        } else if (Array.isArray(args[key])) {
+          // if the args field is an array, it is assumed to be a valid array of GiraffeqlObjectTypeLookups (dataloadable field, for example)
+          // replaces [{ id: "123" }] with ["123"]
+          if (args[key].length > 0) {
+            // although any unique key combination can be inputted (via typeDefLookup), only the id is currently supported using this current implementation
+            if (!args[key][0].id) {
+              throw new Error(
+                `For object lookup arrays, only the id field is currently supported`
+              );
+            }
+
+            const results = await fetchTableRows({
+              select: ["id"],
+              table: typeField.name,
+              where: [
+                {
+                  field: "id",
+                  operator: "in",
+                  value: args[key].map((ele) => ele.id),
+                },
+              ],
+            });
+
+            if (results.length !== args[key].length) {
+              throw new Error(
+                `There is at least one invalid or duplicate entry in field: '${key}'`
+              );
+            }
+
+            args[key] = results.map((result) => result.id);
+          }
+        }
       }
     }
   }

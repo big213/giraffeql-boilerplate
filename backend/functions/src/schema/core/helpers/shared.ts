@@ -182,3 +182,14 @@ export function isTimeoutImminent(req: Request) {
 export function isEmptyQuery(query: unknown) {
   return isObject(query) && Object.keys(query).length < 1;
 }
+
+export function getArgsNewValue(fields, item, fieldname) {
+  if (item[fieldname] === undefined) {
+    throw new Error(`Item does not contain the requested compare field: '${fieldname}'`);
+  }
+
+  return fields[fieldname] !== undefined &&
+    fields[fieldname] !== item[fieldname]
+    ? fields[fieldname]
+    : undefined;
+}

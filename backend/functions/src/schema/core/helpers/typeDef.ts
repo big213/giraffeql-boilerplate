@@ -776,8 +776,7 @@ export function generateDataloadableField(
         // necessary for inserting JSON into DB properly
         parseValue: (val) => {
           // storing in DB as JSON: ["id1", "id2", ...]
-          // although any unique key combination can be inputted (via typeDefLookup), only the id is currently supported using this simple implementation
-          return JSON.stringify(val.map((input) => input.id));
+          return JSON.stringify(val);
         },
         type: "jsonb",
       }),

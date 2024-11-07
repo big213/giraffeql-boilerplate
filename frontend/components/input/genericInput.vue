@@ -320,11 +320,7 @@
         </component>
         <v-chip v-else pill>
           <v-avatar left>
-            <v-img
-              v-if="data.item.avatarUrl"
-              :src="data.item.avatarUrl"
-              contain
-            ></v-img
+            <v-img v-if="data.item.avatarUrl" :src="data.item.avatarUrl"></v-img
             ><v-icon v-else>{{ icon }} </v-icon>
           </v-avatar>
           {{ data.item.name }}
@@ -345,11 +341,7 @@
         </component>
         <v-chip v-else v-bind="data.attrs" pill>
           <v-avatar left>
-            <v-img
-              v-if="data.item.avatarUrl"
-              :src="data.item.avatarUrl"
-              contain
-            ></v-img
+            <v-img v-if="data.item.avatarUrl" :src="data.item.avatarUrl"></v-img
             ><v-icon v-else>{{ icon }}</v-icon>
           </v-avatar>
           {{ standardizeComboboxName(data.item) }}
@@ -402,11 +394,7 @@
         </component>
         <v-chip v-else pill>
           <v-avatar left>
-            <v-img
-              v-if="data.item.avatarUrl"
-              :src="data.item.avatarUrl"
-              contain
-            ></v-img
+            <v-img v-if="data.item.avatarUrl" :src="data.item.avatarUrl"></v-img
             ><v-icon v-else>{{ icon }} </v-icon>
           </v-avatar>
           {{ data.item.name }}
@@ -427,11 +415,7 @@
         </component>
         <v-chip v-else v-bind="data.attrs" pill>
           <v-avatar left>
-            <v-img
-              v-if="data.item.avatarUrl"
-              :src="data.item.avatarUrl"
-              contain
-            ></v-img
+            <v-img v-if="data.item.avatarUrl" :src="data.item.avatarUrl"></v-img
             ><v-icon v-else>{{ icon }}</v-icon>
           </v-avatar>
           {{ data.item.name }}
@@ -528,11 +512,7 @@
         </component>
         <v-chip v-else pill>
           <v-avatar left>
-            <v-img
-              v-if="data.item.avatarUrl"
-              :src="data.item.avatarUrl"
-              contain
-            ></v-img
+            <v-img v-if="data.item.avatarUrl" :src="data.item.avatarUrl"></v-img
             ><v-icon v-else>{{ icon }} </v-icon>
           </v-avatar>
           {{ data.item.name }}
@@ -553,11 +533,7 @@
         </component>
         <v-chip v-else v-bind="data.attrs" pill>
           <v-avatar left>
-            <v-img
-              v-if="data.item.avatarUrl"
-              :src="data.item.avatarUrl"
-              contain
-            ></v-img
+            <v-img v-if="data.item.avatarUrl" :src="data.item.avatarUrl"></v-img
             ><v-icon v-else>{{ icon }}</v-icon>
           </v-avatar>
           {{ data.item.name }}

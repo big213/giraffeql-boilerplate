@@ -328,6 +328,7 @@ export function generatePreviewableFilesColumn({
   soloMode = false,
   hideDownload = false,
   mediaMode = false,
+  useFirebaseUrl = false,
   fieldOptions,
 }: {
   fieldname: string
@@ -337,6 +338,7 @@ export function generatePreviewableFilesColumn({
   soloMode?: boolean
   hideDownload?: boolean
   mediaMode?: boolean
+  useFirebaseUrl?: boolean
   fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
 }) {
   return {
@@ -373,6 +375,7 @@ export function generatePreviewableFilesColumn({
       ...fieldOptions,
       inputOptions: {
         ...fieldOptions?.inputOptions,
+        useFirebaseUrl,
         limit,
         mediaMode,
         contentType: mediaMode ? 'image/*' : null,
@@ -705,11 +708,12 @@ export function generateMultipleJoinableField({
     },
     default: () => [],
     parseValue: (val) => {
-      // if array, extract the id field only
+      // if not array, convert to empty array
       if (!Array.isArray(val)) {
-        return val
+        return []
       }
 
+      // if array, extract the id field only
       return val.map((ele) => ({ id: ele.id }))
     },
     pathPrefix: fieldname,

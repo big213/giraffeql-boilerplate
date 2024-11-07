@@ -10,12 +10,15 @@ const argv = yargs(process.argv.slice(2))
   .options({
     name: { type: "string", demandOption: true },
     link: { type: "boolean", default: false },
+    "backend-only": { type: "boolean", default: false },
   })
   .parseSync();
 
 const typename = argv.name;
 
 const isLink = argv.link;
+
+const isBackendOnly = argv["backend-only"];
 
 const capitalizedTypename = capitalizeString(typename);
 
@@ -135,82 +138,85 @@ modifiersArray.forEach((modifierObj) => {
 /*
  ** Frontend
  */
+if (!isBackendOnly) {
+  // create the directory for base models
+  if (!fs.existsSync(`frontend/models/base`)) {
+    fs.mkdirSync(`frontend/models/base`);
+  }
 
-// create the directory for base models
-if (!fs.existsSync(`frontend/models/base`)) {
-  fs.mkdirSync(`frontend/models/base`);
-}
+  // create the directory for the simple models
+  if (!fs.existsSync(`frontend/models/simple`)) {
+    fs.mkdirSync(`frontend/models/simple`);
+  }
 
-// create the directory for the simple models
-if (!fs.existsSync(`frontend/models/simple`)) {
-  fs.mkdirSync(`frontend/models/simple`);
-}
-
-// use different template depending on whether it is a link or not
-const template = fs.readFileSync(
-  `scripts/templates/frontend/${isLink ? "baseLink.txt" : "base.txt"}`,
-  "utf8"
-);
-
-// write the base model if it doesn't already exist
-if (!fs.existsSync(`frontend/models/base/${typename}.ts`)) {
-  fs.writeFileSync(
-    `frontend/models/base/${typename}.ts`,
-    processTemplate(template, {
-      typename,
-      capitalizedTypename,
-    })
+  // use different template depending on whether it is a link or not
+  const template = fs.readFileSync(
+    `scripts/templates/frontend/${isLink ? "baseLink.txt" : "base.txt"}`,
+    "utf8"
   );
-} else {
-  // if it already exists, throw error
-  throw new Error("File already exists");
-}
 
-// write the simple model
-const simpleTemplate = fs.readFileSync(
-  `scripts/templates/frontend/simple.txt`,
-  "utf8"
-);
+  // write the base model if it doesn't already exist
+  if (!fs.existsSync(`frontend/models/base/${typename}.ts`)) {
+    fs.writeFileSync(
+      `frontend/models/base/${typename}.ts`,
+      processTemplate(template, {
+        typename,
+        capitalizedTypename,
+      })
+    );
+  } else {
+    // if it already exists, throw error
+    throw new Error("File already exists");
+  }
 
-// write the simple model if it doesn't already exist
-if (!fs.existsSync(`frontend/models/simple/${typename}.ts`)) {
-  fs.writeFileSync(
-    `frontend/models/simple/${typename}.ts`,
-    processTemplate(simpleTemplate, {
-      typename,
-      capitalizedTypename,
-    })
+  // write the simple model
+  const simpleTemplate = fs.readFileSync(
+    `scripts/templates/frontend/simple.txt`,
+    "utf8"
   );
-} else {
-  // if it already exists, throw error
-  throw new Error("File already exists");
+
+  // write the simple model if it doesn't already exist
+  if (!fs.existsSync(`frontend/models/simple/${typename}.ts`)) {
+    fs.writeFileSync(
+      `frontend/models/simple/${typename}.ts`,
+      processTemplate(simpleTemplate, {
+        typename,
+        capitalizedTypename,
+      })
+    );
+  } else {
+    // if it already exists, throw error
+    throw new Error("File already exists");
+  }
+
+  // add the export statement to models/base/index.ts
+  let fileContents = fs.readFileSync("frontend/models/base/index.ts", "utf8");
+
+  fileContents = insertStatementBefore(
+    fileContents,
+    `/** END Base Model Import */`,
+    `export { ${capitalizedTypename} } from './${typename}'`
+  );
+
+  // replace the file
+  fs.writeFileSync("frontend/models/base/index.ts", fileContents);
+
+  // add the export statement to models/simple/index.ts
+  let simpleFileContents = fs.readFileSync(
+    "frontend/models/simple/index.ts",
+    "utf8"
+  );
+
+  simpleFileContents = insertStatementBefore(
+    simpleFileContents,
+    `/** END Simple Model Import */`,
+    `export { Simple${capitalizedTypename} } from './${typename}'`
+  );
+
+  // replace the file
+  fs.writeFileSync("frontend/models/simple/index.ts", simpleFileContents);
 }
 
-// add the export statement to models/base/index.ts
-let fileContents = fs.readFileSync("frontend/models/base/index.ts", "utf8");
-
-fileContents = insertStatementBefore(
-  fileContents,
-  `/** END Base Model Import */`,
-  `export { ${capitalizedTypename} } from './${typename}'`
+console.log(
+  `Done adding ${typename} model${isBackendOnly ? ` (Backend Only)` : ""}`
 );
-
-// replace the file
-fs.writeFileSync("frontend/models/base/index.ts", fileContents);
-
-// add the export statement to models/simple/index.ts
-let simpleFileContents = fs.readFileSync(
-  "frontend/models/simple/index.ts",
-  "utf8"
-);
-
-simpleFileContents = insertStatementBefore(
-  simpleFileContents,
-  `/** END Simple Model Import */`,
-  `export { Simple${capitalizedTypename} } from './${typename}'`
-);
-
-// replace the file
-fs.writeFileSync("frontend/models/simple/index.ts", simpleFileContents);
-
-console.log(`Done adding ${typename} model`);

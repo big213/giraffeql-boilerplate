@@ -415,6 +415,9 @@ function processJoinFields(
 
         const linkJoinTypeDef = linkService.typeDef;
 
+        const actualJoinSqlField =
+          linkJoinTypeDef.definition.fields[actualJoinField].sqlOptions!.field!;
+
         // find the field on the typeDef
         const typeDefField = linkJoinTypeDef.definition.fields[linkTableField];
 
@@ -468,7 +471,7 @@ function processJoinFields(
             table: linkTable,
             alias: joinTableAlias,
             parentTableField: "id",
-            field: actualJoinField,
+            field: actualJoinSqlField,
           },
           // automatically apply the nested field
           nested: {
