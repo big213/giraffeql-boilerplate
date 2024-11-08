@@ -78,6 +78,13 @@
                   <v-btn v-if="!hideRefresh" icon @click="reset()">
                     <v-icon>mdi-refresh</v-icon>
                   </v-btn>
+                  <v-btn
+                    v-if="recordInfo.pageOptions?.dedicatedShareButton"
+                    icon
+                    @click="openEditDialog('share')"
+                  >
+                    <v-icon>mdi-share-variant</v-icon></v-btn
+                  >
                   <RecordActionMenu
                     v-if="!hideActions"
                     :record-info="recordInfo"

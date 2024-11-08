@@ -1245,12 +1245,14 @@ export function generateShareUrl(
     id,
     showComments,
     miniMode,
+    expandKey,
   }: {
     routeKey: string
     routeType?: string
     id: string
     showComments?: boolean
     miniMode?: boolean
+    expandKey?: string
   }
 ) {
   return (
@@ -1261,6 +1263,7 @@ export function generateShareUrl(
       id,
       showComments,
       miniMode,
+      expandKey,
     })
   )
 }

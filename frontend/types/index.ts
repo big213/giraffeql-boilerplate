@@ -102,6 +102,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
     // custom page component
     component?: any
 
+    // should there be a dedicated share button? (requires shareOptions)
+    dedicatedShareButton?: boolean
+
     // should the actions be hidden?
     hideActions?: boolean
     // should the refresh button be hidden?
