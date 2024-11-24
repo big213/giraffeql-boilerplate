@@ -17,6 +17,17 @@ export class PermissionsError extends GiraffeqlBaseError {
   }
 }
 
+export class ItemNotFoundError extends GiraffeqlBaseError {
+  constructor(params: { message?: string; fieldPath?: string[] }) {
+    const { message = "Item not found" } = params;
+    super({
+      errorName: "ItemNotFoundError",
+      message,
+      statusCode: 404,
+    });
+  }
+}
+
 export class TimeoutError extends GiraffeqlBaseError {
   constructor({
     message,

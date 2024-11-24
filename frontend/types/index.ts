@@ -52,7 +52,186 @@ export type FieldDefinition = {
   component?: any // component for rendering the field in table
 }
 
-export type SimpleRecordInfo<T extends keyof MainTypes> = Partial<RecordInfo<T>>
+export type PaginationOptions = {
+  // function that runs when pagination interface is opened for the first time
+  onSuccess?: (that) => void
+
+  // does the interface have the ability to search?
+  searchOptions?: {
+    // should the search bar show up in the presets
+    preset?: boolean
+    // function that will return the params to be passed with the search, if any
+    getParams?: (that, searchQuery) => any
+  }
+
+  defaultPageOptions?: (that: any) => Promise<CrudPageOptions> | CrudPageOptions
+
+  defaultLockedFilters?: (that: any) => CrudRawFilterObject[]
+
+  // all of the possible usable filters
+  filterOptions?: FilterObject[]
+
+  distanceFilterOptions?: {
+    key: string
+    text: string
+    defaultLocation?: (that) => Promise<any>
+    defaultValue?: (that) => Promise<any>
+  }[]
+
+  sortOptions?: SortObject[]
+
+  // fields required but not shown, such as fields needed for heroOptions
+  requiredFields?: string[]
+
+  // should a hero image be displayed? only applies to grid view
+  heroOptions?: {
+    // function that will get the preview image from the item
+    getPreviewImage?: (item: any) => any
+
+    // function that will get the preview name from the item
+    getPreviewName?: (item: any) => any
+
+    // should the v-img component be contained?
+    containMode?: boolean
+
+    // custom component that should be rendered, which will override the above 2 options
+    component?: any
+  }
+
+  // should the entire toolbar be hidden? this will override some of the toolbar-related options below
+  hideToolbar?: boolean
+
+  // should the actions be hidden?
+  hideActions?: boolean
+
+  // should the refresh button be hidden?
+  hideRefresh?: boolean
+
+  // extra sort params that are to be appended to the user-selected sort params
+  additionalSortParams?: CrudRawSortObject[]
+
+  // the headers of the table
+  headerOptions: HeaderObject[]
+
+  // header fields that should be hidden
+  excludeHeaders?: string[]
+
+  // special options for overriding the action header element
+  headerActionOptions?: {
+    text?: string
+    width?: string
+  }
+  handleRowClick?: (that, props) => void
+  handleGridElementClick?: (that, item) => void
+
+  // options relating to the grid interface
+  gridOptions?: {
+    justify?: 'center' | 'left'
+    colsObject?: {
+      // cols, out of 12
+      xs?: number
+      sm?: number
+      md?: number
+      lg?: number
+    }
+  }
+
+  // custom component
+  component?: any
+  // can the results be downloaded?
+  downloadOptions?: {
+    // custom fields to download
+    fields: ExportFieldDefinition[]
+  }
+
+  // can results be imported?
+  importOptions?: {
+    // required: fields that can be added
+    fields: ImportFieldDefinition[]
+    // custom component
+    component?: any
+    // if not createX, the custom create operation name
+    operationName?: string
+
+    // custom function to modify the inputs in-place before they get sent as args
+    inputsModifier?: (that, inputs) => void
+
+    // skip the import row if this is true
+    skipIf?: (that, inputs) => boolean
+
+    // function that runs when import is successfully run on at least one record
+    onSuccess?: (that) => void
+
+    // function that runs when an import operation throws an error. it is a way to ignore (catch) the error if it should be caught
+    onError?: (that, err) => void
+
+    // if a custom title, what should it be?
+    title?: string
+
+    // if a custom icon, what should it be?
+    icon?: string
+
+    // should the imported records be downloaded after? requires downloadOptions to be set
+    allowDownloadAfterCompletion?: boolean
+  }
+
+  // this option, if defined, will override the default grid/list option set by the user
+  overrideViewMode?: 'grid' | 'list'
+
+  // should the grid/list toggle button be hidden?
+  hideGridModeToggle?: boolean
+
+  // should the sortBy feature be hidden?
+  hideSortOptions?: boolean
+
+  // override the number of records per page
+  resultsPerPage?: number
+
+  // number of records to show initially
+  maxInitialRecords?: number
+
+  limitOptions?: {
+    // what should clicking the view all button do? (if undefined, button will be left out)
+    handleViewAllButtonClick?: (that) => void
+  }
+
+  // hide the view more button
+  hideViewMoreOptions?: {
+    // even though the view more button is hidden, should more records be allowed to load? infinite scroll must be true on paginatorOptions too.
+    infiniteScroll?: boolean
+  }
+
+  // should more records be loaded when the scroll bar reaches the bottom?
+  infiniteScroll?: boolean
+
+  // hide the total number of results (showing X of Y)
+  hideCount?: boolean
+
+  // hide the title
+  hideTitle?: boolean
+
+  // show button to "view all" of this record
+  showViewAll?: boolean
+
+  // the min height of the pagination container, if any
+  minHeight?: string
+
+  // loader will be linear by default
+  loaderStyle?: 'circular' | 'linear'
+}
+
+export type SimpleRecordInfo<T extends keyof MainTypes> = Partial<
+  RecordInfo<T>
+> & {
+  typename: T
+  pluralTypename: string
+  name: string
+  pluralName: string
+  icon?: string
+  hasName?: boolean
+  hasAvatar?: boolean
+  hasDescription?: boolean
+}
 
 export type RecordInfo<T extends keyof MainTypes> = {
   // optional title for this recordInfo
@@ -114,181 +293,7 @@ export type RecordInfo<T extends keyof MainTypes> = {
   }
 
   // options related to viewing multiple, if possible
-  paginationOptions?: {
-    // function that runs when pagination interface is opened for the first time
-    onSuccess?: (that) => void
-
-    // does the interface have the ability to search?
-    searchOptions?: `${T}PaginatorInput` extends keyof InputTypes
-      ? 'search' extends keyof InputTypes[`${T}PaginatorInput`]
-        ? {
-            // should the search bar show up in the presets
-            preset?: boolean
-            // function that will return the params to be passed with the search, if any
-            getParams?: (that, searchQuery) => any
-          }
-        : null
-      : null
-
-    defaultPageOptions?: (
-      that: any
-    ) => Promise<CrudPageOptions> | CrudPageOptions
-
-    defaultLockedFilters?: (that: any) => CrudRawFilterObject[]
-
-    // all of the possible usable filters
-    filterOptions: `${T}FilterByObject` extends keyof InputTypes
-      ? FilterObject[]
-      : []
-
-    distanceFilterOptions?: {
-      key: string
-      text: string
-      defaultLocation?: (that) => Promise<any>
-      defaultValue?: (that) => Promise<any>
-    }[]
-
-    sortOptions: SortObject[]
-
-    // fields required but not shown, such as fields needed for heroOptions
-    requiredFields?: string[]
-
-    // should a hero image be displayed? only applies to grid view
-    heroOptions?: {
-      // function that will get the preview image from the item
-      getPreviewImage?: (item: any) => any
-
-      // function that will get the preview name from the item
-      getPreviewName?: (item: any) => any
-
-      // should the v-img component be contained?
-      containMode?: boolean
-
-      // custom component that should be rendered, which will override the above 2 options
-      component?: any
-    }
-
-    // should the entire toolbar be hidden? this will override some of the toolbar-related options below
-    hideToolbar?: boolean
-
-    // should the actions be hidden?
-    hideActions?: boolean
-
-    // should the refresh button be hidden?
-    hideRefresh?: boolean
-
-    // extra sort params that are to be appended to the user-selected sort params
-    additionalSortParams?: CrudRawSortObject[]
-
-    // the headers of the table
-    headerOptions: HeaderObject[]
-
-    // header fields that should be hidden
-    excludeHeaders?: string[]
-
-    // special options for overriding the action header element
-    headerActionOptions?: {
-      text?: string
-      width?: string
-    }
-    handleRowClick?: (that, props) => void
-    handleGridElementClick?: (that, item) => void
-
-    // options relating to the grid interface
-    gridOptions?: {
-      justify?: 'center' | 'left'
-      colsObject?: {
-        // cols, out of 12
-        xs?: number
-        sm?: number
-        md?: number
-        lg?: number
-      }
-    }
-
-    // custom component
-    component?: any
-    // can the results be downloaded?
-    downloadOptions?: {
-      // custom fields to download
-      fields: ExportFieldDefinition[]
-    }
-
-    // can results be imported?
-    importOptions?: {
-      // required: fields that can be added
-      fields: ImportFieldDefinition[]
-      // custom component
-      component?: any
-      // if not createX, the custom create operation name
-      operationName?: string
-
-      // custom function to modify the inputs in-place before they get sent as args
-      inputsModifier?: (that, inputs) => void
-
-      // skip the import row if this is true
-      skipIf?: (that, inputs) => boolean
-
-      // function that runs when import is successfully run on at least one record
-      onSuccess?: (that) => void
-
-      // function that runs when an import operation throws an error. it is a way to ignore (catch) the error if it should be caught
-      onError?: (that, err) => void
-
-      // if a custom title, what should it be?
-      title?: string
-
-      // if a custom icon, what should it be?
-      icon?: string
-
-      // should the imported records be downloaded after? requires downloadOptions to be set
-      allowDownloadAfterCompletion?: boolean
-    }
-
-    // this option, if defined, will override the default grid/list option set by the user
-    overrideViewMode?: 'grid' | 'list'
-
-    // should the grid/list toggle button be hidden?
-    hideGridModeToggle?: boolean
-
-    // should the sortBy feature be hidden?
-    hideSortOptions?: boolean
-
-    // override the number of records per page
-    resultsPerPage?: number
-
-    // number of records to show initially
-    maxInitialRecords?: number
-
-    limitOptions?: {
-      // what should clicking the view all button do? (if undefined, button will be left out)
-      handleViewAllButtonClick?: (that) => void
-    }
-
-    // hide the view more button
-    hideViewMoreOptions?: {
-      // even though the view more button is hidden, should more records be allowed to load? infinite scroll must be true on paginatorOptions too.
-      infiniteScroll?: boolean
-    }
-
-    // should more records be loaded when the scroll bar reaches the bottom?
-    infiniteScroll?: boolean
-
-    // hide the total number of results (showing X of Y)
-    hideCount?: boolean
-
-    // hide the title
-    hideTitle?: boolean
-
-    // show button to "view all" of this record
-    showViewAll?: boolean
-
-    // the min height of the pagination container, if any
-    minHeight?: string
-
-    // loader will be linear by default
-    loaderStyle?: 'circular' | 'linear'
-  }
+  paginationOptions?: PaginationOptions
 
   dialogOptions?: {
     // should the actions be hidden?
@@ -640,7 +645,7 @@ type InputOptions = {
   // additional args that should be appended to the __args when creating a new record for a combobox
   getCreateArgs?: (that, inputObjectArray) => any
 
-  // for text-autocomplete and text-combobox, function that returns an array of suggestions
+  // for text-autocomplete and text-combobox, function that returns an array of suggestions (to override the default loadTypeSearchResults fetcher)
   getSuggestions?: (that, inputObject) => Promise<string[]>
 
   // for multiple-file input, maximum number of files
@@ -735,6 +740,9 @@ export type ActionOptions = {
 
   title: string
   icon: string
+
+  // is login required? if so, it will redirect to login if not logged in
+  isLoginRequired?: boolean
 
   // override submit button text
   submitButtonText?: string

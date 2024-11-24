@@ -10,11 +10,12 @@ import {
   GiraffeqlInputFieldType,
   lookupSymbol,
 } from "giraffeql";
-import { PaginatedService, EnumService } from "../services";
+import { PaginatedService } from "../services";
 import {
   generatePaginatorPivotResolverObject,
   generateStatsResolverObject,
   generateAggregatorResolverObject,
+  GiraffeqlObjectTypeLookupService,
 } from "../helpers/typeDef";
 import { capitalizeString, isObject } from "../helpers/shared";
 import { Request } from "express";
@@ -133,13 +134,8 @@ export function generateBaseRootResolvers({
             required: true,
             type: service.inputTypeDefLookup,
           }),
-          resolver: ({ req, query, args, fieldPath }) => {
-            return service.getRecord({
-              req,
-              query,
-              args,
-              fieldPath,
-            });
+          resolver: (inputs) => {
+            return service.getRecord(inputs);
           },
         });
         break;
@@ -248,13 +244,7 @@ export function generateBaseRootResolvers({
             required: true,
             type: service.inputTypeDefLookup,
           }),
-          resolver: ({ req, query, args, fieldPath }) =>
-            service.deleteRecord({
-              req,
-              query,
-              args,
-              fieldPath,
-            }),
+          resolver: (inputs) => service.deleteRecord(inputs),
         });
         break;
       }
@@ -265,9 +255,13 @@ export function generateBaseRootResolvers({
           ([key, typeDefField]) => {
             let typeField = typeDefField.type;
 
-            // if typeField is GiraffeqlObjectTypeLookup, convert to GiraffeqlInputTypeLookup
+            // if typeField is GiraffeqlObjectTypeLookup/Service, get the corresponding input
             if (typeField instanceof GiraffeqlObjectTypeLookup) {
-              typeField = new GiraffeqlInputTypeLookup(typeField.name);
+              if (!(typeField instanceof GiraffeqlObjectTypeLookupService)) {
+                typeField = new GiraffeqlInputTypeLookup(typeField.name);
+              } else {
+                typeField = typeField.service.inputTypeDefLookup;
+              }
             } else if (typeField instanceof GiraffeqlObjectType) {
               typeField = new GiraffeqlInputTypeLookup(
                 typeField.definition.name
@@ -323,7 +317,7 @@ export function generateBaseRootResolvers({
                 }),
                 fields: new GiraffeqlInputFieldType({
                   type: new GiraffeqlInputType({
-                    name: `update${capitalizedClass}Fields`,
+                    name: `update${capitalizedClass}Args`,
                     fields: updateArgs,
                     inputsValidator: (args, fieldPath) => {
                       // check if at least 1 valid update field provided
@@ -347,8 +341,7 @@ export function generateBaseRootResolvers({
               },
             }),
           }),
-          resolver: ({ req, query, args, fieldPath }) =>
-            service.updateRecord({ req, query, args, fieldPath }),
+          resolver: (inputs) => service.updateRecord(inputs),
         });
         break;
       }
@@ -359,9 +352,13 @@ export function generateBaseRootResolvers({
           ([key, typeDefField]) => {
             let typeField = typeDefField.type;
 
-            // if typeField is GiraffeqlObjectTypeLookup, convert to GiraffeqlInputTypeLookup
+            // if typeField is GiraffeqlObjectTypeLookup/Service, get the corresponding input
             if (typeField instanceof GiraffeqlObjectTypeLookup) {
-              typeField = new GiraffeqlInputTypeLookup(typeField.name);
+              if (!(typeField instanceof GiraffeqlObjectTypeLookupService)) {
+                typeField = new GiraffeqlInputTypeLookup(typeField.name);
+              } else {
+                typeField = typeField.service.inputTypeDefLookup;
+              }
             } else if (typeField instanceof GiraffeqlObjectType) {
               typeField = new GiraffeqlInputTypeLookup(
                 typeField.definition.name
@@ -407,17 +404,11 @@ export function generateBaseRootResolvers({
           args: new GiraffeqlInputFieldType({
             required: true,
             type: new GiraffeqlInputType({
-              name: methodName,
+              name: `create${capitalizedClass}Args`,
               fields: createArgs,
             }),
           }),
-          resolver: ({ req, query, args, fieldPath }) =>
-            service.createRecord({
-              req,
-              query,
-              args,
-              fieldPath,
-            }),
+          resolver: (inputs) => service.createRecord(inputs),
         });
         break;
       }

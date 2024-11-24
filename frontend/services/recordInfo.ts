@@ -18,6 +18,7 @@ import TruthyRecordColumn from '~/components/table/truthyRecordColumn.vue'
 import ConcatRecordColumn from '~/components/table/concatRecordColumn.vue'
 import CopyableColumn from '~/components/table/copyableColumn.vue'
 import ShareLinkColumn from '~/components/table/shareLinkColumn.vue'
+import CurrencyColumn from '~/components/table/currencyColumn.vue'
 
 export function getSimpleModel(typename: string) {
   const model = SimpleModels[`Simple${capitalizeString(typename)}`]
@@ -73,12 +74,14 @@ export function generatePreviewableRecordField({
   const simpleModel = getSimpleModel(typename ?? fieldname)
   return {
     text,
-    fields: [
-      simpleModel.hasName ? `${fieldnamePrefix}name` : null,
-      `${fieldnamePrefix}id`,
-      `${fieldnamePrefix}__typename`,
-      simpleModel.hasAvatar ? `${fieldnamePrefix}avatarUrl` : null,
-    ].filter((e) => e),
+    fields: <string[]>(
+      [
+        simpleModel.hasName ? `${fieldnamePrefix}name` : null,
+        `${fieldnamePrefix}id`,
+        `${fieldnamePrefix}__typename`,
+        simpleModel.hasAvatar ? `${fieldnamePrefix}avatarUrl` : null,
+      ].filter((e) => e)
+    ),
     pathPrefix: fieldname,
     component: RecordColumn,
     ...fieldOptions,
@@ -130,7 +133,7 @@ export function generateBaseFields(simpleModel: SimpleRecordInfo<any>) {
     ...(simpleModel.hasAvatar && {
       avatarUrl: {
         text: 'Avatar',
-        inputType: 'single-image-url',
+        inputType: 'single-image-url' as InputType,
         component: AvatarColumn,
         inputOptions: {
           avatarOptions: {
@@ -142,7 +145,7 @@ export function generateBaseFields(simpleModel: SimpleRecordInfo<any>) {
     ...(simpleModel.hasDescription && {
       description: {
         text: 'Description',
-        inputType: 'textarea',
+        inputType: 'textarea' as InputType,
         tableOptions: {
           verticalView: true,
         },
@@ -230,7 +233,7 @@ export function generateIsPublicField({
     isPublic: {
       text: 'Is Public',
       component: BooleanColumn,
-      inputType: 'switch',
+      inputType: 'switch' as InputType,
       default: () => defaultValue,
     },
   }
@@ -539,6 +542,25 @@ export function generateValueArrayField({
   }
 }
 
+export function generateCurrencyField({
+  text,
+  fieldOptions = {},
+}: {
+  text: string
+  fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
+}) {
+  return {
+    text,
+    component: CurrencyColumn,
+    parseValue: (val) => {
+      if (!val) return val
+
+      return String(val).replace(/[^(\d|.|\-)]/g, '')
+    },
+    ...fieldOptions,
+  }
+}
+
 export function generateDualOwnerInputOptions({
   hasOrganizationOwner = true,
   allowPublic = false,
@@ -702,10 +724,6 @@ export function generateMultipleJoinableField({
       `${fieldname}.avatarUrl`,
     ],
     inputType,
-    inputOptions: {
-      hasAvatar: true,
-      typename,
-    },
     default: () => [],
     parseValue: (val) => {
       // if not array, convert to empty array
@@ -719,5 +737,11 @@ export function generateMultipleJoinableField({
     pathPrefix: fieldname,
     component: RecordColumn,
     ...fieldOptions,
+    inputOptions: {
+      hasAvatar: true,
+      hasName: true,
+      typename,
+      ...fieldOptions.inputOptions,
+    },
   }
 }

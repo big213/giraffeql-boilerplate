@@ -35,10 +35,10 @@ export class GithubService extends BaseService {
   @permissionsCheck("get")
   async getRepositoryReleases({
     req,
+    rootResolver,
     fieldPath,
     args,
     query,
-    isAdmin = false,
   }: ServiceFunctionInputs): Promise<any> {
     try {
       // args should be validated already
@@ -116,10 +116,10 @@ query {
   @permissionsCheck("get")
   async getRepositoryLatestVersion({
     req,
+    rootResolver,
     fieldPath,
     args,
     query,
-    isAdmin = false,
   }: ServiceFunctionInputs): Promise<any> {
     try {
       // args should be validated already

@@ -35,18 +35,9 @@ export abstract class BaseService {
 
   async testPermissions(
     operation: string,
-    {
-      req,
-      fieldPath,
-      args,
-      query,
-      data,
-      isAdmin = false,
-    }: ServiceFunctionInputs
+    { req, rootResolver, fieldPath, args, query }: ServiceFunctionInputs
   ): Promise<boolean> {
     try {
-      if (isAdmin) return true;
-
       // if logged in, attempt to verify permissions using the permissions array
       if (req.user) {
         // check against permissions array first. allow if found.
@@ -74,11 +65,10 @@ export abstract class BaseService {
         allowed = this.accessControl[validatedOperation]
           ? await this.accessControl[validatedOperation]({
               req,
+              rootResolver,
               fieldPath,
               args,
               query,
-              data,
-              isAdmin,
             })
           : false;
       }
@@ -92,12 +82,7 @@ export abstract class BaseService {
       return allowed;
     } catch (err: unknown) {
       // if the error is an error but not a permissions error, convert it into a permissions error with the same message
-      // throw the actual error in debugMode mode
-      if (
-        err instanceof Error &&
-        !(err instanceof PermissionsError) &&
-        !debugMode
-      ) {
+      if (err instanceof Error && !(err instanceof PermissionsError)) {
         throw new PermissionsError({
           fieldPath,
           message: err.message,

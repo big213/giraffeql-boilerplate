@@ -205,8 +205,11 @@ export default {
      ** if actionOptions.selectedItemModifier is set, use that to generate the selectedItem
      */
     this.$root.$on('openExecuteActionDialog', (params, loginDialog = false) => {
-      // if loginDialog and not logged in, trigger the login dialog instead and queue the action
-      if (loginDialog && !this.$store.getters['auth/user']) {
+      // if loginDialog (OR actionOptions.isLoginRequired) and not logged in, trigger the login dialog instead and queue the action
+      if (
+        (loginDialog || params.actionOptions.isLoginRequired) &&
+        !this.$store.getters['auth/user']
+      ) {
         this.dialogs.login = {
           status: true,
         }

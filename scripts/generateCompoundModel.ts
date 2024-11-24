@@ -83,4 +83,4 @@ insertStatementBeforeInFile({
   statement: `export { ${capitalizedRouteType}${capitalizedTypename} } from './${typename}'`,
 });
 
-console.log(`Done adding ${routeType}/${typename} compound model`);
+console.log(`Done adding compound model: ${routeType}/${typename}`);

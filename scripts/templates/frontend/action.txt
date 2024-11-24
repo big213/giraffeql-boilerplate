@@ -1,0 +1,25 @@
+import { ActionOptions } from '~/types'
+
+export const {{ actionName }}: ActionOptions = {
+  operationName: '{{ actionName }}',
+  title: '{{ capitalizedActionName }}',
+  icon: 'mdi-code-tags',
+  inputs: [
+    {
+      field: 'code',
+      definition: {
+        text: 'Code',
+      },
+    },
+  ],
+
+  onSuccess: (that, item) => {
+    // reload interfaces
+    // that.$root.$emit('refresh-interface', 'someType')
+
+    that.$notifier.showSnackbar({
+      message: `Action succeeded`,
+      variant: 'success',
+    })
+  },
+}

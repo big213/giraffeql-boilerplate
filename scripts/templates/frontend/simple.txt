@@ -1,6 +1,6 @@
 import type { SimpleRecordInfo } from '~/types'
 
-export const Simple{{ capitalizedTypename }} = <SimpleRecordInfo<'{{ typename }}'>>{
+export const Simple{{ capitalizedTypename }}: SimpleRecordInfo<'{{ typename }}'> = {
   typename: '{{ typename }}',
   pluralTypename: '{{ typename }}s',
   name: '{{ capitalizedTypename }}',

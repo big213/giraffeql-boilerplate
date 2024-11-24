@@ -1,11 +1,12 @@
+import type { RecordInfo } from '~/types'
 import { ApiKey } from '../../base'
 
-export const MyApiKey = {
+export const MyApiKey: RecordInfo<'apiKey'> = {
   ...ApiKey,
   routeType: 'my',
   title: `My ${ApiKey.pluralName}`,
   paginationOptions: {
-    ...ApiKey.paginationOptions,
+    ...ApiKey.paginationOptions!,
     defaultLockedFilters: (that) => {
       return [
         {

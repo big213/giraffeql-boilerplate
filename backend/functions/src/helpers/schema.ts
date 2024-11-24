@@ -1,39 +1,10 @@
 import { TsSchemaGenerator } from "giraffeql";
 import { readFileSync } from "fs";
 import { projectID } from "firebase-functions/params";
-
-// parses templateString and replaces with any params
-function processTemplate(
-  templateString: string,
-  params: { [x in string]: string | null } | null | undefined
-) {
-  let templateStringModified = templateString;
-
-  // if params is provided, attempt to replace the template variables
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      // need to escape any quotes, so they don't mess up the JSON
-      // const escapedValue = value ? value.replace(/"/g, '\\"') : "";
-
-      const currentRegex = new RegExp(`{{\\s*${key}\\s*}}`, "g");
-      templateStringModified = templateStringModified.replace(
-        currentRegex,
-        value ?? ""
-      );
-    });
-  }
-
-  // replace any remaining template variables with "undefined"
-  templateStringModified = templateStringModified.replace(
-    /{{\s*([^}]*)\s*}}/g,
-    "undefined"
-  );
-
-  return templateStringModified;
-}
+import { processTemplate } from "../schema/core/helpers/shared";
 
 export function generateQueryPage(lookupValue: any) {
-  const templateFile = readFileSync("src/helpers/templates/query.html", {
+  const templateFile = readFileSync("templates/query.html", {
     encoding: "utf-8",
   });
   return processTemplate(templateFile, {
@@ -79,14 +50,14 @@ export function executeGiraffeql<Key extends keyof Root>(
 }
 
 export function generatePromptPage(lookupValue: any) {
-  const templateFile = readFileSync("src/helpers/templates/prompt.html", {
+  const templateFile = readFileSync("templates/prompt.html", {
     encoding: "utf-8",
   });
   return processTemplate(templateFile, {});
 }
 
 export function generatePromptEmptyPage() {
-  const templateFile = readFileSync("src/helpers/templates/promptEmpty.html", {
+  const templateFile = readFileSync("templates/promptEmpty.html", {
     encoding: "utf-8",
   });
   return processTemplate(templateFile, {

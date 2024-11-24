@@ -218,5 +218,5 @@ if (!isBackendOnly) {
 }
 
 console.log(
-  `Done adding ${typename} model${isBackendOnly ? ` (Backend Only)` : ""}`
+  `Done adding model: ${typename} ${isBackendOnly ? ` (Backend Only)` : ""}`
 );

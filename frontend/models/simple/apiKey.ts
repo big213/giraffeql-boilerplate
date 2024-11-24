@@ -1,6 +1,6 @@
 import type { SimpleRecordInfo } from '~/types'
 
-export const SimpleApiKey = <SimpleRecordInfo<'apiKey'>>{
+export const SimpleApiKey: SimpleRecordInfo<'apiKey'> = {
   typename: 'apiKey',
   pluralTypename: 'apiKeys',
   name: 'API Key',

@@ -6,7 +6,7 @@ import {
 } from '~/services/recordInfo'
 import { SimpleUserUserFollowLink } from '../simple'
 
-export const UserUserFollowLink = <RecordInfo<'userUserFollowLink'>>{
+export const UserUserFollowLink: RecordInfo<'userUserFollowLink'> = {
   ...SimpleUserUserFollowLink,
   routeType: 'a',
   fields: {

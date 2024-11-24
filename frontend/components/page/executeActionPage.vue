@@ -12,8 +12,8 @@
       </div>
     </v-layout>
   </v-container>
-  <v-container v-else fluid>
-    <v-layout justify-center align-center column d-block>
+  <v-container v-else fill-height>
+    <v-layout justify-center align-center>
       <v-row>
         <v-col cols="12" md="6" class="text-center" offset-md="3">
           <v-card class="elevation-12">
@@ -45,6 +45,7 @@
 
 <script>
 import ExecuteActionInterface from '~/components/interface/action/executeActionInterface.vue'
+import { redirectToLogin } from '~/services/base'
 
 export default {
   data() {
@@ -57,15 +58,6 @@ export default {
 
       item: null,
       selectedItem: null,
-      /*       item: {
-        id: '9zm1wp80',
-        salePrice: 19.99,
-        price: 29.99,
-      },
-      selectedItem: {
-        'enrollment.course.id': '9zm1wp80',
-        'enrollment.user.id': 'cgf2nn5n',
-      }, */
     }
   },
 
@@ -79,6 +71,16 @@ export default {
     interfaceComponent() {
       return this.actionOptions.component ?? ExecuteActionInterface
     },
+  },
+
+  created() {
+    // if isLoginRequired and not logged in, redirect to login while saving the current path
+    if (
+      this.actionOptions.isLoginRequired &&
+      !this.$store.getters['auth/user']
+    ) {
+      redirectToLogin(this, this.$route.path)
+    }
   },
 
   methods: {

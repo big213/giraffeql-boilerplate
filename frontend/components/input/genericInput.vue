@@ -1226,10 +1226,7 @@ export default {
 
         // set the load search result function if it is a text-autocomplete type
         const loadSearchResultsFn =
-          inputObject.inputType === 'text-autocomplete' ||
-          inputObject.inputType === 'text-combobox'
-            ? inputObject.inputOptions.getSuggestions
-            : loadTypeSearchResults
+          inputObject.inputOptions.getSuggestions ?? loadTypeSearchResults
 
         // delay new call 500ms
         this._timerId = setTimeout(async () => {

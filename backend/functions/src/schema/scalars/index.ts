@@ -10,7 +10,10 @@ export const unknown = BaseScalars.unknown;
 
 // added scalars
 export { number } from "./number"; // replacing the built-in number type to automatically parse Number-like strings
-export { positiveNumber } from "./positiveNumber"; // >= 0
+export { positiveNumber } from "./positiveNumber";
+export { negativeNumber } from "./negativeNumber";
+export { positiveNumberAndZero } from "./positiveNumberAndZero";
+export { negativeNumberAndZero } from "./negativeNumberAndZero";
 export { imageUrl } from "./imageUrl";
 export { url } from "./url";
 export { unixTimestamp } from "./unixTimestamp";

@@ -8,6 +8,7 @@
     "generate:model": "ts-node scripts/generateModel.ts",
     "generate:enum": "ts-node scripts/generateEnum.ts",
     "generate:compound-model": "ts-node scripts/generateCompoundModel.ts",
+    "generate:action": "ts-node scripts/generateAction.ts",
     "generate:schema": "ts-node scripts/generateSchema.ts"
   },
   "keywords": [],

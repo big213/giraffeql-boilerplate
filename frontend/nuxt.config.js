@@ -1,5 +1,5 @@
 import colors from 'vuetify/es5/util/colors'
-import { routesMap } from './services/config'
+import { readdirSync } from 'fs'
 
 export default {
   // Disable server-side rendering (https://go.nuxtjs.dev/ssr-mode)
@@ -32,6 +32,12 @@ export default {
 
   generate: {
     routes() {
+      function retrieveRouteNamesFromDirectory(directory) {
+        return readdirSync(directory)
+          .map((filename) => filename.match(/^(.*)\.ts$/)?.[1])
+          .filter((filename) => filename !== 'index')
+      }
+
       function camelToKebabCase(str) {
         return str
           .split('')
@@ -42,6 +48,27 @@ export default {
           })
           .join('')
       }
+
+      // build the routesMap by loading the contents of the models directory
+      const routesMap = {
+        view: {
+          a: retrieveRouteNamesFromDirectory('models/base'),
+        },
+        crud: {
+          a: retrieveRouteNamesFromDirectory('models/base'),
+        },
+        action: retrieveRouteNamesFromDirectory('models/actions'),
+      }
+
+      // get the remaining compound model dirs
+      readdirSync('models/compound').forEach((compoundModelType) => {
+        const routeNames = retrieveRouteNamesFromDirectory(
+          `models/compound/${compoundModelType}`
+        )
+
+        routesMap.view[compoundModelType] = routeNames
+        routesMap.crud[compoundModelType] = routeNames
+      })
 
       const routes = new Set()
 

@@ -5,8 +5,9 @@ import {
   SqlFieldGetter,
 } from "../schema/core/helpers/sql";
 import { userPermission, userRole } from "../schema/enums";
+import { GiraffeqlRootResolverType } from "giraffeql";
 
-export type StringKeyObject = Record<string, unknown>;
+export type StringKeyObject = Record<string, any>;
 
 export type SpecialJoinFunction = ({
   knexObject,
@@ -78,8 +79,7 @@ export type ServiceFunctionInputs = {
   fieldPath: string[];
   args: any;
   query?: any;
-  data?: any;
-  isAdmin?: boolean;
+  rootResolver: GiraffeqlRootResolverType;
 };
 
 export type ContextUser = {
@@ -99,21 +99,16 @@ export type AccessControlFunction = (
 
 export type DataloaderFunctionInput = {
   req: Request;
+  rootResolver: GiraffeqlRootResolverType;
   fieldPath: string[];
   args: any;
   query: any;
-  data?: any;
   idArray: any[];
 };
 
 export type DataloaderFunction = (
   input: DataloaderFunctionInput
 ) => Promise<unknown[]>;
-
-export type PaginatorData = {
-  rootArgs: StringKeyObject;
-  records: StringKeyObject[];
-};
 
 export type CustomResolverFunction = (
   typename: string,

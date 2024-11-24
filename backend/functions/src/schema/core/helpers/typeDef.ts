@@ -16,6 +16,7 @@ import {
   inputTypeDefs,
   ObjectTypeDefinition,
   GiraffeqlInputTypeLookup,
+  GiraffeqlBaseError,
 } from "giraffeql";
 import { knex } from "../../../utils/knex";
 import { camelToSnake, isObject } from "./shared";
@@ -27,7 +28,7 @@ import type {
   StringKeyObject,
 } from "../../../types";
 import { getObjectType } from "./resolver";
-import { SqlSelectQuery } from "./sql";
+import { fetchTableRows, SqlSelectQuery } from "./sql";
 import { Enum, Kenum } from "./enum";
 import { User } from "../../services";
 
@@ -42,6 +43,27 @@ type GenerateFieldParams = {
   sqlOptions?: Partial<ObjectTypeDefSqlOptions> | null;
   typeDefOptions?: Partial<ObjectTypeDefinitionField>;
 };
+
+// special type to indicate that it is a lookup attached to a specific service
+export class GiraffeqlInputTypeLookupService extends GiraffeqlInputTypeLookup {
+  service: PaginatedService;
+
+  constructor(name: string, service: PaginatedService) {
+    super(name);
+
+    this.service = service;
+  }
+}
+
+export class GiraffeqlObjectTypeLookupService extends GiraffeqlObjectTypeLookup {
+  service: PaginatedService;
+
+  constructor(name: string, service: PaginatedService) {
+    super(name);
+
+    this.service = service;
+  }
+}
 
 /*
  ** Standard Fields
@@ -190,6 +212,9 @@ export function generateUnixTimestampField(
         : (value: unknown) => {
             // if null, allow null value
             if (value === null) return null;
+            // if Date type, return that
+            if (value instanceof Date) return value;
+
             if (typeof value !== "number")
               throw new Error("Unix timestamp must be sent in seconds"); // should never happen
             // assuming the timestamp is being sent in seconds
@@ -559,7 +584,18 @@ export function generateEnumField(
     nestHidden,
     sqlType: isKenum ? "integer" : "string",
     type: scalarDefinition,
-    sqlOptions,
+    sqlOptions: {
+      parseValue: (value: unknown) => {
+        // if Enum type, return the parsed value (for storing in DB)
+        if (value instanceof Enum || value instanceof Kenum) {
+          return value.parsed;
+        }
+
+        // otherwise, just return the actual value
+        return value;
+      },
+      ...sqlOptions,
+    },
     typeDefOptions,
   });
 }
@@ -783,13 +819,14 @@ export function generateDataloadableField(
       ...sqlOptions,
     },
     typeDefOptions: {
-      dataloader: ({ req, query, fieldPath, data, idArray }) => {
+      dataloader: ({ req, rootResolver, query, fieldPath, idArray }) => {
         // if idArray empty, return empty array
         if (!idArray.length) return Promise.resolve([]);
         // aggregator function that must accept idArray = [1, 2, 3, ...]
         return getObjectType({
           typename: service.typename,
           req,
+          rootResolver,
           fieldPath,
           additionalSelect: [
             {
@@ -800,7 +837,6 @@ export function generateDataloadableField(
           sqlParams: {
             where: [{ field: "id", operator: "in", value: idArray }],
           },
-          data,
         });
       },
       ...(isArray && {
@@ -915,10 +951,11 @@ export function generatePivotResolverObject({
     },
     requiredSqlFields: ["id"],
     allowNull: false,
-    resolver({ req, parentValue, fieldPath, query }) {
+    resolver({ req, rootResolver, parentValue, fieldPath, query }) {
       return getObjectType({
         typename: pivotService.typename,
         req,
+        rootResolver,
         fieldPath,
         externalQuery: query,
         sqlParams: {
@@ -975,7 +1012,7 @@ export function generatePaginatorPivotResolverObject({
   });
 
   const groupByScalarDefinition: ScalarDefinition = {
-    name: pivotService.typename + "GroupByKey",
+    name: `${pivotService.typename}GroupByKey`,
     types: Object.entries(pivotService.groupByFieldsMap).map(([key, value]) => {
       // ensure the path exists
       validateFieldPath(pivotService.getTypeDef(), value.field ?? key);
@@ -1097,11 +1134,11 @@ export function generatePaginatorPivotResolverObject({
   if (filterByField) {
     resolverFunction = async ({
       req,
+      rootResolver,
       args,
       fieldPath,
       query,
       parentValue,
-      data,
     }) => {
       // args should be validated already
       const validatedArgs = <any>args;
@@ -1117,13 +1154,13 @@ export function generatePaginatorPivotResolverObject({
 
       return pivotService.getRecordPaginator({
         req,
+        rootResolver,
         args: {
           ...validatedArgs,
           filterBy: filterObjectArray,
         },
         fieldPath,
         query,
-        data,
       });
     };
   } else {
@@ -1490,11 +1527,11 @@ export function generateStatsResolverObject({
   if (filterByField) {
     resolverFunction = async ({
       req,
+      rootResolver,
       args,
       fieldPath,
       query,
       parentValue,
-      data,
     }) => {
       // args should be validated already
       const validatedArgs = <any>args;
@@ -1510,13 +1547,13 @@ export function generateStatsResolverObject({
 
       return pivotService.getRecordStats({
         req,
+        rootResolver,
         fieldPath,
         args: {
           ...validatedArgs,
           filterBy: filterObjectArray,
         },
         query,
-        data,
       });
     };
   } else {
@@ -1641,11 +1678,11 @@ export function generateAggregatorResolverObject({
   if (filterByField) {
     resolverFunction = async ({
       req,
+      rootResolver,
       args,
       fieldPath,
       query,
       parentValue,
-      data,
     }) => {
       // args should be validated already
       const validatedArgs = <any>args;
@@ -1661,13 +1698,13 @@ export function generateAggregatorResolverObject({
 
       return pivotService.getRecordAggregator({
         req,
+        rootResolver,
         fieldPath,
         args: {
           ...validatedArgs,
           filterBy: filterObjectArray,
         },
         query,
-        data,
       });
     };
   } else {
@@ -1953,4 +1990,113 @@ export function generateLinkTypeDef(
       ...additionalFields,
     },
   });
+}
+
+export async function processLookupArgs(
+  args: any,
+  inputFieldType: GiraffeqlInputFieldType | undefined,
+  field?: string
+): Promise<any> {
+  // if inputType undefined, return
+  if (!inputFieldType) return;
+
+  const inputType = inputFieldType.definition.type;
+
+  if (inputType instanceof GiraffeqlScalarType) return args;
+
+  // if it is a service lookup (and not a normal lookup), proceed
+  if (inputType instanceof GiraffeqlInputTypeLookupService) {
+    const inputTypeDef = getInputTypeDef(inputType.name);
+    if (isObject(args)) {
+      // get record ID of type, replace object with the ID
+      const results = await fetchTableRows({
+        select: ["id"],
+        table: inputTypeDef.definition.name,
+        where: args,
+      });
+
+      if (results.length < 1) {
+        throw new GiraffeqlBaseError({
+          message: `${inputTypeDef.definition.name} not found`,
+        });
+      }
+
+      // replace args[key] with the item ID
+      return results[0].id;
+    } else if (Array.isArray(args)) {
+      // if the args field is an array, it is assumed to be a valid array of GiraffeqlObjectTypeLookups (dataloadable field, for example)
+      // replaces [{ id: "123" }] with ["123"]
+      if (args.length > 0) {
+        // although any unique key combination can be inputted (via typeDefLookup), only the id is currently supported using this current implementation
+        if (!args[0].id) {
+          throw new Error(
+            `For object lookup arrays, only the id field is currently supported`
+          );
+        }
+
+        const results = await fetchTableRows({
+          select: ["id"],
+          table: inputTypeDef.definition.name,
+          where: [
+            {
+              field: "id",
+              operator: "in",
+              value: args.map((ele) => ele.id),
+            },
+          ],
+        });
+
+        if (results.length !== args.length) {
+          throw new Error(
+            `There is at least one invalid or duplicate entry in field: ${
+              field ? `'${field}'` : "<Root Args>"
+            }`
+          );
+        }
+
+        return results.map((result) => result.id);
+      }
+    }
+  } else if (
+    inputType instanceof GiraffeqlInputTypeLookup ||
+    inputType instanceof GiraffeqlInputType
+  ) {
+    // get the input type
+    const validatedInputType =
+      inputType instanceof GiraffeqlInputTypeLookup
+        ? getInputTypeDef(inputType.name)
+        : inputType;
+
+    // if not a service lookup and not a scalar, and the args is an object need to go deeper
+    if (isObject(args)) {
+      for (const field in args) {
+        args[field] = await processLookupArgs(
+          args[field],
+          validatedInputType.definition.fields[field],
+          field
+        );
+      }
+    } else if (Array.isArray(args)) {
+      for (const argsElement of args) {
+        for (const field in argsElement) {
+          argsElement[field] = await processLookupArgs(
+            argsElement[field],
+            validatedInputType.definition.fields[field],
+            field
+          );
+        }
+      }
+    }
+  }
+  return args;
+}
+
+export function getInputTypeDef(name: string) {
+  const inputTypeDef = inputTypeDefs.get(name);
+
+  if (!inputTypeDef) {
+    throw new Error(`InputTypeDef with name: '${name}' not found`);
+  }
+
+  return inputTypeDef;
 }

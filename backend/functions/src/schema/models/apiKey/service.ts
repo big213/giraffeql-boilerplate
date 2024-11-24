@@ -38,7 +38,7 @@ export class ApiKeyService extends PaginatedService {
     Allow if:
     - args.user is currentUser
     */
-    create: allowIfArgsFieldIsCurrentUserFn(this, "user"),
+    create: allowIfArgsFieldIsCurrentUserFn("user"),
 
     /*
     Allow if:
@@ -68,14 +68,11 @@ export class ApiKeyService extends PaginatedService {
   @permissionsCheck("create")
   async createRecord({
     req,
+    rootResolver,
     fieldPath,
     args,
     query,
-    data = {},
-    isAdmin = false,
   }: ServiceFunctionInputs) {
-    await this.handleLookupArgs(args);
-
     let addResults;
     await knex.transaction(async (transaction) => {
       addResults = await this.createSqlRecord({
@@ -91,23 +88,25 @@ export class ApiKeyService extends PaginatedService {
       await this.afterCreateProcess(
         {
           req,
+          rootResolver,
           fieldPath,
           args,
           query,
-          data,
-          isAdmin,
         },
         addResults.id,
         transaction
       );
     });
 
-    return this.getRecord({
-      req,
-      fieldPath,
-      args: { id: addResults.id },
-      query,
-      isAdmin,
+    return this.getReturnQuery({
+      id: addResults.id,
+      inputs: {
+        req,
+        rootResolver,
+        args,
+        query,
+        fieldPath,
+      },
     });
   }
 }

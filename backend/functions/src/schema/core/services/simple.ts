@@ -13,11 +13,10 @@ export class SimpleService extends BaseService {
 
   async getRecord({
     req,
+    rootResolver,
     fieldPath,
     args,
     query,
-    data = {},
-    isAdmin = false,
   }: ServiceFunctionInputs) {
     // if no fields requested, can skip the permissions check
     if (Object.keys(query).length < 1) return { typename: this.typename };
@@ -25,9 +24,9 @@ export class SimpleService extends BaseService {
     const results = await getObjectType({
       typename: this.typename,
       req,
+      rootResolver,
       fieldPath,
       externalQuery: query,
-      data,
     });
 
     if (results.length < 1) {

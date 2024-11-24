@@ -1,8 +1,9 @@
 import { BaseService } from "../services";
 import { ServiceFunctionInputs } from "../../../types";
 import { PermissionsError } from "./error";
+import { processLookupArgs } from "./typeDef";
 
-export function permissionsCheck(methodKey: string) {
+export function permissionsCheck(methodKey: string, processArgsBefore = false) {
   return function (
     target: BaseService,
     propertyName: string,
@@ -12,23 +13,30 @@ export function permissionsCheck(methodKey: string) {
 
     propertyDescriptor.value = async function ({
       req,
+      rootResolver,
       fieldPath,
       args,
       query,
-      data,
-      isAdmin = false,
     }: ServiceFunctionInputs) {
+      let processedArgs;
+      // if processArgsBefore is true, it will process all of the args prior to running the permissions check. otherwise, it will be run after the permissions are checked (this is done because checking the args could be a costly operation and may not be necessary for permissions checking)
+      if (processArgsBefore) {
+        processedArgs = await processLookupArgs(
+          args,
+          rootResolver.definition.args
+        );
+      }
+
       // if it does not pass the access control, throw an error
       if (
         !(await target.testPermissions.apply(this, [
           methodKey,
           {
             req,
+            rootResolver,
             fieldPath,
             args,
             query,
-            data,
-            isAdmin,
           },
         ]))
       ) {
@@ -38,15 +46,21 @@ export function permissionsCheck(methodKey: string) {
         });
       }
 
+      if (!processArgsBefore) {
+        processedArgs = await processLookupArgs(
+          args,
+          rootResolver.definition.args
+        );
+      }
+
       // invoke greet() and get its return value
       const result = await method.apply(this, [
         {
           req,
+          rootResolver,
           fieldPath,
-          args,
+          args: processedArgs,
           query,
-          data,
-          isAdmin,
         },
       ]);
 

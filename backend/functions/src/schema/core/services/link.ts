@@ -19,14 +19,11 @@ export class LinkService extends PaginatedService {
   @permissionsCheck("create")
   async createRecord({
     req,
+    rootResolver,
     fieldPath,
     args,
     query,
-    data = {},
-    isAdmin = false,
   }: ServiceFunctionInputs) {
-    await this.handleLookupArgs(args);
-
     const fields = Object.keys(this.servicesObjectMap);
 
     const addResults = await this.createSqlRecord({
@@ -52,22 +49,23 @@ export class LinkService extends PaginatedService {
     await this.afterCreateProcess(
       {
         req,
+        rootResolver,
         fieldPath,
         args,
         query,
-        data,
-        isAdmin,
       },
       addResults.id
     );
 
-    return this.getRecord({
-      req,
-      args: { id: addResults.id },
-      query,
-      fieldPath,
-      isAdmin,
-      data,
+    return this.getReturnQuery({
+      id: addResults.id,
+      inputs: {
+        req,
+        rootResolver,
+        args,
+        query,
+        fieldPath,
+      },
     });
   }
 }

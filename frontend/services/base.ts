@@ -1313,3 +1313,8 @@ export function getPriceObjectFromDiscountScheme({
     quantity,
   }
 }
+
+export function redirectToLogin(that, redirectPath?: string) {
+  that.$store.commit('auth/setRedirectPath', redirectPath ?? null)
+  that.$router.push('/login')
+}

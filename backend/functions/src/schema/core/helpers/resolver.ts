@@ -8,6 +8,7 @@ import {
   GiraffeqlObjectTypeLookup,
   isRootResolverDefinition,
   GiraffeqlBaseError,
+  GiraffeqlRootResolverType,
 } from "giraffeql";
 
 import {
@@ -53,6 +54,7 @@ type SqlSelectQueryOutput = {
 export async function createObjectType({
   typename,
   req,
+  rootResolver,
   fieldPath,
   addFields,
   extendFn,
@@ -60,6 +62,7 @@ export async function createObjectType({
 }: {
   typename: string;
   req: Request;
+  rootResolver: GiraffeqlRootResolverType;
   fieldPath: string[];
   addFields: { [x: string]: unknown };
   extendFn?: KnexExtendFunction;
@@ -131,6 +134,7 @@ export async function createObjectType({
 export async function updateObjectType({
   typename,
   req,
+  rootResolver,
   fieldPath,
   updateFields,
   id,
@@ -138,6 +142,7 @@ export async function updateObjectType({
 }: {
   typename: string;
   req: Request;
+  rootResolver: GiraffeqlRootResolverType;
   fieldPath: string[];
   updateFields: { [x: string]: unknown };
   id: number;
@@ -214,12 +219,14 @@ export async function updateObjectType({
 export async function deleteObjectType({
   typename,
   req,
+  rootResolver,
   fieldPath,
   id,
   transaction,
 }: {
   typename: string;
   req: Request;
+  rootResolver: GiraffeqlRootResolverType;
   fieldPath: string[];
   id: number;
   transaction?: Knex.Transaction;
@@ -276,20 +283,20 @@ export async function deleteObjectType({
 export async function getObjectType({
   typename,
   req,
+  rootResolver,
   fieldPath,
   externalQuery,
   sqlParams,
   additionalSelect = [],
-  data = {},
   externalTypeDef,
 }: {
   typename: string;
   req: Request;
+  rootResolver: GiraffeqlRootResolverType;
   fieldPath: string[];
   externalQuery: unknown;
   sqlParams?: Omit<SqlSelectQuery, "table" | "select">;
   additionalSelect?: SqlSimpleSelectObject[];
-  data?: any;
   externalTypeDef?: GiraffeqlObjectType;
 }): Promise<any[]> {
   const typeDef = objectTypeDefs.get(typename);
@@ -343,10 +350,10 @@ export async function getObjectType({
   const processedResultsTree = await Promise.all(
     giraffeqlResultsTreeArray.map((giraffeqlResultsTree) =>
       processGiraffeqlResolverTree({
+        giraffeqlRootResolver: rootResolver,
         giraffeqlResultsNode: giraffeqlResultsTree,
         giraffeqlResolverNode: giraffeqlResolverTree,
         req,
-        data,
         fieldPath,
       })
     )
@@ -358,7 +365,7 @@ export async function getObjectType({
       resultsArray: processedResultsTree,
       nestedResolverNodeMap: giraffeqlResolverTree.nested,
       req,
-      data,
+      rootResolver,
       fieldPath,
     });
   }
@@ -536,15 +543,15 @@ async function handleAggregatedQueries({
   resultsArray,
   nestedResolverNodeMap,
   req,
+  rootResolver,
   args,
-  data,
   fieldPath = [],
 }: {
   resultsArray: any[];
   nestedResolverNodeMap: { [x: string]: GiraffeqlResolverNode };
   req: Request;
+  rootResolver: GiraffeqlRootResolverType;
   args?: unknown;
-  data: any;
   fieldPath?: string[];
 }): Promise<void> {
   for (const field in nestedResolverNodeMap) {
@@ -577,10 +584,10 @@ async function handleAggregatedQueries({
       // lookup all the ids
       const aggregatedResults = await dataloaderFn({
         req,
+        rootResolver,
         args,
         query: nestedResolverNodeMap[field].query,
         fieldPath: currentFieldPath,
-        data,
         idArray,
       });
 
@@ -616,8 +623,8 @@ async function handleAggregatedQueries({
         resultsArray: nestedResultsArray,
         nestedResolverNodeMap: nestedResolver,
         req,
+        rootResolver,
         args,
-        data,
         fieldPath: currentFieldPath,
       });
     }

@@ -42,6 +42,7 @@ import {
   GiraffeqlScalarType,
   GiraffeqlBaseError,
   lookupSymbol,
+  inputTypeDefs,
 } from "giraffeql";
 
 import { ExternalQuery, ServiceFunctionInputs } from "../../../types";
@@ -52,12 +53,20 @@ import {
   isObject,
   generateCursorFromNode,
   btoa,
+  capitalizeString,
 } from "../helpers/shared";
 import { getObjectType } from "../helpers/resolver";
 import { Scalars } from "../..";
 import { knex } from "../../../utils/knex";
 import { generateSqlSingleFieldObject } from "../helpers/sqlHelper";
 import { Knex } from "knex";
+import {
+  getInputTypeDef,
+  GiraffeqlInputTypeLookupService,
+  GiraffeqlObjectTypeLookupService,
+  processLookupArgs,
+} from "../helpers/typeDef";
+import { ItemNotFoundError } from "../helpers/error";
 
 export type FieldObject = {
   field?: string;
@@ -109,14 +118,14 @@ export class PaginatedService extends BaseService {
     id: lookupSymbol,
   };
 
-  typeDefLookup: GiraffeqlObjectTypeLookup;
+  typeDefLookup: GiraffeqlObjectTypeLookupService;
 
   inputTypeDef!: GiraffeqlInputType;
   primaryInputTypeDef!: GiraffeqlInputType;
 
-  inputTypeDefLookup: GiraffeqlInputTypeLookup;
+  inputTypeDefLookup: GiraffeqlInputTypeLookupService;
 
-  primaryInputTypeDefLookup: GiraffeqlInputTypeLookup;
+  primaryInputTypeDefLookup: GiraffeqlInputTypeLookupService;
 
   rootResolvers!: { [x: string]: GiraffeqlRootResolverType };
 
@@ -147,31 +156,47 @@ export class PaginatedService extends BaseService {
   constructor(typename?: string) {
     super(typename);
 
-    this.typeDefLookup = new GiraffeqlObjectTypeLookup(this.typename);
+    this.typeDefLookup = new GiraffeqlObjectTypeLookupService(
+      this.typename,
+      this
+    );
 
-    this.inputTypeDefLookup = new GiraffeqlInputTypeLookup(this.typename);
+    this.inputTypeDefLookup = new GiraffeqlInputTypeLookupService(
+      this.typename,
+      this
+    );
 
-    this.primaryInputTypeDefLookup = new GiraffeqlInputTypeLookup(
-      `${this.typename}Id`
+    this.primaryInputTypeDefLookup = new GiraffeqlInputTypeLookupService(
+      `${this.typename}Id`,
+      this
     );
 
     process.nextTick(() => {
       const uniqueKeyMap = {};
-      Object.entries(this.uniqueKeyMap).forEach(([uniqueKeyName, entry]) => {
-        entry.forEach((key) => {
-          const typeDefField = this.getTypeDef().definition.fields[key];
+      Object.entries(this.uniqueKeyMap).forEach(([_uniqueKeyName, entry]) => {
+        entry.forEach((field) => {
+          const typeDefField = this.getTypeDef().definition.fields[field];
           if (!typeDefField) {
             throw new GiraffeqlInitializationError({
-              message: `Unique key map field not found. Nested values not allowed`,
+              message: `Unique key map field not found: ${field}. Nested values not allowed`,
             });
           }
 
-          this.getTypeDef().definition.fields[key].allowNull;
-          uniqueKeyMap[key] = new GiraffeqlInputFieldType({
+          // if the typeDefField is a GiraffeqlObjectType or a *non-service* lookup, throw err
+          if (
+            typeDefField.type instanceof GiraffeqlObjectType ||
+            (typeDefField.type instanceof GiraffeqlObjectTypeLookup &&
+              !(typeDefField.type instanceof GiraffeqlObjectTypeLookupService))
+          ) {
+            throw new Error(
+              `TypeDef type for ${field} must be either a scalar or GiraffeqlObjectTypeLookupService`
+            );
+          }
+          uniqueKeyMap[field] = new GiraffeqlInputFieldType({
             type:
-              typeDefField.type instanceof GiraffeqlScalarType
-                ? typeDefField.type
-                : new GiraffeqlInputTypeLookup(key),
+              typeDefField.type instanceof GiraffeqlObjectTypeLookupService
+                ? typeDefField.type.service.inputTypeDefLookup
+                : typeDefField.type,
             allowNull: typeDefField.allowNull,
           });
         });
@@ -239,123 +264,112 @@ export class PaginatedService extends BaseService {
     return typeDefLookup;
   }
 
+  getCreateInputTypeDefLookup() {
+    return getInputTypeDef(`create${capitalizeString(this.typename)}Args`);
+  }
+
+  getUpdateInputTypeDefLookup() {
+    return getInputTypeDef(`update${capitalizeString(this.typename)}Args`);
+  }
+
   @permissionsCheck("get")
   async getRecord({
     req,
+    rootResolver,
     fieldPath,
     args,
     query,
-    data = {},
-    isAdmin = false,
   }: ServiceFunctionInputs) {
-    await this.handleLookupArgs(args);
-
-    const whereObject: SqlWhereObject = {
-      connective: "AND",
-      fields: [],
-    };
-
-    data.rootArgs = args;
-
-    whereObject.fields.push(
-      ...Object.entries(args).map(([field, value]) => ({
-        field,
-        value,
-      }))
-    );
-
     const results = await getObjectType({
       typename: this.typename,
       req,
+      rootResolver,
       fieldPath,
       externalQuery: query,
       sqlParams: {
-        where: [whereObject],
+        where: {
+          id: args,
+        },
         limit: 1,
         specialParams: await this.getSpecialParams({
           req,
+          rootResolver,
           fieldPath,
           args,
           query,
-          data,
-          isAdmin,
         }),
       },
-      data,
     });
 
     if (results.length < 1) {
-      throw new Error("Item not found");
+      throw new ItemNotFoundError({ fieldPath });
+    }
+
+    return results[0];
+  }
+
+  async getReturnQuery({
+    id,
+    inputs,
+  }: {
+    id: string | number;
+    inputs: ServiceFunctionInputs;
+  }) {
+    const { req, rootResolver, args, query, fieldPath } = inputs;
+
+    // check the "get" permissions manually
+    await this.testPermissions("get", {
+      req,
+      rootResolver,
+      args: id,
+      query,
+      fieldPath,
+    });
+
+    // if no fields requested, return an empty object (after checking permissions)
+    if (Object.keys(query).length === 0) {
+      return {};
+    }
+
+    const results = await getObjectType({
+      typename: this.typename,
+      req: req,
+      rootResolver: rootResolver,
+      fieldPath: fieldPath,
+      externalQuery: query,
+      sqlParams: {
+        where: {
+          id,
+        },
+        limit: 1,
+        specialParams: await this.getSpecialParams(inputs),
+      },
+    });
+
+    if (results.length < 1) {
+      throw new ItemNotFoundError({ fieldPath });
     }
 
     return results[0];
   }
 
   // convert any lookup/joined fields into IDs, in place.
-  async handleLookupArgs(args: any): Promise<void> {
-    for (const key in args) {
-      const typeField = this.getTypeDef().definition.fields[key]?.type;
-      if (typeField instanceof GiraffeqlObjectTypeLookup) {
-        if (isObject(args[key])) {
-          // get record ID of type, replace object with the ID
-          const results = await fetchTableRows({
-            select: ["id"],
-            table: typeField.name,
-            where: args[key],
-          });
-
-          if (results.length < 1) {
-            throw new GiraffeqlBaseError({
-              message: `${typeField.name} not found`,
-            });
-          }
-
-          // replace args[key] with the item ID
-          args[key] = results[0].id;
-        } else if (Array.isArray(args[key])) {
-          // if the args field is an array, it is assumed to be a valid array of GiraffeqlObjectTypeLookups (dataloadable field, for example)
-          // replaces [{ id: "123" }] with ["123"]
-          if (args[key].length > 0) {
-            // although any unique key combination can be inputted (via typeDefLookup), only the id is currently supported using this current implementation
-            if (!args[key][0].id) {
-              throw new Error(
-                `For object lookup arrays, only the id field is currently supported`
-              );
-            }
-
-            const results = await fetchTableRows({
-              select: ["id"],
-              table: typeField.name,
-              where: [
-                {
-                  field: "id",
-                  operator: "in",
-                  value: args[key].map((ele) => ele.id),
-                },
-              ],
-            });
-
-            if (results.length !== args[key].length) {
-              throw new Error(
-                `There is at least one invalid or duplicate entry in field: '${key}'`
-              );
-            }
-
-            args[key] = results.map((result) => result.id);
-          }
-        }
-      }
-    }
+  handleLookupArgs(args: any): Promise<string> {
+    return processLookupArgs(
+      args,
+      new GiraffeqlInputFieldType({
+        type: this.inputTypeDef,
+      })
+    );
   }
 
   @permissionsCheck("getStats")
   async getRecordStats({
     req,
+    rootResolver,
     fieldPath,
     args,
     query,
-    data = {},
-    isAdmin = false,
   }: ServiceFunctionInputs) {
     const whereObject: SqlWhereObject = {
       connective: "AND",
@@ -447,11 +461,10 @@ export class PaginatedService extends BaseService {
   @permissionsCheck("getPaginator")
   async getRecordPaginator({
     req,
+    rootResolver,
     fieldPath,
     args,
     query,
-    data = {},
-    isAdmin = false,
   }: ServiceFunctionInputs) {
     const whereObject: SqlWhereObject = {
       connective: "AND",
@@ -585,11 +598,10 @@ export class PaginatedService extends BaseService {
       limit,
       specialParams: await this.getSpecialParams({
         req,
+        rootResolver,
         fieldPath,
         args,
         query,
-        data,
-        isAdmin,
       }),
       distinctOn: undefined,
       groupBy: Array.isArray(args.groupBy)
@@ -616,10 +628,10 @@ export class PaginatedService extends BaseService {
       typename: this.typename,
       additionalSelect,
       req,
+      rootResolver,
       fieldPath,
       externalQuery: query.edges?.node ?? {},
       sqlParams,
-      data,
     });
 
     const validatedResults = args.reverse
@@ -665,11 +677,10 @@ export class PaginatedService extends BaseService {
   @permissionsCheck("getAggregator")
   async getRecordAggregator({
     req,
+    rootResolver,
     fieldPath,
     args,
     query,
-    data = {},
-    isAdmin = false,
   }: ServiceFunctionInputs) {
     const whereObject: SqlWhereObject = {
       connective: "AND",
@@ -814,15 +825,28 @@ export class PaginatedService extends BaseService {
     sqlQuery: Omit<SqlSelectQuery, "table">,
     throwError = false
   ): Promise<any> {
+    // for this keyed lookup, only allow object
+    if (!isObject(sqlQuery.where)) {
+      throw new Error(`Only simple where object allowed for keyed lookups`);
+    }
+
     const results = await fetchTableRows({
       ...sqlQuery,
       table: this.typename,
+      limit: 2,
     });
 
     if (results.length < 1 && throwError) {
       throw new GiraffeqlBaseError({
         message: `${this.typename} not found`,
       });
+    }
+
+    // if there is more than 1 result, throw an err as this is most likely unintentional
+    if (results.length > 1) {
+      throw new Error(
+        `More than 1 result returned for this keyed lookup. This is most likely unintended.`
+      );
     }
 
     return results[0] ?? null;
@@ -998,14 +1022,11 @@ export class PaginatedService extends BaseService {
   @permissionsCheck("create")
   async createRecord({
     req,
+    rootResolver,
     fieldPath,
     args,
     query,
-    data = {},
-    isAdmin = false,
   }: ServiceFunctionInputs) {
-    await this.handleLookupArgs(args);
-
     let addResults;
     await knex.transaction(async (transaction) => {
       addResults = await this.createSqlRecord({
@@ -1020,24 +1041,25 @@ export class PaginatedService extends BaseService {
       await this.afterCreateProcess(
         {
           req,
+          rootResolver,
           fieldPath,
           args,
           query,
-          data,
-          isAdmin,
         },
         addResults.id,
         transaction
       );
     });
 
-    return this.getRecord({
-      req,
-      args: { id: addResults.id },
-      query,
-      fieldPath,
-      isAdmin,
-      data,
+    return this.getReturnQuery({
+      id: addResults.id,
+      inputs: {
+        req,
+        rootResolver,
+        args,
+        query,
+        fieldPath,
+      },
     });
   }
 
@@ -1050,22 +1072,18 @@ export class PaginatedService extends BaseService {
   @permissionsCheck("update")
   async updateRecord({
     req,
+    rootResolver,
     fieldPath,
     args,
     query,
-    data = {},
-    isAdmin = false,
   }: ServiceFunctionInputs) {
     const item = await this.getFirstSqlRecord(
       {
         select: ["id"],
-        where: args.item,
+        where: { id: args.item },
       },
       true
     );
-
-    // convert any lookup/joined fields into IDs
-    await this.handleLookupArgs(args.fields);
 
     await knex.transaction(async (transaction) => {
       await this.updateSqlRecord(
@@ -1085,24 +1103,25 @@ export class PaginatedService extends BaseService {
       await this.afterUpdateProcess(
         {
           req,
+          rootResolver,
           fieldPath,
           args,
           query,
-          data,
-          isAdmin,
         },
         item.id,
         transaction
       );
     });
 
-    return this.getRecord({
-      req,
-      args: { id: item.id },
-      query,
-      fieldPath,
-      isAdmin,
-      data,
+    return this.getReturnQuery({
+      id: item.id,
+      inputs: {
+        req,
+        rootResolver,
+        args,
+        query,
+        fieldPath,
+      },
     });
   }
 
@@ -1123,43 +1142,30 @@ export class PaginatedService extends BaseService {
   @permissionsCheck("delete")
   async deleteRecord({
     req,
+    rootResolver,
     fieldPath,
     args,
     query,
-    data = {},
-    isAdmin = false,
   }: ServiceFunctionInputs) {
     // confirm existence of item and get ID
     const item = await this.getFirstSqlRecord(
       {
         select: ["id"],
-        where: args,
+        where: { id: args },
       },
       true
     );
 
-    let requestedResults;
-
-    if (Object.keys(query).length > 0) {
-      // check for get permissions, if fields were requested
-      await this.testPermissions("get", {
+    const requestedQuery = await this.getReturnQuery({
+      id: item.id,
+      inputs: {
         req,
+        rootResolver,
         args,
         query,
         fieldPath,
-        isAdmin,
-        data,
-      });
-      // fetch the requested query, if any
-      requestedResults = await this.getRecord({
-        req,
-        args,
-        query,
-        fieldPath,
-        isAdmin,
-        data,
-      });
-    }
+      },
+    });
 
     // delete the type and also any associated services
     await knex.transaction(async (transaction) => {
@@ -1183,18 +1189,17 @@ export class PaginatedService extends BaseService {
       await this.afterDeleteProcess(
         {
           req,
+          rootResolver,
           fieldPath,
           args,
           query,
-          data,
-          isAdmin,
         },
         item.id,
         transaction
       );
     });
 
-    return requestedResults ?? {};
+    return requestedQuery;
   }
 
   async afterDeleteProcess(

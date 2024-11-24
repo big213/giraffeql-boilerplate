@@ -1,11 +1,12 @@
+import type { RecordInfo } from '~/types'
 import { File } from '../../base'
 
-export const MyFile = {
+export const MyFile: RecordInfo<'file'> = {
   ...File,
   title: `My ${File.pluralName}`,
   routeType: 'my',
   paginationOptions: {
-    ...File.paginationOptions,
+    ...File.paginationOptions!,
     downloadOptions: undefined,
   },
   viewOptions: {

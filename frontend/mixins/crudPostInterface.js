@@ -127,19 +127,21 @@ export default {
     // transforms SortObject[] to CrudSortObject[]
     // type: CrudSortObject[]
     sortOptions() {
-      return this.recordInfo.paginationOptions.sortOptions.map((sortObject) => {
-        const fieldInfo = lookupFieldInfo(this.recordInfo, sortObject.field)
+      return this.recordInfo.paginationOptions.sortOptions?.map(
+        (sortObject) => {
+          const fieldInfo = lookupFieldInfo(this.recordInfo, sortObject.field)
 
-        return {
-          text:
-            sortObject.text ??
-            `${fieldInfo.text ?? sortObject.field} (${
-              sortObject.desc ? 'Desc' : 'Asc'
-            })`,
-          field: sortObject.field,
-          desc: sortObject.desc,
+          return {
+            text:
+              sortObject.text ??
+              `${fieldInfo.text ?? sortObject.field} (${
+                sortObject.desc ? 'Desc' : 'Asc'
+              })`,
+            field: sortObject.field,
+            desc: sortObject.desc,
+          }
         }
-      })
+      )
     },
 
     // extracted from the pageOptions object, if any

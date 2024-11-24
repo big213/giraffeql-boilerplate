@@ -168,7 +168,7 @@ export default {
       this.loading.executeAction = true
       try {
         // trigger beforeSubmit logic on genericInputs
-        const inputs = [...this.$refs.inputs]
+        const inputs = [...(this.$refs.inputs ?? [])]
         for (const input of inputs) {
           await input.beforeSubmit()
         }

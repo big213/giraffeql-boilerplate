@@ -14,18 +14,7 @@ export default {
     }),
     allowNull: false,
     type: User.typeDefLookup,
-    resolver: ({ req, fieldPath, args, query }) => {
-      if (!req.user) throw new Error("Login required");
-
-      return User.getRecord({
-        req,
-        fieldPath,
-        args: { id: req.user!.id },
-        query,
-        isAdmin: true,
-      });
-      // always allow user to get own user
-    },
+    resolver: (inputs) => User.getCurrentUser(inputs),
   }),
 
   syncCurrentUser: new GiraffeqlRootResolverType({

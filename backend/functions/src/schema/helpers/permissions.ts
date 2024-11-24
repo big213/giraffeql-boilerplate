@@ -4,36 +4,12 @@ import { PaginatedService } from "../core/services";
 import { AccessControlFunction, StringKeyObject } from "../../types";
 import { isObject } from "giraffeql/lib/helpers/base";
 import { objectOnlyHasFields } from "../core/helpers/shared";
+import { User } from "../services";
 
 export const userRoleToPermissionsMap = {
   [userRole.ADMIN.name]: [userPermission.A_A],
   [userRole.NORMAL.name]: [],
 };
-
-export function generateItemCreatedByUserGuard(
-  service: PaginatedService
-): AccessControlFunction {
-  return async function ({ req, args, fieldPath }) {
-    // args should be validated already
-    const validatedArgs = <any>args;
-    //check if logged in
-    if (!req.user) return false;
-
-    try {
-      const itemRecord = await service.getFirstSqlRecord(
-        {
-          select: ["createdBy"],
-          where: validatedArgs.item ?? validatedArgs,
-        },
-        true
-      );
-
-      return itemRecord?.createdBy === req.user.id;
-    } catch (err) {
-      return false;
-    }
-  };
-}
 
 export function generateUserAdminGuard(): AccessControlFunction {
   return generateUserRoleGuard([userRole.ADMIN]);
@@ -139,6 +115,7 @@ export function allowIfRecordFieldIsCurrentUserFn(
     typeof fieldPath === "string" ? [fieldPath] : fieldPath;
 
   return async function ({ req, args }) {
+    // (this assumes that args have *not* been processed yet)
     const record = await service.getFirstSqlRecord(
       {
         select: fieldPathArray,
@@ -179,15 +156,18 @@ export function allowIfLoggedInFn() {
   };
 }
 
-export function allowIfArgsFieldIsCurrentUserFn(
-  service: PaginatedService,
-  field: string
-) {
+export function allowIfArgsFieldIsCurrentUserFn(field: string) {
   return async function ({ req, args }) {
-    // handle lookupArgs, convert lookups into ids
-    await service.handleLookupArgs(args);
+    // looks up the field assuming it is a userId (this assumes that args have *not* been processed yet)
+    const user = await User.getFirstSqlRecord(
+      {
+        select: ["id"],
+        where: args[field],
+      },
+      true
+    );
 
-    if (isCurrentUser(req, args[field])) return true;
+    if (isCurrentUser(req, user.id)) return true;
 
     return false;
   };
@@ -199,6 +179,7 @@ export function allowIfPublicOrCreatedByCurrentUser(
 ) {
   const prefixStr = fieldPrefix ? `${fieldPrefix}.` : "";
 
+  // (this assumes that args have *not* been processed yet)
   return async function ({ req, args }) {
     const record = await service.getFirstSqlRecord({
       select: [`${prefixStr}createdBy.id`, `${prefixStr}isPublic`],
@@ -217,10 +198,17 @@ export function allowIfPublicOrCreatedByCurrentUser(
   };
 }
 
-export function allowIfUserHasPermissions(requiredPermission: userPermission) {
+// if requiredPermissions is array, *any* one of them will do
+export function allowIfUserHasPermissions(
+  requiredPermissions: userPermission | userPermission[]
+) {
   return async function ({ req }) {
     if (!req.user) throw new Error("Login Required");
 
-    return req.user.permissions.includes(requiredPermission);
+    return Array.isArray(requiredPermissions)
+      ? requiredPermissions.some((requiredPermission) =>
+          req.user.permissions.includes(requiredPermission)
+        )
+      : req.user.permissions.includes(requiredPermissions);
   };
 }

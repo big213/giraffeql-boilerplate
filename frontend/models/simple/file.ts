@@ -1,6 +1,6 @@
 import type { SimpleRecordInfo } from '~/types'
 
-export const SimpleFile = <SimpleRecordInfo<'file'>>{
+export const SimpleFile: SimpleRecordInfo<'file'> = {
   typename: 'file',
   pluralTypename: 'files',
   name: 'File',

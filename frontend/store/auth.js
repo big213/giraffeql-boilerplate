@@ -2,6 +2,7 @@ export const state = () => ({
   user: null,
   firebaseUser: null,
   isAttemptingLogin: false,
+  redirectPath: null,
 })
 
 export const mutations = {
@@ -16,10 +17,19 @@ export const mutations = {
   unsetUser(state) {
     state.firebaseUser = null
     state.user = null
+    state.redirectPath = null
   },
 
   setIsAttemptingLogin(state, status) {
     state.isAttemptingLogin = status
+  },
+
+  setRedirectPath(state, redirectPath) {
+    state.redirectPath = redirectPath
+  },
+
+  clearRedirectPath(state) {
+    state.redirectPath = null
   },
 }
 
@@ -34,5 +44,9 @@ export const getters = {
 
   isAttemptingLogin(state) {
     return state.isAttemptingLogin
+  },
+
+  redirectPath(state) {
+    return state.redirectPath
   },
 }

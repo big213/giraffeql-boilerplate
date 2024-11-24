@@ -134,14 +134,11 @@ export class FileService extends PaginatedService {
   @permissionsCheck("create")
   async createRecord({
     req,
+    rootResolver,
     fieldPath,
     args,
     query,
-    data = {},
-    isAdmin = false,
   }: ServiceFunctionInputs) {
-    await this.handleLookupArgs(args);
-
     // verify location exists and move it into /source folder
     const bucket = storage().bucket();
     const file = bucket.file(`${serveImageTempPath.value()}/${args.location}`);
@@ -165,41 +162,41 @@ export class FileService extends PaginatedService {
       await this.afterCreateProcess(
         {
           req,
+          rootResolver,
           fieldPath,
           args,
           query,
-          data,
-          isAdmin,
         },
         addResults.id,
         transaction
       );
     });
 
-    return this.getRecord({
-      req,
-      args: { id: addResults.id },
-      query,
-      fieldPath,
-      isAdmin,
-      data,
+    return this.getReturnQuery({
+      id: addResults.id,
+      inputs: {
+        req,
+        rootResolver,
+        args,
+        query,
+        fieldPath,
+      },
     });
   }
 
   @permissionsCheck("delete")
   async deleteRecord({
     req,
+    rootResolver,
     fieldPath,
     args,
     query,
-    data = {},
-    isAdmin = false,
   }: ServiceFunctionInputs) {
     // confirm existence of item and get ID
     const item = await this.getFirstSqlRecord(
       {
         select: ["id", "location"],
-        where: args,
+        where: { id: args },
       },
       true
     );
@@ -212,28 +209,16 @@ export class FileService extends PaginatedService {
 
     await file.delete();
 
-    let requestedResults;
-
-    if (Object.keys(query).length > 0) {
-      // check for get permissions, if fields were requested
-      await this.testPermissions("get", {
+    const requestedQuery = await this.getReturnQuery({
+      id: item.id,
+      inputs: {
         req,
+        rootResolver,
         args,
         query,
         fieldPath,
-        isAdmin,
-        data,
-      });
-      // fetch the requested query, if any
-      requestedResults = await this.getRecord({
-        req,
-        args,
-        query,
-        fieldPath,
-        isAdmin,
-        data,
-      });
-    }
+      },
+    });
 
     await this.deleteSqlRecord({
       where: {
@@ -241,6 +226,6 @@ export class FileService extends PaginatedService {
       },
     });
 
-    return requestedResults ?? {};
+    return requestedQuery;
   }
 }

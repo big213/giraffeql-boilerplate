@@ -7,7 +7,7 @@ import {
 } from '~/services/recordInfo'
 import { SimpleApiKey } from '../simple'
 
-export const ApiKey = <RecordInfo<'apiKey'>>{
+export const ApiKey: RecordInfo<'apiKey'> = {
   ...SimpleApiKey,
   routeType: 'a',
   fields: {

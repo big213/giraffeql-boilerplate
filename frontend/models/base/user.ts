@@ -15,7 +15,7 @@ import { SimpleUser } from '../simple'
 import ChipColumn from '~/components/table/chipColumn.vue'
 import { userRoleMap } from '~/services/constants'
 
-export const User = <RecordInfo<'user'>>{
+export const User: RecordInfo<'user'> = {
   ...SimpleUser,
   routeType: 'a',
   requiredFields: ['avatarUrl', 'name'],

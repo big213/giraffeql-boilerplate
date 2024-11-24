@@ -13,6 +13,7 @@ import { knex } from "../../../utils/knex";
 import { linkDefs } from "../../links";
 import { generateSqlSingleFieldObject } from "./sqlHelper";
 import { Knex } from "knex";
+import { isObject } from "./shared";
 
 function isSqlWhereObject(
   obj: SqlWhereFieldObject | SqlWhereObject | SqlRawWhereStatement
@@ -224,6 +225,7 @@ export type SqlSimpleWhereObject = {
 };
 
 export type SqlWhereInput =
+  | true
   | SqlSimpleWhereObject
   | (SqlWhereObject | SqlWhereFieldObject)[];
 
@@ -272,7 +274,7 @@ export type SpecialJoinDefinition = {
 function isSqlSimpleWhereObject(
   ele: SqlWhereInput
 ): ele is SqlSimpleWhereObject {
-  return !Array.isArray(ele);
+  return !Array.isArray(ele) && ele !== true;
 }
 
 function standardizeSqlSingleSelectField(input: SqlSingleFieldObject | string) {
@@ -281,19 +283,41 @@ function standardizeSqlSingleSelectField(input: SqlSingleFieldObject | string) {
     : input;
 }
 
-function standardizeWhereInput(
-  whereObject: SqlSimpleWhereObject | (SqlWhereObject | SqlWhereFieldObject)[]
-) {
+// converts the simple where object to SqlWhereFieldObject
+function standardizeWhereInput(whereInput: SqlWhereInput) {
+  // validates the whereInput at this stage (must be array, object, or true)
+  if (
+    !Array.isArray(whereInput) &&
+    !isObject(whereInput) &&
+    whereInput !== true
+  ) {
+    throw new Error(`SqlWhereInput validation failed`);
+  }
+
+  // if it's an array, it must have more than 1 element
+  // if it's an object, it must have more than 1 property
+  if (
+    (Array.isArray(whereInput) && whereInput.length === 0) ||
+    (isObject(whereInput) && Object.keys(whereInput).length === 0)
+  ) {
+    throw new Error(
+      `Array or object contains no elements and therefore cannot be used as whereInput`
+    );
+  }
+
   return {
-    fields: isSqlSimpleWhereObject(whereObject)
-      ? Object.entries(whereObject).reduce((total, [field, value]) => {
+    fields: isSqlSimpleWhereObject(whereInput)
+      ? Object.entries(whereInput).reduce((total, [field, value]) => {
           total.push({
             field: generateSqlSingleFieldObject(field),
             value,
           });
           return total;
         }, <Array<SqlWhereFieldObject>>[])
-      : whereObject,
+      : // whereInput *must* be true in order to express performing an action on all rows
+      whereInput === true
+      ? []
+      : whereInput,
   };
 }
 

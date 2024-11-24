@@ -185,11 +185,30 @@ export function isEmptyQuery(query: unknown) {
 
 export function getArgsNewValue(fields, item, fieldname) {
   if (item[fieldname] === undefined) {
-    throw new Error(`Item does not contain the requested compare field: '${fieldname}'`);
+    throw new Error(
+      `Item does not contain the requested compare field: '${fieldname}'`
+    );
   }
 
   return fields[fieldname] !== undefined &&
     fields[fieldname] !== item[fieldname]
     ? fields[fieldname]
     : undefined;
+}
+
+// parses templateString and replaces with any params
+export function processTemplate(
+  templateString: string,
+  params: { [x in string]: string }
+) {
+  let templateStringModified = templateString;
+  Object.entries(params).forEach(([key, value]) => {
+    const currentRegex = new RegExp(`{{\\s*${key}\\s*}}`, "g");
+    templateStringModified = templateStringModified.replace(
+      currentRegex,
+      value
+    );
+  });
+
+  return templateStringModified;
 }

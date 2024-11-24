@@ -1,11 +1,12 @@
+import type { RecordInfo } from '~/types'
 import { User } from '../../base'
 
-export const MySettings = {
+export const MySettings: RecordInfo<'user'> = {
   ...User,
   title: 'My Settings',
   routeType: 'my',
   paginationOptions: {
-    ...User.paginationOptions,
+    ...User.paginationOptions!,
   },
   editOptions: {
     fields: ['isPublic', 'allowEmailNotifications'],

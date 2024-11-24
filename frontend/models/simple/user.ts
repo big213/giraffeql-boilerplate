@@ -1,6 +1,6 @@
-import type { RecordInfo } from '~/types'
+import type { RecordInfo, SimpleRecordInfo } from '~/types'
 
-export const SimpleUser = <Partial<RecordInfo<'user'>>>{
+export const SimpleUser: SimpleRecordInfo<'user'> = {
   typename: 'user',
   pluralTypename: 'users',
   name: 'User',

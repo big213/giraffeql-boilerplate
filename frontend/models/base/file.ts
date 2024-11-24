@@ -4,7 +4,7 @@ import FileColumn from '~/components/table/fileColumn.vue'
 import { generateBaseFields, generateSortOptions } from '~/services/recordInfo'
 import { SimpleFile } from '../simple'
 
-export const File = <RecordInfo<'file'>>{
+export const File: RecordInfo<'file'> = {
   ...SimpleFile,
   routeType: 'a',
   fields: {

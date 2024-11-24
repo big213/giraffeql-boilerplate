@@ -27,7 +27,8 @@ export class UserUserFollowLinkService extends LinkService {
     Allow if:
     - args.user is currentUser
     */
-    create: allowIfArgsFieldIsCurrentUserFn(this, "user"),
+
+    create: allowIfArgsFieldIsCurrentUserFn("user"),
 
     /*
     Allow if:

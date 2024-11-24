@@ -5,6 +5,7 @@ import {
   generateBaseFields,
   generateClickRowToExpandOptions,
   generateClickRowToOpenDialogOptions,
+  generateCurrencyField,
   generateJoinableField,
   generateMultipleJoinableField,
   generatePreviewableFilesColumn,
@@ -15,9 +16,11 @@ import {
 import TimeagoColumn from '~/components/table/timeagoColumn.vue'
 import { getUserRoleEnumValues } from '~/services/dropdown'
 import ChipColumn from '~/components/table/chipColumn.vue'
+import type { RecordInfo } from '~/types'
 
-export const Event = {
+export const Event: RecordInfo<any> = {
   typename: 'event',
+  routeType: 'a',
   pluralTypename: 'events',
   name: 'Event',
   pluralName: 'Events',
@@ -28,6 +31,10 @@ export const Event = {
       hasName: true,
       hasAvatar: true,
       hasDescription: true,
+      name: 'Event',
+      pluralName: 'Events',
+      pluralTypename: 'events',
+      typename: 'event',
     }),
     dateTimePickerField: {
       text: 'Start At',
@@ -88,6 +95,9 @@ export const Event = {
       text: 'Ended At',
       component: TimeagoColumn,
     },
+    cost: generateCurrencyField({
+      text: 'Cost',
+    }),
     // ONE file only (single file joined field)
     ...generatePreviewableFilesColumn({
       fieldname: 'file',
@@ -150,11 +160,6 @@ export const Event = {
             ],
           }),
         */
-        inputOptions: {
-          hasAvatar: true,
-          typename: 'productTag',
-          hasName: true,
-        },
         columnOptions: {
           disablePreview: true,
         },
@@ -254,7 +259,7 @@ export const Event = {
       'signupStartAt',
       'signupEndAt',
       'costPerPerson',
-      'totalCost',
+      'itemsCost',
       'paymentInstructions',
       'participantsLimit',
       'isPublic',
@@ -271,7 +276,7 @@ export const Event = {
       'location',
       'locationInstructions',
       'costPerPerson',
-      'totalCost',
+      'itemsCost',
       'paymentInstructions',
       'participantsLimit',
     ],
@@ -292,7 +297,7 @@ export const Event = {
       'signupStartAt',
       'signupEndAt',
       'costPerPerson',
-      'totalCost',
+      'itemsCost',
       'paymentInstructions',
       'participantsLimit',
       'isPublic',
@@ -311,7 +316,7 @@ export const Event = {
       'whenTimeRange',
       'signupTimeRange',
       'costPerPerson',
-      'totalCost',
+      'itemsCost',
       'paymentInstructions',
       'participantsOverview',
       'confirmAttendedOverview',
@@ -322,7 +327,6 @@ export const Event = {
     ],
     heroOptions: {},
   },
-  postOptions: {},
   enterOptions: {},
   deleteOptions: {},
   shareOptions: {},

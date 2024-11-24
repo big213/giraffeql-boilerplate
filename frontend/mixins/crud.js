@@ -215,20 +215,22 @@ export default {
     // transforms SortObject[] to CrudSortObject[]
     // type: CrudSortObject[]
     sortOptions() {
-      return this.recordInfo.paginationOptions.sortOptions.map((sortObject) => {
-        const fieldInfo = lookupFieldInfo(this.recordInfo, sortObject.field)
+      return this.recordInfo.paginationOptions.sortOptions?.map(
+        (sortObject) => {
+          const fieldInfo = lookupFieldInfo(this.recordInfo, sortObject.field)
 
-        return {
-          text:
-            sortObject.text ??
-            `${fieldInfo.text ?? sortObject.field} (${
-              sortObject.desc ? 'Desc' : 'Asc'
-            })`,
-          field: sortObject.field,
-          desc: sortObject.desc,
-          additionalSortObjects: sortObject.additionalSortObjects,
+          return {
+            text:
+              sortObject.text ??
+              `${fieldInfo.text ?? sortObject.field} (${
+                sortObject.desc ? 'Desc' : 'Asc'
+              })`,
+            field: sortObject.field,
+            desc: sortObject.desc,
+            additionalSortObjects: sortObject.additionalSortObjects,
+          }
         }
-      })
+      )
     },
 
     // if this.hiddenHeaders is defined, override the default exclude headers on the recordInfo.paginationOptions
@@ -426,7 +428,7 @@ export default {
 
     hasFilters() {
       return (
-        this.recordInfo.paginationOptions.filterOptions.length > 0 ||
+        this.recordInfo.paginationOptions.filterOptions?.length ||
         this.recordInfo.paginationOptions.distanceFilterOptions?.length > 0 ||
         this.recordInfo.paginationOptions.searchOptions
       )

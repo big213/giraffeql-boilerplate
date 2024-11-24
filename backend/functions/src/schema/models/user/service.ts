@@ -15,6 +15,9 @@ import {
 import { objectOnlyHasFields } from "../../core/helpers/shared";
 import { lookupSymbol } from "giraffeql";
 import { knex } from "../../../utils/knex";
+import { SqlWhereObject } from "../../core/helpers/sql";
+import { getObjectType } from "../../core/helpers/resolver";
+import { ItemNotFoundError } from "../../core/helpers/error";
 
 export class UserService extends PaginatedService {
   defaultTypename = "user";
@@ -51,6 +54,9 @@ export class UserService extends PaginatedService {
   accessControl: AccessControlMap = {
     // create: only admins
 
+    // always allowed to get current user
+    getCurrentUser: () => true,
+
     /*
     Allow if:
     - item.id is currentUser
@@ -61,7 +67,7 @@ export class UserService extends PaginatedService {
       const record = await this.getFirstSqlRecord(
         {
           select: ["id", "isPublic"],
-          where: args,
+          where: { id: req.user!.id },
         },
         true
       );
@@ -165,17 +171,54 @@ export class UserService extends PaginatedService {
     };
   }
 
-  @permissionsCheck("create")
-  async createRecord({
+  @permissionsCheck("getCurrentUser")
+  async getCurrentUser({
     req,
+    rootResolver,
     fieldPath,
     args,
     query,
-    data = {},
-    isAdmin = false,
   }: ServiceFunctionInputs) {
-    await this.handleLookupArgs(args);
+    if (!req.user) {
+      throw new Error(`Login is required`);
+    }
 
+    const results = await getObjectType({
+      typename: this.typename,
+      req,
+      rootResolver,
+      fieldPath,
+      externalQuery: query,
+      sqlParams: {
+        where: {
+          id: req.user!.id,
+        },
+        limit: 1,
+        specialParams: await this.getSpecialParams({
+          req,
+          rootResolver,
+          fieldPath,
+          args,
+          query,
+        }),
+      },
+    });
+
+    if (results.length < 1) {
+      throw new ItemNotFoundError({ fieldPath });
+    }
+
+    return results[0];
+  }
+
+  @permissionsCheck("create")
+  async createRecord({
+    req,
+    rootResolver,
+    fieldPath,
+    args,
+    query,
+  }: ServiceFunctionInputs) {
     // create firebase user
     const firebaseUser = await auth().createUser({
       email: args.email,
@@ -201,35 +244,35 @@ export class UserService extends PaginatedService {
       await this.afterCreateProcess(
         {
           req,
+          rootResolver,
           fieldPath,
           args,
           query,
-          data,
-          isAdmin,
         },
         addResults.id,
         transaction
       );
     });
 
-    return this.getRecord({
-      req,
-      args: { id: addResults.id },
-      query,
-      fieldPath,
-      isAdmin,
-      data,
+    return this.getReturnQuery({
+      id: addResults.id,
+      inputs: {
+        req,
+        rootResolver,
+        args,
+        query,
+        fieldPath,
+      },
     });
   }
 
   // syncs the user's email with their firebase email, in case they fall out of sync (due to updating email, etc)
   async syncRecord({
     req,
+    rootResolver,
     fieldPath,
     args,
     query,
-    data,
-    isAdmin = false,
   }: ServiceFunctionInputs) {
     // login required
     if (!req.user) throw new Error(`Login required`);
@@ -262,34 +305,34 @@ export class UserService extends PaginatedService {
       );
     }
 
-    return this.getRecord({
-      req,
-      args: { id: req.user.id },
-      query,
-      fieldPath,
+    return this.getReturnQuery({
+      id: req.user.id,
+      inputs: {
+        req,
+        rootResolver,
+        args,
+        query,
+        fieldPath,
+      },
     });
   }
 
   @permissionsCheck("update")
   async updateRecord({
     req,
+    rootResolver,
     fieldPath,
     args,
     query,
-    data = {},
-    isAdmin = false,
   }: ServiceFunctionInputs) {
     // check if record exists, get ID
     const item = await this.getFirstSqlRecord(
       {
         select: ["id", "role", "firebaseUid"],
-        where: args.item,
+        where: { id: args.item },
       },
       true
     );
-
-    // convert any lookup/joined fields into IDs
-    await this.handleLookupArgs(args.fields);
 
     await knex.transaction(async (transaction) => {
       await this.updateSqlRecord(
@@ -309,11 +352,10 @@ export class UserService extends PaginatedService {
       await this.afterUpdateProcess(
         {
           req,
+          rootResolver,
           fieldPath,
           args,
           query,
-          data,
-          isAdmin,
         },
         item.id,
         transaction
@@ -340,56 +382,45 @@ export class UserService extends PaginatedService {
       await auth().updateUser(item.firebaseUid, firebaseUserFields);
     }
 
-    return this.getRecord({
-      req,
-      args: { id: item.id },
-      query,
-      fieldPath,
-      isAdmin,
-      data,
+    return this.getReturnQuery({
+      id: item.id,
+      inputs: {
+        req,
+        rootResolver,
+        args,
+        query,
+        fieldPath,
+      },
     });
   }
 
   @permissionsCheck("delete")
   async deleteRecord({
     req,
+    rootResolver,
     fieldPath,
     args,
     query,
-    data,
-    isAdmin = false,
   }: ServiceFunctionInputs) {
     // confirm existence of item and get ID
     const item = await this.getFirstSqlRecord(
       {
         select: ["id", "firebaseUid"],
-        where: args,
+        where: { id: args },
       },
       true
     );
 
-    let requestedResults;
-
-    if (Object.keys(query).length > 0) {
-      // check for get permissions, if fields were requested
-      await this.testPermissions("get", {
+    const requestedQuery = await this.getReturnQuery({
+      id: item.id,
+      inputs: {
         req,
+        rootResolver,
         args,
         query,
         fieldPath,
-        isAdmin,
-        data,
-      });
-      // fetch the requested query, if any
-      requestedResults = await this.getRecord({
-        req,
-        args,
-        query,
-        fieldPath,
-        isAdmin,
-        data,
-      });
-    }
+      },
+    });
 
     // delete the type and also any associated services
     await knex.transaction(async (transaction) => {
@@ -413,6 +444,6 @@ export class UserService extends PaginatedService {
     // remove firebase auth user
     await auth().deleteUser(item.firebaseUid);
 
-    return requestedResults ?? {};
+    return requestedQuery;
   }
 }

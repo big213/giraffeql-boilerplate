@@ -1,12 +1,13 @@
 import { handleUserRefreshed } from '~/services/auth'
 import { User } from '../../base/user'
+import type { RecordInfo } from '~/types'
 
-export const MyProfile = {
+export const MyProfile: RecordInfo<'user'> = {
   ...User,
   title: 'My Profile',
   routeType: 'my',
   paginationOptions: {
-    ...User.paginationOptions,
+    ...User.paginationOptions!,
     filterOptions: [],
     headerOptions: [
       {

@@ -2,7 +2,7 @@ import { executeGiraffeql } from '~/services/giraffeql'
 import { handleError, timeout } from './base'
 import { auth } from './fireinit'
 
-export async function handleLogin(that, store, authPayload) {
+export async function handleLogin(that, store, redirect, authPayload) {
   // set loading state
   store.commit('auth/setIsAttemptingLogin', true)
 
@@ -22,6 +22,14 @@ export async function handleLogin(that, store, authPayload) {
         allPermissions: true,
       },
     })
+
+    // if any redirectPath, attempt to go there, and unset the path
+    if (store.getters['auth/redirectPath']) {
+      redirect(store.getters['auth/redirectPath'])
+    }
+
+    // unset the redirect path
+    store.commit('auth/clearRedirectPath')
 
     // put the response in the vuex store
     store.commit('auth/setUser', currentUser)

@@ -1,11 +1,12 @@
+import type { RecordInfo } from '~/types'
 import { MyProfile } from '../my/profile'
 
-export const PublicUser = {
+export const PublicUser: RecordInfo<'user'> = {
   ...MyProfile,
   title: `Public ${MyProfile.pluralName}`,
   routeType: 'i',
   paginationOptions: {
-    ...MyProfile.paginationOptions,
+    ...MyProfile.paginationOptions!,
     defaultLockedFilters: (_that) => {
       return [
         {
