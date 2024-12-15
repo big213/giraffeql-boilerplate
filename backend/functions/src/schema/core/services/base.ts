@@ -15,8 +15,6 @@ export abstract class BaseService {
 
   rootResolvers?: { [x: string]: GiraffeqlRootResolverType };
 
-  defaultQuery?: ExternalQuery;
-
   setRootResolvers(rootResolvers: {
     [x: string]: GiraffeqlRootResolverType;
   }): void {

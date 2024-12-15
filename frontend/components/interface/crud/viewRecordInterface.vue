@@ -31,6 +31,7 @@
                       :field-path="getFieldPath(item)"
                       :options="item.fieldInfo.columnOptions"
                       display-mode="view"
+                      @edit-item="openEditItemDialog"
                       @submit="$emit('handleSubmit')"
                       @item-updated="handleItemUpdated()"
                     ></component>
@@ -49,6 +50,7 @@
                       :field-path="getFieldPath(item)"
                       :options="item.fieldInfo.columnOptions"
                       display-mode="view"
+                      @edit-item="openEditItemDialog"
                       @submit="$emit('handleSubmit')"
                       @item-updated="handleItemUpdated()"
                     ></component>

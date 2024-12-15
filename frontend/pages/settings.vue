@@ -43,7 +43,7 @@ import EditRecordInterface from '~/components/interface/crud/editRecordInterface
 import { MySettings } from '~/models'
 
 export default {
-  middleware: ['router-auth'],
+  middleware: ['router-auth-redirect'],
   components: {
     UpdateCredentialsInterface,
     EditRecordInterface,

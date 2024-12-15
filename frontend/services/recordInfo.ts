@@ -2,6 +2,7 @@ import RecordColumn from '~/components/table/recordColumn.vue'
 import {
   FieldDefinition,
   InputType,
+  NestedOptions,
   RecordInfo,
   SimpleRecordInfo,
 } from '~/types'
@@ -355,7 +356,8 @@ export function generatePreviewableFilesColumn({
         `${fieldname}.contentType`,
         `${fieldname}.location`,
         `${fieldname}.servingUrl`,
-      ],
+        useFirebaseUrl ? `${fieldname}.downloadUrl` : null,
+      ].filter((e) => e),
       pathPrefix: fieldname,
       inputType,
       default: () => [],
@@ -373,6 +375,7 @@ export function generatePreviewableFilesColumn({
       },
       columnOptions: {
         hideDownload,
+        useFirebaseUrl,
       },
       component: mediaMode ? PreviewableFilesColumn : FilesColumn,
       ...fieldOptions,
@@ -477,24 +480,26 @@ export function generateKeyValueArrayField({
       fields: [`${fieldname}`, `${fieldname}.key`, `${fieldname}.value`],
       inputType: 'value-array',
       inputOptions: {
-        nestedFields: [
-          {
-            key: 'key',
-            inputType: 'text',
-            text: 'Key',
-            inputOptions: {
-              cols: 6,
+        nestedOptions: {
+          fields: [
+            {
+              key: 'key',
+              inputType: 'text',
+              text: 'Key',
+              inputOptions: {
+                cols: 6,
+              },
             },
-          },
-          {
-            key: 'value',
-            inputType: 'text',
-            text: 'Value',
-            inputOptions: {
-              cols: 6,
+            {
+              key: 'value',
+              inputType: 'text',
+              text: 'Value',
+              inputOptions: {
+                cols: 6,
+              },
             },
-          },
-        ],
+          ],
+        },
       },
       // filter out empty keys
       parseValue: (val) => {
@@ -507,7 +512,7 @@ export function generateKeyValueArrayField({
   }
 }
 
-export function generateValueArrayField({
+export function generateSimpleValueArrayField({
   fieldname,
   text,
   fieldOptions = {},
@@ -521,13 +526,15 @@ export function generateValueArrayField({
       text,
       inputType: 'value-array',
       inputOptions: {
-        nestedFields: [
-          {
-            key: 'value',
-            inputType: 'text',
-            text: 'Value',
-          },
-        ],
+        nestedOptions: {
+          fields: [
+            {
+              key: 'value',
+              inputType: 'text',
+              text: 'Value',
+            },
+          ],
+        },
       },
       parseValue: (val) => {
         if (!Array.isArray(val)) return []
@@ -538,6 +545,33 @@ export function generateValueArrayField({
         return val.map((ele) => ({ value: ele }))
       },
       ...fieldOptions,
+    },
+  }
+}
+
+export function generateValueArrayField({
+  fieldname,
+  text,
+  nestedOptions,
+  fieldOptions = {},
+}: {
+  fieldname: string
+  text: string
+  nestedOptions: NestedOptions
+  fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
+}) {
+  return {
+    text,
+    inputType: 'value-array' as InputType,
+    fields: [fieldname].concat(
+      nestedOptions.fields.map(
+        (nestedField) => `${fieldname}.${nestedField.key}`
+      )
+    ),
+    ...fieldOptions,
+    inputOptions: {
+      ...fieldOptions.inputOptions,
+      nestedOptions,
     },
   }
 }
@@ -744,4 +778,8 @@ export function generateMultipleJoinableField({
       ...fieldOptions.inputOptions,
     },
   }
+}
+
+export function emptyStringToNullParser(val: any) {
+  return typeof val === 'string' ? (val.trim() ? val : null) : val
 }

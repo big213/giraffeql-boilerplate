@@ -9,10 +9,6 @@ import {
 export default {
   getRepositoryReleases: new GiraffeqlRootResolverType({
     name: "getRepositoryReleases",
-    restOptions: {
-      method: "get",
-      route: "/repositoryReleases",
-    },
     type: Scalars.unknown,
     allowNull: false,
     arrayOptions: {
@@ -36,10 +32,6 @@ export default {
 
   getRepositoryLatestVersion: new GiraffeqlRootResolverType({
     name: "getRepositoryLatestVersion",
-    restOptions: {
-      method: "get",
-      route: "/repositoryLatestVersion",
-    },
     type: Scalars.unknown,
     allowNull: true,
     resolver: (inputs) => Github.getRepositoryLatestVersion(inputs),

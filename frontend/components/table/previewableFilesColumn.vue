@@ -8,23 +8,29 @@
         v-for="(file, index) in rawFiles"
         :key="index"
         :file="file"
-        :downloadable="isDownloadable"
+        :downloadable="options?.hideDownload"
         openable
         small
         label
         :close="false"
         class="mr-2"
       ></FileChip>
-      <v-container fluid grid-list-xs class="px-0">
-        <v-layout row wrap>
-          <MediaChip
-            v-for="(file, index) in previewableFiles"
-            :key="index"
-            :file="file"
-            :downloadable="isDownloadable"
-            openable
-            class="md4 sm6 xs12"
-          ></MediaChip>
+      <v-container>
+        <v-layout row>
+          <v-col
+            v-for="file in previewableFiles"
+            :key="file.id"
+            cols="12"
+            class="py-2"
+            sm="3"
+          >
+            <MediaChip
+              :file="file"
+              :downloadable="options?.hideDownload"
+              :use-firebase-url="options?.useFirebaseUrl"
+              openable
+            ></MediaChip>
+          </v-col>
         </v-layout>
       </v-container>
     </div>
@@ -64,9 +70,6 @@ export default {
       return this.filesData.filter(
         (file) => !file.contentType.startsWith('image')
       )
-    },
-    isDownloadable() {
-      return !this.options?.hideDownload
     },
   },
 

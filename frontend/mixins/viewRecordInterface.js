@@ -166,6 +166,15 @@ export default {
       )
     },
 
+    openEditItemDialog(item, editFields) {
+      this.$root.$emit('openEditRecordDialog', {
+        recordInfo: this.recordInfo,
+        selectedItem: item,
+        mode: 'edit',
+        customFields: editFields,
+      })
+    },
+
     handleItemUpdated() {
       this.$emit('item-updated')
       this.reset()
@@ -186,7 +195,7 @@ export default {
             .concat(this.recordInfo.viewOptions.requiredFields ?? [])
         )
         const data = await executeGiraffeql({
-          ['get' + this.capitalizedType]: {
+          [`get${this.capitalizedType}`]: {
             ...query,
             __args: {
               id: this.selectedItem.id,

@@ -24,7 +24,7 @@ export default {
     return { type }
   },
 
-  middleware: ['router-auth'],
+  middleware: ['router-auth-redirect'],
 
   components: {
     CrudRecordPage,

@@ -72,6 +72,9 @@ function generateMigration(initSubscriptions = true, force = false) {
           typeDefField.sqlOptions.type === "decimal" &&
           typeDefField.sqlOptions.decimalOptions
             ? `,${typeDefField.sqlOptions.decimalOptions.precision},${typeDefField.sqlOptions.decimalOptions.scale}`
+            : typeDefField.sqlOptions.type === "string" &&
+              typeDefField.sqlOptions.stringOptions
+            ? `,${typeDefField.sqlOptions.stringOptions.length}`
             : ""
         })`;
 

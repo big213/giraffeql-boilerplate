@@ -89,7 +89,6 @@ export const User: RecordInfo<'user'> = {
       },
     ],
   },
-
   addOptions: {
     fields: [
       'avatarUrl',

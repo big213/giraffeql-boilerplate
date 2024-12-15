@@ -37,11 +37,12 @@
           type="password"
         ></v-text-field>
         <v-text-field
-          v-if="isChanged"
           v-model="inputs.password"
           label="Current Password"
           prepend-icon="mdi-lock"
           type="password"
+          hint="Only required if changing your password"
+          persistent-hint
         ></v-text-field>
       </div>
       <div v-else>

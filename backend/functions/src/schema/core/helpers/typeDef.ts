@@ -151,6 +151,7 @@ export function generateGenericScalarField(
 export function generateStringField(
   params: {
     type?: GiraffeqlScalarType;
+    length?: number;
   } & GenerateFieldParams
 ) {
   const {
@@ -161,6 +162,7 @@ export function generateStringField(
     hidden,
     nestHidden,
     type,
+    length = 255,
     sqlOptions,
     typeDefOptions,
   } = params;
@@ -173,7 +175,13 @@ export function generateStringField(
     nestHidden,
     sqlType: "string",
     type: type ?? Scalars.string,
-    sqlOptions,
+    sqlOptions: {
+      stringOptions: {
+        length,
+      },
+      ...sqlOptions,
+    },
+
     typeDefOptions,
   });
 }
@@ -416,6 +424,7 @@ export function generateBooleanField(params: GenerateFieldParams) {
 export function generateArrayField(
   params: {
     type: GiraffeqlScalarType | GiraffeqlObjectTypeLookup | GiraffeqlObjectType;
+    uniqueKeys?: string[];
     allowNullElement?: boolean;
   } & GenerateFieldParams
 ) {
@@ -429,19 +438,20 @@ export function generateArrayField(
     type,
     sqlOptions,
     typeDefOptions,
+    uniqueKeys,
   } = params;
 
   // if adding a GiraffeqlObjectType, also need to register the equivalent GiraffeqlInputFieldType if it doesn't exist
   if (type instanceof GiraffeqlObjectType) {
     if (!inputTypeDefs.has(type.definition.name)) {
-      const fields: any = Object.entries(type.definition.fields).reduce(
-        (total, entry) => {
+      const fields = Object.entries(type.definition.fields).reduce(
+        (total, [key, value]) => {
           // ONLY scalars processed at the moment
-          if (entry[1].type instanceof GiraffeqlScalarType) {
-            total[entry[0]] = new GiraffeqlInputFieldType({
-              type: entry[1].type,
-              allowNull: entry[1].allowNull,
-              required: entry[1].required,
+          if (value.type instanceof GiraffeqlScalarType) {
+            total[key] = new GiraffeqlInputFieldType({
+              type: value.type,
+              allowNull: value.allowNull,
+              required: value.required,
             });
           }
 
@@ -472,7 +482,25 @@ export function generateArrayField(
     ...(!allowNull && { defaultValue: [] }),
     sqlOptions: {
       // necessary for inserting JSON into DB properly
-      parseValue: (val) => JSON.stringify(val),
+      parseValue: (val) => {
+        // if uniqueKeys, confirm that there are no duplicates given the key combinations
+        if (val && uniqueKeys) {
+          const uniqueValues = new Set();
+
+          val.forEach((ele) => {
+            const keyValue = uniqueKeys.map((key) => ele[key]).join("-");
+
+            if (uniqueValues.has(keyValue)) {
+              throw new Error(
+                `Entry with value '${keyValue}' already exists, which violates the unique key constraint`
+              );
+            }
+            uniqueValues.add(keyValue);
+          });
+        }
+
+        return JSON.stringify(val);
+      },
       ...sqlOptions,
     },
     typeDefOptions: {
@@ -1990,6 +2018,18 @@ export function generateLinkTypeDef(
       ...additionalFields,
     },
   });
+}
+
+export async function processLookupArgsInputType(
+  args: any,
+  inputType: GiraffeqlInputType
+) {
+  return processLookupArgs(
+    args,
+    new GiraffeqlInputFieldType({
+      type: inputType,
+    })
+  );
 }
 
 export async function processLookupArgs(

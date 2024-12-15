@@ -53,6 +53,11 @@ export type ObjectTypeDefSqlOptions = {
     scale: number;
   };
 
+  // only used for string sqlType
+  stringOptions?: {
+    length: number;
+  };
+
   defaultValue?: any;
   unique?: boolean | string;
 };

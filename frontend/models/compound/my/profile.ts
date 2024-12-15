@@ -1,26 +1,11 @@
 import { handleUserRefreshed } from '~/services/auth'
 import { User } from '../../base/user'
-import type { RecordInfo } from '~/types'
+import { RecordInfo } from '~/types'
 
 export const MyProfile: RecordInfo<'user'> = {
   ...User,
   title: 'My Profile',
   routeType: 'my',
-  paginationOptions: {
-    ...User.paginationOptions!,
-    filterOptions: [],
-    headerOptions: [
-      {
-        field: 'nameWithAvatar',
-        hideIfGrid: true,
-      },
-      {
-        field: 'updatedAt',
-        width: '150px',
-      },
-    ],
-    downloadOptions: undefined,
-  },
   editOptions: {
     fields: ['avatarUrl', 'name', 'description', 'isPublic'],
     onSuccess: (that) => {

@@ -10,23 +10,14 @@ import {
   filterPassesTest,
   isCurrentUser,
   isUserLoggedIn,
-  queryOnlyHasFields,
 } from "../../helpers/permissions";
 import { objectOnlyHasFields } from "../../core/helpers/shared";
-import { lookupSymbol } from "giraffeql";
 import { knex } from "../../../utils/knex";
-import { SqlWhereObject } from "../../core/helpers/sql";
 import { getObjectType } from "../../core/helpers/resolver";
 import { ItemNotFoundError } from "../../core/helpers/error";
 
 export class UserService extends PaginatedService {
   defaultTypename = "user";
-
-  defaultQuery: ExternalQuery = {
-    id: lookupSymbol,
-    name: lookupSymbol,
-    avatarUrl: lookupSymbol,
-  };
 
   filterFieldsMap = {
     id: {},
@@ -75,7 +66,8 @@ export class UserService extends PaginatedService {
       if (isCurrentUser(req, record.id)) return true;
 
       if (
-        queryOnlyHasFields(query, [
+        query &&
+        objectOnlyHasFields(query, [
           "id",
           "__typename",
           "name",
@@ -91,7 +83,7 @@ export class UserService extends PaginatedService {
       }
 
       if (
-        queryOnlyHasFields(query, [
+        objectOnlyHasFields(query, [
           "id",
           "__typename",
           "name",
@@ -115,8 +107,11 @@ export class UserService extends PaginatedService {
     */
     getPaginator: async ({ args, query }) => {
       if (
-        !query ||
-        queryOnlyHasFields(query, [
+        (await filterPassesTest(args.filterBy, (filterObject) => {
+          return filterObject["isPublic"]?.eq === true;
+        })) &&
+        query.edges?.node &&
+        objectOnlyHasFields(query.edges.node, [
           "id",
           "__typename",
           "name",
@@ -125,14 +120,6 @@ export class UserService extends PaginatedService {
           "isPublic",
           "currentUserFollowLink",
         ])
-      ) {
-        return true;
-      }
-
-      if (
-        await filterPassesTest(args.filterBy, (filterObject) => {
-          return filterObject["isPublic"]?.eq === true;
-        })
       ) {
         return true;
       }
@@ -154,6 +141,7 @@ export class UserService extends PaginatedService {
           "description",
           "isPublic",
           "allowEmailNotifications",
+          "notificationMethods",
         ])
       ) {
         return true;

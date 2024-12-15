@@ -8,7 +8,7 @@ import { timeout } from "../schema/core/helpers/shared";
 
 export async function validateToken(bearerToken: string): Promise<ContextUser> {
   try {
-    if (bearerToken.split(" ")[0] !== "Bearer") {
+    if (!bearerToken.match(/^Bearer\s/)) {
       throw new Error("Invalid bearer token");
     }
 

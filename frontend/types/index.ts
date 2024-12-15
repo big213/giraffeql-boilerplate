@@ -35,7 +35,7 @@ export type FieldDefinition = {
   }
 
   inputRules?: any[]
-  getOptions?: (that) => Promise<any[]>
+  getOptions?: (that, item) => Promise<any[]>
 
   // is the field hidden? if yes, won't fetch it for edit fields
   hidden?: boolean
@@ -584,6 +584,9 @@ type InputOptions = {
   hasAvatar?: boolean
   hasName?: boolean
 
+  // should the "clear" X button be visible?
+  clearable?: boolean
+
   // for type-autocomplete, whether or not to load results from the server if getOptions is provided
   loadServerResults?: boolean
 
@@ -660,15 +663,22 @@ type InputOptions = {
   }
 
   // only applies to value-array
-  nestedFields?: {
+  nestedOptions?: NestedOptions
+}
+
+export type NestedOptions = {
+  entryName?: string
+  pluralEntryName?: string
+  fields: {
     key: string
-    inputType: InputType
     text?: string
+    inputType: InputType
+    hint?: string
     inputOptions?: InputOptions
     optional?: boolean
-    hint?: string
+    default?: (that) => unknown
     inputRules?: any[]
-    getOptions?: (that) => Promise<any[]>
+    getOptions?: (that, item) => Promise<any[]>
   }[]
 }
 
@@ -717,6 +727,7 @@ export type InputType =
   | 'datepicker'
   | 'datetimepicker'
   | 'switch'
+  | 'checkbox'
   | 'stripe-cc'
   | 'stripe-pi'
   | 'stripe-pi-editable'
@@ -764,7 +775,7 @@ export type ActionOptions = {
       text?: string
       inputType?: InputType
       hint?: string
-      getOptions?: (that) => Promise<any[]>
+      getOptions?: (that, item) => Promise<any[]>
       // special options pertaining to the specific inputType
       inputOptions?: InputOptions
       optional?: boolean

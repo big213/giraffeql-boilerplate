@@ -24,7 +24,7 @@ import SocialLoginInterface from '~/components/interface/auth/socialLoginInterfa
 import { socialLoginEnabled } from '~/services/config'
 
 export default {
-  middleware: 'router-auth',
+  middleware: 'logged-in-redirect',
 
   components: {
     LoginInterface,
@@ -45,7 +45,11 @@ export default {
 
   methods: {
     handleSuccess() {
-      this.$router.push('/')
+      // on success, attempt to go to redirectPath (if any, else go to home page)
+      this.$router.push(this.$store.getters['auth/redirectPath'] ?? '/')
+
+      // unset the redirect path
+      this.$store.commit('auth/clearRedirectPath')
     },
   },
 }

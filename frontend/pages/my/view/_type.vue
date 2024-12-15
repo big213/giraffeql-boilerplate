@@ -25,7 +25,7 @@ export default {
     return { type }
   },
 
-  middleware: ['router-auth'],
+  middleware: ['router-auth-redirect'],
 
   computed: {
     pageComponent() {

@@ -1,17 +1,10 @@
 import { User } from "../../services";
 import { generateBaseRootResolvers } from "../../core/helpers/rootResolver";
-import { GiraffeqlRootResolverType } from "giraffeql";
+import { GiraffeqlRootResolverType, lookupSymbol } from "giraffeql";
 
 export default {
   getCurrentUser: new GiraffeqlRootResolverType({
     name: "getCurrentUser",
-    ...(User.defaultQuery && {
-      restOptions: {
-        method: "get",
-        route: "/currentUser",
-        query: User.defaultQuery,
-      },
-    }),
     allowNull: false,
     type: User.typeDefLookup,
     resolver: (inputs) => User.getCurrentUser(inputs),
@@ -19,13 +12,6 @@ export default {
 
   syncCurrentUser: new GiraffeqlRootResolverType({
     name: "syncCurrentUser",
-    ...(User.defaultQuery && {
-      restOptions: {
-        method: "post",
-        route: "/syncCurrentUser",
-        query: User.defaultQuery,
-      },
-    }),
     allowNull: false,
     type: User.typeDefLookup,
     resolver: (inputs) => User.syncRecord(inputs),
@@ -34,8 +20,26 @@ export default {
   ...generateBaseRootResolvers({
     service: User,
     methods: [
-      { type: "get", restOptions: {} },
-      { type: "getPaginator", restOptions: {} },
+      { type: "get" },
+      {
+        type: "getPaginator",
+        restOptions: {
+          query: {
+            paginatorInfo: {
+              count: lookupSymbol,
+              total: lookupSymbol,
+            },
+            edges: {
+              node: {
+                id: lookupSymbol,
+                __typename: lookupSymbol,
+                name: lookupSymbol,
+                avatarUrl: lookupSymbol,
+              },
+            },
+          },
+        },
+      },
       { type: "delete" },
       { type: "create" },
       { type: "update" },

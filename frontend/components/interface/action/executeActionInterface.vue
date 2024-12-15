@@ -261,7 +261,6 @@ export default {
                 inputType: inputDef.definition.inputType,
                 label: inputDef.definition.text ?? inputDef.field,
                 hint: inputDef.definition.hint,
-                clearable: true,
                 closeable: false,
                 optional: inputDef.definition.optional,
                 inputRules: inputDef.definition.inputRules,
@@ -302,7 +301,7 @@ export default {
               if (inputObject.inputType === 'value-array') {
                 if (Array.isArray(inputObject.value)) {
                   inputObject.value.forEach((ele) =>
-                    addNestedInputObject(inputObject, ele)
+                    addNestedInputObject(this, inputObject, ele)
                   )
                 }
               }

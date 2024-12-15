@@ -396,7 +396,6 @@ export default {
               inputType: fieldInfo.inputType,
               label: fieldInfo.text ?? fieldKey,
               hint: fieldInfo.hint,
-              clearable: true,
               closeable: false,
               optional: fieldInfo.optional,
               inputRules: fieldInfo.inputRules,
@@ -444,7 +443,7 @@ export default {
             if (inputObject.inputType === 'value-array') {
               if (Array.isArray(inputObject.value)) {
                 inputObject.value.forEach((ele) =>
-                  addNestedInputObject(inputObject, ele)
+                  addNestedInputObject(this, inputObject, ele)
                 )
               }
             }
@@ -549,7 +548,6 @@ export default {
               inputType: fieldInfo.inputType,
               label: fieldInfo.text ?? fieldKey,
               hint: fieldInfo.hint,
-              clearable: true,
               closeable: false,
               optional: fieldInfo.optional,
               inputRules: fieldInfo.inputRules,
@@ -604,7 +602,7 @@ export default {
             if (inputObject.inputType === 'value-array') {
               if (Array.isArray(inputObject.value)) {
                 inputObject.value.forEach((ele) =>
-                  addNestedInputObject(inputObject, ele)
+                  addNestedInputObject(this, inputObject, ele)
                 )
               }
             }

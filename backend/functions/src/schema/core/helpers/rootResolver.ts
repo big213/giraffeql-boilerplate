@@ -19,6 +19,8 @@ import {
 } from "../helpers/typeDef";
 import { capitalizeString, isObject } from "../helpers/shared";
 import { Request } from "express";
+import { RestOptions } from "giraffeql/lib/types";
+import { ExternalQuery } from "../../../types";
 type BaseRootResolverTypes =
   | "get"
   | "getPaginator"
@@ -93,7 +95,7 @@ export function generateBaseRootResolvers({
   service: PaginatedService;
   methods: {
     type: BaseRootResolverTypes;
-    restOptions?: Partial<RootResolverDefinition["restOptions"]>;
+    restOptions?: Partial<RestOptions> & { query: ExternalQuery };
     additionalArgs?: {
       [x in string]: GiraffeqlInputFieldType | GiraffeqlInputTypeLookup;
     };
@@ -102,16 +104,6 @@ export function generateBaseRootResolvers({
   const capitalizedClass = capitalizeString(service.typename);
 
   const rootResolvers = {};
-
-  // if more than one rest method and no defaultQuery, throw err
-  if (
-    Object.values(methods).some((ele) => ele.restOptions) &&
-    !service.defaultQuery
-  ) {
-    throw new GiraffeqlInitializationError({
-      message: `Default REST Query must be defined for '${service.typename}'`,
-    });
-  }
 
   methods.forEach((method) => {
     const capitalizedMethod = capitalizeString(method.type);
@@ -124,7 +116,6 @@ export function generateBaseRootResolvers({
             restOptions: {
               method: "get",
               route: `/${service.typename}/:id`,
-              query: service.defaultQuery,
               ...method.restOptions,
             },
           }),
@@ -151,9 +142,6 @@ export function generateBaseRootResolvers({
               restOptions: {
                 method: "get",
                 route: `/${service.typename}:count`,
-                query: {
-                  count: lookupSymbol,
-                },
                 // argsTransformer: transformGetMultipleRestArgs,
                 ...method.restOptions,
               },
@@ -178,16 +166,6 @@ export function generateBaseRootResolvers({
               restOptions: {
                 method: "get",
                 route: `/${service.typename}`,
-                query: {
-                  paginatorInfo: {
-                    total: lookupSymbol,
-                    count: lookupSymbol,
-                  },
-                  edges: {
-                    cursor: lookupSymbol,
-                    node: service.defaultQuery,
-                  },
-                },
                 argsTransformer: transformGetMultipleRestArgs,
                 ...method.restOptions,
               },
@@ -212,9 +190,6 @@ export function generateBaseRootResolvers({
               restOptions: {
                 method: "get",
                 route: `/${service.typename}:aggregator`,
-                query: {
-                  // count: lookupSymbol,
-                },
                 // argsTransformer: transformGetMultipleRestArgs,
                 ...method.restOptions,
               },
@@ -234,7 +209,6 @@ export function generateBaseRootResolvers({
             restOptions: {
               method: "delete",
               route: `/${service.typename}/:id`,
-              query: service.defaultQuery,
               ...method.restOptions,
             },
           }),
@@ -292,7 +266,6 @@ export function generateBaseRootResolvers({
             restOptions: {
               method: "put",
               route: `/${service.typename}/:id`,
-              query: service.defaultQuery,
               argsTransformer: (req) => {
                 return {
                   item: req.params,
@@ -389,7 +362,6 @@ export function generateBaseRootResolvers({
             restOptions: {
               method: "post",
               route: `/${service.typename}`,
-              query: service.defaultQuery,
               argsTransformer: (req) => {
                 return {
                   ...req.body,

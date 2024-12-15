@@ -41,6 +41,9 @@ export type SqlWhereObject = {
 export type SqlOrderByObject = {
   field: SqlSingleFieldObject | string | Knex.Raw;
   desc?: boolean;
+  options?: {
+    nullsFirst?: boolean;
+  };
 };
 
 export type SqlWhereFieldObject = {
@@ -126,6 +129,9 @@ export type SqlSimpleRawSelectObject = {
 export type SqlSimpleOrderByObject = {
   field: string | Knex.Raw;
   desc?: boolean;
+  options?: {
+    nullsFirst?: boolean;
+  };
 };
 
 export type SqlSelectQuery = {
@@ -997,7 +1003,17 @@ export async function fetchTableRows(sqlQuery: SqlSelectQuery) {
                     standardizeSqlSingleSelectField(orderByObject.field),
                     { ignoreGetter: true }
                   )
-            } ${orderByObject.desc ? "desc NULLS LAST" : "asc NULLS FIRST"}`;
+            } ${
+              orderByObject.desc
+                ? `desc NULLS ${
+                    orderByObject.options?.nullsFirst ? "FIRST" : "LAST"
+                  }`
+                : `asc NULLS ${
+                    orderByObject.options?.nullsFirst === false
+                      ? "LAST"
+                      : "FIRST"
+                  }`
+            }`;
           })
           .join(", ")
       );

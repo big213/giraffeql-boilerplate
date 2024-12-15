@@ -23,12 +23,12 @@ const capitalizedTypename = capitalizeString(typename);
 const capitalizedRouteType = capitalizeString(routeType);
 
 // typename must start with lowercase and only include letters and numbers
-if (!typename.match(/^[a-z][a-zA-Z0-9]+/)) {
+if (!typename.match(/^[a-z]+[a-zA-Z]*/)) {
   throw new Error(`Invalid typename`);
 }
 
 // route type
-if (!routeType.match(/^[a-z][a-zA-Z]+/)) {
+if (!routeType.match(/^[a-z]+[a-zA-Z]*/)) {
   throw new Error(`Invalid routeType`);
 }
 

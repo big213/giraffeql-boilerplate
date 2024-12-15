@@ -15,7 +15,7 @@ export type CrudFilterObject = {
 
 export type NestedInputObject = {
   inputObject: CrudInputObject
-  nestedFieldInfo: any // InputOptions.nestedFields
+  nestedFieldInfo: any // InputOptions.nestedOptions.fields
 }
 
 // used for the genericInput
@@ -27,7 +27,6 @@ export type CrudInputObject = {
   inputType: InputType
   label: string // the label for the input
   hint?: string | null // the hint for the input
-  clearable?: boolean // is the input clearable?
   closeable?: boolean // is the input closeable?
   optional?: boolean // is the input optional?
   inputRules?: any[] // array of validators for the input
@@ -37,7 +36,7 @@ export type CrudInputObject = {
   value: any // the actual value of the input
   inputValue: any // the proxy value of the input
   secondaryInputValue: any // a secondary proxy value, for compound fields (like stripe-pi)
-  getOptions?: (that) => any
+  getOptions?: (that, item) => any
   // function that will get run whenever a file gets added to the input (if it is a file input)
   handleFileAdded?: (that, inputsArray, inputObject, fileRecord) => void
   options: any[] // the options of the input, if it applies

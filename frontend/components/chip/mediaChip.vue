@@ -1,45 +1,43 @@
 <template>
-  <v-flex v-bind="$attrs">
-    <v-card flat>
-      <v-system-bar v-if="draggable || close" lights-out>
-        <v-icon v-if="draggable" @click="void 0">mdi-arrow-all</v-icon>
-        <v-spacer></v-spacer>
-        <v-icon v-if="close" color="error" @click="$emit('handleCloseClick')"
-          >mdi-close</v-icon
-        >
-      </v-system-bar>
-      <v-hover v-slot="{ hover }">
-        <v-img
-          :src="generateFileServingUrl({ bucketPath: file.location })"
-          aspect-ratio="1"
-          contain
-          @click="openFile()"
-        >
-          <div :class="{ 'image-hover': hover }">
-            <div
-              :class="{ 'd-none': !hover }"
-              class="black--text pa-2 fill-height"
-              :title="mediaTitle"
-            >
-              <v-container class="text-center fill-height justify-center pa-0">
-                <v-btn
-                  v-if="downloadable"
-                  icon
-                  :loading="isDownloading"
-                  @click.stop="downloadFile()"
-                  ><v-icon color="black">mdi-download</v-icon></v-btn
-                >
-                <v-btn v-if="openable" icon @click.stop="openFile()"
-                  ><v-icon color="black">mdi-open-in-new</v-icon></v-btn
-                >
-                <div class="truncate-mobile-row">{{ mediaTitle }}</div>
-              </v-container>
-            </div>
+  <v-card flat v-bind="$attrs">
+    <v-system-bar v-if="draggable || close" lights-out>
+      <v-icon v-if="draggable" @click="void 0">mdi-arrow-all</v-icon>
+      <v-spacer></v-spacer>
+      <v-icon v-if="close" color="error" @click="$emit('handleCloseClick')"
+        >mdi-close</v-icon
+      >
+    </v-system-bar>
+    <v-hover v-slot="{ hover }">
+      <v-img
+        :src="generateFileServingUrl({ bucketPath: file.location })"
+        aspect-ratio="1"
+        contain
+        @click="openFile()"
+      >
+        <div :class="{ 'image-hover': hover }">
+          <div
+            :class="{ 'd-none': !hover }"
+            class="black--text pa-2 fill-height"
+            :title="mediaTitle"
+          >
+            <v-container class="text-center fill-height justify-center pa-0">
+              <v-btn
+                v-if="downloadable"
+                icon
+                :loading="isDownloading"
+                @click.stop="downloadFile()"
+                ><v-icon color="black">mdi-download</v-icon></v-btn
+              >
+              <v-btn v-if="openable" icon @click.stop="openFile()"
+                ><v-icon color="black">mdi-open-in-new</v-icon></v-btn
+              >
+              <div class="truncate-mobile-row">{{ mediaTitle }}</div>
+            </v-container>
           </div>
-        </v-img>
-      </v-hover>
-    </v-card>
-  </v-flex>
+        </div>
+      </v-img>
+    </v-hover>
+  </v-card>
 </template>
 
 <script>
@@ -71,6 +69,10 @@ export default {
       default: false,
     },
     draggable: {
+      type: Boolean,
+      default: false,
+    },
+    useFirebaseUrl: {
       type: Boolean,
       default: false,
     },
@@ -128,10 +130,13 @@ export default {
 
     openFile() {
       try {
+        console.log(this.useFirebaseUrl)
         openLink(
-          generateFileServingUrl({
-            bucketPath: this.file.location,
-          })
+          this.useFirebaseUrl
+            ? this.file.downloadUrl
+            : generateFileServingUrl({
+                bucketPath: this.file.location,
+              })
         )
       } catch (err) {
         handleError(this, err)

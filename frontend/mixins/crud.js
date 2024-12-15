@@ -1394,7 +1394,6 @@ export default {
                 inputType: filterObject.inputType ?? fieldInfo.inputType,
                 label: filterObject.text ?? filterObject.field,
                 hint: fieldInfo.hint,
-                clearable: true,
                 closeable: false,
                 optional: false,
                 inputRules: [],

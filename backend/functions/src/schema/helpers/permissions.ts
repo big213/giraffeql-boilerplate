@@ -80,19 +80,6 @@ export function validateQueryFields(query: any, allowedFields: string[]) {
   return false;
 }
 
-export function queryOnlyHasFields(
-  query: StringKeyObject | null | undefined,
-  fields: string[],
-  allFieldsRequired = false
-) {
-  // if query is falsey, return false
-  if (!query) {
-    return false;
-  }
-
-  return objectOnlyHasFields(query, fields, allFieldsRequired);
-}
-
 export function queryExcludesFields(
   query: StringKeyObject | null | undefined,
   fields: string[]
@@ -179,8 +166,8 @@ export function allowIfPublicOrCreatedByCurrentUser(
 ) {
   const prefixStr = fieldPrefix ? `${fieldPrefix}.` : "";
 
-  // (this assumes that args have *not* been processed yet)
   return async function ({ req, args }) {
+    // (this assumes that args have *not* been processed yet)
     const record = await service.getFirstSqlRecord({
       select: [`${prefixStr}createdBy.id`, `${prefixStr}isPublic`],
       where: args,

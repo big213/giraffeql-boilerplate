@@ -1,13 +1,8 @@
 import { LinkService } from "../../core/services";
-import { AccessControlMap, ExternalQuery } from "../../../types";
-import { lookupSymbol } from "giraffeql";
+import { AccessControlMap } from "../../../types";
 
 export class {{ capitalizedTypename }}Service extends LinkService {
   defaultTypename = "{{ typename }}";
-
-  defaultQuery: ExternalQuery = {
-    id: lookupSymbol,
-  };
 
   filterFieldsMap = {};
 

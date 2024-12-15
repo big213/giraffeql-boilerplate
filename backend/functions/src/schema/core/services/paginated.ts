@@ -16,7 +16,7 @@ import {
   SqlInsertQuery,
   SqlRawQuery,
   SqlSelectQuery,
-  SqlSimpleOrderByObject,
+  SqlOrderByObject,
   SqlSimpleRawSelectObject,
   SqlSimpleSelectObject,
   SqlSumQuery,
@@ -26,6 +26,7 @@ import {
   SqlWhereObject,
   sumTableRows,
   updateTableRow,
+  SqlSimpleOrderByObject,
 } from "../helpers/sql";
 import { permissionsCheck } from "../helpers/permissions";
 
@@ -72,8 +73,13 @@ export type FieldObject = {
   field?: string;
 };
 
-export type FieldMap = {
-  [x: string]: FieldObject;
+export type SortFieldObject = FieldObject & {
+  descNullsFirst?: boolean;
+  ascNullsLast?: boolean;
+};
+
+export type FieldMap<T> = {
+  [x: string]: T;
 };
 
 export type SearchFieldObject = {
@@ -114,10 +120,6 @@ export type KeyMap = {
 export class PaginatedService extends BaseService {
   typeDef!: GiraffeqlObjectType;
 
-  defaultQuery: ExternalQuery = {
-    id: lookupSymbol,
-  };
-
   typeDefLookup: GiraffeqlObjectTypeLookupService;
 
   inputTypeDef!: GiraffeqlInputType;
@@ -129,7 +131,7 @@ export class PaginatedService extends BaseService {
 
   rootResolvers!: { [x: string]: GiraffeqlRootResolverType };
 
-  filterFieldsMap: FieldMap = {};
+  filterFieldsMap: FieldMap<FieldObject> = {};
 
   // some combination of these fields need to be able to identify a unique record
   uniqueKeyMap: KeyMap = {
@@ -140,9 +142,9 @@ export class PaginatedService extends BaseService {
 
   primaryKeyLength: number = 8;
 
-  sortFieldsMap: FieldMap = {};
+  sortFieldsMap: FieldMap<SortFieldObject> = {};
 
-  groupByFieldsMap: FieldMap = {};
+  groupByFieldsMap: FieldMap<FieldObject> = {};
 
   aggregatorOptions?: AggregatorOptions;
 
@@ -321,7 +323,7 @@ export class PaginatedService extends BaseService {
     await this.testPermissions("get", {
       req,
       rootResolver,
-      args: id,
+      args: { id },
       query,
       fieldPath,
     });
@@ -351,16 +353,6 @@ export class PaginatedService extends BaseService {
     }
 
     return results[0];
-  }
-
-  // convert any lookup/joined fields into IDs, in place.
-  handleLookupArgs(args: any): Promise<string> {
-    return processLookupArgs(
-      args,
-      new GiraffeqlInputFieldType({
-        type: this.inputTypeDef,
-      })
-    );
   }
 
   @permissionsCheck("getStats")
@@ -507,7 +499,18 @@ export class PaginatedService extends BaseService {
               field: knex.raw(sortByObject.field),
             };
           } else {
-            return sortByObject;
+            const sortFieldOptions = this.sortFieldsMap[sortByObject.field];
+
+            return {
+              ...sortByObject,
+              options: {
+                nullsFirst: sortByObject.desc
+                  ? sortFieldOptions.descNullsFirst
+                  : sortFieldOptions.ascNullsLast === undefined
+                  ? undefined
+                  : sortFieldOptions.ascNullsLast === false,
+              },
+            };
           }
         })
       );
@@ -553,15 +556,21 @@ export class PaginatedService extends BaseService {
 
         const lastValue = parsedCursor.lastValues[index];
 
-        // if null last value, skip
-        if (lastValue === null) return;
+        // are the nulls going to be shown last?
+        const nullsLast =
+          (orderByObject.desc && !orderByObject.options?.nullsFirst) ||
+          (!orderByObject.desc && orderByObject.options?.nullsFirst === false);
+
+        // if null last value *and* nulls are last, skip
+        if (lastValue === null && nullsLast) return;
 
         const whereAndObject: SqlWhereObject = {
           connective: "AND",
           fields: [
             {
               field: orderByObject.field,
-              operator,
+              // if last value is null and nulls are first, always use gt NULL
+              operator: lastValue === null && !nullsLast ? "gt" : operator,
               value:
                 orderByObject.field === "id" ? parsedCursor.lastId : lastValue,
             },

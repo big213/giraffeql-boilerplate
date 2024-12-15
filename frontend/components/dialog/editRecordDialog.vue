@@ -19,6 +19,7 @@
       @close="close()"
       @item-updated="$emit('item-updated')"
       @reload-parent="$emit('reload-parent')"
+      @reload-parent-item="$emit('reload-parent-item')"
     >
       <template v-slot:toolbar>
         <v-toolbar flat color="accent">
@@ -233,7 +234,9 @@ export default {
     },
 
     options() {
-      return this.recordInfo[`${this.computedMode}Options`]
+      return this.computedMode === 'import'
+        ? this.recordInfo.paginationOptions.importOptions
+        : this.recordInfo[`${this.computedMode}Options`]
     },
 
     title() {

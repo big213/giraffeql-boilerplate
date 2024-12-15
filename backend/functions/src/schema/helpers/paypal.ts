@@ -1,5 +1,4 @@
 import { paypalApiUrl, paypalClientId, paypalClientSecret } from "../../config";
-const baseUrl = paypalApiUrl.value();
 
 async function generateAccessToken() {
   try {
@@ -10,7 +9,7 @@ async function generateAccessToken() {
       paypalClientId.value() + ":" + paypalClientSecret.value()
     ).toString("base64");
 
-    const response = await fetch(`${baseUrl}/v1/oauth2/token`, {
+    const response = await fetch(`${paypalApiUrl.value()}/v1/oauth2/token`, {
       method: "POST",
       body: "grant_type=client_credentials",
       headers: {
@@ -34,7 +33,7 @@ export async function executePaypalRequest({
   method: "POST" | "GET";
   payload?;
 }) {
-  const response = await fetch(`${baseUrl}${path}`, {
+  const response = await fetch(`${paypalApiUrl.value()}${path}`, {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${await generateAccessToken()}`,

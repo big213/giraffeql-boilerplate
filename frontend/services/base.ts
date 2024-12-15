@@ -749,7 +749,7 @@ export function populateInputObject(
     if (loadOptions && inputObject.getOptions) {
       inputObject.loading = true
       promisesArray.push(
-        inputObject.getOptions(that).then((res) => {
+        inputObject.getOptions(that, selectedItem).then((res) => {
           // set the options
           inputObject.options = res
 
@@ -833,31 +833,36 @@ export function populateInputObject(
 }
 
 export function addNestedInputObject(
+  that,
   parentInputObject,
   inputValue: any = null
 ) {
   parentInputObject.nestedInputsArray.push(
-    parentInputObject.inputOptions.nestedFields.map((nestedFieldInfo) => {
-      return {
-        nestedFieldInfo,
-        inputObject: {
-          fieldInfo: nestedFieldInfo,
-          hint: nestedFieldInfo.hint,
-          clearable: true,
-          closeable: false,
-          optional: nestedFieldInfo.optional,
-          inputRules: nestedFieldInfo.inputRules,
-          label: nestedFieldInfo.text ?? nestedFieldInfo.key,
-          inputType: nestedFieldInfo.inputType,
-          inputOptions: nestedFieldInfo.inputOptions,
-          value: (inputValue ? inputValue[nestedFieldInfo.key] : null) ?? null,
-          getOptions: nestedFieldInfo.getOptions,
-          options: [],
-          cols: nestedFieldInfo.inputOptions?.cols,
-          nestedInputsArray: [],
-        },
+    parentInputObject.inputOptions.nestedOptions.fields.map(
+      (nestedFieldInfo) => {
+        return {
+          nestedFieldInfo,
+          inputObject: {
+            fieldInfo: nestedFieldInfo,
+            hint: nestedFieldInfo.hint,
+            closeable: false,
+            optional: nestedFieldInfo.optional,
+            inputRules: nestedFieldInfo.inputRules,
+            label: nestedFieldInfo.text ?? nestedFieldInfo.key,
+            inputType: nestedFieldInfo.inputType,
+            inputOptions: nestedFieldInfo.inputOptions,
+            value:
+              (inputValue ? inputValue[nestedFieldInfo.key] : null) ??
+              nestedFieldInfo.default?.(that) ??
+              null,
+            getOptions: nestedFieldInfo.getOptions,
+            options: [],
+            cols: nestedFieldInfo.inputOptions?.cols,
+            nestedInputsArray: [],
+          },
+        }
       }
-    })
+    )
   )
 }
 

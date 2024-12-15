@@ -5,8 +5,8 @@ export default {
   ...generateBaseRootResolvers({
     service: {{ capitalizedTypename }},
     methods: [
-      { type: "get", restOptions: {} },
-      { type: "getPaginator", restOptions: {} },
+      { type: "get" },
+      { type: "getPaginator" },
       { type: "delete" },
       { type: "create" },
       { type: "update" },

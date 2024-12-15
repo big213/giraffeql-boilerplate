@@ -11,30 +11,32 @@
       v-else-if="item.inputType === 'multiple-file'"
       class="mb-4 text-left highlighted-bg"
     >
-      <v-container v-if="filesData.length" fluid grid-list-xs class="px-0">
+      <v-container v-if="filesData.length">
         <Draggable
           v-model="filesData"
-          class="layout row wrap"
+          class="row"
           :disabled="item.readonly"
           @change="handleFilesDataUpdate()"
         >
-          <div v-if="item.inputOptions?.mediaMode">
+          <v-col
+            v-for="(file, index) in filesData"
+            :key="file.id"
+            cols="12"
+            class="py-2"
+            :sm="item.inputOptions?.mediaMode ? 3 : 6"
+          >
             <MediaChip
-              v-for="(file, index) in filesData"
-              :key="file.id"
+              v-if="item.inputOptions?.mediaMode"
               :file="file"
               draggable
               close
               openable
               :readonly="item.readonly"
-              class="xs3"
+              :use-firebase-url="item.inputOptions?.useFirebaseUrl"
               @handleCloseClick="removeFileByIndex(index)"
             ></MediaChip>
-          </div>
-          <div v-else>
             <FileChip
-              v-for="(file, index) in filesData"
-              :key="file.id"
+              v-else
               :file="file"
               downloadable
               small
@@ -44,25 +46,26 @@
               class="mr-2"
               @handleCloseClick="removeFileByIndex(index)"
             ></FileChip>
-          </div>
+          </v-col>
         </Draggable>
       </v-container>
       <div v-cloak @drop.prevent="handleMultipleDropFile" @dragover.prevent>
         <v-file-input
           v-model="tempInput"
-          :label="
-            item.label +
-            ' (Drag and Drop)' +
-            (item.optional ? ' (optional)' : '') +
-            (limit ? ` (Limit ${limit})` : '')
-          "
+          :label="`${item.label} (Drag and Drop)${
+            item.optional ? ` (optional)` : ''
+          }${
+            item.inputOptions?.limit
+              ? ` (Limit ${item.inputOptions.limit})`
+              : ''
+          }`"
           multiple
           :accept="acceptedFiles"
           :hint="item.hint"
           :loading="item.loading"
           persistent-hint
           :clearable="false"
-          @change="handleMultipleFileInputChange(item)"
+          @change="handleMultipleFileInputChange"
         >
           <template v-slot:selection="{ file, text }">
             <v-chip
@@ -71,9 +74,14 @@
               color="primary"
               close
               close-icon="mdi-close-outline"
-              @click:close="handleMultipleFileInputClear(item, file)"
+              @click:close="handleMultipleFileInputClear(file)"
             >
-              {{ text }} - {{ renderFileUploadProgress(file) }}%
+              {{ text }}
+              <v-progress-circular
+                indeterminate
+                class="ml-2"
+                size="12"
+              ></v-progress-circular>
             </v-chip>
           </template>
         </v-file-input>
@@ -220,6 +228,20 @@
       @click:append="handleClear()"
       @click:append-outer="handleClose()"
     ></v-switch>
+    <v-checkbox
+      v-else-if="item.inputType === 'checkbox'"
+      v-model="item.value"
+      :label="item.label + (item.optional ? ' (optional)' : '')"
+      :readonly="isReadonly"
+      :append-icon="appendIcon"
+      :append-outer-icon="item.closeable ? 'mdi-close' : null"
+      :hint="item.hint"
+      :loading="item.loading"
+      persistent-hint
+      v-on="$listeners"
+      @click:append="handleClear()"
+      @click:append-outer="handleClose()"
+    ></v-checkbox>
     <v-menu
       v-else-if="item.inputType === 'datepicker'"
       v-model="item.focused"
@@ -565,7 +587,8 @@
                   <v-col cols="12" class="pa-0 pb-1" key="-1">
                     <v-system-bar lights-out>
                       <v-icon @click="void 0">mdi-arrow-all</v-icon>
-                      Entry #{{ i + 1 }}
+                      {{ item.inputOptions.nestedOptions.entryName ?? 'Entry' }}
+                      #{{ i + 1 }}
                       <v-spacer></v-spacer>
                       <v-icon @click="removeRow(i)" color="error"
                         >mdi-close</v-icon
@@ -586,14 +609,17 @@
                 </v-row>
               </Draggable>
             </div>
-            <div v-else class="pb-3">No entries</div>
+            <div v-else class="pb-3">
+              No
+              {{ item.inputOptions.nestedOptions.pluralEntryName ?? 'Entries' }}
+            </div>
           </v-col>
         </v-row>
         <v-row v-if="!isReadonly" @click="addRow()">
           <v-col cols="12" class="pa-0">
             <v-btn small block>
               <v-icon left>mdi-plus</v-icon>
-              Add Entry
+              Add {{ item.inputOptions.nestedOptions.entryName ?? 'Entry' }}
             </v-btn>
           </v-col>
         </v-row>
@@ -918,10 +944,6 @@ export default {
       return this.item.inputOptions?.contentType
     },
 
-    limit() {
-      return this.item.inputOptions?.limit
-    },
-
     appendIcon() {
       return this.item.value === null
         ? hideNullInputIcon
@@ -929,7 +951,7 @@ export default {
           : 'mdi-null'
         : this.isReadonly
         ? null
-        : this.item.clearable
+        : this.item.inputOptions?.clearable
         ? 'mdi-close'
         : null
     },
@@ -1168,7 +1190,7 @@ export default {
     },
 
     addRow() {
-      addNestedInputObject(this.item)
+      addNestedInputObject(this, this.item)
 
       // need to load the options
       populateInputObject(this, {
@@ -1253,29 +1275,38 @@ export default {
       this.item.value = this.filesData.map((ele) => ele.id)
     },
 
-    handleMultipleFileInputClear(inputObject, file) {
+    handleMultipleFileInputClear(file) {
+      // fetch the file object
       const fileUploadObject =
         this.filesProcessingQueue.get(file).fileUploadObject
 
-      const index = inputObject.inputValue.indexOf(fileUploadObject)
+      // if not exists for some reason, do nothing
+      if (!fileUploadObject) return
+
+      // cancel the upload task
+      fileUploadObject.uploadTask.cancel()
+
+      // remove from the tempInputs
+      const index = this.tempInput.indexOf(fileUploadObject.file)
 
       if (index !== -1) {
-        inputObject.inputValue[index].uploadTask.cancel()
-        inputObject.inputValue.splice(index, 1)
+        this.tempInput.splice(index, 1)
       }
 
+      // remove from filesProcessingQueue
+      this.filesProcessingQueue.delete(file)
+
       // if no files left, set loading to false
-      if (inputObject.inputValue.length < 1) {
-        inputObject.loading = false
+      if (this.filesProcessingQueue.size < 1) {
+        this.item.loading = false
       }
     },
 
     handleMultipleDropFile(e) {
-      if (!this.tempInput) this.tempInput = []
+      const newFiles = Array.from(e.dataTransfer.files)
 
-      this.tempInput.push(...Array.from(e.dataTransfer.files))
-
-      this.handleMultipleFileInputChange(this.item)
+      // process the files queue
+      this.processFilesQueue(newFiles)
     },
 
     handleDropEvent(e) {
@@ -1302,22 +1333,28 @@ export default {
       }
     },
 
-    handleMultipleFileInputChange(inputObject, removeFromInput = true) {
-      this.$set(inputObject, 'loading', true)
+    handleMultipleFileInputChange(files) {
+      this.processFilesQueue(files)
+    },
+
+    processFilesQueue(newFiles) {
       try {
-        // if the files processing + the files already uploaded >= limit, throw err and clear
+        // if the files processing + the files already uploaded + # of new files >= limit, throw err and clear
+        const limit = this.item.inputOptions?.limit
         if (
-          this.limit &&
-          this.filesProcessingQueue.size + this.filesData.length >= this.limit
+          limit &&
+          this.filesProcessingQueue.size +
+            this.filesData.length +
+            newFiles.length >
+            limit
         ) {
-          // also clear the files
+          this.item.loading = false
+          // clear the temp input
           this.tempInput = []
-          inputObject.loading = false
           throw new Error(`Adding these files would exceed the file limit`)
         }
-        // tempInput expected to be array of Files
-        this.tempInput.forEach((file) => {
-          // add each file to the processing queue if the file is not already in there
+
+        newFiles.forEach((file) => {
           if (!this.filesProcessingQueue.has(file)) {
             this.filesProcessingQueue.set(file, {
               processed: false,
@@ -1326,25 +1363,28 @@ export default {
           }
         })
 
+        // sync the inputs
+        this.tempInput = [...this.filesProcessingQueue.keys()]
+
         // process each file in the processing queue if not already processing
         this.filesProcessingQueue.forEach((fileProcessObject, file) => {
           if (fileProcessObject.processed) return
+
+          this.$set(this.item, 'loading', true)
 
           fileProcessObject.processed = true
 
           uploadFile(
             this,
             fileProcessObject.fileUploadObject,
-            false,
+            this.item.inputOptions?.useFirebaseUrl,
             (fileUploadObject) => {
               // add finished fileRecord to filesData
               this.filesData.push(fileUploadObject.fileRecord)
 
               // remove file from input
-              if (removeFromInput) {
-                const index = this.tempInput.indexOf(file)
-                if (index !== -1) this.tempInput.splice(index, 1)
-              }
+              const index = this.tempInput.indexOf(file)
+              if (index !== -1) this.tempInput.splice(index, 1)
 
               // remove file from the queue by the key (filename)
               this.filesProcessingQueue.delete(file)
@@ -1352,13 +1392,13 @@ export default {
               // emit the file to parent (in case it is needed)
               this.$emit(
                 'file-added',
-                inputObject,
+                this.item,
                 fileProcessObject.fileUploadObject.fileRecord
               )
 
               // if no files left, finish up
               if (this.tempInput.length < 1) {
-                inputObject.loading = false
+                this.item.loading = false
                 this.handleFilesDataUpdate()
                 this.$notifier.showSnackbar({
                   message: 'File Uploaded',
@@ -1652,6 +1692,7 @@ export default {
       switch (this.item.inputType) {
         case 'multiple-file':
           this.filesData = []
+          this.tempInput = []
           this.filesProcessingQueue = new Map()
           this.loadFiles(this.item)
           break
