@@ -662,12 +662,24 @@ export const viewportToPixelsMap = {
   xl: +Infinity,
 }
 
-export function lookupFieldInfo(recordInfo, field: string) {
-  const fieldInfo = recordInfo.fields[field]
+export function lookupInputField(recordInfo, field: string) {
+  const fieldInfo = recordInfo.inputFields[field]
 
   // field unknown, abort
   if (!fieldInfo)
-    throw new Error(`Unknown field on ${recordInfo.typename}: '${field}'`)
+    throw new Error(`Unknown input field on ${recordInfo.typename}: '${field}'`)
+
+  return fieldInfo
+}
+
+export function lookupRenderField(recordInfo, field: string) {
+  const fieldInfo = recordInfo.renderFields[field]
+
+  // field unknown, abort
+  if (!fieldInfo)
+    throw new Error(
+      `Unknown render field on ${recordInfo.typename}: '${field}'`
+    )
 
   return fieldInfo
 }
@@ -687,7 +699,7 @@ export function populateInputObject(
   }
 ) {
   const promisesArray: Promise<any>[] = []
-  if (inputObject.inputType === 'value-array') {
+  if (inputObject.inputOptions?.inputType === 'value-array') {
     // if it is a value-array, recursively process the nestedValueArray
     inputObject.nestedInputsArray.forEach((nestedInputArray) => {
       nestedInputArray.forEach((nestedInputObject) => {
@@ -704,8 +716,8 @@ export function populateInputObject(
   } else {
     // for stripe-pi, need to fetch the stripeAccount and clientSecret
     if (
-      inputObject.inputType === 'stripe-pi' ||
-      inputObject.inputType === 'stripe-pi-editable'
+      inputObject.inputOptions?.inputType === 'stripe-pi' ||
+      inputObject.inputOptions?.inputType === 'stripe-pi-editable'
     ) {
       if (!inputObject.inputOptions?.paymentOptions) {
         throw new Error(`Stripe payments misconfigured`)
@@ -746,17 +758,17 @@ export function populateInputObject(
       inputObject.secondaryInputValue = initialQuantity
     }
 
-    if (loadOptions && inputObject.getOptions) {
+    if (loadOptions && inputObject.inputOptions?.getOptions) {
       inputObject.loading = true
       promisesArray.push(
-        inputObject.getOptions(that, selectedItem).then((res) => {
+        inputObject.inputOptions.getOptions(that, selectedItem).then((res) => {
           // set the options
           inputObject.options = res
 
           // if autocomplete or combobox, attempt to translate the inputObject.value based on the options
           if (
-            inputObject.inputType === 'type-autocomplete' ||
-            inputObject.inputType === 'type-combobox'
+            inputObject.inputOptions?.inputType === 'type-autocomplete' ||
+            inputObject.inputOptions?.inputType === 'type-combobox'
           ) {
             // if the inputObject.value is an object, must already be selected (no need to convert)
             if (!isObject(inputObject.value)) {
@@ -765,7 +777,9 @@ export function populateInputObject(
                   (ele) => ele.id === inputObject.value
                 ) ?? null
             }
-          } else if (inputObject.inputType === 'type-autocomplete-multiple') {
+          } else if (
+            inputObject.inputOptions?.inputType === 'type-autocomplete-multiple'
+          ) {
             // for multiple types, inputObject.value should contain the values already
             inputObject.value = inputObject.value ?? []
           }
@@ -778,7 +792,7 @@ export function populateInputObject(
     // if no getOptions and has a typename, populate the options/value with the specific entry (if not already populated previously, i.e. converted from string to obj)
     if (
       inputObject.inputOptions?.typename &&
-      !inputObject.getOptions &&
+      !inputObject.inputOptions.getOptions &&
       (!inputObject.value || !isObject(inputObject.value))
     ) {
       const originalFieldValue = inputObject.value
@@ -844,18 +858,15 @@ export function addNestedInputObject(
           nestedFieldInfo,
           inputObject: {
             fieldInfo: nestedFieldInfo,
-            hint: nestedFieldInfo.hint,
             closeable: false,
-            optional: nestedFieldInfo.optional,
-            inputRules: nestedFieldInfo.inputRules,
-            label: nestedFieldInfo.text ?? nestedFieldInfo.key,
-            inputType: nestedFieldInfo.inputType,
+            label:
+              nestedFieldInfo.text ??
+              camelCaseToCapitalizedString(nestedFieldInfo.key),
             inputOptions: nestedFieldInfo.inputOptions,
             value:
               (inputValue ? inputValue[nestedFieldInfo.key] : null) ??
-              nestedFieldInfo.default?.(that) ??
+              nestedFieldInfo.inputOptions?.getInitialValue?.(that) ??
               null,
-            getOptions: nestedFieldInfo.getOptions,
             options: [],
             cols: nestedFieldInfo.inputOptions?.cols,
             nestedInputsArray: [],
@@ -870,21 +881,21 @@ export async function processQuery(
   that,
   recordInfo,
   fields: string[],
-  firstFieldOnly = false
+  renderMode = false
 ) {
-  // create a map field -> serializeFn for fast serialization
-  const serializeMap = new Map()
-
   // build the query async
   const query = { id: true, __typename: true }
   for (const field of fields) {
     // skip if key is __typename
     if (field === '__typename') continue
 
-    const fieldInfo = lookupFieldInfo(recordInfo, field)
+    const fieldInfo = (renderMode ? lookupRenderField : lookupInputField)(
+      recordInfo,
+      field
+    )
 
-    // skip if args.loadIf provided and it returns false
-    if (fieldInfo.args?.loadIf && !fieldInfo.args.loadIf(that)) {
+    // skip if loadIf provided and it returns false
+    if (fieldInfo.loadIf && !fieldInfo.loadIf(that)) {
       continue
     }
 
@@ -892,11 +903,7 @@ export async function processQuery(
 
     // in export mode, generally will only be fetching the first field
     if (fieldInfo.fields) {
-      if (firstFieldOnly) {
-        fieldsToAdd.add(fieldInfo.fields[0])
-      } else {
-        fieldInfo.fields.forEach((field) => fieldsToAdd.add(field))
-      }
+      fieldInfo.fields.forEach((field) => fieldsToAdd.add(field))
     } else {
       fieldsToAdd.add(field)
     }
@@ -907,25 +914,16 @@ export async function processQuery(
 
       // add a serializer if there is one for the field
       if (currentFieldInfo) {
-        // skip if args.loadIf provided and it returns false
-        if (
-          currentFieldInfo.args?.loadIf &&
-          !currentFieldInfo.args.loadIf(that)
-        ) {
+        // skip if loadIf provided and it returns false
+        if (currentFieldInfo.loadIf && !currentFieldInfo.loadIf(that)) {
           return
         }
 
-        if (currentFieldInfo.serialize) {
-          serializeMap.set(field, currentFieldInfo.serialize)
-        }
-
         // if field has args, process them
-        if (
-          currentFieldInfo.args &&
-          (!currentFieldInfo.args.loadIf || currentFieldInfo.args.loadIf(that))
-        ) {
-          query[`${currentFieldInfo.args.path}.__args`] =
-            await currentFieldInfo.args.getArgs(that)
+        if (currentFieldInfo.args) {
+          currentFieldInfo.args.forEach((argObject) => {
+            query[`${argObject.path}.__args`] = argObject.getArgs(that)
+          })
         }
       }
 
@@ -933,18 +931,14 @@ export async function processQuery(
     })
 
     // if main fieldInfo has args and passes loadIf, process them
-    if (
-      fieldInfo.args &&
-      (!fieldInfo.args.loadIf || fieldInfo.args.loadIf(that))
-    ) {
-      query[`${fieldInfo.args.path}.__args`] = await fieldInfo.args.getArgs(
-        that
-      )
+    if (fieldInfo.args) {
+      fieldInfo.args.forEach((argObject) => {
+        query[`${argObject.path}.__args`] = argObject.getArgs(that)
+      })
     }
   }
 
   return {
-    serializeMap,
     query: {
       ...collapseObject(query),
     },
@@ -968,15 +962,10 @@ export function kebabToCamelCase(str: string) {
 }
 
 export function generateFilterByObjectArray(
-  crudFilterObjects: CrudRawFilterObject[],
-  recordInfo: any
+  crudFilterObjects: CrudRawFilterObject[]
 ) {
   const filterByObject = crudFilterObjects.reduce((total, rawFilterObject) => {
-    const fieldInfo = lookupFieldInfo(recordInfo, rawFilterObject.field)
-
-    const primaryField = fieldInfo.fields
-      ? fieldInfo.fields[0]
-      : rawFilterObject.field
+    const primaryField = rawFilterObject.field
 
     if (!total[primaryField]) total[primaryField] = {}
 
@@ -1011,10 +1000,7 @@ export function generateFilterByObjectArray(
       }
     }
 
-    // apply parseValue function, if any
-    total[primaryField][rawFilterObject.operator] = fieldInfo.parseValue
-      ? fieldInfo.parseValue(value)
-      : value
+    total[primaryField][rawFilterObject.operator] = value
 
     // always delete if n(in) an empty array, which would throw an API error
     if (
@@ -1037,7 +1023,7 @@ export function generateFilterByObjectArray(
 export async function processInputObject(that, inputObject, inputObjectArray) {
   let value
 
-  if (inputObject.inputType === 'value-array') {
+  if (inputObject.inputOptions?.inputType === 'value-array') {
     // if it is a value array, need to assemble the value as an array
     value = []
     for (const nestedInputArray of inputObject.nestedInputsArray) {
@@ -1054,7 +1040,7 @@ export async function processInputObject(that, inputObject, inputObjectArray) {
   } else {
     // if the fieldInfo.inputType === 'type-combobox', it came from a combo box. need to handle accordingly
     if (
-      inputObject.inputType === 'type-combobox' &&
+      inputObject.inputOptions?.inputType === 'type-combobox' &&
       inputObject.inputOptions?.typename
     ) {
       // if value is string OR value is null and inputValue is string, create the object
@@ -1083,10 +1069,11 @@ export async function processInputObject(that, inputObject, inputObjectArray) {
         })
 
         // force reload of memoized options, if any
-        inputObject.getOptions &&
-          inputObject
+        if (inputObject.inputOptions.getOptions) {
+          inputObject.inputOptions
             .getOptions(that, true)
             .then((res) => (inputObject.options = res))
+        }
 
         value = results.id
       } else if (inputObject.value === null) {
@@ -1095,9 +1082,9 @@ export async function processInputObject(that, inputObject, inputObjectArray) {
         value = inputObject.value.id
       }
     } else if (
-      inputObject.inputType === 'type-autocomplete' ||
-      inputObject.inputType === 'type-autocomplete-multiple' ||
-      inputObject.inputType === 'select'
+      inputObject.inputOptions?.inputType === 'type-autocomplete' ||
+      inputObject.inputOptions?.inputType === 'type-autocomplete-multiple' ||
+      inputObject.inputOptions?.inputType === 'select'
     ) {
       // as we are using return-object option, the entire object will be returned for autocompletes/selects, unless it is null or a number
       value = isObject(inputObject.value)
@@ -1117,8 +1104,8 @@ export async function processInputObject(that, inputObject, inputObjectArray) {
     if (value === '__null') value = null
   }
 
-  return inputObject.fieldInfo?.parseValue
-    ? inputObject.fieldInfo.parseValue(value)
+  return inputObject.inputOptions?.parseValue
+    ? inputObject.inputOptions.parseValue(value)
     : value
 }
 
@@ -1226,17 +1213,11 @@ export function loadTypeSearchResults(that, inputObject) {
         first: 20,
         search: {
           query: inputObject.inputValue?.trim(), // trim spaces
-          params: inputObject.fieldInfo.inputOptions?.searchParams?.(
-            that,
-            that.allItems
-          ),
+          params: inputObject.inputOptions?.searchParams?.(that, that.allItems),
         },
         filterBy: [],
         sortBy: [],
-        ...inputObject.fieldInfo.inputOptions?.lookupParams?.(
-          that,
-          that.allItems
-        ),
+        ...inputObject.inputOptions?.lookupParams?.(that, that.allItems),
       },
     },
   }).then((results: any) => results.edges.map((edge) => edge.node))
@@ -1322,4 +1303,20 @@ export function getPriceObjectFromDiscountScheme({
 export function redirectToLogin(that, redirectPath?: string) {
   that.$store.commit('auth/setRedirectPath', redirectPath ?? null)
   that.$router.push('/login')
+}
+
+export function camelCaseToCapitalizedString(camelCaseString: string) {
+  // Add a space before each uppercase letter and convert all letters to lowercase
+  // also ignore any trailing ".id"
+  const spacedString = camelCaseString
+    .replace(/\.id$/, '')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+
+  // Split the string into words, capitalize the first letter of each word, and join them back
+  const capitalizedString = spacedString
+    .split(' ') // Split the string into an array of words
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()) // Capitalize each word
+    .join(' ') // Join the words back into a single string
+
+  return capitalizedString
 }

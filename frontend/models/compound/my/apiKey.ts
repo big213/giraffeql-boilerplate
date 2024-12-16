@@ -1,22 +1,7 @@
 import type { RecordInfo } from '~/types'
-import { ApiKey } from '../../base'
+import { convertViewDefinition } from '~/services/view'
+import { myViews } from '~/models2/views'
 
-export const MyApiKey: RecordInfo<'apiKey'> = {
-  ...ApiKey,
-  routeType: 'my',
-  title: `My ${ApiKey.pluralName}`,
-  paginationOptions: {
-    ...ApiKey.paginationOptions!,
-    defaultLockedFilters: (that) => {
-      return [
-        {
-          field: 'user',
-          operator: 'eq',
-          value: that.$store.getters['auth/user'].id,
-        },
-      ]
-    },
-    downloadOptions: undefined,
-  },
-  enterOptions: {},
-}
+export const MyApiKey: RecordInfo<'apiKey'> = convertViewDefinition(
+  myViews.ApiKey
+)

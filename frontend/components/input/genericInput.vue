@@ -1,14 +1,37 @@
 <template>
   <div>
+    <v-text-field
+      v-if="!item.inputOptions || item.inputOptions.inputType === 'text'"
+      v-model="item.value"
+      :label="`${item.label}${
+        item.inputOptions?.optional ? ` (optional)` : ''
+      }`"
+      :readonly="isReadonly"
+      :rules="item.inputOptions?.inputRules"
+      :hint="item.inputOptions?.hint"
+      :loading="item.loading"
+      :append-icon="appendIcon"
+      :append-outer-icon="item.closeable ? 'mdi-close' : null"
+      persistent-hint
+      filled
+      dense
+      class="py-0"
+      v-bind="inputParams"
+      v-on="$listeners"
+      @click:append="handleClear()"
+      @keyup.enter="triggerSubmit()"
+      @click:append-outer="handleClose()"
+      @input="triggerInput()"
+    ></v-text-field>
     <div
-      v-if="item.inputType === 'html'"
+      v-else-if="item.inputOptions?.inputType === 'html'"
       class="mb-4"
       style="background-color: white; color: black"
     >
       <wysiwyg v-model="item.value" />
     </div>
     <div
-      v-else-if="item.inputType === 'multiple-file'"
+      v-else-if="item.inputOptions?.inputType === 'multiple-file'"
       class="mb-4 text-left highlighted-bg"
     >
       <v-container v-if="filesData.length">
@@ -53,7 +76,7 @@
         <v-file-input
           v-model="tempInput"
           :label="`${item.label} (Drag and Drop)${
-            item.optional ? ` (optional)` : ''
+            item.inputOptions.optional ? ` (optional)` : ''
           }${
             item.inputOptions?.limit
               ? ` (Limit ${item.inputOptions.limit})`
@@ -61,7 +84,7 @@
           }`"
           multiple
           :accept="acceptedFiles"
-          :hint="item.hint"
+          :hint="item.inputOptions.hint"
           :loading="item.loading"
           persistent-hint
           :clearable="false"
@@ -88,7 +111,7 @@
       </div>
     </div>
     <div
-      v-else-if="item.inputType === 'single-file-url'"
+      v-else-if="item.inputOptions?.inputType === 'single-file-url'"
       class="mb-4 highlighted-bg"
       :class="isReadonly ? 'text-center' : 'd-flex text-left'"
       v-cloak
@@ -122,10 +145,12 @@
       />
       <v-text-field
         v-model="item.value"
-        :label="item.label + (item.optional ? ' (optional)' : '')"
+        :label="`${item.label}${
+          item.inputOptions.optional ? ` (optional)` : ''
+        }`"
         :readonly="isReadonly"
-        :rules="item.inputRules"
-        :hint="item.hint"
+        :rules="item.inputOptions.inputRules"
+        :hint="item.inputOptions.hint"
         :disabled="item.loading"
         :loading="item.loading"
         :append-icon="appendIcon"
@@ -141,7 +166,7 @@
       ></v-text-field>
     </div>
     <div
-      v-else-if="item.inputType === 'single-image-url'"
+      v-else-if="item.inputOptions?.inputType === 'single-image-url'"
       class="mb-4 highlighted-bg text-center"
       v-cloak
       @drop.prevent="handleDropEvent"
@@ -179,10 +204,12 @@
         />
         <v-text-field
           v-model="item.value"
-          :label="item.label + (item.optional ? ' (optional)' : '')"
+          :label="`${item.label}${
+            item.inputOptions.optional ? ` (optional)` : ''
+          }`"
           :readonly="isReadonly"
-          :rules="item.inputRules"
-          :hint="item.hint"
+          :rules="item.inputOptions.inputRules"
+          :hint="item.inputOptions.hint"
           :loading="item.loading"
           :append-icon="appendIcon"
           :append-outer-icon="item.closeable ? 'mdi-close' : null"
@@ -198,30 +225,30 @@
       </div>
     </div>
     <v-textarea
-      v-else-if="item.inputType === 'textarea'"
+      v-else-if="item.inputOptions?.inputType === 'textarea'"
       v-model="item.value"
       filled
       rows="3"
       dense
       class="py-0"
-      :label="item.label + (item.optional ? ' (optional)' : '')"
+      :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
       :readonly="isReadonly"
       :append-icon="appendIcon"
       :append-outer-icon="item.closeable ? 'mdi-close' : null"
-      :hint="item.hint"
+      :hint="item.inputOptions.hint"
       :loading="item.loading"
       persistent-hint
       @click:append="handleClear()"
       @click:append-outer="handleClose()"
     ></v-textarea>
     <v-switch
-      v-else-if="item.inputType === 'switch'"
+      v-else-if="item.inputOptions?.inputType === 'switch'"
       v-model="item.value"
-      :label="item.label + (item.optional ? ' (optional)' : '')"
+      :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
       :readonly="isReadonly"
       :append-icon="appendIcon"
       :append-outer-icon="item.closeable ? 'mdi-close' : null"
-      :hint="item.hint"
+      :hint="item.inputOptions.hint"
       :loading="item.loading"
       persistent-hint
       v-on="$listeners"
@@ -229,13 +256,13 @@
       @click:append-outer="handleClose()"
     ></v-switch>
     <v-checkbox
-      v-else-if="item.inputType === 'checkbox'"
+      v-else-if="item.inputOptions?.inputType === 'checkbox'"
       v-model="item.value"
-      :label="item.label + (item.optional ? ' (optional)' : '')"
+      :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
       :readonly="isReadonly"
       :append-icon="appendIcon"
       :append-outer-icon="item.closeable ? 'mdi-close' : null"
-      :hint="item.hint"
+      :hint="item.inputOptions.hint"
       :loading="item.loading"
       persistent-hint
       v-on="$listeners"
@@ -243,7 +270,7 @@
       @click:append-outer="handleClose()"
     ></v-checkbox>
     <v-menu
-      v-else-if="item.inputType === 'datepicker'"
+      v-else-if="item.inputOptions?.inputType === 'datepicker'"
       v-model="item.focused"
       :close-on-content-click="false"
       :nudge-right="40"
@@ -254,11 +281,13 @@
       <template v-slot:activator="{ on, attrs }">
         <v-text-field
           v-model="item.value"
-          :label="item.label + (item.optional ? ' (optional)' : '')"
+          :label="`${item.label}${
+            item.inputOptions.optional ? ` (optional)` : ''
+          }`"
           :readonly="isReadonly"
           :append-icon="appendIcon"
           :append-outer-icon="item.closeable ? 'mdi-close' : null"
-          :hint="item.hint"
+          :hint="item.inputOptions.hint"
           :loading="item.loading"
           persistent-hint
           filled
@@ -280,12 +309,12 @@
       ></v-date-picker>
     </v-menu>
     <v-text-field
-      v-else-if="item.inputType === 'datetimepicker'"
+      v-else-if="item.inputOptions?.inputType === 'datetimepicker'"
       v-model="tempInput"
-      :label="item.label + (item.optional ? ' (optional)' : '')"
+      :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
       :readonly="isReadonly"
-      :rules="item.inputRules"
-      :hint="item.hint"
+      :rules="item.inputOptions.inputRules"
+      :hint="item.inputOptions.hint"
       :loading="item.loading"
       :append-icon="appendIcon"
       :append-outer-icon="item.closeable ? 'mdi-close' : null"
@@ -301,23 +330,25 @@
       @input="handleDateTimeInputChange($event) || triggerInput()"
     ></v-text-field>
     <v-combobox
-      v-else-if="item.inputType === 'type-combobox'"
+      v-else-if="item.inputOptions?.inputType === 'type-combobox'"
       ref="combobox"
       v-model="item.value"
       :search-input.sync="item.inputValue"
       :items="item.options"
       :item-text="item.inputOptions.hasName ? 'name' : 'id'"
       item-value="id"
-      :label="item.label + (item.optional ? ' (optional)' : '')"
+      :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
       :readonly="isReadonly"
       :append-icon="appendIcon"
       :append-outer-icon="item.closeable ? 'mdi-close' : null"
-      :hint="item.hint"
+      :hint="item.inputOptions.hint"
       :loading="item.loading"
       persistent-hint
       filled
       hide-no-data
-      :no-filter="!item.getOptions || item.inputOptions?.loadServerResults"
+      :no-filter="
+        !item.inputOptions.getOptions || item.inputOptions?.loadServerResults
+      "
       class="py-0"
       :chips="item.inputOptions?.hasAvatar"
       v-on="$listeners"
@@ -372,26 +403,28 @@
     </v-combobox>
     <v-autocomplete
       v-else-if="
-        item.inputType === 'type-autocomplete' ||
-        item.inputType === 'type-autocomplete-multiple'
+        item.inputOptions?.inputType === 'type-autocomplete' ||
+        item.inputOptions?.inputType === 'type-autocomplete-multiple'
       "
       v-model="item.value"
       :search-input.sync="item.inputValue"
       :items="item.options"
-      :multiple="item.inputType === 'type-autocomplete-multiple'"
+      :multiple="item.inputOptions?.inputType === 'type-autocomplete-multiple'"
       :item-text="item.inputOptions.hasName ? 'name' : 'id'"
       item-value="id"
-      :label="item.label + (item.optional ? ' (optional)' : '')"
+      :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
       :readonly="isReadonly"
       :append-icon="appendIcon"
       :append-outer-icon="item.closeable ? 'mdi-close' : null"
-      :hint="item.hint"
+      :hint="item.inputOptions.hint"
       :loading="item.loading"
       persistent-hint
       filled
       hide-no-data
       return-object
-      :no-filter="!item.getOptions || item.inputOptions?.loadServerResults"
+      :no-filter="
+        !item.inputOptions.getOptions || item.inputOptions?.loadServerResults
+      "
       class="py-0"
       :chips="item.inputOptions?.hasAvatar"
       v-on="$listeners"
@@ -445,21 +478,23 @@
       </template>
     </v-autocomplete>
     <v-autocomplete
-      v-else-if="item.inputType === 'text-autocomplete'"
+      v-else-if="item.inputOptions?.inputType === 'text-autocomplete'"
       v-model="item.value"
       :search-input.sync="item.inputValue"
       :items="item.options"
-      :label="item.label + (item.optional ? ' (optional)' : '')"
+      :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
       :readonly="isReadonly"
       :append-icon="appendIcon"
       :append-outer-icon="item.closeable ? 'mdi-close' : null"
-      :hint="item.hint"
+      :hint="item.inputOptions.hint"
       :loading="item.loading"
       persistent-hint
       filled
       hide-no-data
       return-object
-      :no-filter="!item.getOptions || item.inputOptions?.loadServerResults"
+      :no-filter="
+        !item.inputOptions.getOptions || item.inputOptions?.loadServerResults
+      "
       class="py-0"
       v-on="$listeners"
       @update:search-input="handleSearchUpdate(item)"
@@ -471,21 +506,23 @@
     </v-autocomplete>
 
     <v-combobox
-      v-else-if="item.inputType === 'text-combobox'"
+      v-else-if="item.inputOptions?.inputType === 'text-combobox'"
       ref="combobox"
       v-model="item.value"
       :search-input.sync="item.inputValue"
       :items="item.options"
-      :label="item.label + (item.optional ? ' (optional)' : '')"
+      :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
       :readonly="isReadonly"
       :append-icon="appendIcon"
       :append-outer-icon="item.closeable ? 'mdi-close' : null"
-      :hint="item.hint"
+      :hint="item.inputOptions.hint"
       :loading="item.loading"
       persistent-hint
       filled
       hide-no-data
-      :no-filter="!item.getOptions || item.inputOptions?.loadServerResults"
+      :no-filter="
+        !item.inputOptions.getOptions || item.inputOptions?.loadServerResults
+      "
       class="py-0"
       v-on="$listeners"
       @update:search-input="handleSearchUpdate(item)"
@@ -497,17 +534,18 @@
     </v-combobox>
     <v-select
       v-else-if="
-        item.inputType === 'select' || item.inputType === 'multiple-select'
+        item.inputOptions?.inputType === 'select' ||
+        item.inputOptions?.inputType === 'multiple-select'
       "
       v-model="item.value"
       :items="item.options"
-      :multiple="item.inputType === 'multiple-select'"
+      :multiple="item.inputOptions?.inputType === 'multiple-select'"
       filled
-      :label="item.label + (item.optional ? ' (optional)' : '')"
+      :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
       :readonly="isReadonly"
       :append-icon="appendIcon"
       :append-outer-icon="item.closeable ? 'mdi-close' : null"
-      :hint="item.hint"
+      :hint="item.inputOptions.hint"
       :loading="item.loading"
       persistent-hint
       return-object
@@ -562,14 +600,23 @@
         </v-chip>
       </template>
     </v-select>
-    <div v-else-if="item.inputType === 'value-array'" class="rounded-sm mb-4">
+    <div
+      v-else-if="item.inputOptions?.inputType === 'value-array'"
+      class="rounded-sm mb-4"
+    >
       <v-container class="highlighted-bg">
         <v-row>
           <v-col cols="12">
             <div class="subtitle-1">
-              {{ item.label + (item.optional ? ' (optional)' : '') }}
+              {{
+                `${item.label}${
+                  item.inputOptions.optional ? ` (optional)` : ''
+                }`
+              }}
             </div>
-            <div v-if="item.hint">{{ item.hint }}</div>
+            <div v-if="item.inputOptions.hint">
+              {{ item.inputOptions.hint }}
+            </div>
           </v-col>
         </v-row>
         <v-row>
@@ -627,7 +674,8 @@
     </div>
     <div
       v-else-if="
-        item.inputType === 'stripe-cc' || item.inputType === 'stripe-pi'
+        item.inputOptions?.inputType === 'stripe-cc' ||
+        item.inputOptions?.inputType === 'stripe-pi'
       "
       class="pb-5 rounded-sm"
     >
@@ -659,9 +707,11 @@
                 >-- {{ renderDiscount() }}</span
               >
             </div>
-            <div v-if="item.hint">{{ item.hint }}</div>
+            <div v-if="item.inputOptions.hint">
+              {{ item.inputOptions.hint }}
+            </div>
             <StripeElements
-              v-if="item.inputType === 'stripe-cc'"
+              v-if="item.inputOptions?.inputType === 'stripe-cc'"
               :stripe-key="stripeKey"
               :instance-options="instanceOptions"
               :elements-options="elementsOptions"
@@ -679,7 +729,7 @@
               v-if="item.loading"
               indeterminate
             ></v-progress-linear>
-            <div v-else-if="item.inputType === 'stripe-pi'">
+            <div v-else-if="item.inputOptions?.inputType === 'stripe-pi'">
               <StripeElements
                 :stripe-key="stripeKey"
                 :instance-options="instanceOptionsComputed"
@@ -716,7 +766,7 @@
       </v-container>
     </div>
     <div
-      v-else-if="item.inputType === 'stripe-pi-editable'"
+      v-else-if="item.inputOptions?.inputType === 'stripe-pi-editable'"
       class="pb-5 rounded-sm"
     >
       <v-container class="highlighted-bg">
@@ -724,7 +774,9 @@
           <v-col cols="12">
             <v-text-field
               v-model="tempInput"
-              :label="item.label + (item.optional ? ' (optional)' : '')"
+              :label="`${item.label}${
+                item.inputOptions.optional ? ` (optional)` : ''
+              }`"
               filled
               dense
               class="py-0"
@@ -739,7 +791,9 @@
                 >(Invalid Amount)</span
               >
             </div>
-            <div v-if="item.hint">{{ item.hint }}</div>
+            <div v-if="item.inputOptions.hint">
+              {{ item.inputOptions.hint }}
+            </div>
             <v-progress-linear
               v-if="item.loading"
               indeterminate
@@ -764,14 +818,23 @@
         </v-row>
       </v-container>
     </div>
-    <div v-else-if="item.inputType === 'rating'" class="rounded-sm mb-4">
+    <div
+      v-else-if="item.inputOptions?.inputType === 'rating'"
+      class="rounded-sm mb-4"
+    >
       <v-container class="highlighted-bg">
         <v-row>
           <v-col cols="12">
             <div class="subtitle-1">
-              {{ item.label + (item.optional ? ' (optional)' : '') }}
+              {{
+                `${item.label}${
+                  item.inputOptions.optional ? ` (optional)` : ''
+                }`
+              }}
             </div>
-            <div v-if="item.hint">{{ item.hint }}</div>
+            <div v-if="item.inputOptions.hint">
+              {{ item.inputOptions.hint }}
+            </div>
           </v-col>
         </v-row>
         <v-row>
@@ -787,27 +850,6 @@
         </v-row>
       </v-container>
     </div>
-    <v-text-field
-      v-else
-      v-model="item.value"
-      :label="item.label + (item.optional ? ' (optional)' : '')"
-      :readonly="isReadonly"
-      :rules="item.inputRules"
-      :hint="item.hint"
-      :loading="item.loading"
-      :append-icon="appendIcon"
-      :append-outer-icon="item.closeable ? 'mdi-close' : null"
-      persistent-hint
-      filled
-      dense
-      class="py-0"
-      v-bind="inputParams"
-      v-on="$listeners"
-      @click:append="handleClear()"
-      @keyup.enter="triggerSubmit()"
-      @click:append-outer="handleClose()"
-      @input="triggerInput()"
-    ></v-text-field>
   </div>
 </template>
 
@@ -972,7 +1014,7 @@ export default {
   },
 
   mounted() {
-    if (this.item.inputType === 'stripe-pi' && this.hasPaypal) {
+    if (this.item.inputOptions?.inputType === 'stripe-pi' && this.hasPaypal) {
       this.renderPayPal()
     }
   },
@@ -1209,7 +1251,7 @@ export default {
       try {
         // if getOptions already provided, no need to handle this
         if (
-          inputObject.getOptions &&
+          inputObject.inputOptions.getOptions &&
           !inputObject.inputOptions?.loadServerResults
         )
           return
@@ -1239,8 +1281,8 @@ export default {
 
         // if it is a text-autocomplete/combobox type and no getSuggestions function, throw err
         if (
-          inputObject.inputType === 'text-autocomplete' ||
-          (inputObject.inputType === 'text-combobox' &&
+          inputObject.inputOptions?.inputType === 'text-autocomplete' ||
+          (inputObject.inputOptions?.inputType === 'text-combobox' &&
             !inputObject.inputOptions.getSuggestions)
         ) {
           throw new Error(`getSuggestions function required`)
@@ -1608,15 +1650,15 @@ export default {
     async beforeSubmit() {
       // if inputType is stripe-pi or stripe-pi-editable, process the payment at this point
       if (
-        this.item.inputType === 'stripe-pi' ||
-        this.item.inputType === 'stripe-pi-editable'
+        this.item.inputOptions?.inputType === 'stripe-pi' ||
+        this.item.inputOptions?.inputType === 'stripe-pi-editable'
       ) {
         // if the value is already set, this must be due to having captured a paypal payment already, so will skip
         if (this.item.value) return
 
         // for stripe-pi-editable, if amount is <= 0, don't process
         if (
-          this.item.inputType === 'stripe-pi-editable' &&
+          this.item.inputOptions?.inputType === 'stripe-pi-editable' &&
           this.item.inputValue <= 0
         ) {
           this.item.value = null
@@ -1653,7 +1695,7 @@ export default {
         }
 
         this.item.value = res.paymentIntent.id
-      } else if (this.item.inputType === 'stripe-cc') {
+      } else if (this.item.inputOptions?.inputType === 'stripe-cc') {
         const groupComponent = this.$refs.elms
         const cardComponent = this.$refs.card
         // Get stripe element
@@ -1689,7 +1731,7 @@ export default {
     },
 
     reset() {
-      switch (this.item.inputType) {
+      switch (this.item.inputOptions?.inputType) {
         case 'multiple-file':
           this.filesData = []
           this.tempInput = []

@@ -13,17 +13,18 @@ import {
   getCurrentDate,
   downloadCSV,
   handleError,
-  serializeNestedProperty,
   getPaginatorData,
   collectPaginatorData,
   getIcon,
   viewportToPixelsMap,
-  lookupFieldInfo,
+  lookupInputField,
+  lookupRenderField,
   populateInputObject,
   processQuery,
   generateFilterByObjectArray,
   collapseObject,
   generateCrudRecordRoute,
+  camelCaseToCapitalizedString,
 } from '~/services/base'
 import { defaultGridView } from '~/services/config'
 import { executeGiraffeql } from '~/services/giraffeql'
@@ -215,21 +216,15 @@ export default {
     // transforms SortObject[] to CrudSortObject[]
     // type: CrudSortObject[]
     sortOptions() {
-      return this.recordInfo.paginationOptions.sortOptions?.map(
-        (sortObject) => {
-          const fieldInfo = lookupFieldInfo(this.recordInfo, sortObject.field)
-
+      return (
+        this.recordInfo.paginationOptions.sortOptions?.map((sortObject) => {
           return {
-            text:
-              sortObject.text ??
-              `${fieldInfo.text ?? sortObject.field} (${
-                sortObject.desc ? 'Desc' : 'Asc'
-              })`,
+            text: sortObject.text,
             field: sortObject.field,
             desc: sortObject.desc,
             additionalSortObjects: sortObject.additionalSortObjects,
           }
-        }
+        }) ?? []
       )
     },
 
@@ -277,14 +272,15 @@ export default {
           )
         })
         .map((headerInfo, index) => {
-          const fieldInfo = lookupFieldInfo(this.recordInfo, headerInfo.field)
+          const fieldInfo = lookupRenderField(this.recordInfo, headerInfo.field)
 
           const primaryField = fieldInfo.fields
             ? fieldInfo.fields[0]
             : headerInfo.field
 
           return {
-            text: fieldInfo.text ?? headerInfo.field,
+            text:
+              fieldInfo.text ?? camelCaseToCapitalizedString(headerInfo.field),
             align: headerInfo.align ?? 'left',
             value: primaryField,
             sortable: false,
@@ -921,7 +917,7 @@ export default {
           after: this.endCursor ?? undefined,
         }),
         sortBy,
-        filterBy: generateFilterByObjectArray(this.allFilters, this.recordInfo),
+        filterBy: generateFilterByObjectArray(this.allFilters),
         ...(distanceParams && {
           distance: distanceParams,
         }),
@@ -947,18 +943,14 @@ export default {
         const query = collapseObject(
           this.recordInfo.paginationOptions.downloadOptions.fields.reduce(
             (total, fieldObject) => {
-              if (fieldObject.args) {
-                // if args has loadIf and if it returns false, skip this field entirely
-                if (fieldObject.args.loadIf && !fieldObject.args.loadIf(this)) {
-                  return total
-                }
+              // if args has hideIf and if it returns false, skip this field entirely
+              if (!fieldObject.hideIf && fieldObject.hideIf(this)) return total
 
+              if (fieldObject.args) {
                 // else add the args
-                // can skip if it has already been set
-                if (!total[`${fieldObject.args.path}.__args`]) {
-                  total[`${fieldObject.args.path}.__args`] =
-                    fieldObject.args.getArgs(this)
-                }
+                fieldObject.args.forEach((argObject) => {
+                  total[`${argObject.path}.__args`] = argObject.getArgs(this)
+                })
               }
 
               total[fieldObject.field] = true
@@ -1174,11 +1166,7 @@ export default {
         .concat(this.recordInfo.requiredFields ?? [])
         .concat(this.recordInfo.paginationOptions.requiredFields ?? [])
 
-      const { query, serializeMap } = await processQuery(
-        this,
-        this.recordInfo,
-        fields
-      )
+      const { query } = await processQuery(this, this.recordInfo, fields, true)
 
       if (itemId) {
         const result = await executeGiraffeql({
@@ -1190,11 +1178,6 @@ export default {
           },
         })
 
-        // apply serialization to result before returning
-        serializeMap.forEach((serialzeFn, field) => {
-          serializeNestedProperty(result, field, serialzeFn)
-        })
-
         return result
       } else {
         const results = await getPaginatorData(
@@ -1203,13 +1186,6 @@ export default {
           query,
           this.generatePaginatorArgs(true)
         )
-
-        // apply serialization to results before returning
-        results.edges.forEach((ele) => {
-          serializeMap.forEach((serialzeFn, field) => {
-            serializeNestedProperty(ele.node, field, serialzeFn)
-          })
-        })
 
         return results
       }
@@ -1367,11 +1343,6 @@ export default {
         this.filterInputsArray = await Promise.all(
           this.recordInfo.paginationOptions.filterOptions.map(
             async (filterObject) => {
-              const fieldInfo = lookupFieldInfo(
-                this.recordInfo,
-                filterObject.field
-              )
-
               // sync the filters
               const filters = this.pageOptions?.filters
               let matchingRawFilterObject
@@ -1386,29 +1357,22 @@ export default {
 
               const inputObject = {
                 fieldKey: filterObject.field,
-                primaryField: fieldInfo.fields
-                  ? fieldInfo.fields[0]
-                  : filterObject.field,
-                fieldInfo,
+                primaryField: filterObject.field,
                 recordInfo: this.recordInfo,
-                inputType: filterObject.inputType ?? fieldInfo.inputType,
-                label: filterObject.text ?? filterObject.field,
-                hint: fieldInfo.hint,
+                label:
+                  filterObject.text ??
+                  camelCaseToCapitalizedString(filterObject.field),
                 closeable: false,
-                optional: false,
-                inputRules: [],
-                inputOptions: fieldInfo.inputOptions,
+                inputOptions: filterObject.inputOptions,
                 value: matchingRawFilterObject
                   ? matchingRawFilterObject.value
                   : null,
                 inputValue: null,
-                getOptions: fieldInfo.getOptions,
                 options: [],
                 readonly: false,
-                hidden: false,
                 loading: false,
                 focused: false,
-                cols: fieldInfo.inputOptions?.cols,
+                cols: filterObject.cols,
                 generation: 0,
                 parentInput: null,
                 nestedInputsArray: [],

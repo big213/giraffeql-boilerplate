@@ -14,7 +14,8 @@
 
 <script>
 import ViewRecordPage from '~/components/page/viewRecordPage.vue'
-import * as baseModels from '~/models/base'
+import { baseViews } from '~/models2/views'
+import { convertViewDefinition } from '~/services/view'
 import { capitalizeString, kebabToCamelCase } from '~/services/base'
 
 export default {
@@ -31,7 +32,7 @@ export default {
 
   computed: {
     currentModel() {
-      return baseModels[capitalizeString(this.type)]
+      return convertViewDefinition(baseViews[capitalizeString(this.type)])
     },
   },
 }

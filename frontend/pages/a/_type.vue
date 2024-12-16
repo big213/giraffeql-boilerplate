@@ -14,8 +14,9 @@
 
 <script>
 import CrudRecordPage from '~/components/page/crudRecordPage.vue'
-import * as baseModels from '~/models/base'
 import { capitalizeString, kebabToCamelCase } from '~/services/base'
+import { baseViews } from '~/models2/views'
+import { convertViewDefinition } from '~/services/view'
 
 export default {
   async asyncData({ params }) {
@@ -31,7 +32,7 @@ export default {
 
   computed: {
     currentModel() {
-      return baseModels[capitalizeString(this.type)]
+      return convertViewDefinition(baseViews[capitalizeString(this.type)])
     },
   },
 }

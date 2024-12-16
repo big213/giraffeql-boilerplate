@@ -1,5 +1,316 @@
 import { InputTypes, MainTypes, FilterByField } from '../../schema'
 import { CrudPageOptions, CrudRawFilterObject, CrudRawSortObject } from './misc'
+export type PageOptions = {
+  // required fields for the page, if any
+  fields?: string[]
+
+  // custom function that will return the lookup params, if any
+  getLookupParams?: (that) => any
+
+  // whether or not to render the record as a full page (12 cols), rather than centered with an offset
+  fullPageMode?: boolean
+
+  // the expand types to automatically render below (as previews)
+  // string corresponds to the key
+  previewExpandTypes?: string[]
+
+  // custom page component
+  component?: any
+
+  // should there be a dedicated share button? (requires shareOptions)
+  dedicatedShareButton?: boolean
+
+  // should the actions be hidden?
+  hideActions?: boolean
+  // should the refresh button be hidden?
+  hideRefresh?: boolean
+  // should the minimize button be hidden?
+  hideMinimize?: boolean
+}
+
+export type DialogOptions = {
+  // should the actions be hidden?
+  hideActions?: boolean
+  // should the refresh button be hidden?
+  hideRefresh?: boolean
+  // should the title and icon be hidden?
+  hideTitle?: boolean
+}
+
+export type AddOptions = {
+  // required: fields that can be added
+  fields: (string | EditFieldDefinition)[]
+  // custom component
+  component?: any
+  // if not createX, the custom create operation name
+  operationName?: string
+
+  // custom function to modify the inputs in-place before they get sent as args
+  inputsModifier?: (that, inputs) => void
+
+  // custom action when the "new" button is clicked, if any. item refers to parentItem, if any
+  customAction?: (that, parentItem) => void
+
+  // fields to return after editing (for use in onSuccess, etc) -- array in dot notation
+  returnFields?: string[]
+
+  // function that runs when record is successfully added
+  onSuccess?: (that, item) => void
+
+  // post-processing of inputs, if any
+  afterLoaded?: (that, inputsArray) => Promise<void>
+
+  // under what conditions will the button be hidden?
+  hideIf?: (that) => boolean
+
+  // if a custom title, what should it be?
+  title?: string
+
+  // if a custom icon, what should it be?
+  icon?: string
+}
+
+export type EditOptions = {
+  // required: fields that can be added
+  // a function can be provided instead, which will determine the fields dynamically based on that/item
+  fields:
+    | (string | EditFieldDefinition)[]
+    | ((that, item) => (string | EditFieldDefinition)[])
+  // custom component
+  component?: any
+  // if not createX, the custom create operation name
+  operationName?: string
+
+  // custom function to modify the inputs in-place before they get sent as args
+  inputsModifier?: (that, inputs) => void
+
+  // fields to return after editing (for use in onSuccess, etc) -- array in dot notation
+  returnFields?: string[]
+
+  // function that runs when recorded is successfully edited
+  onSuccess?: (that, item) => void
+
+  // post-processing of inputs, if any
+  afterLoaded?: (that, inputsArray) => Promise<void>
+
+  // under what conditions will the button be hidden?
+  hideIf?: (that, item) => boolean
+
+  // if a custom title, what should it be?
+  title?: string
+
+  // if a custom icon, what should it be?
+  icon?: string
+}
+
+export type DeleteOptions = {
+  // no fields when deleting
+  // custom component
+  component?: any
+  // if not createX, the custom create operation name
+  operationName?: string
+
+  // fields to return after deleting (for use in onSuccess, etc) -- array in dot notation
+  returnFields?: string[]
+
+  // function that runs when recorded is successfully deleted
+  onSuccess?: (that, item) => void
+
+  // under what conditions will the button be hidden?
+  hideIf?: (that, item) => boolean
+
+  // if a custom title, what should it be?
+  title?: string
+
+  // if a custom icon, what should it be?
+  icon?: string
+}
+
+export type ViewOptions = {
+  // required: fields that can be viewed
+  fields: (string | ViewFieldDefinition)[]
+
+  // additional fields required (but not shown)
+  requiredFields?: string[]
+
+  // custom component
+  component?: any
+
+  // function that runs when recorded is successfully viewed
+  onSuccess?: (that, item) => void
+
+  // should the viewOptions interface show a hero image/text at the top
+  heroOptions?: {
+    // function that will get the preview image from the item
+    getPreviewImage?: (item: any) => any
+
+    // function that will get the preview name from the item
+    getPreviewName?: (item: any) => any
+
+    // should the v-img component be contained?
+    containMode?: boolean
+
+    // custom component that should be rendered, which will override the above 2 options
+    component?: any
+  }
+
+  // if a custom title, what should it be?
+  title?: string
+
+  // if a custom icon, what should it be?
+  icon?: string
+}
+
+export type PreviewOptions = {
+  // required: fields that can be previewed
+  fields: string[]
+
+  // should the previewOptions interface show a hero image/text at the top
+  heroOptions?: {
+    // function that will get the preview image from the item
+    getPreviewImage?: (item: any) => any
+
+    // function that will get the preview name from the item
+    getPreviewName?: (item: any) => any
+
+    // should the v-img component be contained?
+    containMode?: boolean
+
+    // custom component that should be rendered, which will override the above 2 options
+    component?: any
+  }
+
+  // hides the "view" button
+  hideViewButton?: boolean
+
+  // hides the follow button, if any
+  hideFollowButton?: boolean
+
+  // customActions
+  customActions?: {
+    text: string
+    icon: string
+    handleClick: (that, item: any) => void
+  }[]
+}
+
+export type ChipOptions = {
+  fields: string[]
+  // the function to derive the name on the chip. else defaults to name
+  getName?: (item: any) => any
+  // the function to derive the image on the chip. else defaults to avatar
+  getImage?: (item: any) => any
+}
+
+export type PostOptions = {
+  recordInfo: RecordInfo<any>
+
+  // are the posts readonly?
+  readonly?: boolean
+
+  // custom component
+  component?: any
+
+  // fields to hide
+  hiddenFields?: string[]
+
+  // initial sort options that should be applied to nested component
+  initialSortOptions?: CrudRawSortObject
+
+  // custom function for generating the lockedFilters for filtering the posts, if any
+  getLockedFilters?: (that, selectedItem) => any
+}
+
+export type CopyOptions = {
+  // required: fields that should be copied
+  fields: string[]
+  // custom component
+  component?: any
+
+  // replacement icon
+  icon?: string
+  // replacement text
+  text?: string
+}
+
+export type ShareOptions = {
+  // custom component
+  component?: any
+
+  // get a custom share URL
+  getUrl?: (that, recordInfo, id) => string
+
+  // if a custom title, what should it be?
+  title?: string
+
+  // if a custom icon, what should it be?
+  icon?: string
+}
+
+export type EnterOptions = {}
+
+export type ExpandTypeObject = {
+  // the key that will be associated with this in the URL
+  key: string
+  // recordInfo is required unless it is a custom component
+  recordInfo?: RecordInfo<any>
+  component?: any
+  // name for the expandType, otherwise recordInfo.name will be used
+  name?: string
+  // icon for the expandType, otherwise recordInfo.icon will be used
+  icon?: string
+  // function that will replace the lockedSubFilters() computed property in crud.js if provided
+  lockedFilters?: (that, item) => CrudRawFilterObject[]
+  // headers fields that should not be shown
+  excludeHeaders?: string[]
+  // filter fields that should not be shown (however, they can still be manipulated in a custom component file)
+  excludeFilters?: string[]
+  // initial filters that should be loaded into the nested component
+  initialFilters?: CrudRawFilterObject[]
+
+  // initial sort options that should be applied to nested component
+  initialSortOptions?: CrudRawSortObject
+
+  // force use of dialog for this expandType. default false.
+  forceDialog?: boolean
+
+  // show any preset filters that may be on the recordInfo (default no)
+  showPresets?: boolean
+
+  // number of results to show per page for this expand option. else, defaults to 12
+  resultsPerPage?: number
+
+  // open the expand in the same interface instead of expanding or opening a dialog, and related options
+  breadcrumbOptions?: {
+    hideBreadcrumbs?: boolean
+  }
+
+  // show this option as its own block/row if it is rendered as a grid
+  showRowIfGrid?: boolean
+
+  // hide the expand type if true
+  hideIf?: (that, item) => boolean
+}
+
+export type CustomActionObject = {
+  text: string
+  icon: string
+  showIf?: (that, item) => boolean
+  // submitting to API, in filterBy and create/update functions
+  parseValue?: (val: any) => any
+  // if this is specified, it will open a dialog that will allow the user to complete the action (with inputs, if necessary)
+  actionOptions?: ActionOptions
+
+  // if this above is not specified, this must be specified
+  simpleActionOptions?: {
+    handleClick: (that, item) => void
+    isAsync?: boolean // should the button have a loader and not be clickable while the operation is processing?
+    // should a confirmation dialog trigger when clicking this action
+    confirmOptions?: {
+      text?: string
+    }
+  }
+}
 
 export type FieldDefinition = {
   // the fields involved in this field
@@ -8,46 +319,22 @@ export type FieldDefinition = {
   pathPrefix?: string
 
   text?: string
-  // hint field for helping the user to fill out the field
-  hint?: string
-
-  inputType?: InputType
 
   // special options pertaining to the specific inputType
   inputOptions?: InputOptions
 
-  // options for how this component will be rendered in the viewRecordTableInterface
-  tableOptions?: {
-    verticalView?: boolean
-    hideIf?: (fieldValue, item) => boolean
-  }
-
   // special options that will be passed to the column component
-  columnOptions?: {
+  renderOptions?: {
     [x: string]: any
   }
 
   args?: {
     getArgs: (that) => any
     path: string
-    // if provided, only load this field if this returns true
-    loadIf?: (that) => boolean
-  }
+  }[]
 
-  inputRules?: any[]
-  getOptions?: (that, item) => Promise<any[]>
-
-  // is the field hidden? if yes, won't fetch it for edit fields
-  hidden?: boolean
-  // is the field nullable? if so, we will add some text saying that to the input
-  optional?: boolean
-  default?: (that) => unknown
-  // fetching from API, in editRecordInterface (when editing/viewing)
-  serialize?: (val: any) => any
-  // submitting to API, in filterBy and create/update functions
-  parseValue?: (val: any) => any
-  // for crudRecordPage. parsing the query params
-  parseQueryValue?: (val: any) => unknown
+  // if provided, only load this field if this returns true
+  loadIf?: (that) => boolean
 
   component?: any // component for rendering the field in table
 }
@@ -224,7 +511,6 @@ export type SimpleRecordInfo<T extends keyof MainTypes> = Partial<
   RecordInfo<T>
 > & {
   typename: T
-  pluralTypename: string
   name: string
   pluralName: string
   icon?: string
@@ -238,7 +524,6 @@ export type RecordInfo<T extends keyof MainTypes> = {
   title?: string
   // name of the type
   typename: T
-  pluralTypename: string
   name: string
   pluralName: string
   icon?: string
@@ -258,331 +543,89 @@ export type RecordInfo<T extends keyof MainTypes> = {
   // fields that must always be requested when fetching the specific item and multiple items, along with the id field. could be for certain rendering purposes
   requiredFields?: string[]
 
-  // all of the "known" fields of the type. could be nested types (not included in type hints)
-  fields: {
-    [K in string]?: FieldDefinition
+  inputFields: {
+    [x in string]: {
+      text?: string
+      // special options pertaining to the specific inputType
+      inputOptions?: InputOptions
+      // if not provided, will default to a text field
+    } & {}
+  }
+
+  renderFields: {
+    text?: string
+
+    // the fields involved in this field
+    fields?: string[]
+    // path leading up to the field. i.e. item.blah
+    pathPrefix?: string
+
+    // special options that will be passed to the column component
+    renderOptions?: {
+      [x: string]: any
+    }
+
+    args?: {
+      getArgs: (that) => any
+      path: string
+    }[]
+
+    // if provided, only load this field if this returns true
+    loadIf?: (that) => boolean
+
+    component?: any // component for rendering the field in table
   }
 
   // options related to viewing a single record (via viewRecordPage), if any
-  pageOptions?: {
-    // required fields for the page, if any
-    fields?: string[]
-
-    // custom function that will return the lookup params, if any
-    getLookupParams?: (that) => any
-
-    // whether or not to render the record as a full page (12 cols), rather than centered with an offset
-    fullPageMode?: boolean
-
-    // the expand types to automatically render below (as previews)
-    // string corresponds to the key
-    previewExpandTypes?: string[]
-
-    // custom page component
-    component?: any
-
-    // should there be a dedicated share button? (requires shareOptions)
-    dedicatedShareButton?: boolean
-
-    // should the actions be hidden?
-    hideActions?: boolean
-    // should the refresh button be hidden?
-    hideRefresh?: boolean
-    // should the minimize button be hidden?
-    hideMinimize?: boolean
-  }
+  pageOptions?: PageOptions
 
   // options related to viewing multiple, if possible
   paginationOptions?: PaginationOptions
 
-  dialogOptions?: {
-    // should the actions be hidden?
-    hideActions?: boolean
-    // should the refresh button be hidden?
-    hideRefresh?: boolean
-    // should the title and icon be hidden?
-    hideTitle?: boolean
-  }
+  dialogOptions?: DialogOptions
 
-  addOptions?: {
-    // required: fields that can be added
-    fields: (string | EditFieldDefinition)[]
-    // custom component
-    component?: any
-    // if not createX, the custom create operation name
-    operationName?: string
+  addOptions?: AddOptions
 
-    // custom function to modify the inputs in-place before they get sent as args
-    inputsModifier?: (that, inputs) => void
+  editOptions?: EditOptions
 
-    // custom action when the "new" button is clicked, if any. item refers to parentItem, if any
-    customAction?: (that, parentItem) => void
+  deleteOptions?: DeleteOptions
 
-    // fields to return after editing (for use in onSuccess, etc) -- array in dot notation
-    returnFields?: string[]
+  viewOptions?: ViewOptions
 
-    // function that runs when record is successfully added
-    onSuccess?: (that, item) => void
+  previewOptions?: PreviewOptions
 
-    // post-processing of inputs, if any
-    afterLoaded?: (that, inputsArray) => Promise<void>
+  chipOptions?: ChipOptions
 
-    // under what conditions will the button be hidden?
-    hideIf?: (that) => boolean
+  postOptions?: PostOptions
 
-    // if a custom title, what should it be?
-    title?: string
+  copyOptions?: CopyOptions
 
-    // if a custom icon, what should it be?
-    icon?: string
-  }
+  shareOptions?: ShareOptions
 
-  editOptions?: {
-    // required: fields that can be added
-    // a function can be provided instead, which will determine the fields dynamically based on that/item
-    fields:
-      | (string | EditFieldDefinition)[]
-      | ((that, item) => (string | EditFieldDefinition)[])
-    // custom component
-    component?: any
-    // if not createX, the custom create operation name
-    operationName?: string
+  enterOptions?: EnterOptions
 
-    // custom function to modify the inputs in-place before they get sent as args
-    inputsModifier?: (that, inputs) => void
+  expandTypes: ExpandTypeObject[]
 
-    // fields to return after editing (for use in onSuccess, etc) -- array in dot notation
-    returnFields?: string[]
-
-    // function that runs when recorded is successfully edited
-    onSuccess?: (that, item) => void
-
-    // post-processing of inputs, if any
-    afterLoaded?: (that, inputsArray) => Promise<void>
-
-    // under what conditions will the button be hidden?
-    hideIf?: (that, item) => boolean
-
-    // if a custom title, what should it be?
-    title?: string
-
-    // if a custom icon, what should it be?
-    icon?: string
-  }
-
-  deleteOptions?: {
-    // no fields when deleting
-    // custom component
-    component?: any
-    // if not createX, the custom create operation name
-    operationName?: string
-
-    // fields to return after deleting (for use in onSuccess, etc) -- array in dot notation
-    returnFields?: string[]
-
-    // function that runs when recorded is successfully deleted
-    onSuccess?: (that, item) => void
-
-    // under what conditions will the button be hidden?
-    hideIf?: (that, item) => boolean
-
-    // if a custom title, what should it be?
-    title?: string
-
-    // if a custom icon, what should it be?
-    icon?: string
-  }
-
-  viewOptions?: {
-    // required: fields that can be viewed
-    fields: (string | ViewFieldDefinition)[]
-
-    // additional fields required (but not shown)
-    requiredFields?: string[]
-
-    // custom component
-    component?: any
-
-    // function that runs when recorded is successfully viewed
-    onSuccess?: (that, item) => void
-
-    // should the viewOptions interface show a hero image/text at the top
-    heroOptions?: {
-      // function that will get the preview image from the item
-      getPreviewImage?: (item: any) => any
-
-      // function that will get the preview name from the item
-      getPreviewName?: (item: any) => any
-
-      // should the v-img component be contained?
-      containMode?: boolean
-
-      // custom component that should be rendered, which will override the above 2 options
-      component?: any
-    }
-
-    // if a custom title, what should it be?
-    title?: string
-
-    // if a custom icon, what should it be?
-    icon?: string
-  }
-
-  previewOptions?: {
-    // required: fields that can be previewed
-    fields: string[]
-
-    // should the previewOptions interface show a hero image/text at the top
-    heroOptions?: {
-      // function that will get the preview image from the item
-      getPreviewImage?: (item: any) => any
-
-      // function that will get the preview name from the item
-      getPreviewName?: (item: any) => any
-
-      // should the v-img component be contained?
-      containMode?: boolean
-
-      // custom component that should be rendered, which will override the above 2 options
-      component?: any
-    }
-
-    // hides the "view" button
-    hideViewButton?: boolean
-
-    // hides the follow button, if any
-    hideFollowButton?: boolean
-
-    // customActions
-    customActions?: {
-      text: string
-      icon: string
-      handleClick: (that, item: any) => void
-    }[]
-  }
-
-  chipOptions?: {
-    fields: string[]
-    // the function to derive the name on the chip. else defaults to name
-    getName?: (item: any) => any
-    // the function to derive the image on the chip. else defaults to avatar
-    getImage?: (item: any) => any
-  }
-
-  postOptions?: {
-    recordInfo: RecordInfo<any>
-
-    // are the posts readonly?
-    readonly?: boolean
-
-    // custom component
-    component?: any
-
-    // fields to hide
-    hiddenFields?: string[]
-
-    // initial sort options that should be applied to nested component
-    initialSortOptions?: CrudRawSortObject
-
-    // custom function for generating the lockedFilters for filtering the posts, if any
-    getLockedFilters?: (that, selectedItem) => any
-  }
-
-  copyOptions?: {
-    // required: fields that should be copied
-    fields: string[]
-    // custom component
-    component?: any
-
-    // replacement icon
-    icon?: string
-    // replacement text
-    text?: string
-  }
-
-  shareOptions?: {
-    // custom component
-    component?: any
-
-    // get a custom share URL
-    getUrl?: (that, recordInfo, id) => string
-
-    // if a custom title, what should it be?
-    title?: string
-
-    // if a custom icon, what should it be?
-    icon?: string
-  }
-
-  enterOptions?: {}
-
-  expandTypes: {
-    // the key that will be associated with this in the URL
-    key: string
-    // recordInfo is required unless it is a custom component
-    recordInfo?: RecordInfo<any>
-    component?: any
-    // name for the expandType, otherwise recordInfo.name will be used
-    name?: string
-    // icon for the expandType, otherwise recordInfo.icon will be used
-    icon?: string
-    // function that will replace the lockedSubFilters() computed property in crud.js if provided
-    lockedFilters?: (that, item) => CrudRawFilterObject[]
-    // headers fields that should not be shown
-    excludeHeaders?: string[]
-    // filter fields that should not be shown (however, they can still be manipulated in a custom component file)
-    excludeFilters?: string[]
-    // initial filters that should be loaded into the nested component
-    initialFilters?: CrudRawFilterObject[]
-
-    // initial sort options that should be applied to nested component
-    initialSortOptions?: CrudRawSortObject
-
-    // force use of dialog for this expandType. default false.
-    forceDialog?: boolean
-
-    // show any preset filters that may be on the recordInfo (default no)
-    showPresets?: boolean
-
-    // number of results to show per page for this expand option. else, defaults to 12
-    resultsPerPage?: number
-
-    // open the expand in the same interface instead of expanding or opening a dialog, and related options
-    breadcrumbOptions?: {
-      hideBreadcrumbs?: boolean
-    }
-
-    // show this option as its own block/row if it is rendered as a grid
-    showRowIfGrid?: boolean
-
-    // hide the expand type if true
-    hideIf?: (that, item) => boolean
-  }[]
-
-  customActions?: {
-    text: string
-    icon: string
-    showIf?: (that, item) => boolean
-
-    // if this is specified, it will open a dialog that will allow the user to complete the action (with inputs, if necessary)
-    actionOptions?: ActionOptions
-
-    // if this above is not specified, this must be specified
-    simpleActionOptions?: {
-      handleClick: (that, item) => void
-      isAsync?: boolean // should the button have a loader and not be clickable while the operation is processing?
-      // should a confirmation dialog trigger when clicking this action
-      confirmOptions?: {
-        text?: string
-      }
-    }
-  }[]
+  customActions?: CustomActionObject[]
 }
 
-type InputOptions = {
+export type InputOptions = {
+  inputType: InputType
+
+  getOptions?: (that, item) => Promise<any[]>
+  getInitialValue?: (that) => unknown
+
+  // submitting to API, in filterBy and create/update functions
+  parseValue?: (val: any) => any
+
   // for type-autocomplete and type-combobox, multiple-select -- a simple way to get an avatar/name chip.
   hasAvatar?: boolean
   hasName?: boolean
+
+  hint?: string
+  inputRules?: any[]
+  // is the field nullable? if so, we will add some text saying that to the input
+  optional?: boolean
 
   // should the "clear" X button be visible?
   clearable?: boolean
@@ -672,13 +715,7 @@ export type NestedOptions = {
   fields: {
     key: string
     text?: string
-    inputType: InputType
-    hint?: string
     inputOptions?: InputOptions
-    optional?: boolean
-    default?: (that) => unknown
-    inputRules?: any[]
-    getOptions?: (that, item) => Promise<any[]>
   }[]
 }
 
@@ -696,7 +733,8 @@ export type FilterObject = {
   text?: string
   field: string
   operator: keyof FilterByField<any>
-  inputType?: InputType
+  inputOptions?: InputOptions
+  cols?: number
   preset?: boolean // should this filter show up as a preset
   // should this filter show up in the special chip filters section? (only certain types supported)
   chipOptions?: {
@@ -773,14 +811,8 @@ export type ActionOptions = {
     field: string
     definition: {
       text?: string
-      inputType?: InputType
-      hint?: string
-      getOptions?: (that, item) => Promise<any[]>
       // special options pertaining to the specific inputType
       inputOptions?: InputOptions
-      optional?: boolean
-      inputRules?: any[]
-      default?: (that) => unknown
     }
 
     watch?: (that, val, prev) => void
@@ -838,9 +870,7 @@ export type ExportFieldDefinition = {
   args?: {
     getArgs: (that) => any
     path: string
-    // if provided, only load this field if this returns true
-    loadIf?: (that) => boolean
-  }
+  }[]
 }
 
 export type PriceObject = {

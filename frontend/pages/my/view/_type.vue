@@ -16,8 +16,9 @@
 
 <script>
 import ViewRecordPage from '~/components/page/viewRecordPage.vue'
-import * as models from '~/models'
 import { capitalizeString, kebabToCamelCase } from '~/services/base'
+import { myViews } from '~/models2/views'
+import { convertViewDefinition } from '~/services/view'
 
 export default {
   async asyncData({ params }) {
@@ -33,7 +34,7 @@ export default {
     },
 
     currentModel() {
-      return models[`My${capitalizeString(this.type)}`]
+      return convertViewDefinition(myViews[capitalizeString(this.type)])
     },
 
     lookupParams() {

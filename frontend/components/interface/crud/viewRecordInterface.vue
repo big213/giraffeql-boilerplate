@@ -22,14 +22,14 @@
                 <tr v-for="(item, i) in visibleInputsArray" :key="i">
                   <td v-if="item.verticalMode" colspan="2" class="pb-3">
                     <div class="pt-3 subtitle-2 text-decoration-underline">
-                      {{ item.fieldInfo.text }}
+                      {{ item.label }}
                     </div>
                     <component
                       :is="item.fieldInfo.component"
                       v-if="item.fieldInfo.component"
                       :item="currentItem"
                       :field-path="getFieldPath(item)"
-                      :options="item.fieldInfo.columnOptions"
+                      :options="item.fieldInfo.renderOptions"
                       display-mode="view"
                       @edit-item="openEditItemDialog"
                       @submit="$emit('handleSubmit')"
@@ -40,7 +40,7 @@
                     }}</span>
                   </td>
                   <td v-if="!item.verticalMode" style="width: 150px">
-                    <span class="subtitle-2">{{ item.fieldInfo.text }}</span>
+                    <span class="subtitle-2">{{ item.label }}</span>
                   </td>
                   <td v-if="!item.verticalMode">
                     <component
@@ -48,7 +48,7 @@
                       v-if="item.fieldInfo.component"
                       :item="currentItem"
                       :field-path="getFieldPath(item)"
-                      :options="item.fieldInfo.columnOptions"
+                      :options="item.fieldInfo.renderOptions"
                       display-mode="view"
                       @edit-item="openEditItemDialog"
                       @submit="$emit('handleSubmit')"

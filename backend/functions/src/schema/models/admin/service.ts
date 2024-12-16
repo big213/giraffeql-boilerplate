@@ -17,7 +17,6 @@ export class AdminService extends BaseService {
     fieldPath,
     args,
     query,
-    isAdmin = false,
   }: ServiceFunctionInputs) {
     return "done";
   }
@@ -70,7 +69,6 @@ export class AdminService extends BaseService {
     fieldPath,
     args,
     query,
-    isAdmin = false,
   }: ServiceFunctionInputs) {
     try {
       const data = await getGoogleApiResponse({

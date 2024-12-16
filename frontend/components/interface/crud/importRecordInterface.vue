@@ -318,20 +318,16 @@ export default {
                 this.recordInfo.paginationOptions.downloadOptions.fields.reduce(
                   (total, fieldObject) => {
                     if (fieldObject.args) {
-                      // if args has loadIf and if it returns false, skip this field entirely
-                      if (
-                        fieldObject.args.loadIf &&
-                        !fieldObject.args.loadIf(this)
-                      ) {
+                      // if args has hideIf and if it returns false, skip this field entirely
+                      if (!fieldObject.hideIf || fieldObject.hideIf(this)) {
                         return total
                       }
 
                       // else add the args
-                      // can skip if it has already been set
-                      if (!total[`${fieldObject.args.path}.__args`]) {
-                        total[`${fieldObject.args.path}.__args`] =
-                          fieldObject.args.getArgs(this)
-                      }
+                      fieldObject.args.forEach((argObject) => {
+                        total[`${argObject.path}.__args`] =
+                          argObject.getArgs(this)
+                      })
                     }
 
                     total[fieldObject.field] = true

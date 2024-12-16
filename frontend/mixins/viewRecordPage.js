@@ -535,10 +535,11 @@ export default {
         if (this.recordInfo.hasName) fields.push('name')
         if (this.recordInfo.hasAvatar) fields.push('avatarUrl')
 
-        const { serializeMap, query } = await processQuery(
+        const { query } = await processQuery(
           this,
           this.recordInfo,
-          fields
+          fields,
+          true
         )
 
         const data = await executeGiraffeql({
@@ -549,16 +550,6 @@ export default {
               ...(this.$route.query.id && { id: this.$route.query.id }),
             },
           },
-        })
-
-        // remove any undefined serializeMap elements
-        serializeMap.forEach((val, key) => {
-          if (val === undefined) serializeMap.delete(key)
-        })
-
-        // apply serialization to results
-        serializeMap.forEach((serialzeFn, field) => {
-          serializeNestedProperty(data, field, serialzeFn)
         })
 
         this.selectedItem = data

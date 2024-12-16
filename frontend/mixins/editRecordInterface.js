@@ -9,12 +9,13 @@ import {
   getInputValue,
   getInputObject,
   populateInputObject,
-  lookupFieldInfo,
   addNestedInputObject,
   processInputObject,
   processQuery,
   timeout,
   buildQueryFromFieldPathArray,
+  lookupInputField,
+  camelCaseToCapitalizedString,
 } from '~/services/base'
 import GenericInput from '~/components/input/genericInput.vue'
 import CircularLoader from '~/components/common/circularLoader.vue'
@@ -155,8 +156,6 @@ export default {
 
     visibleInputsArray() {
       return this.inputsArray.filter((inputObject) => {
-        if (inputObject.hidden) return false
-
         if (inputObject.hideIf)
           return !inputObject.hideIf(this, this.inputsArray)
 
@@ -339,7 +338,7 @@ export default {
     async loadRecord() {
       this.loading.loadRecord = true
       try {
-        const { serializeMap, query } = await processQuery(
+        const { query } = await processQuery(
           this,
           this.recordInfo,
           this.rawFields
@@ -357,16 +356,6 @@ export default {
         // save record
         this.currentItem = data
 
-        // remove any undefined serializeMap elements
-        serializeMap.forEach((val, key) => {
-          if (val === undefined) serializeMap.delete(key)
-        })
-
-        // apply serialization to results
-        serializeMap.forEach((serialzeFn, field) => {
-          serializeNestedProperty(data, field, serialzeFn)
-        })
-
         // if copy mode, load all add fields
         const inputFields =
           this.mode === 'copy' ? this.recordInfo.addOptions.fields : this.fields
@@ -382,26 +371,19 @@ export default {
                 ? fieldElement
                 : fieldElement.field
 
-            const fieldInfo = lookupFieldInfo(this.recordInfo, fieldKey)
+            const fieldInfo = lookupInputField(this.recordInfo, fieldKey)
 
-            const primaryField = fieldInfo.fields
-              ? fieldInfo.fields[0]
-              : fieldKey
+            const primaryField = fieldKey
 
             const inputObject = {
               fieldKey,
               primaryField,
               fieldInfo,
               recordInfo: this.recordInfo,
-              inputType: fieldInfo.inputType,
-              label: fieldInfo.text ?? fieldKey,
-              hint: fieldInfo.hint,
+              label: fieldInfo.text ?? camelCaseToCapitalizedString(fieldKey),
               closeable: false,
-              optional: fieldInfo.optional,
-              inputRules: fieldInfo.inputRules,
               inputOptions: fieldInfo.inputOptions,
               value: null,
-              getOptions: fieldInfo.getOptions,
               handleFileAdded:
                 typeof fieldElement === 'string'
                   ? null
@@ -430,8 +412,8 @@ export default {
 
             // if copy mode and fieldKey not in original fields, use default
             if (this.mode === 'copy' && !this.rawFields.includes(fieldKey)) {
-              inputObject.value = fieldInfo.default
-                ? await fieldInfo.default(this)
+              inputObject.value = fieldInfo.inputOptions?.getInitialValue
+                ? await fieldInfo.inputOptions.getInitialValue(this)
                 : null
             } else {
               inputObject.value = fieldInfo.hidden
@@ -440,7 +422,7 @@ export default {
             }
 
             // if it is an array, populate the nestedInputsArray
-            if (inputObject.inputType === 'value-array') {
+            if (inputObject.inputOptions?.inputType === 'value-array') {
               if (Array.isArray(inputObject.value)) {
                 inputObject.value.forEach((ele) =>
                   addNestedInputObject(this, inputObject, ele)
@@ -513,8 +495,8 @@ export default {
         if (this.selectedItem && inputObject.fieldKey in this.selectedItem) {
           inputObject.value = this.selectedItem[inputObject.fieldKey]
         } else {
-          inputObject.value = inputObject.fieldInfo.default
-            ? await inputObject.fieldInfo.default(this)
+          inputObject.value = inputObject.inputOptions?.getInitialValue
+            ? await inputObject.inputOptions.getInitialValue(this)
             : null
         }
 
@@ -538,23 +520,18 @@ export default {
                 ? fieldElement
                 : fieldElement.field
 
-            const fieldInfo = lookupFieldInfo(this.recordInfo, fieldKey)
+            const fieldInfo = lookupInputField(this.recordInfo, fieldKey)
 
             const inputObject = {
               fieldKey,
-              primaryField: fieldInfo.fields ? fieldInfo.fields[0] : fieldKey,
+              primaryField: fieldKey,
               fieldInfo,
               recordInfo: this.recordInfo,
-              inputType: fieldInfo.inputType,
-              label: fieldInfo.text ?? fieldKey,
-              hint: fieldInfo.hint,
+              label: fieldInfo.text ?? camelCaseToCapitalizedString(fieldKey),
               closeable: false,
-              optional: fieldInfo.optional,
-              inputRules: fieldInfo.inputRules,
               inputOptions: fieldInfo.inputOptions,
               value: null,
               inputValue: null,
-              getOptions: fieldInfo.getOptions,
               handleFileAdded:
                 typeof fieldElement === 'string'
                   ? null
@@ -593,13 +570,13 @@ export default {
               // if hideLockedFields, also set those fields to hidden
               if (this.hideLockedFields) inputObject.hidden = true
             } else {
-              inputObject.value = fieldInfo.default
-                ? await fieldInfo.default(this)
+              inputObject.value = fieldInfo.inputOptions?.getInitialValue
+                ? await fieldInfo.inputOptions.getInitialValue(this)
                 : null
             }
 
             // if it is an array, populate the nestedInputsArray
-            if (inputObject.inputType === 'value-array') {
+            if (inputObject.inputOptions?.inputType === 'value-array') {
               if (Array.isArray(inputObject.value)) {
                 inputObject.value.forEach((ele) =>
                   addNestedInputObject(this, inputObject, ele)

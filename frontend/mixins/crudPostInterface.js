@@ -7,7 +7,7 @@ import {
   capitalizeString,
   generateTimeAgoString,
   generateFilterByObjectArray,
-  lookupFieldInfo,
+  lookupInputField,
 } from '~/services/base'
 import EditRecordInterface from '~/components/interface/crud/editRecordInterface.vue'
 import PreviewableFilesColumn from '~/components/table/previewableFilesColumn.vue'
@@ -127,20 +127,14 @@ export default {
     // transforms SortObject[] to CrudSortObject[]
     // type: CrudSortObject[]
     sortOptions() {
-      return this.recordInfo.paginationOptions.sortOptions?.map(
-        (sortObject) => {
-          const fieldInfo = lookupFieldInfo(this.recordInfo, sortObject.field)
-
+      return (
+        this.recordInfo.paginationOptions.sortOptions?.map((sortObject) => {
           return {
-            text:
-              sortObject.text ??
-              `${fieldInfo.text ?? sortObject.field} (${
-                sortObject.desc ? 'Desc' : 'Asc'
-              })`,
+            text: sortObject.text,
             field: sortObject.field,
             desc: sortObject.desc,
           }
-        }
+        }) ?? []
       )
     },
 
@@ -283,8 +277,7 @@ export default {
               after: this.endCursor,
             }),
             filterBy: generateFilterByObjectArray(
-              this.lockedFilters.concat(this.additionalFilters),
-              this.recordInfo
+              this.lockedFilters.concat(this.additionalFilters)
             ),
             sortBy: this.currentSort
               ? [{ field: this.currentSort.field, desc: this.currentSort.desc }]

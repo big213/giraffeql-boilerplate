@@ -24,19 +24,14 @@ export type CrudInputObject = {
   primaryField?: string // the main field. either fieldInfo.fields[0] or the fieldKey
   fieldInfo?: any // fieldInfo
   recordInfo?: any | null // recordInfo, if any
-  inputType: InputType
   label: string // the label for the input
-  hint?: string | null // the hint for the input
   closeable?: boolean // is the input closeable?
-  optional?: boolean // is the input optional?
-  inputRules?: any[] // array of validators for the input
   inputOptions?: {
     [x in string]: any
   } // various extra options relating to the specific inputType
   value: any // the actual value of the input
   inputValue: any // the proxy value of the input
   secondaryInputValue: any // a secondary proxy value, for compound fields (like stripe-pi)
-  getOptions?: (that, item) => any
   // function that will get run whenever a file gets added to the input (if it is a file input)
   handleFileAdded?: (that, inputsArray, inputObject, fileRecord) => void
   options: any[] // the options of the input, if it applies

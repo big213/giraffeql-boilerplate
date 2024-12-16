@@ -56,6 +56,7 @@ import {
   setInputValue,
   getInputValue,
   getInputObject,
+  camelCaseToCapitalizedString,
 } from '~/services/base'
 
 export default {
@@ -259,19 +260,16 @@ export default {
                 fieldInfo: inputDef.definition,
                 recordInfo: null,
                 inputType: inputDef.definition.inputType,
-                label: inputDef.definition.text ?? inputDef.field,
-                hint: inputDef.definition.hint,
+                label:
+                  inputDef.definition.text ??
+                  camelCaseToCapitalizedString(inputDef.field),
                 closeable: false,
-                optional: inputDef.definition.optional,
-                inputRules: inputDef.definition.inputRules,
                 inputOptions: inputDef.definition.inputOptions,
                 value: null,
                 inputValue: null,
                 secondaryInputValue: null,
-                getOptions: inputDef.definition.getOptions,
                 options: [],
                 readonly: false,
-                hidden: false,
                 loading: false,
                 focused: false,
                 cols: inputDef.cols,
@@ -292,13 +290,14 @@ export default {
                 inputObject.value = this.selectedItem[inputDef.field]
                 inputObject.readonly = true
               } else {
-                inputObject.value = inputDef.definition.default
-                  ? await inputDef.definition.default(this)
+                inputObject.value = inputDef.definition.inputOptions
+                  ?.getInitialValue
+                  ? await inputDef.definition.inputOptions.getInitialValue(this)
                   : null
               }
 
               // if it is an array, populate the nestedInputsArray
-              if (inputObject.inputType === 'value-array') {
+              if (inputObject.inputOptions?.inputType === 'value-array') {
                 if (Array.isArray(inputObject.value)) {
                   inputObject.value.forEach((ele) =>
                     addNestedInputObject(this, inputObject, ele)

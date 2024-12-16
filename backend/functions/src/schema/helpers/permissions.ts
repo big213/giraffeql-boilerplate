@@ -11,6 +11,16 @@ export const userRoleToPermissionsMap = {
   [userRole.NORMAL.name]: [],
 };
 
+export function parsePermissions(
+  permissions: null | string[]
+): userPermission[] {
+  if (!permissions) return [];
+
+  return permissions.map((permission) =>
+    userPermission.fromUnknown(permission)
+  );
+}
+
 export function generateUserAdminGuard(): AccessControlFunction {
   return generateUserRoleGuard([userRole.ADMIN]);
 }

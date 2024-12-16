@@ -4,8 +4,9 @@ import {
   handleError,
   capitalizeString,
   serializeNestedProperty,
-  lookupFieldInfo,
+  lookupRenderField,
   processQuery,
+  camelCaseToCapitalizedString,
 } from '~/services/base'
 import CircularLoader from '~/components/common/circularLoader.vue'
 import Hero from '~/components/interface/crud/hero/hero.vue'
@@ -101,12 +102,6 @@ export default {
           )
         }
 
-        const tableOptionsHideIf = inputObject.fieldInfo.tableOptions?.hideIf
-
-        if (tableOptionsHideIf) {
-          return !tableOptionsHideIf(inputObject.value, this.currentItem)
-        }
-
         return true
       })
     },
@@ -187,12 +182,13 @@ export default {
           typeof fieldElement === 'string' ? fieldElement : fieldElement.field
         )
 
-        const { query, serializeMap } = await processQuery(
+        const { query } = await processQuery(
           this,
           this.recordInfo,
           fields
             .concat(this.recordInfo.requiredFields ?? [])
-            .concat(this.recordInfo.viewOptions.requiredFields ?? [])
+            .concat(this.recordInfo.viewOptions.requiredFields ?? []),
+          true
         )
         const data = await executeGiraffeql({
           [`get${this.capitalizedType}`]: {
@@ -205,16 +201,6 @@ export default {
 
         // save record
         this.currentItem = data
-
-        // remove any undefined serializeMap elements
-        serializeMap.forEach((val, key) => {
-          if (val === undefined) serializeMap.delete(key)
-        })
-
-        // apply serialization to results
-        serializeMap.forEach((serialzeFn, field) => {
-          serializeNestedProperty(data, field, serialzeFn)
-        })
 
         // run any custom onSuccess functions
         const onSuccess = this.recordInfo.viewOptions.onSuccess
@@ -231,13 +217,14 @@ export default {
                 ? fieldElement
                 : fieldElement.field
 
-            const fieldInfo = lookupFieldInfo(this.recordInfo, fieldKey)
+            const fieldInfo = lookupRenderField(this.recordInfo, fieldKey)
 
             const fieldValue = fieldInfo.hidden
               ? null
               : getNestedProperty(data, fieldKey)
 
             const inputObject = {
+              label: fieldInfo.text ?? camelCaseToCapitalizedString(fieldKey),
               field: fieldInfo.fields ? fieldInfo.fields[0] : fieldKey,
               fieldInfo,
               value: fieldValue, // already serialized
@@ -245,10 +232,9 @@ export default {
               readonly: true,
               generation: 0,
               verticalMode:
-                fieldInfo.tableOptions?.verticalView ??
-                (typeof fieldElement === 'string'
+                typeof fieldElement === 'string'
                   ? false
-                  : fieldElement.verticalMode ?? false),
+                  : fieldElement.verticalMode ?? false,
               hideIf:
                 typeof fieldElement === 'string'
                   ? undefined

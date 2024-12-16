@@ -2,7 +2,6 @@ import type { RecordInfo, SimpleRecordInfo } from '~/types'
 
 export const SimpleUser: SimpleRecordInfo<'user'> = {
   typename: 'user',
-  pluralTypename: 'users',
   name: 'User',
   pluralName: 'Users',
   icon: 'mdi-account',

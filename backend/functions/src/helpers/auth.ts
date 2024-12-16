@@ -1,7 +1,10 @@
 import { ApiKey, User } from "../schema/services";
 import { auth } from "firebase-admin";
-import { userRole, userPermission } from "../schema/enums";
-import { userRoleToPermissionsMap } from "../schema/helpers/permissions";
+import { userRole } from "../schema/enums";
+import {
+  parsePermissions,
+  userRoleToPermissionsMap,
+} from "../schema/helpers/permissions";
 import type { ContextUser } from "../types";
 import { AuthenticationError } from "../schema/core/helpers/error";
 import { timeout } from "../schema/core/helpers/shared";
@@ -19,17 +22,15 @@ export async function validateToken(bearerToken: string): Promise<ContextUser> {
 
     // check if firebase_uid exists
     // fetch role from database
-    let userRecord = await User.getFirstSqlRecord({
+    let user = await User.getFirstSqlRecord({
       select: ["id", "role", "permissions"],
       where: {
         firebaseUid: decodedToken.uid,
       },
     });
 
-    const permissions: userPermission[] = [];
-
     // user not exists in db
-    if (!userRecord) {
+    if (!user) {
       // user not exists, must create
 
       // get the displayName, photoURL from firebase
@@ -63,7 +64,7 @@ export async function validateToken(bearerToken: string): Promise<ContextUser> {
       });
 
       // fetch the user
-      userRecord = await User.getFirstSqlRecord({
+      user = await User.getFirstSqlRecord({
         select: ["id", "role", "permissions"],
         where: {
           id: addUserResults.id,
@@ -71,28 +72,17 @@ export async function validateToken(bearerToken: string): Promise<ContextUser> {
       });
     }
 
-    const id = userRecord.id;
-    const role = userRole.fromUnknown(userRecord.role);
+    const id = user.id;
+    const role = userRole.fromUnknown(user.role);
 
-    if (userRoleToPermissionsMap[role.name]) {
-      permissions.push(...userRoleToPermissionsMap[role.name]);
-    }
-
-    // if any extra permissions, also add those
-    let parsedPermissions = userRecord.permissions
-      ? userRecord.permissions
-      : [];
-
-    // convert permissions to enums
-    parsedPermissions = parsedPermissions.map((ele) =>
-      userPermission.fromName(ele)
+    const userPermissions = (userRoleToPermissionsMap[role.name] ?? []).concat(
+      parsePermissions(user.permissions)
     );
-    permissions.push(...parsedPermissions);
 
     const contextUser: ContextUser = {
       id,
       role,
-      permissions,
+      permissions: userPermissions,
       isApiKey: false,
     };
 
@@ -106,10 +96,9 @@ export async function validateToken(bearerToken: string): Promise<ContextUser> {
 
 export async function validateApiKey(code: string): Promise<ContextUser> {
   try {
-    // lookup user by API key
     const apiKey = await ApiKey.getFirstSqlRecord(
       {
-        select: ["createdBy.id", "createdBy.role", "createdBy.permissions"],
+        select: ["user.id", "user.role", "user.permissions", "permissions"],
         where: {
           code,
         },
@@ -117,21 +106,23 @@ export async function validateApiKey(code: string): Promise<ContextUser> {
       true
     );
 
-    let parsedPermissions = apiKey["createdBy.permissions"] ?? [];
+    const role = userRole.fromUnknown(apiKey["user.role"]);
 
-    // convert permissions to enums
-    parsedPermissions = parsedPermissions.map((ele) =>
-      userPermission.fromName(ele)
+    // calculate the user's permissions
+    const userPermissions = (userRoleToPermissionsMap[role.name] ?? []).concat(
+      parsePermissions(apiKey["user.permissions"])
     );
 
-    const role = userRole.fromUnknown(apiKey["createdBy.role"]);
+    // calculate the permissions associated with the apiKey
+    const apiKeyPermissions = parsePermissions(apiKey.permissions);
 
     return {
-      id: apiKey["createdBy.id"],
+      id: apiKey["user.id"],
       role,
-      permissions: (userRoleToPermissionsMap[role.name] ?? []).concat(
-        parsedPermissions
-      ),
+      // the api key's permissions is a subset of the apiKey.permissions
+      permissions: apiKeyPermissions
+        ? userPermissions.filter((ele) => apiKeyPermissions.includes(ele))
+        : userPermissions,
       isApiKey: true,
     };
   } catch (err: unknown) {

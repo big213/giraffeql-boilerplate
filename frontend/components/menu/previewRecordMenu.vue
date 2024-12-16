@@ -248,10 +248,10 @@ export default {
       try {
         const { query } =
           this.recordInfo &&
-          (await processQuery(this, this.recordInfo, this.fields))
+          (await processQuery(this, this.recordInfo, this.fields, true))
 
         this.itemData = await executeGiraffeql({
-          ['get' + this.capitalizedType]: {
+          [`get${this.capitalizedType}`]: {
             id: true,
             __typename: true,
             ...query,

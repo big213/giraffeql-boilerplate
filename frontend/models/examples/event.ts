@@ -21,151 +21,12 @@ import type { RecordInfo } from '~/types'
 export const Event: RecordInfo<any> = {
   typename: 'event',
   routeType: 'a',
-  pluralTypename: 'events',
   name: 'Event',
   pluralName: 'Events',
   icon: 'mdi-calendar',
   requiredFields: ['name', 'avatarUrl', 'isActive'],
-  fields: {
-    ...generateBaseFields({
-      hasName: true,
-      hasAvatar: true,
-      hasDescription: true,
-      name: 'Event',
-      pluralName: 'Events',
-      pluralTypename: 'events',
-      typename: 'event',
-    }),
-    dateTimePickerField: {
-      text: 'Start At',
-      inputType: 'datetimepicker',
-      component: SimplifiedTimeStringColumn,
-      hint: 'Specify the time as it would appear in the local timezone',
-      inputOptions: {
-        cols: 6,
-      },
-    },
-    postedDate: {
-      text: 'Posted Date',
-      inputType: 'datepicker',
-      default: () => new Date().toISOString().split('T')[0],
-    },
-    standardTextField: {
-      text: 'Title',
-    },
-    isPublic: {
-      text: 'Is Public',
-      component: BooleanColumn,
-      inputType: 'switch',
-      default: () => true,
-    },
-    // joinable fields
-    locale: {
-      ...generateJoinableField({
-        text: 'Locale',
-        fieldname: 'locale',
-        fieldOptions: {
-          // getOptions: getLocales
-          /*
-          getOptions: (that) =>
-            getEvents(that, false, {
-              sortBy: [
-                {
-                  field: 'sortIndex',
-                  desc: false,
-                },
-              ],
-            }),
-          */
-        },
-      }),
-    },
-    localeRecord: generatePreviewableRecordField({
-      fieldname: 'locale',
-      text: 'Locale',
-    }),
-    // OR, joinable and previewable fields, combined
-    ...generatePreviewableJoinableField({
-      text: 'Locale',
-      fieldname: 'locale',
-      // inputType: 'autocomplete',
-      // fieldOptions: { getOptions: getLocales },
-    }),
-    endedAt: {
-      text: 'Ended At',
-      component: TimeagoColumn,
-    },
-    cost: generateCurrencyField({
-      text: 'Cost',
-    }),
-    // ONE file only (single file joined field)
-    ...generatePreviewableFilesColumn({
-      fieldname: 'file',
-      text: 'File',
-      inputType: 'multiple-file',
-      soloMode: true,
-      limit: 1,
-    }),
-    // multiple files (media mode)
-    ...generatePreviewableFilesColumn({
-      fieldname: 'files',
-      text: 'Files',
-      inputType: 'multiple-file',
-      hideDownload: true,
-      mediaMode: true,
-    }),
-    // multiple files (file chip mode)
-    ...generatePreviewableFilesColumn({
-      fieldname: 'files',
-      text: 'Files',
-      inputType: 'multiple-file',
-    }),
-    role: {
-      text: 'User Role',
-      getOptions: getUserRoleEnumValues,
-      inputType: 'select',
-    },
-    permissions: {
-      text: 'Custom Permissions',
-      serialize: (val: string[]) => val && val.join(','),
-      parseValue: (val: string) =>
-        val ? val.split(',').filter((ele) => ele) : [],
-    },
-    /*
-    status: {
-      text: 'Status',
-      getOptions: getOrderStatusEnumValues,
-      inputType: 'select',
-      component: ChipColumn,
-      columnOptions: {
-        smallMode: true,
-        valuesMap: orderStatusMap,
-      },
-    },
-    */
-    events: generateMultipleJoinableField({
-      fieldname: 'events',
-      text: 'Events',
-      typename: 'event',
-      inputType: 'multiple-select',
-      fieldOptions: {
-        /*
-        getOptions: (that) =>
-          getEvents(that, false, {
-            sortBy: [
-              {
-                field: 'sortIndex',
-                desc: false,
-              },
-            ],
-          }),
-        */
-        columnOptions: {
-          disablePreview: true,
-        },
-      },
-    }),
-  },
+  inputFields: {},
+  renderFields: {},
   paginationOptions: {
     searchOptions: {},
     filterOptions: [
@@ -186,8 +47,8 @@ export const Event: RecordInfo<any> = {
     ...generateClickRowToOpenDialogOptions(),
     ...generateClickRowToExpandOptions(),
     sortOptions: [
-      ...generateSortOptions('createdAt'),
-      ...generateSortOptions('updatedAt'),
+      ...generateSortOptions({ field: 'createdAt', text: 'Created At' }),
+      ...generateSortOptions({ field: 'updatedAt', text: 'Updated At' }),
     ],
     headerOptions: [
       {

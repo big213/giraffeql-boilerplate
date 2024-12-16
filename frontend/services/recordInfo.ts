@@ -40,7 +40,7 @@ export function generatePreviewableJoinableField({
   typename?: string
   text: string
   inputType?: InputType
-  fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
+  fieldOptions?: Omit<FieldDefinition, 'text'>
   alias?: string
 }) {
   return {
@@ -69,7 +69,7 @@ export function generatePreviewableRecordField({
   fieldname: string
   typename?: string
   text: string
-  fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
+  fieldOptions?: Omit<FieldDefinition, 'text'>
 }) {
   const fieldnamePrefix = fieldname ? fieldname + '.' : ''
   const simpleModel = getSimpleModel(typename ?? fieldname)
@@ -100,15 +100,15 @@ export function generateJoinableField({
   typename?: string
   text: string
   inputType?: InputType
-  fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
+  fieldOptions?: Omit<FieldDefinition, 'text'>
 }) {
   const simpleModel = getSimpleModel(typename ?? fieldname)
   return {
     text,
     fields: [`${fieldname}.id`],
-    inputType,
     ...fieldOptions,
     inputOptions: {
+      inputType,
       hasAvatar: simpleModel.hasAvatar,
       hasName: simpleModel.hasName,
       typename: typename ?? fieldname,
@@ -126,17 +126,14 @@ export function generateBaseFields(simpleModel: SimpleRecordInfo<any>) {
     ...(simpleModel.hasName && {
       name: {
         text: 'Name',
-        tableOptions: {
-          verticalView: true,
-        },
       },
     }),
     ...(simpleModel.hasAvatar && {
       avatarUrl: {
         text: 'Avatar',
-        inputType: 'single-image-url' as InputType,
         component: AvatarColumn,
         inputOptions: {
+          inputType: 'single-image-url' as InputType,
           avatarOptions: {
             fallbackIcon: simpleModel.icon,
           },
@@ -146,9 +143,8 @@ export function generateBaseFields(simpleModel: SimpleRecordInfo<any>) {
     ...(simpleModel.hasDescription && {
       description: {
         text: 'Description',
-        inputType: 'textarea' as InputType,
-        tableOptions: {
-          verticalView: true,
+        inputOptions: {
+          inputType: 'textarea' as InputType,
         },
       },
     }),
@@ -234,8 +230,10 @@ export function generateIsPublicField({
     isPublic: {
       text: 'Is Public',
       component: BooleanColumn,
-      inputType: 'switch' as InputType,
-      default: () => defaultValue,
+      inputOptions: {
+        inputType: 'switch' as InputType,
+        getInitialValue: () => defaultValue,
+      },
     },
   }
 }
@@ -291,7 +289,7 @@ export function generateTruthyRecordField({
         `${fieldPath}.avatarUrl`,
       ])
     }, <string[]>[]),
-    columnOptions: {
+    renderOptions: {
       fields,
     },
     component: TruthyRecordColumn,
@@ -316,7 +314,7 @@ export function generateConcatRecordField({
         `${fieldPath}.avatarUrl`,
       ])
     }, <string[]>[]),
-    columnOptions: {
+    renderOptions: {
       fields,
     },
     component: ConcatRecordColumn,
@@ -343,7 +341,7 @@ export function generatePreviewableFilesColumn({
   hideDownload?: boolean
   mediaMode?: boolean
   useFirebaseUrl?: boolean
-  fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
+  fieldOptions?: Omit<FieldDefinition, 'text'>
 }) {
   return {
     [fieldname]: {
@@ -359,7 +357,6 @@ export function generatePreviewableFilesColumn({
         useFirebaseUrl ? `${fieldname}.downloadUrl` : null,
       ].filter((e) => e),
       pathPrefix: fieldname,
-      inputType,
       default: () => [],
       parseValue: (val) => {
         if (!Array.isArray(val)) return []
@@ -373,7 +370,7 @@ export function generatePreviewableFilesColumn({
         // if solo mode, need to convert to array
         return soloMode ? [val].filter((e) => e) : val
       },
-      columnOptions: {
+      renderOptions: {
         hideDownload,
         useFirebaseUrl,
       },
@@ -381,14 +378,11 @@ export function generatePreviewableFilesColumn({
       ...fieldOptions,
       inputOptions: {
         ...fieldOptions?.inputOptions,
+        inputType,
         useFirebaseUrl,
         limit,
         mediaMode,
         contentType: mediaMode ? 'image/*' : null,
-      },
-      tableOptions: {
-        ...fieldOptions?.tableOptions,
-        verticalView: true,
       },
     },
   }
@@ -472,29 +466,29 @@ export function generateKeyValueArrayField({
 }: {
   fieldname: string
   text: string
-  fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
+  fieldOptions?: Omit<FieldDefinition, 'text'>
 }) {
   return {
     [fieldname]: {
       text,
       fields: [`${fieldname}`, `${fieldname}.key`, `${fieldname}.value`],
-      inputType: 'value-array',
       inputOptions: {
+        inputType: 'value-array',
         nestedOptions: {
           fields: [
             {
               key: 'key',
-              inputType: 'text',
               text: 'Key',
               inputOptions: {
+                inputType: 'text',
                 cols: 6,
               },
             },
             {
               key: 'value',
-              inputType: 'text',
               text: 'Value',
               inputOptions: {
+                inputType: 'text',
                 cols: 6,
               },
             },
@@ -519,19 +513,21 @@ export function generateSimpleValueArrayField({
 }: {
   fieldname: string
   text: string
-  fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
+  fieldOptions?: Omit<FieldDefinition, 'text'>
 }) {
   return {
     [fieldname]: {
       text,
-      inputType: 'value-array',
       inputOptions: {
+        inputType: 'value-array',
         nestedOptions: {
           fields: [
             {
               key: 'value',
-              inputType: 'text',
               text: 'Value',
+              inputOptions: {
+                inputType: 'text',
+              },
             },
           ],
         },
@@ -558,11 +554,10 @@ export function generateValueArrayField({
   fieldname: string
   text: string
   nestedOptions: NestedOptions
-  fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
+  fieldOptions?: Omit<FieldDefinition, 'text'>
 }) {
   return {
     text,
-    inputType: 'value-array' as InputType,
     fields: [fieldname].concat(
       nestedOptions.fields.map(
         (nestedField) => `${fieldname}.${nestedField.key}`
@@ -571,6 +566,7 @@ export function generateValueArrayField({
     ...fieldOptions,
     inputOptions: {
       ...fieldOptions.inputOptions,
+      inputType: 'value-array' as InputType,
       nestedOptions,
     },
   }
@@ -581,7 +577,7 @@ export function generateCurrencyField({
   fieldOptions = {},
 }: {
   text: string
-  fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
+  fieldOptions?: Omit<FieldDefinition, 'text'>
 }) {
   return {
     text,
@@ -633,13 +629,21 @@ export function generateDualOwnerInputOptions({
   }
 }
 
-export function generateSortOptions(field: string) {
+export function generateSortOptions({
+  field,
+  text,
+}: {
+  field: string
+  text?: string
+}) {
   return [
     {
+      text: `${text ?? field} (Desc)`,
       field,
       desc: true,
     },
     {
+      text: `${text ?? field} (Asc)`,
       field,
       desc: false,
     },
@@ -746,7 +750,7 @@ export function generateMultipleJoinableField({
   text: string
   typename: string
   inputType?: InputType
-  fieldOptions?: Omit<FieldDefinition, 'inputType' | 'text'>
+  fieldOptions?: Omit<FieldDefinition, 'text'>
 }) {
   return {
     text,
@@ -757,7 +761,6 @@ export function generateMultipleJoinableField({
       `${fieldname}.__typename`,
       `${fieldname}.avatarUrl`,
     ],
-    inputType,
     default: () => [],
     parseValue: (val) => {
       // if not array, convert to empty array
@@ -772,6 +775,7 @@ export function generateMultipleJoinableField({
     component: RecordColumn,
     ...fieldOptions,
     inputOptions: {
+      inputType,
       hasAvatar: true,
       hasName: true,
       typename,

@@ -223,8 +223,7 @@
         </v-btn>
         <v-menu
           v-if="
-            sortOptions.length > 0 &&
-            !recordInfo.paginationOptions.hideSortOptions
+            sortOptions.length && !recordInfo.paginationOptions.hideSortOptions
           "
           offset-y
           left
@@ -334,7 +333,7 @@
             v-for="(crudFilterObject, i) in visibleFiltersArray"
             :key="i"
             cols="12"
-            lg="3"
+            :lg="crudFilterObject.inputObject.cols ?? 3"
             class="py-0"
           >
             <GenericInput
@@ -488,7 +487,7 @@
                           v-if="headerItem.fieldInfo.component"
                           :item="item"
                           :field-path="headerItem.path"
-                          :options="headerItem.fieldInfo.columnOptions"
+                          :options="headerItem.fieldInfo.renderOptions"
                           display-mode="crud"
                           @edit-item="openEditItemDialog"
                         ></component>
@@ -633,7 +632,7 @@
                     v-if="headerItem.fieldInfo.component"
                     :item="props.item"
                     :field-path="headerItem.path"
-                    :options="headerItem.fieldInfo.columnOptions"
+                    :options="headerItem.fieldInfo.renderOptions"
                     display-mode="crud"
                     @edit-item="openEditItemDialog"
                   ></component>
@@ -682,7 +681,7 @@
                   v-if="headerItem.fieldInfo.component"
                   :item="props.item"
                   :field-path="headerItem.path"
-                  :options="headerItem.fieldInfo.columnOptions"
+                  :options="headerItem.fieldInfo.renderOptions"
                   display-mode="crud"
                   @edit-item="openEditItemDialog"
                 ></component>

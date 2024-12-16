@@ -15,8 +15,9 @@
 
 <script>
 import CrudRecordPage from '~/components/page/crudRecordPage.vue'
-import * as models from '~/models'
 import { capitalizeString, kebabToCamelCase } from '~/services/base'
+import { myViews } from '~/models2/views'
+import { convertViewDefinition } from '~/services/view'
 
 export default {
   async asyncData({ params }) {
@@ -32,7 +33,7 @@ export default {
 
   computed: {
     currentModel() {
-      return models[`My${capitalizeString(this.type)}`]
+      return convertViewDefinition(myViews[capitalizeString(this.type)])
     },
 
     lockedFilters() {
@@ -40,7 +41,7 @@ export default {
       return (
         this.currentModel?.paginationOptions?.defaultLockedFilters?.(this) ?? [
           {
-            field: 'createdBy',
+            field: 'createdBy.id',
             operator: 'eq',
             value: this.$store.getters['auth/user'].id,
           },
