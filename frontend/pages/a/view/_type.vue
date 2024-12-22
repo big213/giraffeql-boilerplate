@@ -1,7 +1,7 @@
 <template>
   <ViewRecordPage
-    v-if="currentModel"
-    :record-info="currentModel"
+    v-if="currentView"
+    :view-definition="currentView"
   ></ViewRecordPage>
   <v-container v-else fill-height>
     <v-layout align-center justify-center>
@@ -14,8 +14,7 @@
 
 <script>
 import ViewRecordPage from '~/components/page/viewRecordPage.vue'
-import { baseViews } from '~/models2/views'
-import { convertViewDefinition } from '~/services/view'
+import * as baseViews from '~/models2/views/base'
 import { capitalizeString, kebabToCamelCase } from '~/services/base'
 
 export default {
@@ -31,8 +30,8 @@ export default {
   },
 
   computed: {
-    currentModel() {
-      return convertViewDefinition(baseViews[capitalizeString(this.type)])
+    currentView() {
+      return baseViews[`Base${capitalizeString(this.type)}View`]
     },
   },
 }

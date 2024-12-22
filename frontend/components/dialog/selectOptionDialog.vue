@@ -35,7 +35,6 @@
 
 <script>
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
-import { getIcon } from '~/services/base'
 
 export default {
   components: {
@@ -58,7 +57,6 @@ export default {
     },
   },
   methods: {
-    getIcon,
     close() {
       this.$emit('close')
     },

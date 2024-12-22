@@ -3,9 +3,9 @@ import {
   generateNavRouteObject,
   userHasPermissions,
 } from './base'
-import * as models from '../models'
+import * as views from '../models2/views'
 import * as actions from '../models/actions'
-import * as baseModels from '../models/base'
+import * as baseViews from '../models2/views/base'
 
 export function generateNavDrawerItems(that) {
   return [
@@ -23,7 +23,7 @@ export function generateNavDrawerItems(that) {
       title: 'Explore',
       items: [
         generateNavRouteObject(that, {
-          recordInfo: models.PublicUser,
+          viewDefinition: views.PublicUserView,
           pageOptions: {
             sort: {
               field: 'createdAt',
@@ -38,7 +38,7 @@ export function generateNavDrawerItems(that) {
           title: 'My Account',
           items: [
             generateNavRouteObject(that, {
-              recordInfo: models.MyApiKey,
+              viewDefinition: views.MyApiKeyView,
               pageOptions: {
                 sort: {
                   field: 'createdAt',
@@ -47,7 +47,7 @@ export function generateNavDrawerItems(that) {
               },
             }),
             generateNavRouteObject(that, {
-              recordInfo: models.MyFile,
+              viewDefinition: views.MyFileView,
               pageOptions: {
                 sort: {
                   field: 'createdAt',
@@ -72,11 +72,11 @@ export function generateNavDrawerItems(that) {
                   title: 'Models',
                   icon: 'mdi-star',
                   collapsible: true,
-                  items: Object.values(baseModels)
-                    .sort((a, b) => a.name.localeCompare(b.name))
-                    .map((recordInfo) =>
+                  items: Object.values(baseViews)
+                    .sort((a, b) => a.entity.name.localeCompare(b.entity.name))
+                    .map((viewDefinition) =>
                       generateNavRouteObject(that, {
-                        recordInfo,
+                        viewDefinition,
                         pageOptions: {
                           sort: {
                             field: 'createdAt',

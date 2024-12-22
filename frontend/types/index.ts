@@ -203,7 +203,7 @@ export type ChipOptions = {
 }
 
 export type PostOptions = {
-  recordInfo: RecordInfo<any>
+  viewDefinition: RecordInfo<any>
 
   // are the posts readonly?
   readonly?: boolean
@@ -238,7 +238,7 @@ export type ShareOptions = {
   component?: any
 
   // get a custom share URL
-  getUrl?: (that, recordInfo, id) => string
+  getUrl?: (that, viewDefinition, id) => string
 
   // if a custom title, what should it be?
   title?: string
@@ -252,12 +252,12 @@ export type EnterOptions = {}
 export type ExpandTypeObject = {
   // the key that will be associated with this in the URL
   key: string
-  // recordInfo is required unless it is a custom component
-  recordInfo?: RecordInfo<any>
+  // viewDefinition is required unless it is a custom component
+  viewDefinition?: RecordInfo<any>
   component?: any
-  // name for the expandType, otherwise recordInfo.name will be used
+  // name for the expandType, otherwise viewDefinition.entity.name will be used
   name?: string
-  // icon for the expandType, otherwise recordInfo.icon will be used
+  // icon for the expandType, otherwise viewDefinition.entity.icon will be used
   icon?: string
   // function that will replace the lockedSubFilters() computed property in crud.js if provided
   lockedFilters?: (that, item) => CrudRawFilterObject[]
@@ -274,7 +274,7 @@ export type ExpandTypeObject = {
   // force use of dialog for this expandType. default false.
   forceDialog?: boolean
 
-  // show any preset filters that may be on the recordInfo (default no)
+  // show any preset filters that may be on the viewDefinition (default no)
   showPresets?: boolean
 
   // number of results to show per page for this expand option. else, defaults to 12
@@ -520,7 +520,7 @@ export type SimpleRecordInfo<T extends keyof MainTypes> = Partial<
 }
 
 export type RecordInfo<T extends keyof MainTypes> = {
-  // optional title for this recordInfo
+  // optional title for this viewDefinition
   title?: string
   // name of the type
   typename: T
@@ -584,9 +584,9 @@ export type RecordInfo<T extends keyof MainTypes> = {
 
   dialogOptions?: DialogOptions
 
-  addOptions?: AddOptions
+  createOptions?: AddOptions
 
-  editOptions?: EditOptions
+  updateOptions?: EditOptions
 
   deleteOptions?: DeleteOptions
 
@@ -617,10 +617,6 @@ export type InputOptions = {
 
   // submitting to API, in filterBy and create/update functions
   parseValue?: (val: any) => any
-
-  // for type-autocomplete and type-combobox, multiple-select -- a simple way to get an avatar/name chip.
-  hasAvatar?: boolean
-  hasName?: boolean
 
   hint?: string
   inputRules?: any[]

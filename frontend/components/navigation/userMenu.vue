@@ -105,19 +105,6 @@
           </v-btn>
         </v-toolbar>
       </template>
-      <template v-slot:item>
-        <v-chip pill>
-          <v-avatar left>
-            <v-img
-              v-if="data.item.avatar"
-              :src="data.item.avatar"
-              contain
-            ></v-img
-            ><v-icon v-else>{{ getIcon(data.item.typename) }}</v-icon>
-          </v-avatar>
-          {{ data.item.name }}
-        </v-chip>
-      </template>
     </SelectOptionDialog>
   </v-menu>
 </template>

@@ -15,15 +15,15 @@
         <v-card class="elevation-12">
           <EditRecordInterface
             :selected-item="selectedItem"
-            :record-info="recordInfo"
-            mode="edit"
+            :view-definition="viewDefinition"
+            mode="update"
             :generation="generation"
             @handle-submit="reset()"
           >
             <template v-slot:toolbar>
               <v-toolbar flat color="accent" dense>
-                <v-icon left>{{ recordInfo.icon }}</v-icon>
-                <v-toolbar-title> {{ recordInfo.title }} </v-toolbar-title>
+                <v-icon left>{{ viewDefinition.entity.icon }}</v-icon>
+                <v-toolbar-title> {{ viewDefinition.title }} </v-toolbar-title>
                 <v-spacer></v-spacer>
                 <v-btn icon @click="reset()">
                   <v-icon>mdi-refresh</v-icon>
@@ -40,7 +40,7 @@
 <script>
 import UpdateCredentialsInterface from '~/components/interface/auth/updateCredentialsInterface.vue'
 import EditRecordInterface from '~/components/interface/crud/editRecordInterface.vue'
-import { MySettings } from '~/models'
+import { MySettingsView } from '~/models2/views/my/settings'
 
 export default {
   middleware: ['router-auth-redirect'],
@@ -51,7 +51,7 @@ export default {
 
   data() {
     return {
-      recordInfo: MySettings,
+      viewDefinition: MySettingsView,
       generation: 0,
     }
   },

@@ -1,23 +1,24 @@
 import { ViewDefinition } from '~/types/view'
-import { UserEntity } from '~/models2/entities'
+import { UserEntity, UserUserFollowLinkEntity } from '~/models2/entities'
 import {
   generateBaseInputFields,
   generateBaseRenderFields,
+  generateClickRowToOpenDialogOptions,
   generateSortOptions,
 } from '~/services/view'
 import {
   getUserPermissionEnumValues,
   getUserRoleEnumValues,
 } from '~/services/dropdown'
-import { generateClickRowToOpenDialogOptions } from '~/services/recordInfo'
 import ChipColumn from '~/components/table/chipColumn.vue'
 import { userRoleMap } from '~/services/constants'
 import BooleanColumn from '~/components/table/booleanColumn.vue'
 import FollowColumn from '~/components/table/followColumn.vue'
 
-export const User: ViewDefinition = {
+export const BaseUserView: ViewDefinition = {
   routeType: 'a',
-  entityDefinition: UserEntity,
+  entity: UserEntity,
+
   requiredFields: ['avatarUrl', 'name'],
   inputFields: {
     ...generateBaseInputFields(UserEntity),
@@ -70,6 +71,11 @@ export const User: ViewDefinition = {
       text: 'Follow',
       fields: ['currentUserFollowLink.id'],
       component: FollowColumn,
+      renderOptions: {
+        followOptions: {
+          entity: UserUserFollowLinkEntity,
+        },
+      },
     },
   },
   paginationOptions: {

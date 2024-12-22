@@ -1,10 +1,10 @@
 <template>
   <div>
     <FollowButton
-      v-if="followLinkModel"
+      v-if="followOptions"
       color="primary"
       small
-      :follow-link-model="followLinkModel"
+      :follow-options="followOptions"
       :item="item"
     ></FollowButton>
   </div>
@@ -13,8 +13,6 @@
 <script>
 import columnMixin from '~/mixins/column'
 import FollowButton from '~/components/button/followButton.vue'
-import { capitalizeString } from '~/services/base'
-import * as simpleModels from '~/models/simple'
 
 export default {
   components: {
@@ -24,11 +22,8 @@ export default {
   mixins: [columnMixin],
 
   computed: {
-    recordInfo() {
-      return simpleModels[`Simple${capitalizeString(this.item.__typename)}`]
-    },
-    followLinkModel() {
-      return this.recordInfo?.followLinkModel
+    followOptions() {
+      return this.options?.followOptions
     },
   },
 }

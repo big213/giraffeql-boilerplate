@@ -8,7 +8,9 @@
         </span>
       </div>
       <div v-else>
-        <span class="display-1 pl-2">{{ recordInfo.name }} Not Found</span>
+        <span class="display-1 pl-2"
+          >{{ viewDefinition.entity.name }} Not Found</span
+        >
       </div>
     </v-layout>
   </v-container>
@@ -20,7 +22,7 @@
             <template v-slot:rightIcon>
               <RecordActionMenu
                 v-if="!hideActions"
-                :record-info="recordInfo"
+                :view-definition="viewDefinition"
                 :item="selectedItem"
                 hide-enter
                 expand-mode="emit"
@@ -56,16 +58,18 @@
             <component
               :is="currentInterface"
               :selected-item="selectedItem"
-              :record-info="recordInfo"
+              :view-definition="viewDefinition"
               :generation="generation"
               :reset-instruction="recordResetInstruction"
               mode="view"
             >
               <template v-slot:toolbar>
                 <v-toolbar flat color="accent" dense>
-                  <v-icon left>{{ recordInfo.icon || 'mdi-domain' }}</v-icon>
+                  <v-icon left>{{
+                    viewDefinition.entity.icon || 'mdi-domain'
+                  }}</v-icon>
                   <v-toolbar-title>
-                    {{ recordInfo.name }}
+                    {{ viewDefinition.entity.name }}
                   </v-toolbar-title>
                   <v-spacer></v-spacer>
                   <v-btn
@@ -79,7 +83,7 @@
                     <v-icon>mdi-refresh</v-icon>
                   </v-btn>
                   <v-btn
-                    v-if="recordInfo.pageOptions?.dedicatedShareButton"
+                    v-if="viewDefinition.pageOptions?.dedicatedShareButton"
                     icon
                     @click="openEditDialog('share')"
                   >
@@ -87,7 +91,7 @@
                   >
                   <RecordActionMenu
                     v-if="!hideActions"
-                    :record-info="recordInfo"
+                    :view-definition="viewDefinition"
                     :item="selectedItem"
                     hide-view
                     hide-enter
@@ -126,9 +130,11 @@
             style="max-width: 800px"
             :is="postInterface"
             :locked-filters="postLockedFilters"
-            :hidden-fields="recordInfo.postOptions.hiddenFields"
-            :record-info="recordInfo.postOptions.recordInfo"
-            :initial-sort-options="recordInfo.postOptions.initialSortOptions"
+            :hidden-fields="viewDefinition.postOptions.hiddenFields"
+            :view-definition="viewDefinition.postOptions.viewDefinition"
+            :initial-sort-options="
+              viewDefinition.postOptions.initialSortOptions
+            "
           >
             <template v-slot:header-action>
               <v-btn icon @click="toggleComments(false)">
@@ -147,7 +153,7 @@
           <v-card class="elevation-12">
             <component
               :is="paginationComponent"
-              :record-info="expandTypeObject.recordInfo"
+              :view-definition="expandTypeObject.viewDefinition"
               :element-title="expandTypeObject.name"
               :icon="expandTypeObject.icon"
               :hidden-headers="expandTypeObject.excludeHeaders"
@@ -161,7 +167,7 @@
               :breadcrumb-items="breadcrumbItems"
               :is-child-component="isChildComponent"
               dense
-              :parent-expand-types="recordInfo.expandTypes"
+              :parent-expand-types="viewDefinition.childTypes"
               :current-expand-type-key="expandTypeObject.key"
               @pageOptions-updated="handleSubPageOptionsUpdated"
               @parent-expand-type-updated="handleExpandClick"
@@ -186,7 +192,7 @@
         <v-col cols="12">
           <component
             :is="getExpandTypeComponent(item.expandTypeObject)"
-            :record-info="item.expandTypeObject.recordInfo"
+            :view-definition="item.expandTypeObject.viewDefinition"
             :icon="item.expandTypeObject.icon"
             :hidden-headers="item.expandTypeObject.excludeHeaders"
             :locked-filters="getExpandTypeSubFilters(item.expandTypeObject)"
@@ -205,7 +211,7 @@
     </v-layout>
     <EditRecordDialog
       v-model="dialogs.editRecord"
-      :record-info="recordInfo"
+      :view-definition="viewDefinition"
       :selected-item="selectedItem"
       :mode="dialogs.editMode"
       @close="dialogs.editRecord = false"

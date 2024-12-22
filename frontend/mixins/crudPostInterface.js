@@ -24,7 +24,7 @@ export default {
   },
 
   props: {
-    recordInfo: {
+    viewDefinition: {
       type: Object,
       required: true,
     },
@@ -114,7 +114,7 @@ export default {
     },
 
     capitalizedType() {
-      return capitalizeString(this.recordInfo.typename)
+      return capitalizeString(this.viewDefinition.entity.typename)
     },
 
     selectedItem() {
@@ -128,7 +128,7 @@ export default {
     // type: CrudSortObject[]
     sortOptions() {
       return (
-        this.recordInfo.paginationOptions.sortOptions?.map((sortObject) => {
+        this.viewDefinition.paginationOptions.sortOptions?.map((sortObject) => {
           return {
             text: sortObject.text,
             field: sortObject.field,
@@ -162,7 +162,7 @@ export default {
     this.reset({ resetSort: true })
 
     // run any onSuccess functions
-    const onSuccess = this.recordInfo.paginationOptions.onSuccess
+    const onSuccess = this.viewDefinition.paginationOptions.onSuccess
     if (onSuccess) {
       onSuccess(this)
     }
@@ -232,7 +232,7 @@ export default {
 
         // snackbar and then reload comments
         this.$notifier.showSnackbar({
-          message: `${this.recordInfo.name} deleted`,
+          message: `${this.viewDefinition.entity.name} deleted`,
           variant: 'success',
         })
 
@@ -244,13 +244,16 @@ export default {
         }
 
         // perform onSuccess function for deleteOptions
-        const onSuccess = this.recordInfo.deleteOptions?.onSuccess
+        const onSuccess = this.viewDefinition.deleteOptions?.onSuccess
 
         if (onSuccess) {
           onSuccess(this)
         } else {
           // else emit the generic refresh-interface event
-          this.$root.$emit('refresh-interface', this.recordInfo.typename)
+          this.$root.$emit(
+            'refresh-interface',
+            this.viewDefinition.entity.typename
+          )
         }
 
         // decrement the number of records to keep it in sync

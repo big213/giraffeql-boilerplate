@@ -16,8 +16,8 @@
         <component
           :is="heroComponent"
           :item="item"
-          :record-info="recordInfo"
-          mode="view"
+          :hero-options="previewDefinition.heroOptions"
+          :entity="previewDefinition.entity"
         ></component>
       </div>
       <v-list v-if="hasLineItems">
@@ -55,16 +55,15 @@
       </v-list>
       <v-divider></v-divider>
       <v-card-actions
-        v-if="
-          (!isFollowButtonHidden || !recordInfo.followLinkModel) &&
-          !isViewButtonHidden
-        "
+        v-if="previewDefinition.followOptions && !isViewButtonHidden"
       >
         <FollowButton
-          v-if="!isFollowButtonHidden && itemData && recordInfo.followLinkModel"
+          v-if="
+            !isFollowButtonHidden && itemData && previewDefinition.followOptions
+          "
           color="primary"
           :item="itemData"
-          :follow-link-model="recordInfo.followLinkModel"
+          :follow-options="previewDefinition.followOptions"
         ></FollowButton>
         <v-spacer></v-spacer>
         <v-btn v-if="!isViewButtonHidden" color="primary" @click="openPage()">
@@ -72,7 +71,7 @@
           View
         </v-btn>
       </v-card-actions>
-      <div class="pa-2">
+      <div v-if="customActions.length" class="pa-2">
         <v-btn
           v-for="(action, index) in customActions"
           :key="index"
@@ -101,11 +100,12 @@ import {
   enterRoute,
   generateViewRecordRoute,
   processQuery,
+  camelCaseToCapitalizedString,
 } from '~/services/base'
 import { executeGiraffeql } from '~/services/giraffeql'
 import FollowButton from '~/components/button/followButton.vue'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
-import * as simpleModels from '~/models/simple'
+import * as previews from '~/models2/previews'
 import Hero from '~/components/interface/crud/hero/hero.vue'
 
 export default {
@@ -146,7 +146,7 @@ export default {
 
   computed: {
     fallbackIcon() {
-      return this.recordInfo.icon
+      return this.previewDefinition.entity.icon
     },
     capitalizedType() {
       return capitalizeString(this.typenameComputed)
@@ -155,32 +155,32 @@ export default {
       return this.typename ?? this.item.__typename
     },
     // must exist
-    recordInfo() {
-      return simpleModels[`Simple${capitalizeString(this.typenameComputed)}`]
+    previewDefinition() {
+      return previews[`${capitalizeString(this.typenameComputed)}Preview`]
     },
     // if previewOptions is not specified, default to showing typename only
     fields() {
-      return this.recordInfo.previewOptions?.fields ?? ['__typename']
+      return this.previewDefinition.fields
     },
     customActions() {
-      return this.recordInfo.previewOptions?.customActions ?? []
+      return this.previewDefinition?.customActions ?? []
     },
     hasHeroOptions() {
-      return !!this.recordInfo.previewOptions?.heroOptions
+      return !!this.previewDefinition?.heroOptions
     },
     hasLineItems() {
       return this.fields.length > 0 || !this.hasHeroOptions
     },
     isViewButtonHidden() {
-      return !!this.recordInfo.previewOptions?.hideViewButton
+      return !!this.previewDefinition?.hideViewButton
     },
 
     isFollowButtonHidden() {
-      return !!this.recordInfo.previewOptions?.hideFollowButton
+      return !!this.previewDefinition?.hideFollowButton
     },
 
     heroComponent() {
-      return this.recordInfo.previewOptions?.heroOptions?.component ?? Hero
+      return this.previewDefinition?.heroOptions?.component ?? Hero
     },
   },
 
@@ -199,16 +199,17 @@ export default {
     renderFieldTitle(field) {
       return field === '__typename'
         ? 'Type'
-        : this.recordInfo.fields?.[field]?.text ?? field
+        : this.previewDefinition.renderFields?.[field]?.text ??
+            camelCaseToCapitalizedString(field)
     },
 
     getFieldComponent(field) {
-      return this.recordInfo.fields?.[field]?.component
+      return this.previewDefinition.renderFields?.[field]?.component
     },
 
     // pathPrefix, OR fields[0], OR the name of the field
     getFieldPath(field) {
-      const fieldInfo = this.recordInfo.fields?.[field]
+      const fieldInfo = this.previewDefinition.renderFields?.[field]
 
       if (!fieldInfo) return null
 
@@ -231,7 +232,7 @@ export default {
         )
       } else if (this.openMode === 'openInDialog') {
         this.$root.$emit('openEditRecordDialog', {
-          recordInfo: 'Public' + this.capitalizedType,
+          viewDefinition: 'Public' + this.capitalizedType,
           mode: 'view',
           selectedItem: {
             id: this.item.id,
@@ -247,15 +248,15 @@ export default {
       this.loading.loadData = true
       try {
         const { query } =
-          this.recordInfo &&
-          (await processQuery(this, this.recordInfo, this.fields, true))
+          this.previewDefinition &&
+          (await processQuery(this, this.previewDefinition, this.fields, true))
 
         this.itemData = await executeGiraffeql({
           [`get${this.capitalizedType}`]: {
             id: true,
             __typename: true,
             ...query,
-            ...(this.recordInfo.followLinkModel && {
+            ...(this.previewDefinition.followOptions && {
               currentUserFollowLink: {
                 id: true,
               },

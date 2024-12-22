@@ -31,12 +31,12 @@ export default {
       type: Object,
     },
 
-    recordInfo: {
+    viewDefinition: {
       type: Object,
       required: true,
     },
 
-    // custom fields that will override add/edit/view options on recordInfo
+    // custom fields that will override add/edit/view options on viewDefinition
     customFields: {
       type: Array,
     },
@@ -46,7 +46,7 @@ export default {
       type: String,
       required: true,
       validator: (value) => {
-        return ['add', 'edit', 'view', 'copy'].includes(value)
+        return ['create', 'update', 'view', 'copy'].includes(value)
       },
     },
 
@@ -114,13 +114,13 @@ export default {
 
       // for edit, fields could be a dynamic function
       if (
-        this.mode === 'edit' &&
-        typeof this.recordInfo.editOptions.fields === 'function'
+        this.mode === 'update' &&
+        typeof this.viewDefinition.updateOptions.fields === 'function'
       ) {
-        return this.recordInfo.editOptions.fields(this, this.selectedItem)
+        return this.viewDefinition.updateOptions.fields(this, this.selectedItem)
       }
 
-      return this.recordInfo[`${this.mode}Options`].fields
+      return this.viewDefinition[`${this.mode}Options`].fields
     },
 
     // extracts the field from any EditFieldDefinitions
@@ -133,23 +133,23 @@ export default {
     },
 
     capitalizedType() {
-      return capitalizeString(this.recordInfo.typename)
+      return capitalizeString(this.viewDefinition.entity.typename)
     },
     title() {
       return (
-        (this.mode === 'add' || this.mode === 'copy'
+        (this.mode === 'create' || this.mode === 'copy'
           ? 'New'
-          : this.mode === 'edit'
-          ? 'Edit'
+          : this.mode === 'update'
+          ? 'Update'
           : 'View') +
         ' ' +
-        this.recordInfo.name
+        this.viewDefinition.entity.name
       )
     },
     icon() {
-      return this.mode === 'add' || this.mode === 'copy'
+      return this.mode === 'create' || this.mode === 'copy'
         ? 'mdi-plus'
-        : this.mode === 'edit'
+        : this.mode === 'update'
         ? 'mdi-pencil'
         : 'mdi-eye'
     },
@@ -171,7 +171,7 @@ export default {
     generation() {
       this.reset()
     },
-    recordInfo() {
+    viewDefinition() {
       this.reset()
     },
   },
@@ -188,11 +188,11 @@ export default {
   methods: {
     refreshCb(typename, { refreshType } = {}) {
       // only allow refresh on view mode
-      // if type of refresh is not defined or 'edit', refresh
+      // if type of refresh is not defined or 'update', refresh
       if (
-        this.recordInfo.typename === typename &&
+        this.viewDefinition.entity.typename === typename &&
         this.mode === 'view' &&
-        (!refreshType || refreshType === 'edit')
+        (!refreshType || refreshType === 'update')
       ) {
         this.reset()
       }
@@ -249,22 +249,22 @@ export default {
 
         // add/copy mode
         let data
-        if (this.mode === 'add' || this.mode === 'copy') {
+        if (this.mode === 'create' || this.mode === 'copy') {
           // run the inputsModifier, if any
-          if (this.recordInfo.addOptions.inputsModifier) {
-            this.recordInfo.addOptions.inputsModifier(this, inputs)
+          if (this.viewDefinition.createOptions.inputsModifier) {
+            this.viewDefinition.createOptions.inputsModifier(this, inputs)
           }
 
           data = await executeGiraffeql(
             {
-              [this.recordInfo.addOptions.operationName ??
+              [this.viewDefinition.createOptions.operationName ??
               `create${this.capitalizedType}`]: {
                 id: true,
                 __typename: true,
                 ...this.returnFields,
-                ...(this.recordInfo.addOptions.returnFields
+                ...(this.viewDefinition.createOptions.returnFields
                   ? buildQueryFromFieldPathArray(
-                      this.recordInfo.addOptions.returnFields
+                      this.viewDefinition.createOptions.returnFields
                     )
                   : undefined),
                 __args: collapseObject(inputs),
@@ -276,19 +276,19 @@ export default {
           )
         } else {
           // run the inputsModifier, if any
-          if (this.recordInfo.editOptions.inputsModifier) {
-            this.recordInfo.editOptions.inputsModifier(this, inputs)
+          if (this.viewDefinition.updateOptions.inputsModifier) {
+            this.viewDefinition.updateOptions.inputsModifier(this, inputs)
           }
 
           data = await executeGiraffeql({
-            [this.recordInfo.editOptions.operationName ??
+            [this.viewDefinition.updateOptions.operationName ??
             `update${this.capitalizedType}`]: {
               id: true,
               __typename: true,
               ...this.returnFields,
-              ...(this.recordInfo.editOptions.returnFields
+              ...(this.viewDefinition.updateOptions.returnFields
                 ? buildQueryFromFieldPathArray(
-                    this.recordInfo.editOptions.returnFields
+                    this.viewDefinition.updateOptions.returnFields
                   )
                 : undefined),
               __args: {
@@ -302,8 +302,10 @@ export default {
         }
 
         this.$notifier.showSnackbar({
-          message: `${this.recordInfo.name} ${
-            this.mode === 'add' || this.mode === 'copy' ? 'Added' : 'Updated'
+          message: `${this.viewDefinition.entity.name} ${
+            this.mode === 'create' || this.mode === 'copy'
+              ? 'Created'
+              : 'Updated'
           }`,
           variant: 'success',
         })
@@ -323,14 +325,21 @@ export default {
       this.$emit('handle-submit', data)
 
       // run any custom onSuccess functions
-      if (this.mode === 'add' || this.mode === 'edit' || this.mode === 'copy') {
-        const onSuccess = this.recordInfo[`${this.mode}Options`].onSuccess
+      if (
+        this.mode === 'create' ||
+        this.mode === 'update' ||
+        this.mode === 'copy'
+      ) {
+        const onSuccess = this.viewDefinition[`${this.mode}Options`].onSuccess
 
         if (onSuccess) {
           onSuccess(this, data)
         } else {
           // else emit the generic refresh-interface event
-          this.$root.$emit('refresh-interface', this.recordInfo.typename)
+          this.$root.$emit(
+            'refresh-interface',
+            this.viewDefinition.entity.typename
+          )
         }
       }
     },
@@ -340,7 +349,7 @@ export default {
       try {
         const { query } = await processQuery(
           this,
-          this.recordInfo,
+          this.viewDefinition,
           this.rawFields
         )
 
@@ -358,7 +367,9 @@ export default {
 
         // if copy mode, load all add fields
         const inputFields =
-          this.mode === 'copy' ? this.recordInfo.addOptions.fields : this.fields
+          this.mode === 'copy'
+            ? this.viewDefinition.createOptions.fields
+            : this.fields
 
         // keep track of promises relating to dropdowns/options
         const dropdownPromises = []
@@ -371,7 +382,7 @@ export default {
                 ? fieldElement
                 : fieldElement.field
 
-            const fieldInfo = lookupInputField(this.recordInfo, fieldKey)
+            const fieldInfo = lookupInputField(this.viewDefinition, fieldKey)
 
             const primaryField = fieldKey
 
@@ -379,7 +390,7 @@ export default {
               fieldKey,
               primaryField,
               fieldInfo,
-              recordInfo: this.recordInfo,
+              viewDefinition: this.viewDefinition,
               label: fieldInfo.text ?? camelCaseToCapitalizedString(fieldKey),
               closeable: false,
               inputOptions: fieldInfo.inputOptions,
@@ -442,15 +453,15 @@ export default {
           })
         )
         // do post-processing on inputsArray, if function provided
-        if (this.mode === 'edit') {
-          this.recordInfo.editOptions.afterLoaded &&
-            (await this.recordInfo.editOptions.afterLoaded(
+        if (this.mode === 'update') {
+          this.viewDefinition.updateOptions.afterLoaded &&
+            (await this.viewDefinition.updateOptions.afterLoaded(
               this,
               this.inputsArray
             ))
         } else if (this.mode === 'copy') {
-          this.recordInfo.addOptions.afterLoaded &&
-            (await this.recordInfo.addOptions.afterLoaded(
+          this.viewDefinition.createOptions.afterLoaded &&
+            (await this.viewDefinition.createOptions.afterLoaded(
               this,
               this.inputsArray
             ))
@@ -510,7 +521,7 @@ export default {
       this.loading.initInputs = true
       try {
         if (!this.fields) {
-          throw new Error('Adding of this record is not configured')
+          throw new Error('Creation of this record is not configured')
         }
 
         this.inputsArray = await Promise.all(
@@ -520,13 +531,13 @@ export default {
                 ? fieldElement
                 : fieldElement.field
 
-            const fieldInfo = lookupInputField(this.recordInfo, fieldKey)
+            const fieldInfo = lookupInputField(this.viewDefinition, fieldKey)
 
             const inputObject = {
               fieldKey,
               primaryField: fieldKey,
               fieldInfo,
-              recordInfo: this.recordInfo,
+              viewDefinition: this.viewDefinition,
               label: fieldInfo.text ?? camelCaseToCapitalizedString(fieldKey),
               closeable: false,
               inputOptions: fieldInfo.inputOptions,
@@ -647,11 +658,14 @@ export default {
       }
 
       // initialize inputs
-      if (this.mode === 'add') {
+      if (this.mode === 'create') {
         await this.initializeInputs()
         // do post-processing on inputsArray, if function provided
-        this.recordInfo.addOptions.afterLoaded &&
-          (await this.recordInfo.addOptions.afterLoaded(this, this.inputsArray))
+        this.viewDefinition.createOptions.afterLoaded &&
+          (await this.viewDefinition.createOptions.afterLoaded(
+            this,
+            this.inputsArray
+          ))
         this.afterInitializeInputs && this.afterInitializeInputs()
       } else {
         this.loadRecord()

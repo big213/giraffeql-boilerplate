@@ -4,12 +4,7 @@ import RecordActionMenu from '~/components/menu/recordActionMenu.vue'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 import CrudPostInterface from '~/components/interface/crud/crudPostInterface.vue'
 import { executeGiraffeql } from '~/services/giraffeql'
-import {
-  capitalizeString,
-  handleError,
-  serializeNestedProperty,
-  processQuery,
-} from '~/services/base'
+import { capitalizeString, handleError, processQuery } from '~/services/base'
 import { generatePreviewRecordInfo } from '~/services/recordInfo'
 import CrudRecordInterface from '~/components/interface/crud/crudRecordInterface.vue'
 import { mapGetters } from 'vuex'
@@ -23,7 +18,7 @@ export default {
   },
 
   props: {
-    recordInfo: {
+    viewDefinition: {
       type: Object,
       required: true,
     },
@@ -57,7 +52,7 @@ export default {
         loadRecord: false,
       },
 
-      recordInfoChanged: false,
+      viewDefinitionChanged: false,
 
       breadcrumbItems: [],
 
@@ -75,13 +70,13 @@ export default {
     },
 
     postInterface() {
-      return this.recordInfo.postOptions?.component ?? CrudPostInterface
+      return this.viewDefinition.postOptions?.component ?? CrudPostInterface
     },
 
     postLockedFilters() {
       return [
         {
-          field: this.recordInfo.typename,
+          field: this.viewDefinition.entity.typename,
           operator: 'eq',
           value: this.selectedItem.id,
         },
@@ -97,7 +92,7 @@ export default {
     },
 
     fullPageMode() {
-      return !!this.recordInfo.pageOptions?.fullPageMode
+      return !!this.viewDefinition.pageOptions?.fullPageMode
     },
 
     parentItem() {
@@ -109,7 +104,7 @@ export default {
     },
 
     hasComments() {
-      return !!this.recordInfo.postOptions
+      return !!this.viewDefinition.postOptions
     },
 
     isExpandOrCommentsOpened() {
@@ -121,7 +116,7 @@ export default {
     },
 
     currentInterface() {
-      return this.recordInfo.viewOptions.component || ViewRecordInterface
+      return this.viewDefinition.viewOptions.component || ViewRecordInterface
     },
     hiddenSubFilters() {
       if (!this.isExpanded) return []
@@ -134,13 +129,13 @@ export default {
       return this.getExpandTypeSubFilters(this.expandTypeObject)
     },
     capitalizedTypename() {
-      return capitalizeString(this.recordInfo.typename)
+      return capitalizeString(this.viewDefinition.entity.typename)
     },
 
     paginationComponent() {
       return (
         this.expandTypeObject.component ||
-        this.expandTypeObject.recordInfo.paginationOptions.component ||
+        this.expandTypeObject.viewDefinition.paginationOptions.component ||
         CrudRecordInterface
       )
     },
@@ -157,15 +152,15 @@ export default {
     },
 
     hideActions() {
-      return this.recordInfo.pageOptions?.hideActions
+      return this.viewDefinition.pageOptions?.hideActions
     },
 
     hideRefresh() {
-      return this.recordInfo.pageOptions?.hideRefresh
+      return this.viewDefinition.pageOptions?.hideRefresh
     },
 
     hideMinimize() {
-      return this.recordInfo.pageOptions?.hideMinimize
+      return this.viewDefinition.pageOptions?.hideMinimize
     },
   },
 
@@ -174,16 +169,16 @@ export default {
       this.setExpandTypeObject(val)
     },
 
-    recordInfo() {
-      this.recordInfoChanged = true
+    viewDefinition() {
+      this.viewDefinitionChanged = true
       this.reset(true)
     },
 
     '$route.query.id'() {
-      // if this was triggered in addition to recordInfo change, do nothing and revert recordInfoChange on next tick
-      if (this.recordInfoChanged) {
+      // if this was triggered in addition to viewDefinition change, do nothing and revert viewDefinitionChange on next tick
+      if (this.viewDefinitionChanged) {
         this.$nextTick(() => {
-          this.recordInfoChanged = false
+          this.viewDefinitionChanged = false
         })
         return
       }
@@ -192,7 +187,7 @@ export default {
 
     '$route.query.pageOptions'(val) {
       // if no pageOptions, automatically redirect if there is a defaultPageOptions
-      if (!val && this.recordInfo.paginationOptions.defaultPageOptions) {
+      if (!val && this.viewDefinition.paginationOptions.defaultPageOptions) {
         this.navigateToDefaultRoute()
       }
     },
@@ -211,7 +206,7 @@ export default {
 
   methods: {
     refreshCb(typename, { id } = {}) {
-      if (this.recordInfo.typename === typename) {
+      if (this.viewDefinition.entity.typename === typename) {
         // if ID is provided and it is equal to the current selectedItem id, do hard refresh
         if (id && id === this.selectedItem.id) {
           this.reset(true)
@@ -222,7 +217,7 @@ export default {
     getExpandTypeComponent(expandTypeObject) {
       return (
         expandTypeObject.component ||
-        expandTypeObject.recordInfo.paginationOptions.component ||
+        expandTypeObject.viewDefinition.paginationOptions.component ||
         CrudRecordInterface
       )
     },
@@ -235,7 +230,7 @@ export default {
 
       return [
         {
-          field: this.recordInfo.typename.toLowerCase() + '.id',
+          field: this.viewDefinition.entity.typename.toLowerCase() + '.id',
           operator: 'eq',
           value: this.parentItem.id,
         },
@@ -244,7 +239,7 @@ export default {
 
     getExpandTypeHiddenSubFilters(expandTypeObject) {
       // is there an excludeFilters array on the expandTypeObject? if so, use that
-      return [this.recordInfo.typename.toLowerCase() + '.id'].concat(
+      return [this.viewDefinition.entity.typename.toLowerCase() + '.id'].concat(
         expandTypeObject.excludeFilters ?? []
       )
     },
@@ -384,7 +379,7 @@ export default {
 
     openViewRecordDialog() {
       this.$root.$emit('openEditRecordDialog', {
-        recordInfo: this.recordInfo,
+        viewDefinition: this.viewDefinition,
         selectedItem: {
           id: this.selectedItem.id,
         },
@@ -440,13 +435,13 @@ export default {
         return
       }
 
-      if (Array.isArray(this.recordInfo.expandTypes)) {
+      if (Array.isArray(this.viewDefinition.childTypes)) {
         // find the expandTypeObject with the matching key
         // if expandKey === null, set to first expandType
         const expandTypeObject =
           expandKey === null
-            ? this.recordInfo.expandTypes[0]
-            : this.recordInfo.expandTypes.find(
+            ? this.viewDefinition.childTypes[0]
+            : this.viewDefinition.childTypes.find(
                 (expandTypeObject) => expandTypeObject.key === expandKey
               )
 
@@ -527,17 +522,17 @@ export default {
     async loadRecord() {
       this.loading.loadRecord = true
       try {
-        const fields = (this.recordInfo.requiredFields ?? []).concat(
-          this.recordInfo.pageOptions?.fields ?? []
+        const fields = (this.viewDefinition.requiredFields ?? []).concat(
+          this.viewDefinition.pageOptions?.fields ?? []
         )
 
         // if the record type has name/avatar, also fetch those
-        if (this.recordInfo.hasName) fields.push('name')
-        if (this.recordInfo.hasAvatar) fields.push('avatarUrl')
+        if (this.viewDefinition.entity.nameField) fields.push('name')
+        if (this.viewDefinition.entity.avatarField) fields.push('avatarUrl')
 
         const { query } = await processQuery(
           this,
-          this.recordInfo,
+          this.viewDefinition,
           fields,
           true
         )
@@ -570,23 +565,23 @@ export default {
           }
 
           const previewExpandTypes =
-            this.recordInfo.pageOptions?.previewExpandTypes
+            this.viewDefinition.pageOptions?.previewExpandTypes
 
           if (previewExpandTypes) {
             this.previewExpandTypes = previewExpandTypes
               .map((ele) =>
-                this.recordInfo.expandTypes.find(
+                this.viewDefinition.childTypes.find(
                   (expandTypeObject) => expandTypeObject.key === ele
                 )
               )
               .map((expandTypeObject) => {
-                // replace each recordInfo with the previewRecordInfo
+                // replace each viewDefinition with the previewRecordInfo
                 return {
                   expandTypeObject: {
                     ...expandTypeObject,
-                    recordInfo: generatePreviewRecordInfo({
-                      recordInfo: expandTypeObject.recordInfo,
-                      title: `Latest ${expandTypeObject.recordInfo.pluralName}`,
+                    viewDefinition: generatePreviewRecordInfo({
+                      viewDefinition: expandTypeObject.viewDefinition,
+                      title: `Latest ${expandTypeObject.viewDefinition.entity.pluralName}`,
                     }),
                   },
                   pageOptions: undefined,
@@ -603,7 +598,7 @@ export default {
   head() {
     return (
       this.head ?? {
-        title: `View ${this.recordInfo.name}`,
+        title: `View ${this.viewDefinition.entity.name}`,
       }
     )
   },

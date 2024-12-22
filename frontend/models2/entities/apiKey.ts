@@ -5,6 +5,5 @@ export const ApiKeyEntity: EntityDefinition = {
   name: 'API Key',
   pluralName: 'API Keys',
   nameField: 'name',
-  avatarField: 'avatarUrl',
   icon: 'mdi-view-grid-plus',
 }

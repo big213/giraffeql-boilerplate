@@ -20,7 +20,7 @@
 
     <v-list dense>
       <v-list-item
-        v-if="recordInfo.viewOptions && !hideView"
+        v-if="viewDefinition.viewOptions && !hideView"
         key="view"
         @click="openEditDialog('view')"
       >
@@ -30,7 +30,7 @@
         <v-list-item-title>View</v-list-item-title>
       </v-list-item>
       <v-list-item
-        v-if="recordInfo.enterOptions && !hideEnter"
+        v-if="viewDefinition.enterOptions && !hideEnter"
         key="enter"
         @click="goToRecordPage()"
         @click.middle="goToRecordPage(true)"
@@ -46,7 +46,7 @@
         </v-list-item-title>
       </v-list-item>
       <v-list-item
-        v-if="recordInfo.shareOptions"
+        v-if="viewDefinition.shareOptions"
         key="share"
         @click="openEditDialog('share')"
       >
@@ -57,36 +57,39 @@
       </v-list-item>
       <v-list-item
         v-if="
-          recordInfo.editOptions && !isComponentHidden(recordInfo.editOptions)
+          viewDefinition.updateOptions &&
+          !isComponentHidden(viewDefinition.updateOptions)
         "
-        key="edit"
-        @click="openEditDialog('edit')"
+        key="update"
+        @click="openEditDialog('update')"
       >
         <v-list-item-icon>
-          <v-icon>{{ recordInfo.editOptions.icon || 'mdi-pencil' }}</v-icon>
+          <v-icon>{{
+            viewDefinition.updateOptions.icon || 'mdi-pencil'
+          }}</v-icon>
         </v-list-item-icon>
         <v-list-item-title>{{
-          recordInfo.editOptions.text || 'Edit'
+          viewDefinition.updateOptions.text || 'Update'
         }}</v-list-item-title>
       </v-list-item>
       <v-list-item
-        v-if="recordInfo.copyOptions && recordInfo.addOptions"
+        v-if="viewDefinition.copyOptions && viewDefinition.createOptions"
         key="copy"
         @click="openEditDialog('copy')"
       >
         <v-list-item-icon>
           <v-icon>
-            {{ recordInfo.copyOptions.icon || 'mdi-content-copy' }}</v-icon
+            {{ viewDefinition.copyOptions.icon || 'mdi-content-copy' }}</v-icon
           >
         </v-list-item-icon>
         <v-list-item-title>{{
-          recordInfo.copyOptions.text || 'Duplicate'
+          viewDefinition.copyOptions.text || 'Duplicate'
         }}</v-list-item-title>
       </v-list-item>
       <v-list-item
         v-if="
-          recordInfo.deleteOptions &&
-          !isComponentHidden(recordInfo.deleteOptions)
+          viewDefinition.deleteOptions &&
+          !isComponentHidden(viewDefinition.deleteOptions)
         "
         key="delete"
         @click="openEditDialog('delete')"
@@ -118,9 +121,9 @@
         </v-list-item>
       </template>
 
-      <v-divider v-if="recordInfo.expandTypes.length > 0"></v-divider>
+      <v-divider v-if="viewDefinition.childTypes.length > 0"></v-divider>
       <v-list-item
-        v-for="(expandObject, i) in recordInfo.expandTypes"
+        v-for="(expandObject, i) in viewDefinition.childTypes"
         :key="i"
         dense
         @click="openExpandType(expandObject)"
@@ -128,11 +131,11 @@
       >
         <v-list-item-icon>
           <v-icon>{{
-            expandObject.icon || expandObject.recordInfo.icon
+            expandObject.icon || expandObject.viewDefinition.entity.icon
           }}</v-icon>
         </v-list-item-icon>
         <v-list-item-title
-          >{{ expandObject.name || expandObject.recordInfo.name }}
+          >{{ expandObject.name || expandObject.viewDefinition.entity.name }}
           <v-icon
             v-if="expandMode === 'openInNew'"
             small
@@ -159,7 +162,7 @@ export default {
       type: Object,
       required: true,
     },
-    recordInfo: {
+    viewDefinition: {
       type: Object,
       required: true,
     },
@@ -203,8 +206,8 @@ export default {
   },
 
   created() {
-    this.customActions = this.recordInfo.customActions
-      ? this.recordInfo.customActions.map((actionObject) => ({
+    this.customActions = this.viewDefinition.actions
+      ? this.viewDefinition.actions.map((actionObject) => ({
           isLoading: false,
           actionObject,
         }))
@@ -225,7 +228,7 @@ export default {
         this.$emit('handle-expand-click', expandTypeObject)
       else if (this.expandMode === 'openInDialog')
         this.$root.$emit('openCrudRecordDialog', {
-          recordInfo: expandTypeObject.recordInfo,
+          viewDefinition: expandTypeObject.viewDefinition,
           lockedFilters: expandTypeObject.lockedFilters
             ? expandTypeObject.lockedFilters(this, this.item)
             : [],
@@ -321,8 +324,8 @@ export default {
       enterRoute(
         this,
         generateViewRecordRoute(this, {
-          routeKey: this.recordInfo.typename,
-          routeType: this.recordInfo.routeType,
+          routeKey: this.viewDefinition.entity.typename,
+          routeType: this.viewDefinition.routeType,
           id: this.item.id,
           showComments: true,
         }),

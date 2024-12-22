@@ -10,7 +10,7 @@
       v-if="$attrs.value"
       :is="interfaceComponent"
       :selected-item="selectedItem"
-      :record-info="recordInfo"
+      :view-definition="viewDefinition"
       :custom-fields="customFields"
       :mode="computedMode"
       dialog-mode
@@ -30,7 +30,7 @@
           <v-divider
             v-if="
               selectedItem &&
-              computedMode !== 'add' &&
+              computedMode !== 'create' &&
               computedMode !== 'import'
             "
             class="mx-4"
@@ -40,7 +40,7 @@
           <PreviewRecordChip
             v-if="
               selectedItem &&
-              computedMode !== 'add' &&
+              computedMode !== 'create' &&
               computedMode !== 'import'
             "
             :value="selectedItem"
@@ -57,11 +57,11 @@
           </v-btn>
           <RecordActionMenu
             v-if="
-              computedMode !== 'add' &&
+              computedMode !== 'create' &&
               computedMode !== 'import' &&
               !hideActionsMode
             "
-            :record-info="recordInfo"
+            :view-definition="viewDefinition"
             :item="selectedItem"
             expand-mode="openInDialog"
             left
@@ -88,15 +88,17 @@
         <v-divider class="mx-3"></v-divider>
         <div class="mx-2">
           <component
-            v-if="recordInfo.postOptions && selectedItem"
+            v-if="viewDefinition.postOptions && selectedItem"
             class="mt-2 mx-auto elevation-6"
             style="max-width: 800px"
             :is="postInterface"
             :locked-filters="postLockedFilters"
-            :hidden-fields="recordInfo.postOptions.hiddenFields"
-            :record-info="recordInfo.postOptions.recordInfo"
+            :hidden-fields="viewDefinition.postOptions.hiddenFields"
+            :view-definition="viewDefinition.postOptions.viewDefinition"
             :page-options="initialPostPageOptions"
-            :initial-sort-options="recordInfo.postOptions.initialSortOptions"
+            :initial-sort-options="
+              viewDefinition.postOptions.initialSortOptions
+            "
           ></component></div
       ></template>
     </component>
@@ -114,9 +116,9 @@ import CrudPostInterface from '~/components/interface/crud/crudPostInterface.vue
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 
 const modesMap = {
-  add: {
+  create: {
     icon: 'mdi-plus',
-    prefix: 'New',
+    prefix: 'Create',
     persistent: true,
     defaultInterface: EditRecordInterface,
   },
@@ -132,9 +134,9 @@ const modesMap = {
     persistent: true,
     defaultInterface: EditRecordInterface,
   },
-  edit: {
+  update: {
     icon: 'mdi-pencil',
-    prefix: 'Edit',
+    prefix: 'Update',
     persistent: true,
     defaultInterface: EditRecordInterface,
   },
@@ -169,12 +171,12 @@ export default {
       type: Object,
     },
 
-    recordInfo: {
+    viewDefinition: {
       type: Object,
       required: true,
     },
 
-    // custom fields that will override add/edit/view options on recordInfo
+    // custom fields that will override add/edit/view options on viewDefinition
     customFields: {
       type: Array,
     },
@@ -184,9 +186,9 @@ export default {
       type: String,
       validator: (value) => {
         return [
-          'add',
+          'create',
           'import',
-          'edit',
+          'update',
           'view',
           'delete',
           'copy',
@@ -212,15 +214,15 @@ export default {
     },
 
     hideActionsMode() {
-      return !!this.recordInfo.dialogOptions?.hideActions
+      return !!this.viewDefinition.dialogOptions?.hideActions
     },
 
     hideRefreshMode() {
-      return !!this.recordInfo.dialogOptions?.hideRefresh
+      return !!this.viewDefinition.dialogOptions?.hideRefresh
     },
 
     hideTitleMode() {
-      return !!this.recordInfo.dialogOptions?.hideTitle
+      return !!this.viewDefinition.dialogOptions?.hideTitle
     },
 
     modeObject() {
@@ -235,14 +237,14 @@ export default {
 
     options() {
       return this.computedMode === 'import'
-        ? this.recordInfo.paginationOptions.importOptions
-        : this.recordInfo[`${this.computedMode}Options`]
+        ? this.viewDefinition.paginationOptions.importOptions
+        : this.viewDefinition[`${this.computedMode}Options`]
     },
 
     title() {
       return (
         this.options?.title ??
-        `${this.modeObject.prefix} ${this.recordInfo.name}`
+        `${this.modeObject.prefix} ${this.viewDefinition.entity.name}`
       )
     },
     icon() {
@@ -251,14 +253,14 @@ export default {
 
     postLockedFilters() {
       return (
-        this.recordInfo.postOptions?.getLockedFilters?.(
+        this.viewDefinition.postOptions?.getLockedFilters?.(
           this,
           this.selectedItem
         ) ??
         (this.selectedItem
           ? [
               {
-                field: this.recordInfo.typename,
+                field: this.viewDefinition.entity.typename,
                 operator: 'eq',
                 value: this.selectedItem.id,
               },
@@ -268,13 +270,13 @@ export default {
     },
 
     postInterface() {
-      return this.recordInfo.postOptions?.component ?? CrudPostInterface
+      return this.viewDefinition.postOptions?.component ?? CrudPostInterface
     },
 
     initialPostPageOptions() {
-      return this.recordInfo.postOptions?.initialSortOptions
+      return this.viewDefinition.postOptions?.initialSortOptions
         ? {
-            sort: this.recordInfo.postOptions?.initialSortOptions,
+            sort: this.viewDefinition.postOptions?.initialSortOptions,
           }
         : null
     },

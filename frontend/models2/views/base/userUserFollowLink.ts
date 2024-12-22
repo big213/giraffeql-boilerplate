@@ -8,27 +8,27 @@ import {
   generateSortOptions,
 } from '~/services/view'
 
-export const UserUserFollowLink: ViewDefinition = {
+export const BaseUserUserFollowLinkView: ViewDefinition = {
   routeType: 'a',
-  entityDefinition: UserUserFollowLinkEntity,
+  entity: UserUserFollowLinkEntity,
   inputFields: {
     ...generateBaseInputFields(UserUserFollowLinkEntity),
     'user.id': generateJoinableInputField({
-      entityDefinition: UserEntity,
+      entity: UserEntity,
     }),
     'target.id': generateJoinableInputField({
-      entityDefinition: UserEntity,
+      entity: UserEntity,
     }),
   },
   renderFields: {
     ...generateBaseRenderFields(UserUserFollowLinkEntity),
     user: generatePreviewableRecordField({
       fieldname: 'user',
-      entityDefinition: UserEntity,
+      entity: UserEntity,
     }),
     target: generatePreviewableRecordField({
       fieldname: 'target',
-      entityDefinition: UserEntity,
+      entity: UserEntity,
     }),
   },
   paginationOptions: {

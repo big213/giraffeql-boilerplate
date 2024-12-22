@@ -15,9 +15,7 @@ import {
   handleError,
   getPaginatorData,
   collectPaginatorData,
-  getIcon,
   viewportToPixelsMap,
-  lookupInputField,
   lookupRenderField,
   populateInputObject,
   processQuery,
@@ -50,7 +48,7 @@ export default {
     icon: {
       type: String,
     },
-    recordInfo: {
+    viewDefinition: {
       required: true,
     },
     // header fields that should be hidden
@@ -61,7 +59,7 @@ export default {
     pageOptions: {
       type: Object,
     },
-    /** raw filters must also be in recordInfo.filters. appended directly to the filterBy params. also applied to addRecordDialog
+    /** raw filters must also be in viewDefinition.filters. appended directly to the filterBy params. also applied to addRecordDialog
     {
       field: string;
       operator: string;
@@ -71,7 +69,7 @@ export default {
     lockedFilters: {
       type: Array,
     },
-    // array of filter keys (recordInfo.filters) that should be hidden
+    // array of filter keys (viewDefinition.filters) that should be hidden
     // string[]
     hiddenFilters: {
       type: Array,
@@ -175,7 +173,7 @@ export default {
 
       reloadGeneration: 0,
 
-      // has the recordInfo been changed?
+      // has the viewDefinition been changed?
       cancelPageOptionsReset: false,
 
       // has reset been called on this tick already?
@@ -217,7 +215,7 @@ export default {
     // type: CrudSortObject[]
     sortOptions() {
       return (
-        this.recordInfo.paginationOptions.sortOptions?.map((sortObject) => {
+        this.viewDefinition.paginationOptions.sortOptions?.map((sortObject) => {
           return {
             text: sortObject.text,
             field: sortObject.field,
@@ -228,11 +226,11 @@ export default {
       )
     },
 
-    // if this.hiddenHeaders is defined, override the default exclude headers on the recordInfo.paginationOptions
+    // if this.hiddenHeaders is defined, override the default exclude headers on the viewDefinition.paginationOptions
     hiddenHeadersComputed() {
       return (
         this.hiddenHeaders ??
-        this.recordInfo.paginationOptions.excludeHeaders ??
+        this.viewDefinition.paginationOptions.excludeHeaders ??
         []
       )
     },
@@ -241,12 +239,12 @@ export default {
     renderedExpandItems() {
       if (!this.isGrid) return []
 
-      return this.recordInfo.expandTypes.filter((e) => e.showRowIfGrid)
+      return this.viewDefinition.childTypes.filter((e) => e.showRowIfGrid)
     },
 
-    // type: recordInfo.paginationOptions.headers to CrudHeaderObject[]
+    // type: viewDefinition.paginationOptions.headers to CrudHeaderObject[]
     headerOptions() {
-      const headerOptions = this.recordInfo.paginationOptions.headerOptions
+      const headerOptions = this.viewDefinition.paginationOptions.headerOptions
         .filter(
           (headerInfo) => !this.hiddenHeadersComputed.includes(headerInfo.field)
         )
@@ -272,7 +270,10 @@ export default {
           )
         })
         .map((headerInfo, index) => {
-          const fieldInfo = lookupRenderField(this.recordInfo, headerInfo.field)
+          const fieldInfo = lookupRenderField(
+            this.viewDefinition,
+            headerInfo.field
+          )
 
           const primaryField = fieldInfo.fields
             ? fieldInfo.fields[0]
@@ -298,14 +299,14 @@ export default {
           }
         })
         .concat(
-          this.isGrid || this.recordInfo.paginationOptions.hideActions
+          this.isGrid || this.viewDefinition.paginationOptions.hideActions
             ? []
             : {
                 text: 'Actions',
                 value: null,
                 width: '50px',
                 sortable: false,
-                ...this.recordInfo.paginationOptions.headerActionOptions,
+                ...this.viewDefinition.paginationOptions.headerActionOptions,
               }
         )
 
@@ -333,8 +334,8 @@ export default {
       // if lockedFilters is undefined, attempt to fetch defaultLockedFilters
       if (this.lockedFilters) return this.lockedFilters
 
-      if (this.recordInfo.paginationOptions.defaultLockedFilters)
-        return this.recordInfo.paginationOptions.defaultLockedFilters(this)
+      if (this.viewDefinition.paginationOptions.defaultLockedFilters)
+        return this.viewDefinition.paginationOptions.defaultLockedFilters(this)
 
       return []
     },
@@ -346,17 +347,19 @@ export default {
     childInterfaceComponent() {
       return this.expandTypeObject
         ? this.expandTypeObject.component ||
-            this.expandTypeObject.recordInfo.paginationOptions.component ||
+            this.expandTypeObject.viewDefinition.paginationOptions.component ||
             'CrudRecordInterface'
         : null
     },
 
     heroComponent() {
-      return this.recordInfo.paginationOptions.heroOptions?.component ?? Hero
+      return (
+        this.viewDefinition.paginationOptions.heroOptions?.component ?? Hero
+      )
     },
 
     capitalizedType() {
-      return capitalizeString(this.recordInfo.typename)
+      return capitalizeString(this.viewDefinition.entity.typename)
     },
     visibleFiltersArray() {
       return this.filterInputsArray.filter(
@@ -386,8 +389,8 @@ export default {
     },
 
     hasNested() {
-      return this.recordInfo.expandTypes
-        ? !!this.recordInfo.expandTypes.length
+      return this.viewDefinition.childTypes
+        ? !!this.viewDefinition.childTypes.length
         : false
     },
 
@@ -402,7 +405,7 @@ export default {
 
       return [
         {
-          field: this.recordInfo.typename.toLowerCase() + '.id',
+          field: this.viewDefinition.entity.typename.toLowerCase() + '.id',
           operator: 'eq',
           value: this.expandedItem.id,
         },
@@ -413,7 +416,7 @@ export default {
       if (!this.expandedItems.length) return []
 
       // is there an excludeFilters array on the expandTypeObject? if so, use that
-      return [this.recordInfo.typename.toLowerCase() + '.id'].concat(
+      return [this.viewDefinition.entity.typename.toLowerCase() + '.id'].concat(
         this.expandTypeObject.excludeFilters ?? []
       )
     },
@@ -424,16 +427,19 @@ export default {
 
     hasFilters() {
       return (
-        this.recordInfo.paginationOptions.filterOptions?.length ||
-        this.recordInfo.paginationOptions.distanceFilterOptions?.length > 0 ||
-        this.recordInfo.paginationOptions.searchOptions
+        this.viewDefinition.paginationOptions.filterOptions?.length ||
+        this.viewDefinition.paginationOptions.distanceFilterOptions?.length >
+          0 ||
+        this.viewDefinition.paginationOptions.searchOptions
       )
     },
 
     hasPresetFilters() {
       return (
-        this.recordInfo.paginationOptions.filterOptions.filter((e) => e.preset)
-          .length > 0 || this.recordInfo.paginationOptions.searchOptions?.preset
+        this.viewDefinition.paginationOptions.filterOptions.filter(
+          (e) => e.preset
+        ).length > 0 ||
+        this.viewDefinition.paginationOptions.searchOptions?.preset
       )
     },
 
@@ -443,7 +449,7 @@ export default {
 
     gridColsObject() {
       return (
-        this.recordInfo.paginationOptions.gridOptions?.colsObject ?? {
+        this.viewDefinition.paginationOptions.gridOptions?.colsObject ?? {
           sm: 6,
           md: 4,
           lg: 3,
@@ -452,7 +458,7 @@ export default {
     },
 
     hideAddButton() {
-      return this.recordInfo.addOptions?.hideIf?.(this)
+      return this.viewDefinition.createOptions?.hideIf?.(this)
     },
   },
 
@@ -474,7 +480,7 @@ export default {
     },
 
     // this should trigger mainly when switching routes on admin pages
-    recordInfo() {
+    viewDefinition() {
       this.cancelPageOptionsReset = true
 
       this.$nextTick(() => {
@@ -518,7 +524,7 @@ export default {
         return
       }
 
-      // if this was triggered due to a recordInfo change, do nothing and revert recordInfoChange on next tick
+      // if this was triggered due to a viewDefinition change, do nothing and revert viewDefinitionChange on next tick
       if (this.cancelPageOptionsReset) {
         this.$nextTick(() => {
           this.cancelPageOptionsReset = false
@@ -559,15 +565,16 @@ export default {
 
     // if the viewMoreOptions button is , and infiniteScroll is falsey, do nothing
     if (
-      this.recordInfo.paginationOptions.infiniteScroll &&
-      (!this.recordInfo.paginationOptions.hideViewMoreOptions ||
-        this.recordInfo.paginationOptions.hideViewMoreOptions.infiniteScroll)
+      this.viewDefinition.paginationOptions.infiniteScroll &&
+      (!this.viewDefinition.paginationOptions.hideViewMoreOptions ||
+        this.viewDefinition.paginationOptions.hideViewMoreOptions
+          .infiniteScroll)
     ) {
       window.addEventListener('scroll', this.handleInfiniteScroll)
     }
 
     // run any onSuccess functions
-    const onSuccess = this.recordInfo.paginationOptions.onSuccess
+    const onSuccess = this.viewDefinition.paginationOptions.onSuccess
     if (onSuccess) {
       onSuccess(this)
     }
@@ -587,7 +594,6 @@ export default {
 
   methods: {
     generateTimeAgoString,
-    getIcon,
     getNestedProperty,
 
     isShowExpandButton(item, expandObject) {
@@ -621,7 +627,7 @@ export default {
     refreshCb(typename, { refreshParent = false, id, refreshType } = {}) {
       // if type of refresh is not defined or 'crud', refresh
       if (
-        this.recordInfo.typename === typename &&
+        this.viewDefinition.entity.typename === typename &&
         (!refreshType || refreshType === 'crud')
       ) {
         // if ID is provided, only reload that specific record
@@ -835,13 +841,13 @@ export default {
     },
 
     handleRowClick(props) {
-      if (this.recordInfo.paginationOptions.handleRowClick)
-        this.recordInfo.paginationOptions.handleRowClick(this, props)
+      if (this.viewDefinition.paginationOptions.handleRowClick)
+        this.viewDefinition.paginationOptions.handleRowClick(this, props)
     },
 
     handleGridElementClick(item) {
-      if (this.recordInfo.paginationOptions.handleGridElementClick)
-        this.recordInfo.paginationOptions.handleGridElementClick(this, item)
+      if (this.viewDefinition.paginationOptions.handleGridElementClick)
+        this.viewDefinition.paginationOptions.handleGridElementClick(this, item)
     },
 
     getTableRowData(headerItem, item) {
@@ -862,8 +868,8 @@ export default {
       ).concat(this.currentSortObject?.additionalSortObjects ?? [])
 
       // append any additionalSortParams IF they are unique fields
-      if (this.recordInfo.paginationOptions.additionalSortParams) {
-        this.recordInfo.paginationOptions.additionalSortParams.forEach(
+      if (this.viewDefinition.paginationOptions.additionalSortParams) {
+        this.viewDefinition.paginationOptions.additionalSortParams.forEach(
           (sortObject) => {
             // if field already exists, skip
             if (
@@ -876,7 +882,7 @@ export default {
       }
 
       const getSearchParams =
-        this.recordInfo.paginationOptions.searchOptions?.getParams
+        this.viewDefinition.paginationOptions.searchOptions?.getParams
 
       // build the distanceParams, if any
       let distanceParams
@@ -909,10 +915,10 @@ export default {
         ...(pagination && {
           first:
             (this.isChanged === false
-              ? this.recordInfo.paginationOptions.limitOptions
+              ? this.viewDefinition.paginationOptions.limitOptions
                   ?.maxInitialRecords
               : null) ??
-            this.recordInfo.paginationOptions.resultsPerPage ??
+            this.viewDefinition.paginationOptions.resultsPerPage ??
             this.resultsPerPage,
           after: this.endCursor ?? undefined,
         }),
@@ -936,12 +942,12 @@ export default {
       this.loading.exportData = true
       try {
         // fields required
-        if (!this.recordInfo.paginationOptions.downloadOptions.fields) {
+        if (!this.viewDefinition.paginationOptions.downloadOptions.fields) {
           throw new Error(`Downloads not configured for this record type`)
         }
 
         const query = collapseObject(
-          this.recordInfo.paginationOptions.downloadOptions.fields.reduce(
+          this.viewDefinition.paginationOptions.downloadOptions.fields.reduce(
             (total, fieldObject) => {
               // if args has hideIf and if it returns false, skip this field entirely
               if (!fieldObject.hideIf && fieldObject.hideIf(this)) return total
@@ -972,7 +978,7 @@ export default {
         const data = results.map((item) => {
           const returnItem = {}
 
-          this.recordInfo.paginationOptions.downloadOptions.fields.forEach(
+          this.viewDefinition.paginationOptions.downloadOptions.fields.forEach(
             (fieldObject) => {
               // skip if hideIf returns true
               if (fieldObject.hideIf && fieldObject.hideIf(this)) {
@@ -1048,8 +1054,8 @@ export default {
     },
 
     handleAddButtonClick() {
-      if (this.recordInfo.addOptions.customAction) {
-        this.recordInfo.addOptions.customAction(this, this.parentItem)
+      if (this.viewDefinition.createOptions.customAction) {
+        this.viewDefinition.createOptions.customAction(this, this.parentItem)
       } else {
         this.openAddRecordDialog()
       }
@@ -1064,7 +1070,7 @@ export default {
         {}
       )
 
-      this.openEditDialog('add', initializedRecord)
+      this.openEditDialog('create', initializedRecord)
     },
 
     openImportRecordDialog() {
@@ -1080,7 +1086,7 @@ export default {
     },
 
     openEditItemDialog(selectedItem, customFields) {
-      this.openEditDialog('edit', selectedItem, customFields)
+      this.openEditDialog('update', selectedItem, customFields)
     },
 
     openEditDialog(mode, selectedItem, customFields) {
@@ -1097,20 +1103,21 @@ export default {
     },
 
     handleViewAllButtonClick() {
-      // if limitOptions.handleViewAllButtonClick not set, automatically use the recordInfo.paginationOptions
+      // if limitOptions.handleViewAllButtonClick not set, automatically use the viewDefinition.paginationOptions
       if (
-        !this.recordInfo.paginationOptions.limitOptions.handleViewAllButtonClick
+        !this.viewDefinition.paginationOptions.limitOptions
+          .handleViewAllButtonClick
       ) {
         this.$router.push(
           generateCrudRecordRoute(this, {
-            routeType: this.recordInfo.routeType,
-            typename: this.recordInfo.typename,
+            routeType: this.viewDefinition.routeType,
+            typename: this.viewDefinition.entity.typename,
             pageOptions:
-              this.recordInfo.paginationOptions.defaultPageOptions?.(this),
+              this.viewDefinition.paginationOptions.defaultPageOptions?.(this),
           })
         )
       } else {
-        this.recordInfo.paginationOptions.limitOptions.handleViewAllButtonClick?.(
+        this.viewDefinition.paginationOptions.limitOptions.handleViewAllButtonClick?.(
           this
         )
       }
@@ -1161,12 +1168,17 @@ export default {
     },
     // if itemId is specific, it will fetch only that specific ID
     async fetchData(itemId = null) {
-      const fields = this.recordInfo.paginationOptions.headerOptions
+      const fields = this.viewDefinition.paginationOptions.headerOptions
         .map((headerInfo) => headerInfo.field)
-        .concat(this.recordInfo.requiredFields ?? [])
-        .concat(this.recordInfo.paginationOptions.requiredFields ?? [])
+        .concat(this.viewDefinition.requiredFields ?? [])
+        .concat(this.viewDefinition.paginationOptions.requiredFields ?? [])
 
-      const { query } = await processQuery(this, this.recordInfo, fields, true)
+      const { query } = await processQuery(
+        this,
+        this.viewDefinition,
+        fields,
+        true
+      )
 
       if (itemId) {
         const result = await executeGiraffeql({
@@ -1341,7 +1353,7 @@ export default {
       if (initFilters) {
         // initialize filter inputs
         this.filterInputsArray = await Promise.all(
-          this.recordInfo.paginationOptions.filterOptions.map(
+          this.viewDefinition.paginationOptions.filterOptions.map(
             async (filterObject) => {
               // sync the filters
               const filters = this.pageOptions?.filters
@@ -1358,7 +1370,7 @@ export default {
               const inputObject = {
                 fieldKey: filterObject.field,
                 primaryField: filterObject.field,
-                recordInfo: this.recordInfo,
+                viewDefinition: this.viewDefinition,
                 label:
                   filterObject.text ??
                   camelCaseToCapitalizedString(filterObject.field),
@@ -1395,9 +1407,9 @@ export default {
 
         // initialize distanceFilterOptions, if any
         this.distanceFilterOptions = []
-        if (this.recordInfo.paginationOptions.distanceFilterOptions) {
-          for (const distanceFilterObject of this.recordInfo.paginationOptions
-            .distanceFilterOptions) {
+        if (this.viewDefinition.paginationOptions.distanceFilterOptions) {
+          for (const distanceFilterObject of this.viewDefinition
+            .paginationOptions.distanceFilterOptions) {
             this.distanceFilterOptions.push({
               definition: distanceFilterObject,
               latitudeValue: null,
@@ -1411,11 +1423,11 @@ export default {
         // if pageOptions is undefined, use the defaultPageOptions fn if any
         if (
           this.pageOptions === undefined &&
-          this.recordInfo.paginationOptions.defaultPageOptions
+          this.viewDefinition.paginationOptions.defaultPageOptions
         ) {
           this.$emit(
             'pageOptions-updated',
-            this.recordInfo.paginationOptions.defaultPageOptions(this)
+            this.viewDefinition.paginationOptions.defaultPageOptions(this)
           )
 
           pageOptionsUpdated = true
@@ -1428,10 +1440,10 @@ export default {
 
       // sync the grid options
       if (syncGridOptions) {
-        if (this.recordInfo.paginationOptions.overrideViewMode) {
-          // if overrideViewMode is set on the recordInfo, use that
+        if (this.viewDefinition.paginationOptions.overrideViewMode) {
+          // if overrideViewMode is set on the viewDefinition, use that
           this.isGrid =
-            this.recordInfo.paginationOptions.overrideViewMode === 'grid'
+            this.viewDefinition.paginationOptions.overrideViewMode === 'grid'
         } else {
           this.isGrid = !!defaultGridView
         }

@@ -37,12 +37,12 @@ export default {
       required: true,
     },
 
-    recordInfo: {
+    viewDefinition: {
       type: Object,
       required: true,
     },
 
-    // custom fields that will override add/edit/view options on recordInfo
+    // custom fields that will override add/edit/view options on viewDefinition
     customFields: {
       type: Array,
     },
@@ -79,13 +79,13 @@ export default {
     },
 
     capitalizedType() {
-      return capitalizeString(this.recordInfo.typename)
+      return capitalizeString(this.viewDefinition.entity.typename)
     },
 
     fields() {
       if (this.customFields) return this.customFields
 
-      return this.recordInfo.viewOptions.fields
+      return this.viewDefinition.viewOptions.fields
     },
 
     visibleInputsArray() {
@@ -107,7 +107,7 @@ export default {
     },
 
     heroComponent() {
-      return this.recordInfo.viewOptions.heroOptions?.component ?? Hero
+      return this.viewDefinition.viewOptions.heroOptions?.component ?? Hero
     },
   },
 
@@ -120,7 +120,7 @@ export default {
       this.reset(val)
     },
 
-    recordInfo() {
+    viewDefinition() {
       this.reset()
     },
   },
@@ -139,10 +139,10 @@ export default {
     getNestedProperty,
 
     refreshCb(typename, { refreshType } = {}) {
-      // if type of refresh is not defined or 'edit', refresh
+      // if type of refresh is not defined or 'update', refresh
       if (
-        this.recordInfo.typename === typename &&
-        (!refreshType || refreshType === 'edit')
+        this.viewDefinition.entity.typename === typename &&
+        (!refreshType || refreshType === 'update')
       ) {
         this.reset()
       }
@@ -161,12 +161,12 @@ export default {
       )
     },
 
-    openEditItemDialog(item, editFields) {
+    openEditItemDialog(item, updateFields) {
       this.$root.$emit('openEditRecordDialog', {
-        recordInfo: this.recordInfo,
+        viewDefinition: this.viewDefinition,
         selectedItem: item,
-        mode: 'edit',
-        customFields: editFields,
+        mode: 'update',
+        customFields: updateFields,
       })
     },
 
@@ -184,10 +184,10 @@ export default {
 
         const { query } = await processQuery(
           this,
-          this.recordInfo,
+          this.viewDefinition,
           fields
-            .concat(this.recordInfo.requiredFields ?? [])
-            .concat(this.recordInfo.viewOptions.requiredFields ?? []),
+            .concat(this.viewDefinition.requiredFields ?? [])
+            .concat(this.viewDefinition.viewOptions.requiredFields ?? []),
           true
         )
         const data = await executeGiraffeql({
@@ -203,7 +203,7 @@ export default {
         this.currentItem = data
 
         // run any custom onSuccess functions
-        const onSuccess = this.recordInfo.viewOptions.onSuccess
+        const onSuccess = this.viewDefinition.viewOptions.onSuccess
 
         if (onSuccess) {
           onSuccess(this, data)
@@ -217,7 +217,7 @@ export default {
                 ? fieldElement
                 : fieldElement.field
 
-            const fieldInfo = lookupRenderField(this.recordInfo, fieldKey)
+            const fieldInfo = lookupRenderField(this.viewDefinition, fieldKey)
 
             const fieldValue = fieldInfo.hidden
               ? null

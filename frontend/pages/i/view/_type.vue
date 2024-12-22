@@ -1,8 +1,8 @@
 <template>
   <component
-    v-if="currentModel"
+    v-if="currentView"
     :is="pageComponent"
-    :record-info="currentModel"
+    :view-definition="currentView"
     :lookup-params="lookupParams"
   ></component>
   <v-container v-else fill-height>
@@ -16,7 +16,7 @@
 
 <script>
 import ViewRecordPage from '~/components/page/viewRecordPage.vue'
-import * as models from '~/models'
+import * as publicViews from '~/models2/views/public'
 import { capitalizeString, kebabToCamelCase } from '~/services/base'
 
 export default {
@@ -27,15 +27,15 @@ export default {
 
   computed: {
     pageComponent() {
-      return this.currentModel?.pageOptions?.component ?? ViewRecordPage
+      return this.currentView?.pageOptions?.component ?? ViewRecordPage
     },
 
-    currentModel() {
-      return models[`Public${capitalizeString(this.type)}`]
+    currentView() {
+      return publicViews[`Public${capitalizeString(this.type)}View`]
     },
 
     lookupParams() {
-      const getLookupParams = this.currentModel?.pageOptions?.getLookupParams
+      const getLookupParams = this.currentView?.pageOptions?.getLookupParams
 
       return getLookupParams ? getLookupParams(this) : undefined
     },

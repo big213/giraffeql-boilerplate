@@ -1,13 +1,13 @@
 import { ViewDefinition } from '~/types/view'
-import { baseViews } from '..'
 import { UserEntity } from '~/models2/entities'
+import { BaseUserView } from '../base'
 
-export const User: ViewDefinition = {
-  ...baseViews.User,
+export const PublicUserView: ViewDefinition = {
+  ...BaseUserView,
   routeType: 'i',
   title: `Public ${UserEntity.pluralName}`,
   paginationOptions: {
-    ...baseViews.User.paginationOptions!,
+    ...BaseUserView.paginationOptions!,
     defaultLockedFilters: (_that) => {
       return [
         {

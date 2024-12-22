@@ -8,7 +8,7 @@
   >
     <template v-slot:placeholder>
       <v-row class="fill-height ma-0" align="center" justify="center">
-        <v-icon size="200" color="grey darken-3">{{ recordInfo.icon }}</v-icon>
+        <v-icon size="200" color="grey darken-3">{{ entity.icon }}</v-icon>
       </v-row>
     </template>
     <v-card-title class="subheading font-weight-bold pb-2"

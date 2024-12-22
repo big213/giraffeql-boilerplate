@@ -43,8 +43,8 @@
         <v-row justify="center" class="mt-3">
           <v-col
             v-if="
-              recordInfo.paginationOptions.searchOptions &&
-              recordInfo.paginationOptions.searchOptions.preset
+              viewDefinition.paginationOptions.searchOptions &&
+              viewDefinition.paginationOptions.searchOptions.preset
             "
             :key="-1"
             cols="12"
@@ -150,7 +150,7 @@
       </v-container>
 
       <v-toolbar
-        v-if="!recordInfo.paginationOptions.hideToolbar"
+        v-if="!viewDefinition.paginationOptions.hideToolbar"
         flat
         color="accent"
         dense
@@ -176,20 +176,22 @@
           inset
           vertical
         ></v-divider>
-        <v-icon v-if="!recordInfo.paginationOptions.hideTitle" left>{{
-          icon || recordInfo.icon || 'mdi-domain'
+        <v-icon v-if="!viewDefinition.paginationOptions.hideTitle" left>{{
+          icon || viewDefinition.entity.icon || 'mdi-domain'
         }}</v-icon>
-        <v-toolbar-title v-if="!recordInfo.paginationOptions.hideTitle">{{
-          elementTitle || recordInfo.title || recordInfo.pluralName
+        <v-toolbar-title v-if="!viewDefinition.paginationOptions.hideTitle">{{
+          elementTitle ||
+          viewDefinition.title ||
+          viewDefinition.entity.pluralName
         }}</v-toolbar-title>
         <v-divider
-          v-if="recordInfo.addOptions && !hideAddButton"
+          v-if="viewDefinition.createOptions && !hideAddButton"
           class="mx-4"
           inset
           vertical
         ></v-divider>
         <v-btn
-          v-if="recordInfo.addOptions && !hideAddButton"
+          v-if="viewDefinition.createOptions && !hideAddButton"
           color="primary"
           @click="handleAddButtonClick()"
         >
@@ -197,13 +199,13 @@
           New
         </v-btn>
         <v-divider
-          v-if="recordInfo.paginationOptions.searchOptions"
+          v-if="viewDefinition.paginationOptions.searchOptions"
           class="mx-4"
           inset
           vertical
         ></v-divider>
         <SearchDialog
-          v-if="recordInfo.paginationOptions.searchOptions"
+          v-if="viewDefinition.paginationOptions.searchOptions"
           v-model="searchInput"
           @handleSubmit="handleSearchDialogSubmit"
         >
@@ -215,7 +217,7 @@
         </SearchDialog>
         <v-spacer></v-spacer>
         <v-btn
-          v-if="recordInfo.paginationOptions.showViewAll"
+          v-if="viewDefinition.paginationOptions.showViewAll"
           text
           @click="handleViewAllButtonClick"
         >
@@ -223,7 +225,8 @@
         </v-btn>
         <v-menu
           v-if="
-            sortOptions.length && !recordInfo.paginationOptions.hideSortOptions
+            sortOptions.length &&
+            !viewDefinition.paginationOptions.hideSortOptions
           "
           offset-y
           left
@@ -274,7 +277,7 @@
           </v-badge>
         </v-btn>
         <v-btn
-          v-if="!recordInfo.paginationOptions.hideGridModeToggle"
+          v-if="!viewDefinition.paginationOptions.hideGridModeToggle"
           icon
           title="Toggle Grid/List Mode"
           @click="toggleGridMode()"
@@ -282,7 +285,7 @@
           <v-icon>{{ isGrid ? 'mdi-view-list' : 'mdi-view-grid' }}</v-icon>
         </v-btn>
         <v-btn
-          v-if="recordInfo.paginationOptions.importOptions"
+          v-if="viewDefinition.paginationOptions.importOptions"
           icon
           title="Import Records"
           @click="openImportRecordDialog()"
@@ -290,7 +293,7 @@
           <v-icon>mdi-upload</v-icon>
         </v-btn>
         <v-btn
-          v-if="recordInfo.paginationOptions.downloadOptions"
+          v-if="viewDefinition.paginationOptions.downloadOptions"
           icon
           title="Download Records"
           :loading="loading.exportData"
@@ -299,7 +302,7 @@
           <v-icon>mdi-download</v-icon>
         </v-btn>
         <v-btn
-          v-if="!recordInfo.paginationOptions.hideRefresh"
+          v-if="!viewDefinition.paginationOptions.hideRefresh"
           :loading="loading.loadData || loading.syncData"
           icon
           title="Refresh"
@@ -312,7 +315,7 @@
       <v-container v-if="showFilterInterface" fluid class="pb-0 mt-3">
         <v-row>
           <v-col
-            v-if="recordInfo.paginationOptions.searchOptions"
+            v-if="viewDefinition.paginationOptions.searchOptions"
             :key="-1"
             cols="12"
             lg="3"
@@ -410,12 +413,15 @@
       }"
       class="pa-0"
     >
-      <div v-if="!recordInfo.paginationOptions.hideCount" class="text-center">
+      <div
+        v-if="!viewDefinition.paginationOptions.hideCount"
+        class="text-center"
+      >
         <span v-if="isDataLoading">...</span>
         <span v-else-if="!totalRecords">---</span>
         <span v-else class="noselect">
           (Showing {{ records.length }} of {{ totalRecords }}
-          {{ recordInfo.pluralName }})
+          {{ viewDefinition.entity.pluralName }})
         </span>
       </div>
       <v-divider />
@@ -428,18 +434,18 @@
         hide-default-footer
         class="pt-5"
         :style="
-          recordInfo.paginationOptions.minHeight
-            ? `min-height: ${recordInfo.paginationOptions.minHeight}`
+          viewDefinition.paginationOptions.minHeight
+            ? `min-height: ${viewDefinition.paginationOptions.minHeight}`
             : null
         "
         :loading="loading.loadData"
       >
         <template v-slot:loading>
           <CircularLoader
-            v-if="recordInfo.paginationOptions.loaderStyle === 'circular'"
+            v-if="viewDefinition.paginationOptions.loaderStyle === 'circular'"
             :style="
-              recordInfo.paginationOptions.minHeight
-                ? `min-height: ${recordInfo.paginationOptions.minHeight}`
+              viewDefinition.paginationOptions.minHeight
+                ? `min-height: ${viewDefinition.paginationOptions.minHeight}`
                 : null
             "
           ></CircularLoader>
@@ -449,8 +455,8 @@
           <v-container fluid>
             <v-row
               :justify="
-                recordInfo.paginationOptions.gridOptions &&
-                recordInfo.paginationOptions.gridOptions.justify
+                viewDefinition.paginationOptions.gridOptions &&
+                viewDefinition.paginationOptions.gridOptions.justify
               "
             >
               <v-col
@@ -463,12 +469,14 @@
                   class="noselect elevation-6"
                   @click="handleGridElementClick(item)"
                 >
-                  <div v-if="recordInfo.paginationOptions.heroOptions">
+                  <div v-if="viewDefinition.paginationOptions.heroOptions">
                     <component
                       :is="heroComponent"
                       :item="item"
-                      :record-info="recordInfo"
-                      mode="pagination"
+                      :hero-options="
+                        viewDefinition.paginationOptions.heroOptions
+                      "
+                      :entity="viewDefinition.entity"
                     ></component>
                   </div>
                   <v-list dense>
@@ -508,20 +516,24 @@
                       @click.stop="toggleGridExpand(item, expandObject)"
                     >
                       <v-icon left>{{
-                        expandObject.icon || expandObject.recordInfo.icon
+                        expandObject.icon ||
+                        expandObject.viewDefinition.entity.icon
                       }}</v-icon>
-                      {{ expandObject.name || expandObject.recordInfo.name }}
+                      {{
+                        expandObject.name ||
+                        expandObject.viewDefinition.entity.name
+                      }}
                     </v-btn>
                   </div>
 
                   <div
-                    v-if="!recordInfo.paginationOptions.hideActions"
+                    v-if="!viewDefinition.paginationOptions.hideActions"
                     class="text-center"
                     style="width: 100%"
                   >
                     <v-divider />
                     <RecordActionMenu
-                      :record-info="recordInfo"
+                      :view-definition="viewDefinition"
                       :item="item"
                       expand-mode="emit"
                       bottom
@@ -538,7 +550,7 @@
               </v-col>
               <v-col
                 v-if="
-                  !recordInfo.paginationOptions.hideViewMoreOptions &&
+                  !viewDefinition.paginationOptions.hideViewMoreOptions &&
                   records.length < totalRecords
                 "
                 cols="12"
@@ -554,7 +566,7 @@
                 >
               </v-col>
               <v-col
-                v-if="!recordInfo.paginationOptions.hideCount"
+                v-if="!viewDefinition.paginationOptions.hideCount"
                 cols="12"
                 class="text-center pa-0"
               >
@@ -563,7 +575,7 @@
                 <span v-else-if="!totalRecords">---</span>
                 <span v-else class="noselect">
                   (Showing {{ records.length }} of {{ totalRecords }}
-                  {{ recordInfo.pluralName }})
+                  {{ viewDefinition.entity.pluralName }})
                 </span>
               </v-col>
             </v-row>
@@ -571,7 +583,7 @@
         </template>
         <template v-slot:no-data
           ><div class="text-center">
-            No {{ recordInfo.pluralName }}
+            No {{ viewDefinition.entity.pluralName }}
           </div></template
         >
       </v-data-iterator>
@@ -602,14 +614,14 @@
               <div
                 v-if="
                   headerItem.value === null &&
-                  !recordInfo.paginationOptions.hideActions
+                  !viewDefinition.paginationOptions.hideActions
                 "
                 class="text-center"
                 style="width: 100%"
               >
                 <v-divider />
                 <RecordActionMenu
-                  :record-info="recordInfo"
+                  :view-definition="viewDefinition"
                   :item="props.item"
                   expand-mode="emit"
                   bottom
@@ -648,7 +660,8 @@
             :key="props.item.id"
             :class="{
               'expanded-row-bg': props.isExpanded,
-              'pointer-cursor': !!recordInfo.paginationOptions.handleRowClick,
+              'pointer-cursor':
+                !!viewDefinition.paginationOptions.handleRowClick,
             }"
             @click="handleRowClick(props)"
           >
@@ -660,7 +673,7 @@
             >
               <div v-if="headerItem.value === null">
                 <RecordActionMenu
-                  :record-info="recordInfo"
+                  :view-definition="viewDefinition"
                   :item="props.item"
                   expand-mode="emit"
                   left
@@ -695,7 +708,7 @@
         <template v-slot:footer>
           <div
             v-if="
-              !recordInfo.paginationOptions.hideViewMoreOptions &&
+              !viewDefinition.paginationOptions.hideViewMoreOptions &&
               records.length < totalRecords
             "
             class="text-center"
@@ -706,7 +719,7 @@
             >
           </div>
           <div
-            v-if="!recordInfo.paginationOptions.hideCount"
+            v-if="!viewDefinition.paginationOptions.hideCount"
             class="text-center"
           >
             <v-divider></v-divider>
@@ -714,7 +727,7 @@
             <span v-else-if="!totalRecords">---</span>
             <span v-else class="noselect">
               (Showing {{ records.length }} of {{ totalRecords }}
-              {{ recordInfo.pluralName }})
+              {{ viewDefinition.entity.pluralName }})
             </span>
           </div>
         </template>
@@ -727,7 +740,7 @@
             <div class="mb-2 expanded-table-bg">
               <component
                 :is="childInterfaceComponent"
-                :record-info="expandTypeObject.recordInfo"
+                :view-definition="expandTypeObject.viewDefinition"
                 :icon="expandTypeObject.icon"
                 :element-title="expandTypeObject.name"
                 :hidden-headers="expandTypeObject.excludeHeaders"
@@ -740,7 +753,7 @@
                 :breadcrumb-items="subBreadcrumbItems"
                 :results-per-page="expandTypeObject.resultsPerPage"
                 :hide-presets="!expandTypeObject.showPresets"
-                :parent-expand-types="recordInfo.expandTypes"
+                :parent-expand-types="viewDefinition.childTypes"
                 :current-expand-type-key="expandTypeObject.key"
                 @parent-expand-type-updated="
                   toggleItemExpanded(
@@ -770,7 +783,7 @@
 
     <EditRecordDialog
       v-model="dialogs.editRecord"
-      :record-info="recordInfo"
+      :view-definition="viewDefinition"
       :selected-item="dialogs.selectedItem"
       :mode="dialogs.editMode"
       :custom-fields="dialogs.customFields"
@@ -786,7 +799,7 @@
       <component
         :is="childInterfaceComponent"
         v-if="dialogs.expandRecord && expandTypeObject"
-        :record-info="expandTypeObject.recordInfo"
+        :view-definition="expandTypeObject.viewDefinition"
         :icon="expandTypeObject.icon"
         :element-title="expandTypeObject.name"
         :hidden-headers="expandTypeObject.excludeHeaders"

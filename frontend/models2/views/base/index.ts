@@ -1,4 +1,4 @@
-export { ApiKey } from './apiKey'
-export { User } from './user'
-export { File } from './file'
-export { UserUserFollowLink } from './userUserFollowLink'
+export { BaseApiKeyView } from './apiKey'
+export { BaseUserView } from './user'
+export { BaseFileView } from './file'
+export { BaseUserUserFollowLinkView } from './userUserFollowLink'

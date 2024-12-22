@@ -258,7 +258,7 @@ export default {
                 fieldKey: inputDef.field,
                 primaryField: inputDef.field,
                 fieldInfo: inputDef.definition,
-                recordInfo: null,
+                viewDefinition: null,
                 inputType: inputDef.definition.inputType,
                 label:
                   inputDef.definition.text ??

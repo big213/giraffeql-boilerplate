@@ -7,7 +7,7 @@
   >
     <component
       :is="paginationComponent"
-      :record-info="recordInfo"
+      :view-definition="viewDefinition"
       :locked-filters="lockedFilters"
       :hidden-filters="hiddenFilters"
       :hidden-headers="hiddenHeaders"
@@ -48,7 +48,7 @@ export default {
       type: String,
       default: null,
     },
-    recordInfo: {
+    viewDefinition: {
       type: Object,
       required: true,
     },
@@ -88,7 +88,9 @@ export default {
 
   computed: {
     paginationComponent() {
-      return this.recordInfo.paginationOptions?.component ?? CrudRecordInterface
+      return (
+        this.viewDefinition.paginationOptions?.component ?? CrudRecordInterface
+      )
     },
 
     computedMaxWidth() {

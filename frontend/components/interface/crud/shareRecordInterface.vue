@@ -36,7 +36,7 @@ export default {
       type: Object,
       required: true,
     },
-    recordInfo: {
+    viewDefinition: {
       type: Object,
       required: true,
     },
@@ -44,23 +44,23 @@ export default {
 
   computed: {
     shareUrl() {
-      return this.recordInfo.shareOptions.getUrl
-        ? this.recordInfo.shareOptions.getUrl(
+      return this.viewDefinition.shareOptions.getUrl
+        ? this.viewDefinition.shareOptions.getUrl(
             this,
-            this.recordInfo,
+            this.viewDefinition,
             this.selectedItem.id
           )
         : generateShareUrl(this, {
-            routeKey: this.recordInfo.typename,
+            routeKey: this.viewDefinition.entity.typename,
             id: this.selectedItem.id,
             showComments: true,
           })
     },
     // default to name || id
     itemIdentifier() {
-      return this.recordInfo.renderItem
-        ? this.recordInfo.renderItem(this.selectedItem)
-        : this.selectedItem.name || this.selectedItem.id
+      return this.viewDefinition.entity.nameField
+        ? this.selectedItem[this.viewDefinition.entity.nameField]
+        : this.selectedItem.id
     },
   },
 

@@ -23,7 +23,7 @@ export type CrudInputObject = {
   fieldKey: string // the fieldKey
   primaryField?: string // the main field. either fieldInfo.fields[0] or the fieldKey
   fieldInfo?: any // fieldInfo
-  recordInfo?: any | null // recordInfo, if any
+  viewDefinition?: any | null // viewDefinition, if any
   label: string // the label for the input
   closeable?: boolean // is the input closeable?
   inputOptions?: {

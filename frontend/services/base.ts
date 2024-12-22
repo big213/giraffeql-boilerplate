@@ -1,15 +1,17 @@
 import { format } from 'timeago.js'
 import { convertArrayToCSV } from 'convert-array-to-csv'
 import { executeGiraffeql } from '~/services/giraffeql'
-import * as models from '~/models/base'
 import { CrudInputObject, CrudRawFilterObject } from '~/types/misc'
 import { Root } from '../../schema'
 import { PriceObject } from '~/types'
+import * as entities from '~/models2/entities'
 
 type StringKeyObject = { [x: string]: any }
 
 export function getIcon(typename: string | undefined) {
-  return typename ? models[capitalizeString(typename)]?.icon ?? null : null
+  if (!typename) return null
+
+  return entities[`${capitalizeString(typename)}Entity`]?.icon ?? null
 }
 
 export function formatAsCurrency(input: number | null) {
@@ -421,24 +423,24 @@ export function generateLoginError(setRedirect = true) {
 export function generateNavRouteObject(
   that,
   {
-    recordInfo,
+    viewDefinition,
     path,
     pageOptions,
     title,
   }: {
-    recordInfo: any
+    viewDefinition: any
     path?: string
     pageOptions?: any
     title?: string
   }
 ) {
   return {
-    icon: recordInfo.icon,
-    title: title ?? recordInfo.title ?? recordInfo.pluralName,
+    icon: viewDefinition.entity.icon,
+    title: title ?? viewDefinition.title ?? viewDefinition.entity.pluralName,
     to: generateCrudRecordRoute(that, {
       path,
-      typename: recordInfo.typename,
-      routeType: recordInfo.routeType,
+      typename: viewDefinition.entity.typename,
+      routeType: viewDefinition.routeType,
       pageOptions:
         pageOptions === null
           ? null
@@ -662,23 +664,25 @@ export const viewportToPixelsMap = {
   xl: +Infinity,
 }
 
-export function lookupInputField(recordInfo, field: string) {
-  const fieldInfo = recordInfo.inputFields[field]
-
-  // field unknown, abort
-  if (!fieldInfo)
-    throw new Error(`Unknown input field on ${recordInfo.typename}: '${field}'`)
-
-  return fieldInfo
-}
-
-export function lookupRenderField(recordInfo, field: string) {
-  const fieldInfo = recordInfo.renderFields[field]
+export function lookupInputField(viewDefinition, field: string) {
+  const fieldInfo = viewDefinition.inputFields[field]
 
   // field unknown, abort
   if (!fieldInfo)
     throw new Error(
-      `Unknown render field on ${recordInfo.typename}: '${field}'`
+      `Unknown input field on ${viewDefinition.entity.typename}: '${field}'`
+    )
+
+  return fieldInfo
+}
+
+export function lookupRenderField(viewDefinition, field: string) {
+  const fieldInfo = viewDefinition.renderFields[field]
+
+  // field unknown, abort
+  if (!fieldInfo)
+    throw new Error(
+      `Unknown render field on ${viewDefinition.entity.typename}: '${field}'`
     )
 
   return fieldInfo
@@ -791,10 +795,12 @@ export function populateInputObject(
 
     // if no getOptions and has a typename, populate the options/value with the specific entry (if not already populated previously, i.e. converted from string to obj)
     if (
-      inputObject.inputOptions?.typename &&
+      inputObject.inputOptions?.entity &&
       !inputObject.inputOptions.getOptions &&
       (!inputObject.value || !isObject(inputObject.value))
     ) {
+      const entity = inputObject.inputOptions.entity
+
       const originalFieldValue = inputObject.value
       inputObject.value = null // set this to null initially while the results load, to prevent console error
 
@@ -806,29 +812,25 @@ export function populateInputObject(
       } else {
         if (originalFieldValue && originalFieldValue !== '__undefined') {
           // if no name or avatar, just use the id
-          if (
-            !inputObject.inputOptions?.hasName &&
-            inputObject.inputOptions?.hasAvatar
-          ) {
+          if (!entity.nameField && !entity.avatarField) {
             inputObject.value = {
               id: originalFieldValue,
             }
           } else {
             promisesArray.push(
               executeGiraffeql(<any>{
-                [`get${capitalizeString(inputObject.inputOptions?.typename)}`]:
-                  {
-                    id: true,
-                    ...(inputObject.inputOptions?.hasName && {
-                      name: true,
-                    }),
-                    ...(inputObject.inputOptions?.hasAvatar && {
-                      avatarUrl: true,
-                    }),
-                    __args: {
-                      id: originalFieldValue,
-                    },
+                [`get${capitalizeString(entity.typename)}`]: {
+                  id: true,
+                  ...(entity.nameField && {
+                    [entity.nameField]: true,
+                  }),
+                  ...(entity.avatarField && {
+                    [entity.avatarField]: true,
+                  }),
+                  __args: {
+                    id: originalFieldValue,
                   },
+                },
               })
                 .then((res) => {
                   // change value to object
@@ -879,7 +881,7 @@ export function addNestedInputObject(
 
 export async function processQuery(
   that,
-  recordInfo,
+  viewDefinition,
   fields: string[],
   renderMode = false
 ) {
@@ -890,7 +892,7 @@ export async function processQuery(
     if (field === '__typename') continue
 
     const fieldInfo = (renderMode ? lookupRenderField : lookupInputField)(
-      recordInfo,
+      viewDefinition,
       field
     )
 
@@ -910,7 +912,9 @@ export async function processQuery(
 
     // process fields
     fieldsToAdd.forEach(async (field) => {
-      const currentFieldInfo = recordInfo.fields[field]
+      const currentFieldInfo = renderMode
+        ? viewDefinition.renderFields[field]
+        : viewDefinition.inputFields[field]
 
       // add a serializer if there is one for the field
       if (currentFieldInfo) {
@@ -1041,7 +1045,7 @@ export async function processInputObject(that, inputObject, inputObjectArray) {
     // if the fieldInfo.inputType === 'type-combobox', it came from a combo box. need to handle accordingly
     if (
       inputObject.inputOptions?.inputType === 'type-combobox' &&
-      inputObject.inputOptions?.typename
+      inputObject.inputOptions.entity
     ) {
       // if value is string OR value is null and inputValue is string, create the object
       // first case happens if the user clicks away from the input before submitting
@@ -1054,7 +1058,8 @@ export async function processInputObject(that, inputObject, inputObjectArray) {
         // expecting either string or obj
         // create the item, get its id.
         const results = <any>await executeGiraffeql(<any>{
-          ['create' + capitalizeString(inputObject.inputOptions.typename)]: {
+          ['create' +
+          capitalizeString(inputObject.inputOptions.entity.typename)]: {
             id: true,
             name: true,
             __args: {
@@ -1198,14 +1203,26 @@ export function userHasRole(that, role: string) {
 }
 
 export function loadTypeSearchResults(that, inputObject) {
+  // if no typename, abort
+  if (!inputObject.inputOptions?.entity) {
+    throw new Error('Entity required for type-search')
+  }
+
+  const entity = inputObject.inputOptions.entity
+
+  // if no nameField, abort
+  if (!entity.nameField) {
+    throw new Error('NameField required for type-search')
+  }
+
   return executeGiraffeql(<any>{
-    [`get${capitalizeString(inputObject.inputOptions.typename)}Paginator`]: {
+    [`get${capitalizeString(entity.typename)}Paginator`]: {
       edges: {
         node: {
           id: true,
-          name: true,
-          ...(inputObject.inputOptions?.hasAvatar && {
-            avatarUrl: true,
+          [entity.nameField]: true,
+          ...(entity.avatarField && {
+            [entity.avatarField]: true,
           }),
         },
       },

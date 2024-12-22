@@ -10,9 +10,9 @@ import {
 } from '~/services/view'
 import { getUserPermissionEnumValues } from '~/services/dropdown'
 
-export const ApiKey: ViewDefinition = {
+export const BaseApiKeyView: ViewDefinition = {
   routeType: 'a',
-  entityDefinition: ApiKeyEntity,
+  entity: ApiKeyEntity,
   inputFields: {
     ...generateBaseInputFields(ApiKeyEntity),
     code: {
@@ -26,7 +26,7 @@ export const ApiKey: ViewDefinition = {
       },
     },
     'user.id': generateJoinableInputField({
-      entityDefinition: UserEntity,
+      entity: UserEntity,
     }),
   },
   renderFields: {
@@ -38,7 +38,7 @@ export const ApiKey: ViewDefinition = {
     permissions: {},
     user: generatePreviewableRecordField({
       fieldname: 'user',
-      entityDefinition: UserEntity,
+      entity: UserEntity,
     }),
   },
   paginationOptions: {

@@ -10,8 +10,10 @@
         <v-col cols="12">
           <component
             :is="paginationComponent"
-            :record-info="
-              expandTypeObject ? expandTypeObject.recordInfo : recordInfo
+            :view-definition="
+              expandTypeObject
+                ? expandTypeObject.viewDefinition
+                : viewDefinition
             "
             :page-options="isChildComponent ? subPageOptions : pageOptions"
             :locked-filters="
@@ -84,7 +86,7 @@ export default {
       type: String,
       default: null,
     },
-    recordInfo: {
+    viewDefinition: {
       type: Object,
       required: true,
     },
@@ -128,7 +130,7 @@ export default {
 
       return [
         {
-          field: this.recordInfo.typename.toLowerCase() + '.id',
+          field: this.viewDefinition.entity.typename.toLowerCase() + '.id',
           operator: 'eq',
           value: this.currentParentItem.id,
         },
@@ -136,10 +138,12 @@ export default {
     },
 
     paginationComponent() {
-      return this.recordInfo.paginationOptions.component || CrudRecordInterface
+      return (
+        this.viewDefinition.paginationOptions.component || CrudRecordInterface
+      )
     },
     capitalizedTypename() {
-      return capitalizeString(this.recordInfo.typename)
+      return capitalizeString(this.viewDefinition.entity.typename)
     },
     // type: CrudPageOptions | null
     pageOptions() {
@@ -213,13 +217,15 @@ export default {
     },
 
     async navigateToDefaultRoute() {
-      if (!this.recordInfo.paginationOptions.defaultPageOptions) return
+      if (!this.viewDefinition.paginationOptions.defaultPageOptions) return
 
       this.$router.replace(
         generateCrudRecordRoute(this, {
           path: this.$route.path,
           pageOptions:
-            await this.recordInfo.paginationOptions.defaultPageOptions(this),
+            await this.viewDefinition.paginationOptions.defaultPageOptions(
+              this
+            ),
         })
       )
     },
@@ -264,7 +270,7 @@ export default {
         // if no pageOptions, automatically redirect to defaultPageOptions, if any
         if (
           !this.$route.query.pageOptions &&
-          this.recordInfo.paginationOptions.defaultPageOptions
+          this.viewDefinition.paginationOptions.defaultPageOptions
         ) {
           await this.navigateToDefaultRoute()
         }
@@ -283,8 +289,8 @@ export default {
     return {
       title:
         this.elementTitle ??
-        this.recordInfo.title ??
-        `Manage ${this.recordInfo.pluralName}`,
+        this.viewDefinition.title ??
+        `Manage ${this.viewDefinition.entity.pluralName}`,
     }
   },
 }

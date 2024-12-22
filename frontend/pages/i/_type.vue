@@ -1,7 +1,7 @@
 <template>
   <CrudRecordPage
-    v-if="currentModel"
-    :record-info="currentModel"
+    v-if="currentView"
+    :view-definition="currentView"
     :locked-filters="lockedFilters"
   ></CrudRecordPage>
   <v-container v-else fill-height>
@@ -15,7 +15,7 @@
 
 <script>
 import CrudRecordPage from '~/components/page/crudRecordPage.vue'
-import * as models from '~/models'
+import * as publicViews from '~/models2/views/public'
 import { capitalizeString, kebabToCamelCase } from '~/services/base'
 
 export default {
@@ -29,13 +29,12 @@ export default {
   },
 
   computed: {
-    currentModel() {
-      return models[`Public${capitalizeString(this.type)}`]
+    currentView() {
+      return publicViews[`Public${capitalizeString(this.type)}View`]
     },
-
     lockedFilters() {
       const publicFilterFieldFn =
-        this.currentModel?.paginationOptions?.defaultLockedFilters
+        this.currentView?.paginationOptions?.defaultLockedFilters
       return publicFilterFieldFn ? publicFilterFieldFn(this) : []
     },
   },

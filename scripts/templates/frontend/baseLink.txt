@@ -43,10 +43,10 @@ export const {{ capitalizedTypename }}: RecordInfo<'{{ typename }}'> = {
     ],
     
   },
-  addOptions: {
+  createOptions: {
     fields: ['user', 'target'],
   },
-  editOptions: {
+  updateOptions: {
     fields: ['user', 'target'],
   },
   viewOptions: {

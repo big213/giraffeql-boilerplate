@@ -12,7 +12,6 @@ import {
   PageOptions,
   PaginationOptions,
   PostOptions,
-  PreviewOptions,
   PriceObject,
   ShareOptions,
   ViewOptions,
@@ -52,6 +51,54 @@ export type InputType =
   | 'text-combobox' // validate text input using server-side calls, but selection not required
   | 'rating' // rating from 1 to 5
   | 'text'
+
+type HeroOptions = {
+  // function that will get the preview image from the item
+  getPreviewImage?: (item: any) => any
+
+  // function that will get the preview name from the item
+  getPreviewName?: (item: any) => any
+
+  // fallback icon if no image is found
+  fallbackIcon?: string
+
+  // should the v-img component be contained?
+  containMode?: boolean
+
+  // custom component that should be rendered, which will override the above 2 options
+  component?: any
+}
+
+export type PreviewDefinition = {
+  entity: EntityDefinition
+
+  renderFields: {
+    [x in string]: RenderFieldDefinition
+  }
+
+  // required: fields that can be previewed
+  fields: string[]
+
+  // should the previewOptions interface show a hero image/text at the top
+  heroOptions?: HeroOptions
+
+  // hides the "view" button
+  hideViewButton?: boolean
+
+  // customActions
+  customActions?: {
+    text: string
+    icon: string
+    handleClick: (that, item: any) => void
+  }[]
+
+  followOptions?: {} & FollowOptions
+}
+
+type FollowOptions = {
+  // entity for "following" this type
+  entity: EntityDefinition
+}
 
 export type InputFieldDefinition = {
   text?: string
@@ -93,10 +140,6 @@ type InputOptions = {} & {
   // submitting to API, in filterBy and create/update functions
   parseValue?: (val: any) => any
 
-  // for type-autocomplete and type-combobox, multiple-select -- a simple way to get an avatar/name chip.
-  hasAvatar?: boolean
-  hasName?: boolean
-
   hint?: string
   inputRules?: any[]
   // is the field nullable? if so, we will add some text saying that to the input
@@ -116,7 +159,8 @@ type InputOptions = {} & {
   // nestedInputType?: InputType
   // nestedKeyText?: string
   // nestedValueText?: string
-  typename?: string
+  // typename?: string
+  entity?: EntityDefinition
   cols?: number // defaults to 12
 
   // for stripe-pi
@@ -189,7 +233,8 @@ type RenderOptions = {
 }
 
 export type ViewDefinition = {
-  entityDefinition: EntityDefinition
+  entity: EntityDefinition
+  preview?: PreviewDefinition
   inputFields: {
     [x in string]: InputFieldDefinition
   }
@@ -204,7 +249,6 @@ export type ViewDefinition = {
   updateOptions?: {} & EditOptions
   deleteOptions?: {} & DeleteOptions
   viewOptions?: {} & ViewOptions
-  previewOptions?: {} & PreviewOptions
   chipOptions?: {} & ChipOptions
   postOptions?: {} & PostOptions
   copyOptions?: {} & CopyOptions

@@ -1,5 +1,5 @@
 <template>
-  <v-chip pill v-bind="$attrs" v-on="$listeners" :title="name">
+  <v-chip v-if="entity" pill v-bind="$attrs" v-on="$listeners" :title="name">
     <v-avatar left>
       <v-img v-if="avatarUrl" :src="avatarUrl" contain></v-img
       ><v-icon v-else>{{ fallbackIcon }} </v-icon>
@@ -13,7 +13,7 @@
   </v-chip>
 </template>
 <script>
-import * as simpleModels from '~/models/simple'
+import * as entities from '~/models2/entities'
 import { capitalizeString } from '~/services/base'
 
 export default {
@@ -26,24 +26,23 @@ export default {
   },
 
   computed: {
-    recordInfo() {
-      return simpleModels[`Simple${capitalizeString(this.value.__typename)}`]
+    entity() {
+      // if no __typename, return null
+      if (!this.value.__typename) return null
+
+      return entities[`${capitalizeString(this.value.__typename)}Entity`]
     },
 
     name() {
-      return this.recordInfo?.chipOptions?.getName
-        ? this.recordInfo.chipOptions.getName(this.value)
-        : this.value.name
+      return this.entity ? this.value[this.entity.nameField] : null
     },
 
     avatarUrl() {
-      return this.recordInfo?.chipOptions?.getImage
-        ? this.recordInfo.chipOptions.getImage(this.value)
-        : this.value.avatarUrl
+      return this.entity ? this.value[this.entity.avatarField] : null
     },
 
     fallbackIcon() {
-      return this.recordInfo?.icon
+      return this.entity?.icon
     },
   },
 }

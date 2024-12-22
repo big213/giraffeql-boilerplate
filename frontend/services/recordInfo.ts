@@ -7,219 +7,15 @@ import {
   SimpleRecordInfo,
 } from '~/types'
 import TimeagoColumn from '~/components/table/timeagoColumn.vue'
-import AvatarColumn from '~/components/table/avatarColumn.vue'
-import NameAvatarColumn from '~/components/table/nameAvatarColumn.vue'
 import BooleanColumn from '~/components/table/booleanColumn.vue'
 import FilesColumn from '~/components/table/filesColumn.vue'
 import PreviewableFilesColumn from '~/components/table/previewableFilesColumn.vue'
-import * as SimpleModels from '../models/simple'
-import { capitalizeString, enterRoute, generateViewRecordRoute } from './base'
+import { enterRoute, generateViewRecordRoute } from './base'
 import OwnerColumn from '~/components/table/ownerColumn.vue'
 import TruthyRecordColumn from '~/components/table/truthyRecordColumn.vue'
 import ConcatRecordColumn from '~/components/table/concatRecordColumn.vue'
-import CopyableColumn from '~/components/table/copyableColumn.vue'
 import ShareLinkColumn from '~/components/table/shareLinkColumn.vue'
 import CurrencyColumn from '~/components/table/currencyColumn.vue'
-
-export function getSimpleModel(typename: string) {
-  const model = SimpleModels[`Simple${capitalizeString(typename)}`]
-  if (!model) throw new Error(`Simple model not found: ${typename}`)
-
-  return model
-}
-
-export function generatePreviewableJoinableField({
-  fieldname,
-  typename,
-  text,
-  inputType = 'type-autocomplete',
-  fieldOptions = {},
-  alias,
-}: {
-  fieldname: string
-  typename?: string
-  text: string
-  inputType?: InputType
-  fieldOptions?: Omit<FieldDefinition, 'text'>
-  alias?: string
-}) {
-  return {
-    [alias ?? fieldname]: generateJoinableField({
-      fieldname,
-      typename,
-      text,
-      inputType,
-      fieldOptions,
-    }),
-    [`${fieldname}Record`]: generatePreviewableRecordField({
-      fieldname,
-      typename,
-      text,
-      fieldOptions,
-    }),
-  }
-}
-
-export function generatePreviewableRecordField({
-  fieldname,
-  typename,
-  text,
-  fieldOptions,
-}: {
-  fieldname: string
-  typename?: string
-  text: string
-  fieldOptions?: Omit<FieldDefinition, 'text'>
-}) {
-  const fieldnamePrefix = fieldname ? fieldname + '.' : ''
-  const simpleModel = getSimpleModel(typename ?? fieldname)
-  return {
-    text,
-    fields: <string[]>(
-      [
-        simpleModel.hasName ? `${fieldnamePrefix}name` : null,
-        `${fieldnamePrefix}id`,
-        `${fieldnamePrefix}__typename`,
-        simpleModel.hasAvatar ? `${fieldnamePrefix}avatarUrl` : null,
-      ].filter((e) => e)
-    ),
-    pathPrefix: fieldname,
-    component: RecordColumn,
-    ...fieldOptions,
-  }
-}
-
-export function generateJoinableField({
-  fieldname,
-  typename,
-  text,
-  inputType = 'type-autocomplete',
-  fieldOptions = {},
-}: {
-  fieldname: string
-  typename?: string
-  text: string
-  inputType?: InputType
-  fieldOptions?: Omit<FieldDefinition, 'text'>
-}) {
-  const simpleModel = getSimpleModel(typename ?? fieldname)
-  return {
-    text,
-    fields: [`${fieldname}.id`],
-    ...fieldOptions,
-    inputOptions: {
-      inputType,
-      hasAvatar: simpleModel.hasAvatar,
-      hasName: simpleModel.hasName,
-      typename: typename ?? fieldname,
-      ...fieldOptions.inputOptions,
-    },
-  }
-}
-
-export function generateBaseFields(simpleModel: SimpleRecordInfo<any>) {
-  return {
-    id: {
-      text: 'ID',
-      component: CopyableColumn,
-    },
-    ...(simpleModel.hasName && {
-      name: {
-        text: 'Name',
-      },
-    }),
-    ...(simpleModel.hasAvatar && {
-      avatarUrl: {
-        text: 'Avatar',
-        component: AvatarColumn,
-        inputOptions: {
-          inputType: 'single-image-url' as InputType,
-          avatarOptions: {
-            fallbackIcon: simpleModel.icon,
-          },
-        },
-      },
-    }),
-    ...(simpleModel.hasDescription && {
-      description: {
-        text: 'Description',
-        inputOptions: {
-          inputType: 'textarea' as InputType,
-        },
-      },
-    }),
-    ...(simpleModel.hasName &&
-      simpleModel.hasAvatar && {
-        nameWithAvatar: {
-          text: 'Name',
-          fields: ['name', 'avatarUrl'],
-          component: NameAvatarColumn,
-        },
-        record: generatePreviewableRecordField({
-          text: 'Record',
-          fieldname: simpleModel.typename,
-        }),
-      }),
-    ...generatePreviewableJoinableField({
-      text: 'Created By',
-      fieldname: 'createdBy',
-      typename: 'user',
-    }),
-    ...(simpleModel.hasOrganizationOwner &&
-      generatePreviewableJoinableField({
-        text: 'Organization Owner',
-        fieldname: 'organizationOwner',
-        typename: 'organization',
-      })),
-    ...(simpleModel.hasUserOwner &&
-      generatePreviewableJoinableField({
-        text: 'User Owner',
-        fieldname: 'userOwner',
-        typename: 'user',
-      })),
-    createdAt: {
-      text: 'Created At',
-      component: TimeagoColumn,
-    },
-    updatedAt: {
-      text: 'Updated At',
-      component: TimeagoColumn,
-    },
-  }
-}
-
-export function generateBaseLinkFields(simpleModel: SimpleRecordInfo<any>) {
-  return {
-    id: {
-      text: 'ID',
-    },
-    ...generatePreviewableJoinableField({
-      text: 'CreatedBy',
-      fieldname: 'createdBy',
-      typename: 'user',
-    }),
-    ...(simpleModel.hasOrganizationOwner &&
-      generatePreviewableJoinableField({
-        text: 'Organization Owner',
-        fieldname: 'organizationOwner',
-        typename: 'organization',
-      })),
-    ...(simpleModel.hasUserOwner &&
-      generatePreviewableJoinableField({
-        text: 'User Owner',
-        fieldname: 'userOwner',
-        typename: 'user',
-      })),
-    createdAt: {
-      text: 'Created At',
-      component: TimeagoColumn,
-    },
-    updatedAt: {
-      text: 'Updated At',
-      component: TimeagoColumn,
-    },
-  }
-}
 
 export function generateIsPublicField({
   defaultValue = true,
@@ -390,7 +186,7 @@ export function generatePreviewableFilesColumn({
 
 // paginationOption helpers
 export function generateClickRowToOpenDialogOptions(
-  action: 'view' | 'edit' | 'delete' | 'share' | 'copy' = 'view'
+  action: 'view' | 'update' | 'delete' | 'share' | 'copy' = 'view'
 ) {
   return {
     handleRowClick: (that, props) => {
@@ -408,13 +204,13 @@ export function generateClickRowToExpandOptions() {
       // if already expanded, close it
       if (props.isExpanded) {
         that.closeExpandedItems()
-      } else if (that.recordInfo.expandTypes[0]) {
-        that.toggleItemExpanded(props, that.recordInfo.expandTypes[0])
+      } else if (that.viewDefinition.childTypes[0]) {
+        that.toggleItemExpanded(props, that.viewDefinition.childTypes[0])
       }
     },
     handleGridElementClick: (that, item) => {
-      if (that.recordInfo.expandTypes[0]) {
-        that.toggleGridExpand(item, that.recordInfo.expandTypes[0])
+      if (that.viewDefinition.childTypes[0]) {
+        that.toggleGridExpand(item, that.viewDefinition.childTypes[0])
       }
     },
   }
@@ -430,8 +226,8 @@ export function generateClickRowToEnterOptions({
       enterRoute(
         that,
         generateViewRecordRoute(that, {
-          routeKey: that.recordInfo.typename,
-          routeType: that.recordInfo.routeType,
+          routeKey: that.viewDefinition.entity.typename,
+          routeType: that.viewDefinition.routeType,
           id: props.item.id,
           showComments: true,
           miniMode,
@@ -445,8 +241,8 @@ export function generateClickRowToEnterOptions({
       enterRoute(
         that,
         generateViewRecordRoute(that, {
-          routeKey: that.recordInfo.typename,
-          routeType: that.recordInfo.routeType,
+          routeKey: that.viewDefinition.entity.typename,
+          routeType: that.viewDefinition.routeType,
           id: item.id,
           showComments: true,
           miniMode,
@@ -652,22 +448,22 @@ export function generateSortOptions({
 
 // custom functions
 export function generateHomePageRecordInfo({
-  recordInfo,
+  viewDefinition,
   title,
   columnMode = false,
   limit = 4,
   paginationOptions,
 }: {
-  recordInfo: RecordInfo<any>
+  viewDefinition: RecordInfo<any>
   title?: string
   columnMode?: boolean
   limit?: number
   paginationOptions?: any
 }) {
   return {
-    ...recordInfo,
+    ...viewDefinition,
     ...(title && { title }),
-    addOptions: undefined,
+    createOptions: undefined,
     paginationOptions: {
       // dont override existing configuration for these
       defaultLockedFilters: () => [],
@@ -679,7 +475,7 @@ export function generateHomePageRecordInfo({
           desc: true,
         },
       }),
-      ...recordInfo.paginationOptions,
+      ...viewDefinition.paginationOptions,
       // override existing configuration for these
       searchOptions: undefined,
       hideGridModeToggle: true,
@@ -708,17 +504,17 @@ export function generateHomePageRecordInfo({
 }
 
 export function generatePreviewRecordInfo({
-  recordInfo,
+  viewDefinition,
   title,
 }: {
-  recordInfo: RecordInfo<any>
+  viewDefinition: RecordInfo<any>
   title?: string
 }) {
   return {
-    ...recordInfo,
+    ...viewDefinition,
     ...(title && { title }),
     paginationOptions: {
-      ...recordInfo.paginationOptions,
+      ...viewDefinition.paginationOptions,
       defaultLockedFilters: () => [],
       defaultPageOptions: () => ({
         search: null,

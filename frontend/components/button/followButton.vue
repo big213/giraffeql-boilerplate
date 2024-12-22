@@ -18,9 +18,9 @@ export default {
       type: Object,
       required: true,
     },
-    // the name of the follow link model
-    followLinkModel: {
-      type: String,
+    // the Follow Options
+    followOptions: {
+      type: Object,
       required: true,
     },
   },
@@ -40,7 +40,9 @@ export default {
         // login is required
         if (!this.$store.getters['auth/user']) throw new Error('Login required')
 
-        const capitalizedLinkModel = capitalizeString(this.followLinkModel)
+        const capitalizedLinkModel = capitalizeString(
+          this.followOptions.entity.typename
+        )
         if (!this.item.currentUserFollowLink) {
           const data = await executeGiraffeql({
             [`create${capitalizedLinkModel}`]: {

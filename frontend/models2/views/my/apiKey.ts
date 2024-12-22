@@ -1,13 +1,13 @@
 import { ViewDefinition } from '~/types/view'
-import { baseViews } from '..'
 import { ApiKeyEntity } from '~/models2/entities'
+import { BaseApiKeyView } from '../base'
 
-export const ApiKey: ViewDefinition = {
-  ...baseViews.ApiKey,
+export const MyApiKeyView: ViewDefinition = {
+  ...BaseApiKeyView,
   routeType: 'my',
   title: `My ${ApiKeyEntity.pluralName}`,
   paginationOptions: {
-    ...baseViews.ApiKey.paginationOptions!,
+    ...BaseApiKeyView.paginationOptions!,
     defaultLockedFilters: (that) => {
       return [
         {

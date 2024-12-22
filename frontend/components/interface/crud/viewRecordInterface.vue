@@ -7,12 +7,12 @@
         style="min-height: 250px"
       ></CircularLoader>
       <div v-else>
-        <div v-if="currentItem && recordInfo.viewOptions.heroOptions">
+        <div v-if="currentItem && viewDefinition.viewOptions.heroOptions">
           <component
             :is="heroComponent"
             :item="currentItem"
-            :record-info="recordInfo"
-            mode="view"
+            :hero-options="viewDefinition.viewOptions.heroOptions"
+            :entity="viewDefinition.entity"
           ></component>
         </div>
         <v-container class="text-left py-0">

@@ -34,7 +34,7 @@ export default {
       type: Object,
       required: true,
     },
-    recordInfo: {
+    viewDefinition: {
       type: Object,
       required: true,
     },
@@ -50,9 +50,9 @@ export default {
   computed: {
     // default to name || id
     itemIdentifier() {
-      return this.recordInfo.renderItem
-        ? this.recordInfo.renderItem(this.selectedItem)
-        : this.selectedItem.name || this.selectedItem.id
+      return this.viewDefinition.entity.nameField
+        ? this.selectedItem[this.viewDefinition.entity.nameField]
+        : this.selectedItem.id
     },
   },
 
@@ -61,12 +61,12 @@ export default {
       this.loading.deleteRecord = true
       try {
         const data = await executeGiraffeql({
-          [this.recordInfo.deleteOptions.operationName ??
-          `delete${capitalizeString(this.recordInfo.typename)}`]: {
+          [this.viewDefinition.deleteOptions.operationName ??
+          `delete${capitalizeString(this.viewDefinition.entity.typename)}`]: {
             id: true,
-            ...(this.recordInfo.deleteOptions.returnFields
+            ...(this.viewDefinition.deleteOptions.returnFields
               ? buildQueryFromFieldPathArray(
-                  this.recordInfo.editOptions.returnFields
+                  this.viewDefinition.updateOptions.returnFields
                 )
               : undefined),
             __args: {
@@ -76,18 +76,21 @@ export default {
         })
 
         this.$notifier.showSnackbar({
-          message: `${this.recordInfo.name}Deleted`,
+          message: `${this.viewDefinition.entity.name}Deleted`,
           variant: 'success',
         })
 
         // run any custom onSuccess functions
-        const onSuccess = this.recordInfo.deleteOptions.onSuccess
+        const onSuccess = this.viewDefinition.deleteOptions.onSuccess
 
         if (onSuccess) {
           onSuccess(this, data)
         } else {
           // else emit the generic refresh-interface event
-          this.$root.$emit('refresh-interface', this.recordInfo.typename)
+          this.$root.$emit(
+            'refresh-interface',
+            this.viewDefinition.entity.typename
+          )
         }
 
         this.$emit('handleSubmit', data)

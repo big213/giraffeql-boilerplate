@@ -335,7 +335,7 @@
       v-model="item.value"
       :search-input.sync="item.inputValue"
       :items="item.options"
-      :item-text="item.inputOptions.hasName ? 'name' : 'id'"
+      :item-text="item.inputOptions.entity.nameField"
       item-value="id"
       :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
       :readonly="isReadonly"
@@ -410,7 +410,7 @@
       :search-input.sync="item.inputValue"
       :items="item.options"
       :multiple="item.inputOptions?.inputType === 'type-autocomplete-multiple'"
-      :item-text="item.inputOptions.hasName ? 'name' : 'id'"
+      :item-text="item.inputOptions.entity.nameField"
       item-value="id"
       :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
       :readonly="isReadonly"
@@ -863,7 +863,6 @@ import {
 import {
   isObject,
   handleError,
-  getIcon,
   collectPaginatorData,
   addNestedInputObject,
   populateInputObject,
@@ -974,16 +973,13 @@ export default {
     isReadonly() {
       return this.item.readonly
     },
-    icon() {
-      return getIcon(this.item.inputOptions?.typename)
-    },
 
     fallbackIcon() {
-      return this.item.inputOptions?.avatarOptions?.fallbackIcon
+      return this.item.inputOptions.avatarOptions?.fallbackIcon
     },
 
     acceptedFiles() {
-      return this.item.inputOptions?.contentType
+      return this.item.inputOptions.contentType
     },
 
     appendIcon() {
@@ -1270,7 +1266,7 @@ export default {
 
         // if the input type does not have a name, do a slightly different check
         if (
-          !inputObject.inputOptions.hasName &&
+          !inputObject.inputOptions.entity.nameField &&
           (inputObject.value?.id ?? null) === inputObject.inputValue
         ) {
           return
@@ -1752,6 +1748,14 @@ export default {
         case 'stripe-pi-editable':
           this.tempInput = this.item.inputValue
           break
+        case 'type-combobox':
+        case 'type-autocomplete':
+        case 'type-autocomplete-multiple':
+          if (!this.item.inputOptions.entity) {
+            throw new Error(
+              `Entity required for combobox, autocomplete-(multiple) input types`
+            )
+          }
       }
     },
   },

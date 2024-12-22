@@ -1,12 +1,12 @@
 import { ViewDefinition } from '~/types/view'
-import { baseViews } from '..'
+import { BaseFileView } from '../base'
 
-export const File: ViewDefinition = {
-  ...baseViews.File,
+export const MyFileView: ViewDefinition = {
+  ...BaseFileView,
   routeType: 'my',
-  title: `My ${baseViews.File.entityDefinition.pluralName}`,
+  title: `My ${BaseFileView.entity.pluralName}`,
   paginationOptions: {
-    ...baseViews.File.paginationOptions!,
+    ...BaseFileView.paginationOptions!,
     defaultLockedFilters: (that) => {
       return [
         {

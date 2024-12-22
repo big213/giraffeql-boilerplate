@@ -1,9 +1,9 @@
 import { ViewDefinition } from '~/types/view'
-import { baseViews } from '..'
 import { handleUserRefreshed } from '~/services/auth'
+import { BaseUserView } from '../base'
 
-export const Profile: ViewDefinition = {
-  ...baseViews.User,
+export const MyProfileView: ViewDefinition = {
+  ...BaseUserView,
   routeType: 'my',
   title: `My Profile`,
   updateOptions: {
@@ -14,7 +14,7 @@ export const Profile: ViewDefinition = {
     },
   },
   viewOptions: {
-    ...baseViews.User.viewOptions,
+    ...BaseUserView.viewOptions,
     fields: ['isPublic', 'description'],
   },
   deleteOptions: undefined,

@@ -33,7 +33,7 @@
     <v-card-actions>
       <v-switch
         v-if="
-          recordInfo.paginationOptions.importOptions
+          viewDefinition.paginationOptions.importOptions
             .allowDownloadAfterCompletion
         "
         v-model="miscInputs.downloadAfterCompleted"
@@ -71,7 +71,7 @@ export default {
       type: Object,
       required: true,
     },
-    recordInfo: {
+    viewDefinition: {
       type: Object,
       required: true,
     },
@@ -126,7 +126,7 @@ export default {
         []
       )
 
-      return this.recordInfo.paginationOptions.importOptions.fields.filter(
+      return this.viewDefinition.paginationOptions.importOptions.fields.filter(
         (importFieldObject) => {
           if (!importFieldObject.field) return true
 
@@ -208,7 +208,7 @@ export default {
           const lockedFieldsMap = new Map()
           for (const field in this.selectedItem) {
             const fieldObject =
-              this.recordInfo.paginationOptions.importOptions.fields.find(
+              this.viewDefinition.paginationOptions.importOptions.fields.find(
                 (innerFieldObject) => innerFieldObject.field === field
               )
             if (fieldObject) {
@@ -259,9 +259,9 @@ export default {
 
             // run the inputsModifier, if any
             if (
-              this.recordInfo.paginationOptions.importOptions.inputsModifier
+              this.viewDefinition.paginationOptions.importOptions.inputsModifier
             ) {
-              this.recordInfo.paginationOptions.importOptions.inputsModifier(
+              this.viewDefinition.paginationOptions.importOptions.inputsModifier(
                 this,
                 recordData.data
               )
@@ -269,8 +269,8 @@ export default {
 
             // if there is a skipIf function, check it to see if this entry should be skippeed
             if (
-              this.recordInfo.paginationOptions.importOptions.skipIf &&
-              this.recordInfo.paginationOptions.importOptions.skipIf(
+              this.viewDefinition.paginationOptions.importOptions.skipIf &&
+              this.viewDefinition.paginationOptions.importOptions.skipIf(
                 this,
                 recordData.data
               )
@@ -302,20 +302,20 @@ export default {
         // if allowDownloadAfterCompletion set, but no downloadOptions, throw err
         // fields required
         if (
-          this.recordInfo.paginationOptions.importOptions
+          this.viewDefinition.paginationOptions.importOptions
             .allowDownloadAfterCompletion &&
           this.miscInputs.downloadAfterCompleted &&
-          !this.recordInfo.paginationOptions.downloadOptions
+          !this.viewDefinition.paginationOptions.downloadOptions
         ) {
           throw new Error(`Downloads not configured for this record type`)
         }
 
         const query =
-          this.recordInfo.paginationOptions.importOptions
+          this.viewDefinition.paginationOptions.importOptions
             .allowDownloadAfterCompletion &&
           this.miscInputs.downloadAfterCompleted
             ? collapseObject(
-                this.recordInfo.paginationOptions.downloadOptions.fields.reduce(
+                this.viewDefinition.paginationOptions.downloadOptions.fields.reduce(
                   (total, fieldObject) => {
                     if (fieldObject.args) {
                       // if args has hideIf and if it returns false, skip this field entirely
@@ -346,15 +346,18 @@ export default {
           if (recordData.isSkipped) continue
 
           recordData.record = await executeGiraffeql({
-            [this.recordInfo.addOptions?.operationName ??
-            `create${capitalizeString(this.recordInfo.typename)}`]: {
+            [this.viewDefinition.createOptions?.operationName ??
+            `create${capitalizeString(this.viewDefinition.entity.typename)}`]: {
               ...query,
               __args: collapseObject(recordData.data),
             },
           }).catch((err) => {
             // if there is an error and there is a custom onError function, run that. else throw
-            if (this.recordInfo.paginationOptions.importOptions.onError) {
-              this.recordInfo.paginationOptions.importOptions.onError(this, err)
+            if (this.viewDefinition.paginationOptions.importOptions.onError) {
+              this.viewDefinition.paginationOptions.importOptions.onError(
+                this,
+                err
+              )
 
               // if the error is caught, mark the record as skipped
               recordData.isSkipped = true
@@ -369,7 +372,7 @@ export default {
 
         // download the records as CSV
         if (
-          this.recordInfo.paginationOptions.importOptions
+          this.viewDefinition.paginationOptions.importOptions
             .allowDownloadAfterCompletion &&
           this.miscInputs.downloadAfterCompleted
         ) {
@@ -377,7 +380,7 @@ export default {
           const data = this.miscInputs.records.map((recordData) => {
             const returnItem = {}
 
-            this.recordInfo.paginationOptions.downloadOptions.fields.forEach(
+            this.viewDefinition.paginationOptions.downloadOptions.fields.forEach(
               (fieldObject) => {
                 // skip if hideIf returns true
                 if (fieldObject.hideIf && fieldObject.hideIf(this)) {
@@ -402,7 +405,7 @@ export default {
             this,
             data,
             `Export${capitalizeString(
-              this.recordInfo.typename
+              this.viewDefinition.entity.typename
             )}${getCurrentDate()}`
           )
         }
@@ -427,13 +430,16 @@ export default {
     handleSuccess() {
       // run any custom onSuccess functions
       const onSuccess =
-        this.recordInfo.paginationOptions.importOptions.onSuccess
+        this.viewDefinition.paginationOptions.importOptions.onSuccess
 
       if (onSuccess) {
         onSuccess(this)
       } else {
         // else emit the generic refresh-interface event
-        this.$root.$emit('refresh-interface', this.recordInfo.typename)
+        this.$root.$emit(
+          'refresh-interface',
+          this.viewDefinition.entity.typename
+        )
       }
     },
 

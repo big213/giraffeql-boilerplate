@@ -12,9 +12,13 @@ import NameAvatarColumn from '~/components/table/nameAvatarColumn.vue'
 import TimeagoColumn from '~/components/table/timeagoColumn.vue'
 import RecordColumn from '~/components/table/recordColumn.vue'
 import { UserEntity } from '~/models2/entities'
-import { camelCaseToCapitalizedString } from './base'
+import {
+  camelCaseToCapitalizedString,
+  enterRoute,
+  generateViewRecordRoute,
+} from './base'
 
-export function generateBaseRenderFields(entityDefinition: EntityDefinition): {
+export function generateBaseRenderFields(entity: EntityDefinition): {
   [x: string]: RenderFieldDefinition
 } {
   return {
@@ -22,30 +26,30 @@ export function generateBaseRenderFields(entityDefinition: EntityDefinition): {
       text: 'ID',
       component: CopyableColumn,
     },
-    ...(entityDefinition.nameField && {
-      [entityDefinition.nameField]: {},
+    ...(entity.nameField && {
+      [entity.nameField]: {},
     }),
-    ...(entityDefinition.avatarField && {
-      [entityDefinition.avatarField]: {
+    ...(entity.avatarField && {
+      [entity.avatarField]: {
         component: AvatarColumn,
         text: 'Avatar',
         inputOptions: {
           inputType: 'single-image-url' as InputType,
           avatarOptions: {
-            fallbackIcon: entityDefinition.icon,
+            fallbackIcon: entity.icon,
           },
         },
       },
     }),
-    ...(entityDefinition.descriptionField && {
-      [entityDefinition.descriptionField]: {
+    ...(entity.descriptionField && {
+      [entity.descriptionField]: {
         inputOptions: {
           inputType: 'textarea' as InputType,
         },
       },
     }),
-    ...(entityDefinition.nameField &&
-      entityDefinition.avatarField && {
+    ...(entity.nameField &&
+      entity.avatarField && {
         nameWithAvatar: {
           text: 'Name',
           fields: ['name', 'avatarUrl'],
@@ -53,12 +57,12 @@ export function generateBaseRenderFields(entityDefinition: EntityDefinition): {
         },
         record: generatePreviewableRecordField({
           text: 'Record',
-          entityDefinition: entityDefinition,
+          entity: entity,
         }),
       }),
     createdBy: generatePreviewableRecordField({
       fieldname: 'createdBy',
-      entityDefinition: UserEntity,
+      entity: UserEntity,
     }),
     createdAt: {
       component: TimeagoColumn,
@@ -69,26 +73,26 @@ export function generateBaseRenderFields(entityDefinition: EntityDefinition): {
   }
 }
 
-export function generateBaseInputFields(entityDefinition: EntityDefinition): {
+export function generateBaseInputFields(entity: EntityDefinition): {
   [x: string]: InputFieldDefinition
 } {
   return {
-    ...(entityDefinition.nameField && {
-      [entityDefinition.nameField]: {},
+    ...(entity.nameField && {
+      [entity.nameField]: {},
     }),
-    ...(entityDefinition.avatarField && {
-      [entityDefinition.avatarField]: {
+    ...(entity.avatarField && {
+      [entity.avatarField]: {
         text: 'Avatar',
         inputOptions: {
           inputType: 'single-image-url' as InputType,
           avatarOptions: {
-            fallbackIcon: entityDefinition.icon,
+            fallbackIcon: entity.icon,
           },
         },
       },
     }),
-    ...(entityDefinition.descriptionField && {
-      [entityDefinition.descriptionField]: {
+    ...(entity.descriptionField && {
+      [entity.descriptionField]: {
         inputOptions: {
           inputType: 'textarea' as InputType,
         },
@@ -99,20 +103,18 @@ export function generateBaseInputFields(entityDefinition: EntityDefinition): {
 
 export function generateJoinableInputField({
   text,
-  entityDefinition,
+  entity,
   inputType = 'type-autocomplete',
 }: {
   text?: string
-  entityDefinition: EntityDefinition
+  entity: EntityDefinition
   inputType?: InputType
 }): InputFieldDefinition {
   return {
     text,
     inputOptions: {
       inputType,
-      hasAvatar: !!entityDefinition.avatarField,
-      hasName: !!entityDefinition.nameField,
-      typename: entityDefinition.typename,
+      entity,
     },
   }
 }
@@ -120,12 +122,12 @@ export function generateJoinableInputField({
 export function generatePreviewableRecordField({
   fieldname,
   text,
-  entityDefinition,
+  entity,
   fieldOptions,
 }: {
   fieldname?: string
   text?: string
-  entityDefinition: EntityDefinition
+  entity: EntityDefinition
   fieldOptions?: Omit<FieldDefinition, 'text'>
 }) {
   const fieldnamePrefix = fieldname ? `${fieldname}.` : ''
@@ -135,12 +137,8 @@ export function generatePreviewableRecordField({
       [
         `${fieldnamePrefix}id`,
         `${fieldnamePrefix}__typename`,
-        entityDefinition.nameField
-          ? `${fieldnamePrefix}${entityDefinition.nameField}`
-          : null,
-        entityDefinition.avatarField
-          ? `${fieldnamePrefix}${entityDefinition.avatarField}`
-          : null,
+        entity.nameField ? `${fieldnamePrefix}${entity.nameField}` : null,
+        entity.avatarField ? `${fieldnamePrefix}${entity.avatarField}` : null,
       ].filter((e) => e)
     ),
     pathPrefix: fieldname,
@@ -170,33 +168,73 @@ export function generateSortOptions({
   ]
 }
 
-export function convertViewDefinition(
-  viewDefinition: ViewDefinition
-): RecordInfo<any> {
+// paginationOption helpers
+export function generateClickRowToOpenDialogOptions(
+  action: 'view' | 'update' | 'delete' | 'share' | 'copy' = 'view'
+) {
   return {
-    ...viewDefinition.entityDefinition,
-    hasName: !!viewDefinition.entityDefinition.nameField,
-    hasAvatar: !!viewDefinition.entityDefinition.avatarField,
-    hasDescription: !!viewDefinition.entityDefinition.descriptionField,
-    routeType: viewDefinition.routeType,
-    title: viewDefinition.title,
-    requiredFields: viewDefinition.requiredFields,
-    inputFields: viewDefinition.inputFields,
-    renderFields: viewDefinition.renderFields,
-    pageOptions: viewDefinition.pageOptions,
-    paginationOptions: viewDefinition.paginationOptions,
-    dialogOptions: viewDefinition.dialogOptions,
-    addOptions: viewDefinition.createOptions,
-    editOptions: viewDefinition.updateOptions,
-    deleteOptions: viewDefinition.deleteOptions,
-    viewOptions: viewDefinition.viewOptions,
-    previewOptions: viewDefinition.previewOptions,
-    chipOptions: viewDefinition.chipOptions,
-    postOptions: viewDefinition.postOptions,
-    copyOptions: viewDefinition.copyOptions,
-    shareOptions: viewDefinition.shareOptions,
-    enterOptions: viewDefinition.enterOptions,
-    customActions: viewDefinition.actions,
-    expandTypes: viewDefinition.childTypes ?? [],
+    handleRowClick: (that, props) => {
+      that.openEditDialog(action, props.item)
+    },
+    handleGridElementClick: (that, item) => {
+      that.openEditDialog(action, item)
+    },
+  }
+}
+
+export function generateClickRowToExpandOptions() {
+  return {
+    handleRowClick: (that, props) => {
+      // if already expanded, close it
+      if (props.isExpanded) {
+        that.closeExpandedItems()
+      } else if (that.viewDefinition.childTypes[0]) {
+        that.toggleItemExpanded(props, that.viewDefinition.childTypes[0])
+      }
+    },
+    handleGridElementClick: (that, item) => {
+      if (that.viewDefinition.childTypes[0]) {
+        that.toggleGridExpand(item, that.viewDefinition.childTypes[0])
+      }
+    },
+  }
+}
+
+export function generateClickRowToEnterOptions({
+  expandKey,
+  miniMode,
+  queryParams,
+}: { expandKey?: string | null; miniMode?: boolean; queryParams?: any } = {}) {
+  return {
+    handleRowClick: (that, props) => {
+      enterRoute(
+        that,
+        generateViewRecordRoute(that, {
+          routeKey: that.viewDefinition.entity.typename,
+          routeType: that.viewDefinition.routeType,
+          id: props.item.id,
+          showComments: true,
+          miniMode,
+          expandKey,
+          queryParams,
+        }),
+        false
+      )
+    },
+    handleGridElementClick: (that, item) => {
+      enterRoute(
+        that,
+        generateViewRecordRoute(that, {
+          routeKey: that.viewDefinition.entity.typename,
+          routeType: that.viewDefinition.routeType,
+          id: item.id,
+          showComments: true,
+          miniMode,
+          expandKey,
+          queryParams,
+        }),
+        false
+      )
+    },
   }
 }

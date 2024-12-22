@@ -8,9 +8,9 @@ import {
 import FilesizeColumn from '~/components/table/filesizeColumn.vue'
 import FileColumn from '~/components/table/fileColumn.vue'
 
-export const File: ViewDefinition = {
+export const BaseFileView: ViewDefinition = {
   routeType: 'a',
-  entityDefinition: FileEntity,
+  entity: FileEntity,
   inputFields: {
     ...generateBaseInputFields(FileEntity),
     location: {},

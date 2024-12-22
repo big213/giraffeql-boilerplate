@@ -13,10 +13,10 @@
         inset
         vertical
       ></v-divider>
-      <v-icon left>{{ recordInfo.icon }}</v-icon>
+      <v-icon left>{{ viewDefinition.entity.icon }}</v-icon>
       <v-toolbar-title>
         <span
-          >{{ recordInfo.pluralName }} ({{
+          >{{ viewDefinition.entity.pluralName }} ({{
             loading.loadMore ? '--' : totalRecords
           }})</span
         >
@@ -35,11 +35,11 @@
     >
       <v-container class="text-left">
         <v-row>
-          <v-col v-if="recordInfo.addOptions" cols="12">
+          <v-col v-if="viewDefinition.createOptions" cols="12">
             <div class="highlighted-bg">
               <EditRecordInterface
-                :record-info="recordInfo"
-                mode="add"
+                :view-definition="viewDefinition"
+                mode="create"
                 :selected-item="selectedItem"
                 hide-locked-fields
                 :hidden-fields="hiddenFields"
@@ -83,7 +83,9 @@
                   }}</v-list-item-subtitle>
                 </v-list-item-content>
                 <v-row
-                  v-if="recordInfo.editOptions || recordInfo.deleteOptions"
+                  v-if="
+                    viewDefinition.updateOptions || viewDefinition.deleteOptions
+                  "
                   align="center"
                   justify="end"
                 >
@@ -95,7 +97,7 @@
                     </template>
                     <v-list dense>
                       <v-list-item
-                        v-if="recordInfo.editOptions"
+                        v-if="viewDefinition.updateOptions"
                         key="edit"
                         @click="props.isEditing = true"
                       >
@@ -105,7 +107,7 @@
                         <v-list-item-title>Edit</v-list-item-title>
                       </v-list-item>
                       <v-list-item
-                        v-if="recordInfo.deleteOptions"
+                        v-if="viewDefinition.deleteOptions"
                         key="delete"
                         @click="deletePost(props)"
                       >
@@ -129,8 +131,8 @@
                 </template>
                 <EditRecordInterface
                   v-else
-                  :record-info="recordInfo"
-                  mode="edit"
+                  :view-definition="viewDefinition"
+                  mode="update"
                   :selected-item="props.item"
                   :return-fields="returnFields"
                   @handle-submit="handlePostUpdate(props, $event)"
@@ -158,12 +160,12 @@
             <span v-else-if="!totalRecords">---</span>
             <span v-else>
               (Showing {{ records.length }} of {{ totalRecords }}
-              {{ recordInfo.pluralName }})
+              {{ viewDefinition.entity.pluralName }})
             </span>
           </v-col>
 
           <v-col v-if="records.length < 1" cols="12" class="text-center"
-            >No {{ recordInfo.pluralName }}</v-col
+            >No {{ viewDefinition.entity.pluralName }}</v-col
           >
         </v-row>
       </v-container>

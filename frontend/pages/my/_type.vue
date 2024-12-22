@@ -1,7 +1,7 @@
 <template>
   <CrudRecordPage
-    v-if="currentModel"
-    :record-info="currentModel"
+    v-if="currentView"
+    :view-definition="currentView"
     :locked-filters="lockedFilters"
   ></CrudRecordPage>
   <v-container v-else fill-height>
@@ -16,8 +16,7 @@
 <script>
 import CrudRecordPage from '~/components/page/crudRecordPage.vue'
 import { capitalizeString, kebabToCamelCase } from '~/services/base'
-import { myViews } from '~/models2/views'
-import { convertViewDefinition } from '~/services/view'
+import * as myViews from '~/models2/views/my'
 
 export default {
   async asyncData({ params }) {
@@ -32,14 +31,14 @@ export default {
   },
 
   computed: {
-    currentModel() {
-      return convertViewDefinition(myViews[capitalizeString(this.type)])
+    currentView() {
+      return myViews[`My${capitalizeString(this.type)}View`]
     },
 
     lockedFilters() {
       // defaults to "createdBy" is current user
       return (
-        this.currentModel?.paginationOptions?.defaultLockedFilters?.(this) ?? [
+        this.currentView?.paginationOptions?.defaultLockedFilters?.(this) ?? [
           {
             field: 'createdBy.id',
             operator: 'eq',

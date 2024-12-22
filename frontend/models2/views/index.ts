@@ -1,3 +1,3 @@
-export * as baseViews from './base'
-export * as myViews from './my'
-export * as publicViews from './public'
+export * from './base'
+export * from './my'
+export * from './public'

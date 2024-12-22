@@ -37,7 +37,7 @@
     <EditRecordDialog
       v-if="dialogs.editRecord"
       v-model="dialogs.editRecord.status"
-      :record-info="editRecordDialogRecordInfo"
+      :view-definition="editRecordDialogViewDefinition"
       :selected-item="dialogs.editRecord.selectedItem"
       :custom-fields="dialogs.editRecord.customFields"
       :special-mode="dialogs.editRecord.specialMode"
@@ -47,7 +47,7 @@
     <CrudRecordDialog
       v-if="dialogs.crudRecord"
       v-model="dialogs.crudRecord.status"
-      :record-info="crudRecordDialogRecordInfo"
+      :view-definition="crudRecordDialogViewDefinition"
       :locked-filters="dialogs.crudRecord.lockedFilters"
       :hidden-headers="dialogs.crudRecord.hiddenHeaders"
       :hidden-filters="dialogs.crudRecord.hiddenFilters"
@@ -76,7 +76,7 @@
 
 <script>
 import { mapGetters } from 'vuex'
-import Snackbar from '~/components/snackbar/snackbar'
+import Snackbar from '~/components/snackbar/snackbar.vue'
 import NavDrawer from '~/components/navigation/navDrawer.vue'
 import UserMenu from '~/components/navigation/userMenu.vue'
 import Footer from '~/components/navigation/footer.vue'
@@ -84,7 +84,7 @@ import EditRecordDialog from '~/components/dialog/editRecordDialog.vue'
 import CrudRecordDialog from '~/components/dialog/crudRecordDialog.vue'
 import ExecuteActionDialog from '~/components/dialog/executeActionDialog.vue'
 import LoginDialog from '~/components/dialog/loginDialog.vue'
-import * as allModels from '~/models'
+import * as views from '~/models2/views'
 import { logoHasLightVariant } from '~/services/config'
 
 export default {
@@ -123,19 +123,19 @@ export default {
       isAttemptingLogin: 'auth/isAttemptingLogin',
     }),
 
-    editRecordDialogRecordInfo() {
+    editRecordDialogViewDefinition() {
       return this.dialogs.editRecord
-        ? typeof this.dialogs.editRecord.recordInfo === 'string'
-          ? allModels[this.dialogs.editRecord.recordInfo]
-          : this.dialogs.editRecord.recordInfo
+        ? typeof this.dialogs.editRecord.viewDefinition === 'string'
+          ? views[this.dialogs.editRecord.viewDefinition]
+          : this.dialogs.editRecord.viewDefinition
         : null
     },
 
-    crudRecordDialogRecordInfo() {
+    crudRecordDialogViewDefinition() {
       return this.dialogs.crudRecord
-        ? typeof this.dialogs.crudRecord.recordInfo === 'string'
-          ? allModels[this.dialogs.crudRecord.recordInfo]
-          : this.dialogs.crudRecord.recordInfo
+        ? typeof this.dialogs.crudRecord.viewDefinition === 'string'
+          ? views[this.dialogs.crudRecord.viewDefinition]
+          : this.dialogs.crudRecord.viewDefinition
         : null
     },
 
@@ -161,14 +161,14 @@ export default {
     this.drawer = this.$vuetify.breakpoint.name !== 'xs'
 
     /*
-     ** Expecting recordInfo, selectedItem, mode, customFields?, specialMode?
+     ** Expecting viewDefinition, selectedItem, mode, customFields?, specialMode?
      */
     this.$root.$on('openEditRecordDialog', (params) => {
-      // confirm the recordInfo exists
+      // confirm the viewDefinition exists
       if (
-        typeof params.recordInfo === 'string'
-          ? allModels[params.recordInfo]
-          : params.recordInfo
+        typeof params.viewDefinition === 'string'
+          ? views[params.viewDefinition]
+          : params.viewDefinition
       ) {
         this.$set(params, 'status', true)
         this.dialogs.editRecord = params
@@ -176,14 +176,14 @@ export default {
     })
 
     /*
-     ** Expecting recordInfo, lockedFilters?, title?, icon?, hiddenHeaders?, hiddenFilters?, pageOptions?, maxWidth?, parentItem?, hidePresets?
+     ** Expecting viewDefinition, lockedFilters?, title?, icon?, hiddenHeaders?, hiddenFilters?, pageOptions?, maxWidth?, parentItem?, hidePresets?
      */
     this.$root.$on('openCrudRecordDialog', (params) => {
       const model =
-        typeof params.recordInfo === 'string'
-          ? allModels[params.recordInfo]
-          : params.recordInfo
-      // confirm the recordInfo exists
+        typeof params.viewDefinition === 'string'
+          ? views[params.viewDefinition]
+          : params.viewDefinition
+      // confirm the viewDefinition exists
       if (model) {
         // set default pageOption and lockedFilters if defined on the model
         if (model.paginationOptions.defaultPageOptions) {

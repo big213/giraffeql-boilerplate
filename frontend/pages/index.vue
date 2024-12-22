@@ -47,11 +47,11 @@
         <v-row>
           <v-col cols="12">
             <CrudRecordInterface
-              :record-info="homeModels.user.recordInfo"
-              :page-options="homeModels.user.pageOptions"
+              :view-definition="homeViews.user.viewDefinition"
+              :page-options="homeViews.user.pageOptions"
               hide-presets
               dense
-              @pageOptions-updated="homeModels.user.pageOptions = $event"
+              @pageOptions-updated="homeViews.user.pageOptions = $event"
             >
             </CrudRecordInterface>
           </v-col>
@@ -67,7 +67,6 @@ import { mapGetters } from 'vuex'
 import CircularLoader from '~/components/common/circularLoader.vue'
 import CrudRecordInterface from '~/components/interface/crud/crudRecordInterface.vue'
 import { generateHomePageRecordInfo } from '~/services/recordInfo'
-import * as models from '~/models'
 import {
   siteName,
   siteDescription,
@@ -76,10 +75,11 @@ import {
   logoHasLightVariant,
 } from '~/services/config'
 import ReleaseHistory from '~/components/common/releaseHistory.vue'
+import * as views from '~/models2/views'
 
-function generateHomeModelObject(recordInfo) {
+function generateHomeModelObject(viewDefinition) {
   return {
-    recordInfo,
+    viewDefinition,
     pageOptions: undefined,
   }
 }
@@ -97,10 +97,10 @@ export default {
       siteContactEmail,
       siteDiscordLink,
       redirectPath: null,
-      homeModels: {
+      homeViews: {
         user: generateHomeModelObject(
           generateHomePageRecordInfo({
-            recordInfo: models.PublicUser,
+            viewDefinition: views.PublicUserView,
             title: 'Latest Users',
             columnMode: true,
             limit: 2,

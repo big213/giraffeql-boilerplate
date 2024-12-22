@@ -1,8 +1,8 @@
 import { ViewDefinition } from '~/types/view'
-import { baseViews } from '..'
+import { BaseUserView } from '../base'
 
-export const Settings: ViewDefinition = {
-  ...baseViews.User,
+export const MySettingsView: ViewDefinition = {
+  ...BaseUserView,
   routeType: 'my',
   title: `My Settings`,
   updateOptions: {

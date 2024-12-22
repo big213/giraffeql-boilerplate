@@ -4,44 +4,32 @@ export default {
       type: Object,
       required: true,
     },
-    // could have dot notation for nested properties
-    recordInfo: {
+
+    heroOptions: {
       type: Object,
+      required: true,
     },
 
-    // must be view or pagination
-    mode: {
-      type: String,
-      validator: (value) => {
-        return ['view', 'pagination'].includes(value)
-      },
-      default: () => 'view',
+    entity: {
+      type: Object,
     },
   },
 
   computed: {
     previewImageUrl() {
-      const getPreviewImage =
-        this.recordInfo[
-          this.mode === 'view' ? 'viewOptions' : 'paginationOptions'
-        ]?.heroOptions?.getPreviewImage
-
-      return getPreviewImage ? getPreviewImage(this.item) : this.item.avatarUrl
+      return this.heroOptions.getPreviewImage
+        ? this.heroOptions.getPreviewImage(this.item)
+        : this.item.avatarUrl
     },
 
     previewName() {
-      const getPreviewName =
-        this.recordInfo[
-          this.mode === 'view' ? 'viewOptions' : 'paginationOptions'
-        ]?.heroOptions?.getPreviewName
-
-      return getPreviewName ? getPreviewName(this.item) : this.item.name
+      return this.heroOptions.getPreviewName
+        ? this.heroOptions.getPreviewName(this.item)
+        : this.item.name
     },
 
     containMode() {
-      return !!this.recordInfo[
-        this.mode === 'view' ? 'viewOptions' : 'paginationOptions'
-      ]?.heroOptions?.containMode
+      return !!this.heroOptions.containMode
     },
   },
 }
