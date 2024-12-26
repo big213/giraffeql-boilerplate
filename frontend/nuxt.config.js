@@ -51,36 +51,43 @@ export default {
 
       // build the routesMap by loading the contents of the models directory
       const routesMap = {
-        view: {
-          a: retrieveRouteNamesFromDirectory('models/base'),
-        },
-        crud: {
-          a: retrieveRouteNamesFromDirectory('models/base'),
-        },
+        view: {},
+        crud: {},
         action: retrieveRouteNamesFromDirectory('models/actions'),
       }
 
-      // get the remaining compound model dirs
-      readdirSync('models/compound').forEach((compoundModelType) => {
-        const routeNames = retrieveRouteNamesFromDirectory(
-          `models/compound/${compoundModelType}`
-        )
+      const specialRoutesMap = {
+        base: 'a',
+        public: 'i',
+      }
 
-        routesMap.view[compoundModelType] = routeNames
-        routesMap.crud[compoundModelType] = routeNames
-      })
+      // get the remaining compound model dirs
+      readdirSync('models/views')
+        .filter((entry) => entry !== 'index.ts')
+        .forEach((compoundModelType) => {
+          const routeNames = retrieveRouteNamesFromDirectory(
+            `models/views/${compoundModelType}`
+          )
+
+          routesMap.view[compoundModelType] = routeNames
+          routesMap.crud[compoundModelType] = routeNames
+        })
 
       const routes = new Set()
 
       Object.entries(routesMap.view).forEach(([key, val]) => {
         val.forEach((type) => {
-          routes.add(`/${key}/view/${camelToKebabCase(type)}`)
+          routes.add(
+            `/${specialRoutesMap[key] ?? key}/view/${camelToKebabCase(type)}`
+          )
         })
       })
 
       Object.entries(routesMap.crud).forEach(([key, val]) => {
         val.forEach((type) => {
-          routes.add(`/${key}/${camelToKebabCase(type)}`)
+          routes.add(
+            `/${specialRoutesMap[key] ?? key}/${camelToKebabCase(type)}`
+          )
         })
       })
 
