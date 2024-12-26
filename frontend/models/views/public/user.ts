@@ -1,5 +1,5 @@
 import { ViewDefinition } from '~/types/view'
-import { UserEntity } from '~/models2/entities'
+import { UserEntity } from '~/models/entities'
 import { BaseUserView } from '../base'
 
 export const PublicUserView: ViewDefinition = {

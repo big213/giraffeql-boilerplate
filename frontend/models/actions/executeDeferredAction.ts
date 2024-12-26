@@ -1,12 +1,12 @@
-import { ActionOptions } from '~/types'
+import { ActionDefinition } from '~/types/action'
 
-export const executeDeferredAction: ActionOptions = {
-  operationName: 'executeDeferredAction',
+export const executeDeferredAction: ActionDefinition = {
   title: 'Execute Deferred Action',
   icon: 'mdi-code-tags',
-  inputs: [
+  operationName: 'executeDeferredAction',
+  inputFields: [
     {
-      field: 'code',
+      fieldPath: 'code',
       definition: {
         text: 'Code',
       },

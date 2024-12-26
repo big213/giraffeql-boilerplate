@@ -335,7 +335,7 @@
       v-model="item.value"
       :search-input.sync="item.inputValue"
       :items="item.options"
-      :item-text="item.inputOptions.entity.nameField"
+      :item-text="item.inputOptions.entity?.nameField"
       item-value="id"
       :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
       :readonly="isReadonly"
@@ -350,7 +350,7 @@
         !item.inputOptions.getOptions || item.inputOptions?.loadServerResults
       "
       class="py-0"
-      :chips="item.inputOptions?.hasAvatar"
+      :chips="!!item.inputOptions.entity"
       v-on="$listeners"
       @update:search-input="handleSearchUpdate(item)"
       @blur="item.focused = false"
@@ -360,8 +360,8 @@
     >
       <template
         v-if="
-          item.inputOptions &&
-          (item.inputOptions.hasAvatar || item.inputOptions.selectionComponent)
+          item.inputOptions.entity?.avatarField ||
+          item.inputOptions.selectionComponent
         "
         v-slot:item="data"
       >
@@ -381,8 +381,8 @@
       </template>
       <template
         v-if="
-          item.inputOptions &&
-          (item.inputOptions.hasAvatar || item.inputOptions.selectionComponent)
+          item.inputOptions.entity?.avatarField ||
+          item.inputOptions.selectionComponent
         "
         v-slot:selection="data"
       >
@@ -403,13 +403,13 @@
     </v-combobox>
     <v-autocomplete
       v-else-if="
-        item.inputOptions?.inputType === 'type-autocomplete' ||
-        item.inputOptions?.inputType === 'type-autocomplete-multiple'
+        item.inputOptions.inputType === 'type-autocomplete' ||
+        item.inputOptions.inputType === 'type-autocomplete-multiple'
       "
       v-model="item.value"
       :search-input.sync="item.inputValue"
       :items="item.options"
-      :multiple="item.inputOptions?.inputType === 'type-autocomplete-multiple'"
+      :multiple="item.inputOptions.inputType === 'type-autocomplete-multiple'"
       :item-text="item.inputOptions.entity.nameField"
       item-value="id"
       :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
@@ -426,7 +426,7 @@
         !item.inputOptions.getOptions || item.inputOptions?.loadServerResults
       "
       class="py-0"
-      :chips="item.inputOptions?.hasAvatar"
+      :chips="!!item.inputOptions.entity"
       v-on="$listeners"
       @update:search-input="handleSearchUpdate(item)"
       @blur="item.focused = false"
@@ -436,8 +436,8 @@
     >
       <template
         v-if="
-          item.inputOptions &&
-          (item.inputOptions.hasAvatar || item.inputOptions.selectionComponent)
+          item.inputOptions.entity?.avatarField ||
+          item.inputOptions.selectionComponent
         "
         v-slot:item="data"
       >
@@ -457,8 +457,8 @@
       </template>
       <template
         v-if="
-          item.inputOptions &&
-          (item.inputOptions.hasAvatar || item.inputOptions.selectionComponent)
+          item.inputOptions.entity?.avatarField ||
+          item.inputOptions.selectionComponent
         "
         v-slot:selection="data"
       >
@@ -534,12 +534,12 @@
     </v-combobox>
     <v-select
       v-else-if="
-        item.inputOptions?.inputType === 'select' ||
-        item.inputOptions?.inputType === 'multiple-select'
+        item.inputOptions.inputType === 'select' ||
+        item.inputOptions.inputType === 'multiple-select'
       "
       v-model="item.value"
       :items="item.options"
-      :multiple="item.inputOptions?.inputType === 'multiple-select'"
+      :multiple="item.inputOptions.inputType === 'multiple-select'"
       filled
       :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
       :readonly="isReadonly"
@@ -552,15 +552,15 @@
       item-text="name"
       item-value="id"
       class="py-0"
-      :chips="item.inputOptions?.hasAvatar"
+      :chips="!!item.inputOptions.entity"
       v-on="$listeners"
       @click:append="handleClear()"
       @click:append-outer="handleClose()"
     >
       <template
         v-if="
-          item.inputOptions &&
-          (item.inputOptions.hasAvatar || item.inputOptions.selectionComponent)
+          item.inputOptions.entity?.avatarField ||
+          item.inputOptions.selectionComponent
         "
         v-slot:item="data"
       >
@@ -580,8 +580,8 @@
       </template>
       <template
         v-if="
-          item.inputOptions &&
-          (item.inputOptions.hasAvatar || item.inputOptions.selectionComponent)
+          item.inputOptions.entity?.avatarField ||
+          item.inputOptions.selectionComponent
         "
         v-slot:selection="data"
       >

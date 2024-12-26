@@ -60,7 +60,7 @@
     <ExecuteActionDialog
       v-if="dialogs.executeAction"
       v-model="dialogs.executeAction.status"
-      :action-options="dialogs.executeAction.actionOptions"
+      :action-definition="dialogs.executeAction.actionDefinition"
       :item="dialogs.executeAction.item"
       :selected-item="dialogs.executeAction.selectedItem"
       @close="dialogs.executeAction = null"
@@ -84,7 +84,7 @@ import EditRecordDialog from '~/components/dialog/editRecordDialog.vue'
 import CrudRecordDialog from '~/components/dialog/crudRecordDialog.vue'
 import ExecuteActionDialog from '~/components/dialog/executeActionDialog.vue'
 import LoginDialog from '~/components/dialog/loginDialog.vue'
-import * as views from '~/models2/views'
+import * as views from '~/models/views'
 import { logoHasLightVariant } from '~/services/config'
 
 export default {
@@ -201,7 +201,7 @@ export default {
     })
 
     /*
-     ** Expecting actionOptions, item?, selectedItem?
+     ** Expecting action: ActionDefinition, item?, selectedItem?
      ** if actionOptions.selectedItemModifier is set, use that to generate the selectedItem
      */
     this.$root.$on('openExecuteActionDialog', (params, loginDialog = false) => {

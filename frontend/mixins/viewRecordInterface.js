@@ -1,4 +1,4 @@
-import { executeGiraffeql } from '~/services/giraffeql'
+import { executeApiRequest } from '~/services/api'
 import {
   getNestedProperty,
   handleError,
@@ -190,7 +190,7 @@ export default {
             .concat(this.viewDefinition.viewOptions.requiredFields ?? []),
           true
         )
-        const data = await executeGiraffeql({
+        const data = await executeApiRequest({
           [`get${this.capitalizedType}`]: {
             ...query,
             __args: {

@@ -40,7 +40,7 @@
 <script>
 import UpdateCredentialsInterface from '~/components/interface/auth/updateCredentialsInterface.vue'
 import EditRecordInterface from '~/components/interface/crud/editRecordInterface.vue'
-import { MySettingsView } from '~/models2/views/my/settings'
+import { MySettingsView } from '~/models/views/my/settings'
 
 export default {
   middleware: ['router-auth-redirect'],

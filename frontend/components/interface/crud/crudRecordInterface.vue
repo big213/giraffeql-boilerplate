@@ -246,12 +246,12 @@
           </template>
           <v-list dense>
             <v-list-item
-              v-for="(crudSortObject, index) in sortOptions"
-              :key="index"
-              :class="{ 'selected-bg': currentSortObject === crudSortObject }"
-              @click="setcurrentSortObject(crudSortObject)"
+              v-for="sortObject in sortOptions"
+              :key="sortObject.key"
+              :class="{ 'selected-bg': currentSortObject === sortObject }"
+              @click="setCurrentSortOption(sortObject)"
             >
-              <v-list-item-title>{{ crudSortObject.text }}</v-list-item-title>
+              <v-list-item-title>{{ sortObject.text }}</v-list-item-title>
             </v-list-item>
           </v-list>
         </v-menu>

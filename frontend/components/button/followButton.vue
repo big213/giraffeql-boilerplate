@@ -9,7 +9,7 @@
 
 <script>
 import { handleError, capitalizeString } from '~/services/base'
-import { executeGiraffeql } from '~/services/giraffeql'
+import { executeApiRequest } from '~/services/api'
 
 export default {
   props: {
@@ -44,7 +44,7 @@ export default {
           this.followOptions.entity.typename
         )
         if (!this.item.currentUserFollowLink) {
-          const data = await executeGiraffeql({
+          const data = await executeApiRequest({
             [`create${capitalizedLinkModel}`]: {
               id: true,
               __args: {
@@ -59,7 +59,7 @@ export default {
           })
           this.item.currentUserFollowLink = data
         } else {
-          await executeGiraffeql({
+          await executeApiRequest({
             [`delete${capitalizedLinkModel}`]: {
               __args: {
                 id: this.item.currentUserFollowLink.id,

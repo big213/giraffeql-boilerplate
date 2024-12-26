@@ -147,8 +147,8 @@ export default {
     },
     // type: CrudPageOptions | null
     pageOptions() {
-      return this.$route.query.pageOptions
-        ? JSON.parse(atob(decodeURIComponent(this.$route.query.pageOptions)))
+      return this.$route.query.o
+        ? JSON.parse(atob(decodeURIComponent(this.$route.query.o)))
         : null
     },
 
@@ -162,7 +162,7 @@ export default {
   },
 
   watch: {
-    '$route.query.pageOptions'() {
+    '$route.query.o'() {
       this.reset()
     },
   },
@@ -189,7 +189,7 @@ export default {
           ? {
               search: null,
               filters: this.expandTypeObject.initialFilters ?? [],
-              sort: this.expandTypeObject.initialSortOptions ?? null,
+              sort: this.expandTypeObject.initialSortKey ?? null,
             }
           : null
 
@@ -212,7 +212,7 @@ export default {
       this.subPageOptions = {
         search: null,
         filters: expandTypeObject.initialFilters ?? [],
-        sort: expandTypeObject.initialSortOptions ?? null,
+        sort: expandTypeObject.initialSortKey ?? null,
       }
     },
 
@@ -248,11 +248,9 @@ export default {
         pageOptions.sort ||
         pageOptions.distance?.length
       ) {
-        query.pageOptions = encodeURIComponent(
-          btoa(JSON.stringify(pageOptions))
-        )
+        query.o = encodeURIComponent(btoa(JSON.stringify(pageOptions)))
       } else {
-        delete query.pageOptions
+        delete query.o
       }
 
       this.$router
@@ -269,7 +267,7 @@ export default {
       try {
         // if no pageOptions, automatically redirect to defaultPageOptions, if any
         if (
-          !this.$route.query.pageOptions &&
+          !this.$route.query.o &&
           this.viewDefinition.paginationOptions.defaultPageOptions
         ) {
           await this.navigateToDefaultRoute()

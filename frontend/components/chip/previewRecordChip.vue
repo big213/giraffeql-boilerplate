@@ -13,7 +13,7 @@
   </v-chip>
 </template>
 <script>
-import * as entities from '~/models2/entities'
+import * as entities from '~/models/entities'
 import { capitalizeString } from '~/services/base'
 
 export default {

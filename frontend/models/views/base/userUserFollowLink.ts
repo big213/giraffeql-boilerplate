@@ -1,10 +1,10 @@
 import { ViewDefinition } from '~/types/view'
-import { UserUserFollowLinkEntity, UserEntity } from '~/models2/entities'
+import { UserUserFollowLinkEntity, UserEntity } from '~/models/entities'
 import {
   generateBaseInputFields,
   generateBaseRenderFields,
   generateJoinableInputField,
-  generatePreviewableRecordField,
+  generatePreviewableRecordRenderField,
   generateSortOptions,
 } from '~/services/view'
 
@@ -22,11 +22,11 @@ export const BaseUserUserFollowLinkView: ViewDefinition = {
   },
   renderFields: {
     ...generateBaseRenderFields(UserUserFollowLinkEntity),
-    user: generatePreviewableRecordField({
+    user: generatePreviewableRecordRenderField({
       fieldname: 'user',
       entity: UserEntity,
     }),
-    target: generatePreviewableRecordField({
+    target: generatePreviewableRecordRenderField({
       fieldname: 'target',
       entity: UserEntity,
     }),

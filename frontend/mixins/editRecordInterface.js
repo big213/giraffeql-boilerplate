@@ -1,4 +1,4 @@
-import { executeGiraffeql } from '~/services/giraffeql'
+import { executeApiRequest } from '~/services/api'
 import {
   collapseObject,
   getNestedProperty,
@@ -255,7 +255,7 @@ export default {
             this.viewDefinition.createOptions.inputsModifier(this, inputs)
           }
 
-          data = await executeGiraffeql(
+          data = await executeApiRequest(
             {
               [this.viewDefinition.createOptions.operationName ??
               `create${this.capitalizedType}`]: {
@@ -280,7 +280,7 @@ export default {
             this.viewDefinition.updateOptions.inputsModifier(this, inputs)
           }
 
-          data = await executeGiraffeql({
+          data = await executeApiRequest({
             [this.viewDefinition.updateOptions.operationName ??
             `update${this.capitalizedType}`]: {
               id: true,
@@ -353,7 +353,7 @@ export default {
           this.rawFields
         )
 
-        const data = await executeGiraffeql({
+        const data = await executeApiRequest({
           [`get${this.capitalizedType}`]: {
             ...query,
             __args: {
@@ -403,10 +403,7 @@ export default {
               readonly: this.mode === 'view',
               loading: false,
               focused: false,
-              cols:
-                typeof fieldElement === 'string'
-                  ? fieldInfo.inputOptions?.cols
-                  : fieldElement.cols,
+              cols: typeof fieldElement === 'string' ? null : fieldElement.cols,
               generation: 0,
               parentInput: null,
               nestedInputsArray: [],
@@ -552,10 +549,7 @@ export default {
               hidden: this.hiddenFields.includes(fieldKey),
               loading: false,
               focused: false,
-              cols:
-                typeof fieldElement === 'string'
-                  ? fieldInfo.inputOptions?.cols
-                  : fieldElement.cols,
+              cols: typeof fieldElement === 'string' ? null : fieldElement.cols,
               generation: 0,
               parentInput: null,
               nestedInputsArray: [],

@@ -54,7 +54,7 @@
 </template>
 
 <script>
-import { executeGiraffeql } from '~/services/giraffeql'
+import { executeApiRequest } from '~/services/api'
 import {
   handleError,
   convertCSVToJSON,
@@ -345,7 +345,7 @@ export default {
           // skip if skipped
           if (recordData.isSkipped) continue
 
-          recordData.record = await executeGiraffeql({
+          recordData.record = await executeApiRequest({
             [this.viewDefinition.createOptions?.operationName ??
             `create${capitalizeString(this.viewDefinition.entity.typename)}`]: {
               ...query,

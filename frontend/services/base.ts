@@ -1,10 +1,10 @@
 import { format } from 'timeago.js'
 import { convertArrayToCSV } from 'convert-array-to-csv'
-import { executeGiraffeql } from '~/services/giraffeql'
+import { executeApiRequest, GiraffeqlError } from '~/services/api'
 import { CrudInputObject, CrudRawFilterObject } from '~/types/misc'
 import { Root } from '../../schema'
 import { PriceObject } from '~/types'
-import * as entities from '~/models2/entities'
+import * as entities from '~/models/entities'
 
 type StringKeyObject = { [x: string]: any }
 
@@ -367,26 +367,28 @@ export function getBuildVersion() {
 export function handleError(that, err) {
   if (that) {
     // error thrown by server
-    if (err.response && err.response.data.error.message) {
+    if (err instanceof GiraffeqlError) {
       that.$notifier.showSnackbar({
-        message: `${
-          err.response.data.error.message
-        } at [${err.response.data.error.fieldPath
-          .filter((ele) => ele !== '__args')
-          .join('-')}]`,
+        message: `${err.message}${
+          err.data.fieldPath
+            ? ` at [${err.data.fieldPath
+                .filter((ele) => ele !== '__args')
+                .join('-')}]`
+            : ''
+        }`,
         variant: 'error',
         copyableMessage: JSON.stringify(
           {
-            ...err.response.data.error,
-            payload: err.response.config.data,
+            ...err.data,
+            query: err.query,
             build: getBuildVersion(),
-            apiVersion: err.response.headers['x-api-version'],
+            apiVersion: err.apiVersion,
           },
           null,
           2
         ),
       })
-      console.log(err.response.data.error)
+      console.log(err)
     } else {
       // error thrown on client side
       that.$notifier.showSnackbar({
@@ -447,10 +449,7 @@ export function generateNavRouteObject(
           : {
               search: '',
               filters: [],
-              sort: {
-                field: 'updatedAt',
-                desc: true,
-              },
+              sort: 'updatedAt-desc',
               ...pageOptions,
             },
     }),
@@ -483,7 +482,7 @@ export function generateCrudRecordRoute(
     query: {
       ...queryParams,
       ...(pageOptions && {
-        pageOptions: encodeURIComponent(btoa(JSON.stringify(pageOptions))),
+        o: encodeURIComponent(btoa(JSON.stringify(pageOptions))),
       }),
     },
   }).href
@@ -540,7 +539,7 @@ export function enterRoute(that, route: string, openInNew = false) {
 }
 
 export function getPaginatorData(that, operation, query, args) {
-  return executeGiraffeql(<any>{
+  return executeApiRequest(<any>{
     [operation]: {
       paginatorInfo: {
         total: true,
@@ -818,7 +817,7 @@ export function populateInputObject(
             }
           } else {
             promisesArray.push(
-              executeGiraffeql(<any>{
+              executeApiRequest(<any>{
                 [`get${capitalizeString(entity.typename)}`]: {
                   id: true,
                   ...(entity.nameField && {
@@ -870,7 +869,7 @@ export function addNestedInputObject(
               nestedFieldInfo.inputOptions?.getInitialValue?.(that) ??
               null,
             options: [],
-            cols: nestedFieldInfo.inputOptions?.cols,
+            cols: nestedFieldInfo.cols,
             nestedInputsArray: [],
           },
         }
@@ -1057,7 +1056,7 @@ export async function processInputObject(that, inputObject, inputObjectArray) {
       ) {
         // expecting either string or obj
         // create the item, get its id.
-        const results = <any>await executeGiraffeql(<any>{
+        const results = <any>await executeApiRequest(<any>{
           ['create' +
           capitalizeString(inputObject.inputOptions.entity.typename)]: {
             id: true,
@@ -1172,7 +1171,7 @@ export function generateMemoizedGetter(operation: string, fields: string[]) {
 
 export function generateMemoizedEnumGetter(operation: keyof Root) {
   return <any>memoize(async function (that, _forceReload) {
-    return executeGiraffeql<any>({
+    return executeApiRequest<any>({
       [operation]: {
         values: true,
       },
@@ -1215,7 +1214,7 @@ export function loadTypeSearchResults(that, inputObject) {
     throw new Error('NameField required for type-search')
   }
 
-  return executeGiraffeql(<any>{
+  return executeApiRequest(<any>{
     [`get${capitalizeString(entity.typename)}Paginator`]: {
       edges: {
         node: {

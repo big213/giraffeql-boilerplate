@@ -96,9 +96,6 @@
             :hidden-fields="viewDefinition.postOptions.hiddenFields"
             :view-definition="viewDefinition.postOptions.viewDefinition"
             :page-options="initialPostPageOptions"
-            :initial-sort-options="
-              viewDefinition.postOptions.initialSortOptions
-            "
           ></component></div
       ></template>
     </component>
@@ -274,9 +271,9 @@ export default {
     },
 
     initialPostPageOptions() {
-      return this.viewDefinition.postOptions?.initialSortOptions
+      return this.viewDefinition.postOptions?.initialSortKey
         ? {
-            sort: this.viewDefinition.postOptions?.initialSortOptions,
+            sort: this.viewDefinition.postOptions.initialSortKey,
           }
         : null
     },

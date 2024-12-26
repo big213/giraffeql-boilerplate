@@ -3,9 +3,9 @@ import EditRecordDialog from '~/components/dialog/editRecordDialog.vue'
 import RecordActionMenu from '~/components/menu/recordActionMenu.vue'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 import CrudPostInterface from '~/components/interface/crud/crudPostInterface.vue'
-import { executeGiraffeql } from '~/services/giraffeql'
+import { executeApiRequest } from '~/services/api'
 import { capitalizeString, handleError, processQuery } from '~/services/base'
-import { generatePreviewRecordInfo } from '~/services/recordInfo'
+import { generatePreviewViewDefinition } from '~/services/view'
 import CrudRecordInterface from '~/components/interface/crud/crudRecordInterface.vue'
 import { mapGetters } from 'vuex'
 
@@ -142,8 +142,8 @@ export default {
 
     // type: CrudPageOptions | null
     pageOptions() {
-      return this.$route.query.pageOptions
-        ? JSON.parse(atob(decodeURIComponent(this.$route.query.pageOptions)))
+      return this.$route.query.o
+        ? JSON.parse(atob(decodeURIComponent(this.$route.query.o)))
         : null
     },
 
@@ -185,7 +185,7 @@ export default {
       this.reset(true)
     },
 
-    '$route.query.pageOptions'(val) {
+    '$route.query.o'(val) {
       // if no pageOptions, automatically redirect if there is a defaultPageOptions
       if (!val && this.viewDefinition.paginationOptions.defaultPageOptions) {
         this.navigateToDefaultRoute()
@@ -272,7 +272,7 @@ export default {
       this.subPageOptions = {
         search: null,
         filters: expandTypeObject.initialFilters ?? [],
-        sort: expandTypeObject.initialSortOptions ?? null,
+        sort: expandTypeObject.initialSortKey ?? null,
       }
     },
 
@@ -292,7 +292,7 @@ export default {
         this.subPageOptions = {
           search: null,
           filters: expandTypeObject.initialFilters ?? [],
-          sort: expandTypeObject.initialSortOptions ?? null,
+          sort: expandTypeObject.initialSortKey ?? null,
         }
       }
     },
@@ -315,7 +315,7 @@ export default {
       this.subPageOptions = {
         search: null,
         filters: expandTypeObject.initialFilters ?? [],
-        sort: expandTypeObject.initialSortOptions ?? null,
+        sort: expandTypeObject.initialSortKey ?? null,
       }
     },
 
@@ -324,7 +324,7 @@ export default {
         {
           search: null,
           filters: expandTypeObject.initialFilters ?? [],
-          sort: expandTypeObject.initialSortOptions ?? null,
+          sort: expandTypeObject.initialSortKey ?? null,
         },
         expandTypeObject.key
       )
@@ -400,7 +400,7 @@ export default {
         this.handleSubPageOptionsUpdated({
           search: null,
           filters: this.expandTypeObject.initialFilters ?? [],
-          sort: this.expandTypeObject.initialSortOptions ?? null,
+          sort: this.expandTypeObject.initialSortKey ?? null,
         })
 
         return
@@ -414,7 +414,7 @@ export default {
         query.e = expandKey
       } else {
         delete query.e
-        delete query.pageOptions
+        delete query.o
       }
 
       // push to route
@@ -462,11 +462,11 @@ export default {
         }
 
         // when item expanded, initialize the filters if not init, or if init and pageOptions not defined
-        if (!init || (init && !this.$route.query.pageOptions)) {
+        if (!init || (init && !this.$route.query.o)) {
           this.handleSubPageOptionsUpdated({
             search: null,
             filters: expandTypeObject.initialFilters ?? [],
-            sort: expandTypeObject.initialSortOptions ?? null,
+            sort: expandTypeObject.initialSortKey ?? null,
           })
         }
       }
@@ -492,11 +492,9 @@ export default {
         pageOptions &&
         (pageOptions.search || pageOptions.filters.length || pageOptions.sort)
       ) {
-        query.pageOptions = encodeURIComponent(
-          btoa(JSON.stringify(pageOptions))
-        )
+        query.o = encodeURIComponent(btoa(JSON.stringify(pageOptions)))
       } else {
-        delete query.pageOptions
+        delete query.o
       }
 
       this.$router
@@ -537,7 +535,7 @@ export default {
           true
         )
 
-        const data = await executeGiraffeql({
+        const data = await executeApiRequest({
           [`get${this.capitalizedTypename}`]: {
             ...query,
             __args: {
@@ -579,7 +577,7 @@ export default {
                 return {
                   expandTypeObject: {
                     ...expandTypeObject,
-                    viewDefinition: generatePreviewRecordInfo({
+                    viewDefinition: generatePreviewViewDefinition({
                       viewDefinition: expandTypeObject.viewDefinition,
                       title: `Latest ${expandTypeObject.viewDefinition.entity.pluralName}`,
                     }),

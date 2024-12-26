@@ -1,5 +1,5 @@
 import { ViewDefinition } from '~/types/view'
-import { FileEntity } from '~/models2/entities'
+import { FileEntity } from '~/models/entities'
 import {
   generateBaseInputFields,
   generateBaseRenderFields,

@@ -1,14 +1,14 @@
-import { InputOptions } from '.'
+import { InputFieldDefinition } from '.'
 
 export type ActionDefinition = {
+  title: string
+  icon: string
+
   // if there is a singular giraffeql operation to execute
   operationName?: string
 
   // if there is a custom function to execute when submitted
   onSubmit?: (that, item, args) => void
-
-  title: string
-  icon: string
 
   // is login required? if so, it will redirect to login if not logged in
   isLoginRequired?: boolean
@@ -27,13 +27,9 @@ export type ActionDefinition = {
 
   // function that runs when action is successfully completed
   onSuccess?: (that, item) => void
-  inputs: {
-    field: string
-    definition: {
-      text?: string
-      // special options pertaining to the specific inputType
-      inputOptions?: InputOptions
-    }
+  inputFields: {
+    fieldPath: string
+    definition: InputFieldDefinition
 
     watch?: (that, val, prev) => void
 

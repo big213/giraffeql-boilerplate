@@ -25,7 +25,7 @@ import {
   camelCaseToCapitalizedString,
 } from '~/services/base'
 import { defaultGridView } from '~/services/config'
-import { executeGiraffeql } from '~/services/giraffeql'
+import { executeApiRequest } from '~/services/api'
 
 export default {
   name: 'CrudRecordInterface',
@@ -211,19 +211,9 @@ export default {
       )
     },
 
-    // transforms SortObject[] to CrudSortObject[]
-    // type: CrudSortObject[]
+    // type: SortOption[]
     sortOptions() {
-      return (
-        this.viewDefinition.paginationOptions.sortOptions?.map((sortObject) => {
-          return {
-            text: sortObject.text,
-            field: sortObject.field,
-            desc: sortObject.desc,
-            additionalSortObjects: sortObject.additionalSortObjects,
-          }
-        }) ?? []
-      )
+      return this.viewDefinition.paginationOptions.sortOptions ?? []
     },
 
     // if this.hiddenHeaders is defined, override the default exclude headers on the viewDefinition.paginationOptions
@@ -656,9 +646,9 @@ export default {
       this.updatePageOptions()
     },
 
-    setcurrentSortObject(sortObject) {
+    setCurrentSortOption(sortOption) {
       this.isChanged = true
-      this.currentSortObject = sortObject
+      this.currentSortObject = sortOption
       this.updatePageOptions()
     },
 
@@ -766,7 +756,7 @@ export default {
         this.$emit('pageOptions-updated', {
           search: null,
           filters: expandTypeObject.initialFilters ?? [],
-          sort: expandTypeObject.initialSortOptions ?? null,
+          sort: expandTypeObject.initialSortKey ?? null,
         })
         this.filterChanged = false
 
@@ -803,7 +793,7 @@ export default {
         this.subPageOptions = {
           search: null,
           filters: expandTypeObject.initialFilters ?? [],
-          sort: expandTypeObject.initialSortOptions ?? null,
+          sort: expandTypeObject.initialSortKey ?? null,
         }
       }
     },
@@ -819,7 +809,7 @@ export default {
         this.subPageOptions = {
           search: null,
           filters: expandTypeObject.initialFilters ?? [],
-          sort: expandTypeObject.initialSortOptions ?? null,
+          sort: expandTypeObject.initialSortKey ?? null,
         }
       }
     },
@@ -866,20 +856,6 @@ export default {
             ]
           : []
       ).concat(this.currentSortObject?.additionalSortObjects ?? [])
-
-      // append any additionalSortParams IF they are unique fields
-      if (this.viewDefinition.paginationOptions.additionalSortParams) {
-        this.viewDefinition.paginationOptions.additionalSortParams.forEach(
-          (sortObject) => {
-            // if field already exists, skip
-            if (
-              this.currentSortObject &&
-              sortObject.field === this.currentSortObject.field
-            )
-              return sortBy.push(sortObject)
-          }
-        )
-      }
 
       const getSearchParams =
         this.viewDefinition.paginationOptions.searchOptions?.getParams
@@ -1043,12 +1019,7 @@ export default {
             gt: crudDistanceObject.gtValue,
             lt: crudDistanceObject.ltValue,
           })),
-        sort: this.currentSortObject
-          ? {
-              field: this.currentSortObject.field,
-              desc: this.currentSortObject.desc,
-            }
-          : null,
+        sort: this.currentSortObject?.key ?? null,
       })
       this.filterChanged = false
     },
@@ -1181,7 +1152,7 @@ export default {
       )
 
       if (itemId) {
-        const result = await executeGiraffeql({
+        const result = await executeApiRequest({
           [`get${this.capitalizedType}`]: {
             ...query,
             __args: {
@@ -1232,10 +1203,7 @@ export default {
       // sync the sort
       const sort = this.pageOptions?.sort
       this.currentSortObject =
-        this.sortOptions.find(
-          (sortObject) =>
-            sortObject.field === sort?.field && sortObject.desc === sort?.desc
-        ) ?? null
+        this.sortOptions.find((sortObject) => sortObject.key === sort) ?? null
 
       // sync the filters
       if (syncFilters) {

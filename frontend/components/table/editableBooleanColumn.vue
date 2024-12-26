@@ -39,7 +39,7 @@
 </template>
 
 <script>
-import { executeGiraffeql } from '~/services/giraffeql'
+import { executeApiRequest } from '~/services/api'
 import { handleError } from '~/services/base'
 import columnMixin from '~/mixins/column'
 import { capitalizeString } from '~/services/base'
@@ -85,7 +85,7 @@ export default {
     async updateBooleanField(value) {
       this.loading.submit = true
       try {
-        await executeGiraffeql({
+        await executeApiRequest({
           [`update${capitalizeString(this.item.__typename)}`]: {
             __args: {
               fields: {

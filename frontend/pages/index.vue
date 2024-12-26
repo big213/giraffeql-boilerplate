@@ -66,7 +66,7 @@
 import { mapGetters } from 'vuex'
 import CircularLoader from '~/components/common/circularLoader.vue'
 import CrudRecordInterface from '~/components/interface/crud/crudRecordInterface.vue'
-import { generateHomePageRecordInfo } from '~/services/recordInfo'
+import { generateHomePageViewDefinition } from '~/services/view'
 import {
   siteName,
   siteDescription,
@@ -75,7 +75,7 @@ import {
   logoHasLightVariant,
 } from '~/services/config'
 import ReleaseHistory from '~/components/common/releaseHistory.vue'
-import * as views from '~/models2/views'
+import * as views from '~/models/views'
 
 function generateHomeModelObject(viewDefinition) {
   return {
@@ -99,7 +99,7 @@ export default {
       redirectPath: null,
       homeViews: {
         user: generateHomeModelObject(
-          generateHomePageRecordInfo({
+          generateHomePageViewDefinition({
             viewDefinition: views.PublicUserView,
             title: 'Latest Users',
             columnMode: true,

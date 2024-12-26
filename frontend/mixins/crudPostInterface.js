@@ -1,4 +1,4 @@
-import { executeGiraffeql } from '~/services/giraffeql'
+import { executeApiRequest } from '~/services/api'
 import CircularLoader from '~/components/common/circularLoader.vue'
 import {
   getNestedProperty,
@@ -34,7 +34,7 @@ export default {
       default: () => [],
     },
 
-    // only implemented to extract the initialSortOptions, if any - type: CrudPageOptions | null
+    // only implemented to extract the initialSortKey, if any - type: CrudPageOptions | null
     pageOptions: {
       type: Object,
       default: null,
@@ -104,7 +104,7 @@ export default {
       },
 
       // type: CrudSortObject | null
-      currentSort: null,
+      currentSortObject: null,
     }
   },
 
@@ -124,22 +124,13 @@ export default {
       }, {})
     },
 
-    // transforms SortObject[] to CrudSortObject[]
-    // type: CrudSortObject[]
+    // SortObject
     sortOptions() {
-      return (
-        this.viewDefinition.paginationOptions.sortOptions?.map((sortObject) => {
-          return {
-            text: sortObject.text,
-            field: sortObject.field,
-            desc: sortObject.desc,
-          }
-        }) ?? []
-      )
+      return this.viewDefinition.paginationOptions.sortOptions ?? []
     },
 
     // extracted from the pageOptions object, if any
-    initialSortOptions() {
+    initialSortKey() {
       return this.pageOptions?.sort
     },
 
@@ -222,7 +213,7 @@ export default {
 
     async deletePost(props) {
       try {
-        await executeGiraffeql({
+        await executeApiRequest({
           [`delete${this.capitalizedType}`]: {
             __args: {
               id: props.item.id,
@@ -265,7 +256,7 @@ export default {
 
     // the query can be overriden and customized based on the requirements
     fetchMorePosts() {
-      return executeGiraffeql({
+      return executeApiRequest({
         [`get${this.capitalizedType}Paginator`]: {
           paginatorInfo: {
             endCursor: true,
@@ -282,8 +273,13 @@ export default {
             filterBy: generateFilterByObjectArray(
               this.lockedFilters.concat(this.additionalFilters)
             ),
-            sortBy: this.currentSort
-              ? [{ field: this.currentSort.field, desc: this.currentSort.desc }]
+            sortBy: this.currentSortObject
+              ? [
+                  {
+                    field: this.currentSortObject.field,
+                    desc: this.currentSortObject.desc,
+                  },
+                ]
               : [],
           },
         },
@@ -379,7 +375,7 @@ export default {
     },
 
     setCurrentSort(sortObject) {
-      this.currentSort = sortObject
+      this.currentSortObject = sortObject
       this.reset()
     },
 
@@ -388,15 +384,11 @@ export default {
       this.records = []
       this.totalRecords = 0
 
-      // set the currentSort to the parentRecordInfo.initialSortOptions if any
-      if (resetSort && this.initialSortOptions) {
-        this.currentSort =
-          this.sortOptions.find(
-            (ele) =>
-              ele === this.initialSortOptions ||
-              (ele.field === this.initialSortOptions.field &&
-                ele.desc === this.initialSortOptions.desc)
-          ) ?? null
+      // set the currentSortObject to the parentRecordInfo.initialSortKey if any
+      if (resetSort && this.initialSortKey) {
+        this.currentSortObject =
+          this.sortOptions.find((ele) => ele.key === this.initialSortKey) ??
+          null
       }
 
       this.loadMorePosts()

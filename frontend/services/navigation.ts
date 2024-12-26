@@ -3,9 +3,9 @@ import {
   generateNavRouteObject,
   userHasPermissions,
 } from './base'
-import * as views from '../models2/views'
+import * as views from '../models/views'
 import * as actions from '../models/actions'
-import * as baseViews from '../models2/views/base'
+import * as baseViews from '../models/views/base'
 
 export function generateNavDrawerItems(that) {
   return [
@@ -25,10 +25,7 @@ export function generateNavDrawerItems(that) {
         generateNavRouteObject(that, {
           viewDefinition: views.PublicUserView,
           pageOptions: {
-            sort: {
-              field: 'createdAt',
-              desc: true,
-            },
+            sort: 'createdAt-desc',
           },
         }),
       ],
@@ -40,19 +37,13 @@ export function generateNavDrawerItems(that) {
             generateNavRouteObject(that, {
               viewDefinition: views.MyApiKeyView,
               pageOptions: {
-                sort: {
-                  field: 'createdAt',
-                  desc: true,
-                },
+                sort: 'createdAt-desc',
               },
             }),
             generateNavRouteObject(that, {
               viewDefinition: views.MyFileView,
               pageOptions: {
-                sort: {
-                  field: 'createdAt',
-                  desc: true,
-                },
+                sort: 'createdAt-desc',
               },
             }),
             {
@@ -78,10 +69,7 @@ export function generateNavDrawerItems(that) {
                       generateNavRouteObject(that, {
                         viewDefinition,
                         pageOptions: {
-                          sort: {
-                            field: 'createdAt',
-                            desc: true,
-                          },
+                          sort: 'createdAt-desc',
                         },
                       })
                     ),

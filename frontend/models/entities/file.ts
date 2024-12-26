@@ -1,4 +1,4 @@
-import { EntityDefinition } from '~/types/view'
+import { EntityDefinition } from '~/types/entity'
 
 export const FileEntity: EntityDefinition = {
   typename: 'file',

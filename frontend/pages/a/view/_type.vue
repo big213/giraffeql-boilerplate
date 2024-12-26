@@ -14,7 +14,7 @@
 
 <script>
 import ViewRecordPage from '~/components/page/viewRecordPage.vue'
-import * as baseViews from '~/models2/views/base'
+import * as baseViews from '~/models/views/base'
 import { capitalizeString, kebabToCamelCase } from '~/services/base'
 
 export default {

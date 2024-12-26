@@ -70,7 +70,7 @@
 
 <script>
 import { handleError } from '~/services/base'
-import { executeGiraffeql } from '~/services/giraffeql'
+import { executeApiRequest } from '~/services/api'
 import { handleUserRefreshed } from '~/services/auth'
 import { auth } from '~/services/fireinit'
 import {
@@ -156,7 +156,7 @@ export default {
           await updateEmail(this.currentUser, this.inputs.newEmail)
 
           // also update email on the api
-          await executeGiraffeql({
+          await executeApiRequest({
             syncCurrentUser: {
               id: true,
             },

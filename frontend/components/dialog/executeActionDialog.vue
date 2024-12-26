@@ -8,7 +8,7 @@
   >
     <component
       :is="interfaceComponent"
-      :action-options="actionOptions"
+      :action-definition="actionDefinition"
       :item="item"
       :selected-item="selectedItem"
       dialog-mode
@@ -18,9 +18,9 @@
     >
       <template v-slot:toolbar>
         <v-toolbar flat color="accent">
-          <v-icon left>{{ actionOptions.icon }}</v-icon>
+          <v-icon left>{{ actionDefinition.icon }}</v-icon>
           <v-toolbar-title>
-            <span class="headline">{{ actionOptions.title }}</span>
+            <span class="headline">{{ actionDefinition.title }}</span>
           </v-toolbar-title>
           <v-divider v-if="item" class="mx-4" inset vertical></v-divider>
           <PreviewRecordChip v-if="item" :value="item" class="pointer-cursor">
@@ -56,7 +56,8 @@ export default {
       type: Object,
     },
 
-    actionOptions: {
+    // type: ActionDefinition
+    actionDefinition: {
       type: Object,
       required: true,
     },
@@ -69,7 +70,7 @@ export default {
 
   computed: {
     interfaceComponent() {
-      return this.actionOptions.component ?? ExecuteActionInterface
+      return this.actionDefinition.component ?? ExecuteActionInterface
     },
   },
 

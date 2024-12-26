@@ -1,11 +1,11 @@
 import { ViewDefinition } from '~/types/view'
 import CopyableColumn from '~/components/table/copyableColumn.vue'
-import { ApiKeyEntity, UserEntity } from '~/models2/entities'
+import { ApiKeyEntity, UserEntity } from '~/models/entities'
 import {
   generateBaseInputFields,
   generateBaseRenderFields,
   generateJoinableInputField,
-  generatePreviewableRecordField,
+  generatePreviewableRecordRenderField,
   generateSortOptions,
 } from '~/services/view'
 import { getUserPermissionEnumValues } from '~/services/dropdown'
@@ -36,7 +36,7 @@ export const BaseApiKeyView: ViewDefinition = {
       component: CopyableColumn,
     },
     permissions: {},
-    user: generatePreviewableRecordField({
+    user: generatePreviewableRecordRenderField({
       fieldname: 'user',
       entity: UserEntity,
     }),

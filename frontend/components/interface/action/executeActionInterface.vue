@@ -45,7 +45,7 @@
 <script>
 import CircularLoader from '~/components/common/circularLoader.vue'
 import GenericInput from '~/components/input/genericInput.vue'
-import { executeGiraffeql } from '~/services/giraffeql'
+import { executeApiRequest } from '~/services/api'
 import {
   collapseObject,
   handleError,
@@ -73,7 +73,8 @@ export default {
       type: Object,
     },
 
-    actionOptions: {
+    // type: ActionDefinition
+    actionDefinition: {
       type: Object,
       required: true,
     },
@@ -113,11 +114,11 @@ export default {
     },
 
     submitButtonText() {
-      return this.actionOptions.submitButtonText ?? 'Submit'
+      return this.actionDefinition.submitButtonText ?? 'Submit'
     },
 
     hideActions() {
-      return !!this.actionOptions.hideActionsIf?.(this, this.item)
+      return !!this.actionDefinition.hideActionsIf?.(this, this.item)
     },
   },
 
@@ -193,26 +194,30 @@ export default {
         }
 
         // do additional modification of the inputs object, if required
-        if (this.actionOptions.argsModifier) {
-          this.actionOptions.argsModifier(this, this.item, args)
+        if (this.actionDefinition.argsModifier) {
+          this.actionDefinition.argsModifier(this, this.item, args)
         }
 
-        if (this.actionOptions.operationName) {
+        if (this.actionDefinition.operationName) {
           const query = {
-            [this.actionOptions.operationName]: {
-              ...this.actionOptions.getReturnQuery?.(this, this.item),
+            [this.actionDefinition.operationName]: {
+              ...this.actionDefinition.getReturnQuery?.(this, this.item),
               __args: collapseObject(args),
             },
           }
 
           // max 1 attempt, in case of some weird edge cases with firebase functions that could result in the request going through multiple times
-          const data = await executeGiraffeql(query, {
+          const data = await executeApiRequest(query, {
             maxAttempts: 1,
           })
           this.handleSubmitSuccess(data)
-        } else if (this.actionOptions.onSubmit) {
+        } else if (this.actionDefinition.onSubmit) {
           // if no operationName, must have onSubmit function
-          const data = await this.actionOptions.onSubmit(this, this.item, args)
+          const data = await this.actionDefinition.onSubmit(
+            this,
+            this.item,
+            args
+          )
           this.handleSubmitSuccess(data)
         } else {
           throw new Error('Misconfigured action')
@@ -231,12 +236,12 @@ export default {
       this.$emit('handle-submit', data)
 
       // run any custom onSuccess functions. if none, simply show a snackbar
-      const onSuccess = this.actionOptions.onSuccess
+      const onSuccess = this.actionDefinition.onSuccess
       if (onSuccess) {
         onSuccess(this, data)
       } else {
         this.$notifier.showSnackbar({
-          message: `Action: ${this.actionOptions.title} completed successfully`,
+          message: `Action: ${this.actionDefinition.title} completed successfully`,
           variant: 'success',
         })
       }
@@ -247,7 +252,7 @@ export default {
       this.loading.initInputs = true
       try {
         this.inputsArray = await Promise.all(
-          this.actionOptions.inputs
+          this.actionDefinition.inputFields
             .filter((input) =>
               input.excludeIf
                 ? !input.excludeIf(this, this.item, this.selectedItem)

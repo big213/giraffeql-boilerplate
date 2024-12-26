@@ -2,7 +2,7 @@ import { nanoid } from 'nanoid'
 import prettyBytes from 'pretty-bytes'
 import axios from 'axios'
 import { handleError } from '~/services/base'
-import { executeGiraffeql } from '~/services/giraffeql'
+import { executeApiRequest } from '~/services/api'
 import { isDev, tempStoragePath } from './config'
 import { UploadTask, ref, uploadBytesResumable } from 'firebase/storage'
 import { storage } from './fireinit'
@@ -79,7 +79,7 @@ export function uploadFile(
     async () => {
       try {
         // finished uploading. register file with API.
-        const fileRecord = await executeGiraffeql<'createFile'>({
+        const fileRecord = await executeApiRequest<'createFile'>({
           createFile: {
             id: true,
             name: true,
@@ -153,11 +153,16 @@ export function forceFileDownload(response, title) {
 
 export async function downloadFile(that, fileUrl, title) {
   try {
+    const data = await fetch(fileUrl, {
+      method: 'GET',
+    })
+    /*
     const data = await axios({
       method: 'get',
       url: fileUrl,
       responseType: 'arraybuffer',
     })
+      */
 
     forceFileDownload(data, title)
   } catch (err) {

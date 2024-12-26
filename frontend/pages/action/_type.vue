@@ -1,7 +1,7 @@
 <template>
   <ExecuteActionPage
-    v-if="currentActionOptions"
-    :action-options="currentActionOptions"
+    v-if="currentActionDefinition"
+    :action-definition="currentActionDefinition"
   >
   </ExecuteActionPage>
   <v-container v-else fill-height>
@@ -29,7 +29,7 @@ export default {
   },
 
   computed: {
-    currentActionOptions() {
+    currentActionDefinition() {
       return actions[this.type]
     },
   },

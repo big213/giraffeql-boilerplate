@@ -15,7 +15,7 @@
 
 <script>
 import CrudRecordPage from '~/components/page/crudRecordPage.vue'
-import * as publicViews from '~/models2/views/public'
+import * as publicViews from '~/models/views/public'
 import { capitalizeString, kebabToCamelCase } from '~/services/base'
 
 export default {

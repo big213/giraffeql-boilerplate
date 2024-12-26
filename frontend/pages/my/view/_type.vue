@@ -17,7 +17,7 @@
 <script>
 import ViewRecordPage from '~/components/page/viewRecordPage.vue'
 import { capitalizeString, kebabToCamelCase } from '~/services/base'
-import * as myViews from '~/models2/views/my'
+import * as myViews from '~/models/views/my'
 
 export default {
   async asyncData({ params }) {

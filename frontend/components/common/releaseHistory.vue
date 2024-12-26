@@ -24,7 +24,7 @@
 </template>
 
 <script>
-import { executeGiraffeql } from '~/services/giraffeql'
+import { executeApiRequest } from '~/services/api'
 import { generateTimeAgoString } from '~/services/base'
 import { siteGithubRepositoryUrl } from '~/services/config'
 
@@ -47,7 +47,7 @@ export default {
     async loadData() {
       this.loading.loadData = true
       try {
-        this.releases = await executeGiraffeql(
+        this.releases = await executeApiRequest(
           {
             getRepositoryReleases: {
               __args: {

@@ -1,5 +1,5 @@
 import { ViewDefinition } from '~/types/view'
-import { ApiKeyEntity } from '~/models2/entities'
+import { ApiKeyEntity } from '~/models/entities'
 import { BaseApiKeyView } from '../base'
 
 export const MyApiKeyView: ViewDefinition = {

@@ -1,5 +1,5 @@
 import { ViewDefinition } from '~/types/view'
-import { UserEntity, UserUserFollowLinkEntity } from '~/models2/entities'
+import { UserEntity, UserUserFollowLinkEntity } from '~/models/entities'
 import {
   generateBaseInputFields,
   generateBaseRenderFields,

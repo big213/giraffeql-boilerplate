@@ -132,9 +132,7 @@
             :locked-filters="postLockedFilters"
             :hidden-fields="viewDefinition.postOptions.hiddenFields"
             :view-definition="viewDefinition.postOptions.viewDefinition"
-            :initial-sort-options="
-              viewDefinition.postOptions.initialSortOptions
-            "
+            :initial-sort-options="viewDefinition.postOptions.initialSortKey"
           >
             <template v-slot:header-action>
               <v-btn icon @click="toggleComments(false)">

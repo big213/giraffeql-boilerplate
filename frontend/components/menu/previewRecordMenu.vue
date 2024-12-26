@@ -71,9 +71,9 @@
           View
         </v-btn>
       </v-card-actions>
-      <div v-if="customActions.length" class="pa-2">
+      <div v-if="actions.length" class="pa-2">
         <v-btn
-          v-for="(action, index) in customActions"
+          v-for="(action, index) in actions"
           :key="index"
           block
           color="primary"
@@ -102,10 +102,10 @@ import {
   processQuery,
   camelCaseToCapitalizedString,
 } from '~/services/base'
-import { executeGiraffeql } from '~/services/giraffeql'
+import { executeApiRequest } from '~/services/api'
 import FollowButton from '~/components/button/followButton.vue'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
-import * as previews from '~/models2/previews'
+import * as previews from '~/models/previews'
 import Hero from '~/components/interface/crud/hero/hero.vue'
 
 export default {
@@ -162,8 +162,8 @@ export default {
     fields() {
       return this.previewDefinition.fields
     },
-    customActions() {
-      return this.previewDefinition?.customActions ?? []
+    actions() {
+      return this.previewDefinition?.actions ?? []
     },
     hasHeroOptions() {
       return !!this.previewDefinition?.heroOptions
@@ -251,7 +251,7 @@ export default {
           this.previewDefinition &&
           (await processQuery(this, this.previewDefinition, this.fields, true))
 
-        this.itemData = await executeGiraffeql({
+        this.itemData = await executeApiRequest({
           [`get${this.capitalizedType}`]: {
             id: true,
             __typename: true,

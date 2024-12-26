@@ -21,7 +21,7 @@
 </template>
 
 <script>
-import { executeGiraffeql } from '~/services/giraffeql'
+import { executeApiRequest } from '~/services/api'
 import {
   capitalizeString,
   handleError,
@@ -60,7 +60,7 @@ export default {
     async deleteRecord() {
       this.loading.deleteRecord = true
       try {
-        const data = await executeGiraffeql({
+        const data = await executeApiRequest({
           [this.viewDefinition.deleteOptions.operationName ??
           `delete${capitalizeString(this.viewDefinition.entity.typename)}`]: {
             id: true,

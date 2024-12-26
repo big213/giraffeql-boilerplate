@@ -19,7 +19,7 @@
 import columnMixin from '~/mixins/column'
 import { handleError } from '~/services/base'
 import { downloadWithProgress } from '~/services/file'
-import { executeGiraffeql } from '~/services/giraffeql'
+import { executeApiRequest } from '~/services/api'
 
 export default {
   mixins: [columnMixin],
@@ -63,7 +63,7 @@ export default {
 
         // if there is custom downloadFile logic, use that
         const fileRecord = await (this.options?.getFile?.(this, this.item) ??
-          executeGiraffeql({
+          executeApiRequest({
             getFile: {
               name: true,
               signedUrl: true,

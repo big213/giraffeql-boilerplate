@@ -99,24 +99,30 @@
         </v-list-item-icon>
         <v-list-item-title>Delete</v-list-item-title>
       </v-list-item>
-      <template v-if="visibleCustomActions.length > 0">
+      <template v-if="visibleActions.length > 0">
         <v-divider></v-divider>
         <v-list-item
-          v-for="(actionWrapper, i) in visibleCustomActions"
-          :key="'ca' + i"
+          v-for="(actionInputObject, i) in visibleActions"
+          :key="`ca${i}`"
           dense
-          @click="handleCustomActionClick(actionWrapper)"
+          @click="handleActionClick(actionInputObject)"
         >
           <v-list-item-icon>
             <v-progress-circular
-              v-if="actionWrapper.isLoading"
+              v-if="actionInputObject.isLoading"
               size="24"
               indeterminate
             ></v-progress-circular>
-            <v-icon v-else>{{ actionWrapper.actionObject.icon }}</v-icon>
+            <v-icon v-else>{{
+              actionInputObject.actionObject.icon ??
+              actionInputObject.actionObject.action.icon
+            }}</v-icon>
           </v-list-item-icon>
           <v-list-item-title
-            >{{ actionWrapper.actionObject.text }}
+            >{{
+              actionInputObject.actionObject.text ??
+              actionInputObject.actionObject.action.title
+            }}
           </v-list-item-title>
         </v-list-item>
       </template>
@@ -131,11 +137,11 @@
       >
         <v-list-item-icon>
           <v-icon>{{
-            expandObject.icon || expandObject.viewDefinition.entity.icon
+            expandObject.icon ?? expandObject.viewDefinition.entity.icon
           }}</v-icon>
         </v-list-item-icon>
         <v-list-item-title
-          >{{ expandObject.name || expandObject.viewDefinition.entity.name }}
+          >{{ expandObject.name ?? expandObject.viewDefinition.entity.name }}
           <v-icon
             v-if="expandMode === 'openInNew'"
             small
@@ -187,26 +193,28 @@ export default {
   data() {
     return {
       status: false,
-      customActions: [],
+      actionInputObjects: [],
     }
   },
 
   computed: {
-    visibleCustomActions() {
-      return this.customActions.filter((actionWrapper) =>
-        actionWrapper.actionObject.showIf
-          ? actionWrapper.actionObject.showIf(this, this.item)
+    visibleActions() {
+      return this.actionInputObjects.filter((actionInputObject) =>
+        actionInputObject.actionObject.showIf
+          ? actionInputObject.actionObject.showIf(this, this.item)
           : true
       )
     },
 
     isActionLoading() {
-      return this.customActions.some((actionWrapper) => actionWrapper.isLoading)
+      return this.actionInputObjects.some(
+        (actionInputObject) => actionInputObject.isLoading
+      )
     },
   },
 
   created() {
-    this.customActions = this.viewDefinition.actions
+    this.actionInputObjects = this.viewDefinition.actions
       ? this.viewDefinition.actions.map((actionObject) => ({
           isLoading: false,
           actionObject,
@@ -240,7 +248,7 @@ export default {
           pageOptions: {
             search: null,
             filters: expandTypeObject.initialFilters ?? [],
-            sort: expandTypeObject.initialSortOptions ?? undefined,
+            sort: expandTypeObject.initialSortKey ?? undefined,
           },
           parentItem: this.item,
         })
@@ -253,32 +261,39 @@ export default {
       this.$emit('reload-parent')
     },
 
-    async handleCustomActionClick(actionWrapper) {
+    async handleActionClick(actionInputObject) {
       // if the action is already in a loading state, do nothing
-      if (actionWrapper.isLoading) return
+      if (actionInputObject.isLoading) return
+
+      const simpleActionOptions =
+        actionInputObject.actionObject.action.simpleActionOptions
+      const actionOptions = actionInputObject.actionObject.action
+
+      const actionName =
+        actionInputObject.actionObject.text ??
+        actionInputObject.actionObject.action.title
 
       try {
+        // if neither simpleActionOptions nor actionOptions are defined, throw err
+        if (!simpleActionOptions && !actionOptions) {
+          throw new Error(
+            'Action does not have a defined simpleAction or action'
+          )
+        }
+
         // if the action has actionOptions, open the dialog
-        if (actionWrapper.actionObject.actionOptions) {
+        if (actionOptions) {
           this.$root.$emit('openExecuteActionDialog', {
-            actionOptions: actionWrapper.actionObject.actionOptions,
-            selectedItem: actionWrapper.actionObject.actionOptions
-              .selectedItemModifier
-              ? actionWrapper.actionObject.actionOptions.selectedItemModifier(
-                  this,
-                  this.item
-                )
-              : null,
+            actionDefinition: actionInputObject.actionObject.action,
+            selectedItem:
+              actionOptions.selectedItemModifier?.(this, this.item) ?? null,
             item: this.item,
           })
           return
         }
 
-        // if the actionWrapper is already loading and it is asynchronous, prevent the action
-        if (
-          actionWrapper.actionObject.simpleActionOptions.isAsync &&
-          actionWrapper.isLoading
-        ) {
+        // if the actionInputObject is already loading and it is asynchronous, prevent the action
+        if (simpleActionOptions.isAsync && actionInputObject.isLoading) {
           this.$notifier.showSnackbar({
             message: 'Action currently in progress',
             variant: 'warning',
@@ -286,21 +301,18 @@ export default {
           return
         }
 
-        if (actionWrapper.actionObject.simpleActionOptions.isAsync)
-          actionWrapper.isLoading = true
+        if (simpleActionOptions.isAsync) {
+          actionInputObject.isLoading = true
+        }
 
-        if (actionWrapper.actionObject.simpleActionOptions.confirmOptions) {
+        if (simpleActionOptions.confirmOptions) {
           if (
             confirm(
-              actionWrapper.actionObject.simpleActionOptions.confirmOptions
-                ?.text ??
-                `Confirm execute action: ${actionWrapper.actionObject.text}`
+              simpleActionOptions.confirmOptions?.text ??
+                `Confirm execute action: ${actionName}`
             )
           ) {
-            await actionWrapper.actionObject.simpleActionOptions.handleClick(
-              this,
-              this.item
-            )
+            await simpleActionOptions.handleClick(this, this.item)
           } else {
             this.$notifier.showSnackbar({
               message: 'Action cancelled',
@@ -308,16 +320,13 @@ export default {
             })
           }
         } else {
-          await actionWrapper.actionObject.simpleActionOptions.handleClick(
-            this,
-            this.item
-          )
+          await simpleActionOptions.handleClick(this, this.item)
         }
       } catch (err) {
         handleError(this, err)
       }
 
-      actionWrapper.isLoading = false
+      actionInputObject.isLoading = false
     },
 
     goToRecordPage(openInNew) {

@@ -1,4 +1,4 @@
-import { PreviewDefinition } from '~/types/view'
+import { PreviewDefinition } from '~/types/preview'
 import { UserEntity, UserUserFollowLinkEntity } from '../entities'
 
 export const UserPreview: PreviewDefinition = {

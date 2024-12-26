@@ -40,7 +40,7 @@
 </template>
 
 <script>
-import { executeGiraffeql } from '~/services/giraffeql'
+import { executeApiRequest } from '~/services/api'
 import { copyToClipboard, getBuildVersion } from '~/services/base'
 import { auth } from '~/services/fireinit'
 
@@ -57,7 +57,7 @@ export default {
 
   created() {
     this.currentVersion = getBuildVersion()
-    executeGiraffeql(
+    executeApiRequest(
       {
         getRepositoryLatestVersion: true,
       },

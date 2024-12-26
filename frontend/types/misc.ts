@@ -1,4 +1,4 @@
-import { FilterObject, InputType } from '.'
+import { FilterObject } from '.'
 
 // used in crud.js
 export type SortObjectCrud = {
@@ -62,7 +62,7 @@ export type CrudPageOptions = {
   search: string | null
   filters: CrudRawFilterObject[]
   distance?: CrudRawDistanceObject[]
-  sort: CrudRawSortObject | null
+  sort: string | null
 }
 
 // used in crud.js

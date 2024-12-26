@@ -30,7 +30,7 @@
 
 <script>
 import { handleError, openLink } from '~/services/base'
-import { executeGiraffeql } from '~/services/giraffeql'
+import { executeApiRequest } from '~/services/api'
 import {
   downloadWithProgress,
   formatBytes,
@@ -84,7 +84,7 @@ export default {
           variant: 'success',
         })
 
-        const data = await executeGiraffeql({
+        const data = await executeApiRequest({
           getFile: {
             signedUrl: true,
             __args: {

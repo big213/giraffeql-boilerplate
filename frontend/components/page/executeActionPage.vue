@@ -8,7 +8,9 @@
         </span>
       </div>
       <div v-else>
-        <span class="display-1 pl-2">{{ actionOptions.title }} Not Found</span>
+        <span class="display-1 pl-2"
+          >Action: '{{ actionDefinition.title }}' Not Found</span
+        >
       </div>
     </v-layout>
   </v-container>
@@ -19,7 +21,7 @@
           <v-card class="elevation-12">
             <component
               :is="interfaceComponent"
-              :action-options="actionOptions"
+              :action-definition="actionDefinition"
               :item="item"
               :selected-item="selectedItem"
               dialog-mode
@@ -29,9 +31,9 @@
             >
               <template v-slot:toolbar>
                 <v-toolbar flat color="accent">
-                  <v-icon left>{{ actionOptions.icon }}</v-icon>
+                  <v-icon left>{{ actionDefinition.icon }}</v-icon>
                   <v-toolbar-title>
-                    <span class="headline">{{ actionOptions.title }}</span>
+                    <span class="headline">{{ actionDefinition.title }}</span>
                   </v-toolbar-title>
                 </v-toolbar>
               </template>
@@ -62,21 +64,23 @@ export default {
   },
 
   props: {
-    actionOptions: {
+    // type: ActionDefinition
+    actionDefinition: {
+      type: Object,
       required: true,
     },
   },
 
   computed: {
     interfaceComponent() {
-      return this.actionOptions.component ?? ExecuteActionInterface
+      return this.actionDefinition.component ?? ExecuteActionInterface
     },
   },
 
   created() {
     // if isLoginRequired and not logged in, redirect to login while saving the current path
     if (
-      this.actionOptions.isLoginRequired &&
+      this.actionDefinition.isLoginRequired &&
       !this.$store.getters['auth/user']
     ) {
       redirectToLogin(this, this.$route.path)
@@ -97,7 +101,7 @@ export default {
 
   head() {
     return {
-      title: `${this.actionOptions.title}`,
+      title: `${this.actionDefinition.title}`,
     }
   },
 }
