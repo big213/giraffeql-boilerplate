@@ -9,7 +9,8 @@
     <component
       v-if="$attrs.value"
       :is="interfaceComponent"
-      :selected-item="selectedItem"
+      :locked-fields="lockedFields"
+      :parent-item="parentItem"
       :view-definition="viewDefinition"
       :custom-fields="customFields"
       :mode="computedMode"
@@ -27,23 +28,10 @@
           <v-toolbar-title v-if="!hideTitleMode">
             <span class="headline">{{ title }}</span>
           </v-toolbar-title>
-          <v-divider
-            v-if="
-              selectedItem &&
-              computedMode !== 'create' &&
-              computedMode !== 'import'
-            "
-            class="mx-4"
-            inset
-            vertical
-          ></v-divider>
+          <v-divider v-if="parentItem" class="mx-4" inset vertical></v-divider>
           <PreviewRecordChip
-            v-if="
-              selectedItem &&
-              computedMode !== 'create' &&
-              computedMode !== 'import'
-            "
-            :value="selectedItem"
+            v-if="parentItem"
+            :value="parentItem"
             class="pointer-cursor"
           >
           </PreviewRecordChip>
@@ -62,7 +50,7 @@
               !hideActionsMode
             "
             :view-definition="viewDefinition"
-            :item="selectedItem"
+            :item="parentItem"
             expand-mode="openInDialog"
             left
             offset-x
@@ -88,7 +76,7 @@
         <v-divider class="mx-3"></v-divider>
         <div class="mx-2">
           <component
-            v-if="viewDefinition.postOptions && selectedItem"
+            v-if="viewDefinition.postOptions && lockedFields"
             class="mt-2 mx-auto elevation-6"
             style="max-width: 800px"
             :is="postInterface"
@@ -133,7 +121,7 @@ const modesMap = {
   },
   update: {
     icon: 'mdi-pencil',
-    prefix: 'Update',
+    prefix: 'Edit',
     persistent: true,
     defaultInterface: EditRecordInterface,
   },
@@ -164,9 +152,7 @@ export default {
   },
 
   props: {
-    selectedItem: {
-      type: Object,
-    },
+    lockedFields: {},
 
     viewDefinition: {
       type: Object,
@@ -197,6 +183,8 @@ export default {
     specialMode: {
       type: Object,
     },
+
+    parentItem: {},
   },
   data() {
     return {
@@ -252,14 +240,14 @@ export default {
       return (
         this.viewDefinition.postOptions?.getLockedFilters?.(
           this,
-          this.selectedItem
+          this.parentItem
         ) ??
-        (this.selectedItem
+        (this.parentItem
           ? [
               {
-                field: this.viewDefinition.entity.typename,
+                field: `${this.viewDefinition.entity.typename}.id`,
                 operator: 'eq',
-                value: this.selectedItem.id,
+                value: this.parentItem.id,
               },
             ]
           : null)
@@ -292,7 +280,7 @@ export default {
     },
 
     // toggle the dialog to another mode
-    openEditDialog(mode) {
+    openEditDialog({ mode }) {
       this.overrideMode = mode
     },
 

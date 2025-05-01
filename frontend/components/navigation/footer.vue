@@ -41,7 +41,7 @@ import {
   siteDiscordLink,
   siteGithubRepositoryUrl,
   siteContactEmail,
-} from '~/services/config'
+} from '~/config'
 
 export default {
   components: {

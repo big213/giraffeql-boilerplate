@@ -1,4 +1,8 @@
-import { FilterObject } from '.'
+import {
+  FilterInputFieldDefinition,
+  InputDefinition,
+  NestedInputFieldDefinition,
+} from '.'
 
 // used in crud.js
 export type SortObjectCrud = {
@@ -9,26 +13,23 @@ export type SortObjectCrud = {
 
 // used in crud.js, for the genericFilterInput
 export type CrudFilterObject = {
-  filterObject: FilterObject
+  filterInputFieldDefinition: FilterInputFieldDefinition
   inputObject: CrudInputObject
 }
 
 export type NestedInputObject = {
+  nestedInputFieldDefinition: NestedInputFieldDefinition
   inputObject: CrudInputObject
-  nestedFieldInfo: any // InputOptions.nestedOptions.fields
 }
 
 // used for the genericInput
 export type CrudInputObject = {
   fieldKey: string // the fieldKey
-  primaryField?: string // the main field. either fieldInfo.fields[0] or the fieldKey
-  fieldInfo?: any // fieldInfo
+  fieldPath: string // the path to the field
   viewDefinition?: any | null // viewDefinition, if any
   label: string // the label for the input
   closeable?: boolean // is the input closeable?
-  inputOptions?: {
-    [x in string]: any
-  } // various extra options relating to the specific inputType
+  inputDefinition: InputDefinition // various extra options relating to the specific inputType
   value: any // the actual value of the input
   inputValue: any // the proxy value of the input
   secondaryInputValue: any // a secondary proxy value, for compound fields (like stripe-pi)
@@ -43,11 +44,12 @@ export type CrudInputObject = {
   generation: number // generation of the input. used for forcing refreshes
   parentInput: CrudInputObject | null // the parent of the input. can be used to determine if it is nested as well
   nestedInputsArray: NestedInputObject[][] // any nested input objects
-  hideIf?: (that, inputsArray) => boolean // hide this input if...
+  hideIf?: (that, parentItem, inputsArray) => boolean // hide this input if...
   inputData?: any // additional data that is relevant for the input option (mainly for stripe-pi)
+  watch?: (that, val, prev) => void
 }
 
-export type CrudHeaderObject = {
+export type CrudHeaderFieldDefinition = {
   text: string
   align?: string
   sortable?: boolean // should always be false or undefined
@@ -83,4 +85,9 @@ export type CrudRawDistanceObject = {
 export type CrudRawSortObject = {
   field: string
   desc: boolean
+}
+
+// { "abc.def.id": "someid"}
+export type LockedFieldObject = {
+  [x: string]: string
 }

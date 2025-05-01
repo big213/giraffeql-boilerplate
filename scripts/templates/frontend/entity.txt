@@ -1,0 +1,11 @@
+import { EntityDefinition } from '~/types/entity'
+
+export const {{ capitalizedTypename }}Entity: EntityDefinition = {
+  typename: '{{ typename }}',
+  name: '{{ capitalizedTypename }}',
+  pluralName: '{{ capitalizedTypename }}s',
+  icon: 'mdi-folder-information',
+  nameField: 'name',
+  avatarField: 'avatarUrl',
+  descriptionField: 'description',
+}

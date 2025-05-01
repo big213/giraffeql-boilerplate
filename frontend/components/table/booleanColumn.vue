@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <span>
     <span v-if="currentValue === null">N/A</span>
     <v-chip
       v-else
@@ -9,7 +9,7 @@
     >
       {{ currentValue ? 'Yes' : 'No' }}
     </v-chip>
-  </div>
+  </span>
 </template>
 
 <script>

@@ -1,13 +1,13 @@
-import { ActionOptions } from '~/types'
+import { ActionDefinition } from '~/types/action'
 
-export const {{ actionName }}: ActionOptions = {
+export const {{ actionName }}: ActionDefinition = {
   operationName: '{{ actionName }}',
   title: '{{ capitalizedActionName }}',
   icon: 'mdi-code-tags',
-  inputs: [
+  fields: [
     {
-      field: 'code',
-      definition: {
+      fieldKey: 'code',
+      inputDefinition: {
         text: 'Code',
       },
     },
@@ -17,9 +17,9 @@ export const {{ actionName }}: ActionOptions = {
     // reload interfaces
     // that.$root.$emit('refresh-interface', 'someType')
 
-    that.$notifier.showSnackbar({
+    that.$root.$emit('showSnackbar', {
       message: `Action succeeded`,
-      variant: 'success',
+      color: 'success',
     })
   },
 }

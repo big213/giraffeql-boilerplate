@@ -53,7 +53,7 @@ const modifiersArray = [
     modifiers: [
       {
         section: "ENUM Scalar Types",
-        statement: `export const ${enumName} = enums.${enumName}.generateScalarType();`,
+        statement: `${enumName}: enums.${enumName}.getScalarType(),`,
       },
     ],
   },
@@ -62,9 +62,7 @@ const modifiersArray = [
     modifiers: [
       {
         section: "ENUM Service Set",
-        statement: `export const ${capitalizedEnumName} = new ${
-          isKenum ? "Kenum" : "Enum"
-        }Service(enums.${enumName});`,
+        statement: `export const ${capitalizedEnumName} = new EnumService(enums.${enumName});`,
       },
     ],
   },

@@ -51,7 +51,7 @@
 
 <script>
 import { mapGetters } from 'vuex'
-import { logoHasLightVariant } from '~/services/config'
+import { logoHasLightVariant } from '~/config'
 import { generateNavDrawerItems } from '~/services/navigation'
 
 export default {

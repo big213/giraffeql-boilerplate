@@ -108,12 +108,13 @@ export type DataloaderFunctionInput = {
   fieldPath: string[];
   args: any;
   query: any;
-  idArray: any[];
+  resultsArray: any[];
+  field: string;
 };
 
 export type DataloaderFunction = (
   input: DataloaderFunctionInput
-) => Promise<unknown[]>;
+) => Promise<void>;
 
 export type CustomResolverFunction = (
   typename: string,

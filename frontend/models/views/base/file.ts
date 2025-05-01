@@ -3,13 +3,14 @@ import { FileEntity } from '~/models/entities'
 import {
   generateBaseInputFields,
   generateBaseRenderFields,
+  generateClickRowToOpenDialogOptions,
   generateSortOptions,
 } from '~/services/view'
-import FilesizeColumn from '~/components/table/filesizeColumn.vue'
-import FileColumn from '~/components/table/fileColumn.vue'
+import { Columns } from '~/services/components'
 
 export const BaseFileView: ViewDefinition = {
-  routeType: 'a',
+  routeType: 'base',
+  routeKey: FileEntity.typename,
   entity: FileEntity,
   inputFields: {
     ...generateBaseInputFields(FileEntity),
@@ -20,50 +21,38 @@ export const BaseFileView: ViewDefinition = {
     nameWithId: {
       text: 'File',
       fields: ['name', 'id', 'location'],
-      component: FileColumn,
+      component: Columns.FileColumn,
     },
     size: {
-      text: 'Size',
-      component: FilesizeColumn,
+      component: Columns.FilesizeColumn,
     },
-    location: {
-      text: 'Location',
-    },
-    contentType: {
-      text: 'Content Type',
-    },
-    parentKey: {
-      text: 'Parent Key',
-    },
+    location: {},
+    contentType: {},
+    parentKey: {},
   },
   paginationOptions: {
-    filterOptions: [],
-    handleRowClick: (that, props) => {
-      that.openEditDialog('view', props.item)
-    },
-    handleGridElementClick: (that, item) => {
-      that.openEditDialog('view', item)
-    },
-    sortOptions: [
-      ...generateSortOptions({ field: 'createdAt' }),
-      ...generateSortOptions({ field: 'updatedAt' }),
+    filters: [],
+    ...generateClickRowToOpenDialogOptions(),
+    sortFields: [
+      ...generateSortOptions({ fieldPath: 'createdAt' }),
+      ...generateSortOptions({ fieldPath: 'updatedAt' }),
     ],
-    headerOptions: [
+    headers: [
       {
-        field: 'nameWithId',
+        fieldKey: 'nameWithId',
         hideTitleIfGrid: true,
       },
       {
-        field: 'contentType',
+        fieldKey: 'contentType',
         width: '200px',
       },
       {
-        field: 'size',
+        fieldKey: 'size',
         width: '150px',
         align: 'right',
       },
       {
-        field: 'updatedAt',
+        fieldKey: 'updatedAt',
         width: '150px',
       },
     ],

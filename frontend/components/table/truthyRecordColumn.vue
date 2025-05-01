@@ -29,7 +29,7 @@ export default {
 
   computed: {
     currentRecord() {
-      if (!Array.isArray(this.options.fields)) return null
+      if (!Array.isArray(this.options?.fields)) return null
 
       for (const fieldPath of this.options.fields) {
         const value = getNestedProperty(this.currentValue, fieldPath)

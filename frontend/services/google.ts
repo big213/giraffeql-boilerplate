@@ -1,5 +1,5 @@
-import { firebaseConfig } from './config'
 import { Loader } from '@googlemaps/js-api-loader'
+import { firebaseConfig } from '../config'
 
 const loader = new Loader({
   apiKey: firebaseConfig.apiKey,

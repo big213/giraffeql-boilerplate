@@ -1,20 +1,18 @@
 import { PaginatedService } from "../../core/services";
 import { auth } from "firebase-admin";
-import {
-  AccessControlMap,
-  ExternalQuery,
-  ServiceFunctionInputs,
-} from "../../../types";
+import { AccessControlMap, ServiceFunctionInputs } from "../../../types";
 import { permissionsCheck } from "../../core/helpers/permissions";
 import {
   filterPassesTest,
   isCurrentUser,
+  isPermissionAllowed,
   isUserLoggedIn,
 } from "../../helpers/permissions";
 import { objectOnlyHasFields } from "../../core/helpers/shared";
 import { knex } from "../../../utils/knex";
 import { getObjectType } from "../../core/helpers/resolver";
 import { ItemNotFoundError } from "../../core/helpers/error";
+import { userPermission } from "../../enums";
 
 export class UserService extends PaginatedService {
   defaultTypename = "user";
@@ -42,7 +40,7 @@ export class UserService extends PaginatedService {
     email: {},
   };
 
-  accessControl: AccessControlMap = {
+  accessControlMap: AccessControlMap = {
     // create: only admins
 
     // always allowed to get current user
@@ -197,6 +195,28 @@ export class UserService extends PaginatedService {
     }
 
     return results[0];
+  }
+
+  @permissionsCheck("getCurrentUser")
+  async getCurrentUserAvailablePermissions({
+    req,
+    rootResolver,
+    fieldPath,
+    args,
+    query,
+  }: ServiceFunctionInputs) {
+    if (!req.user) {
+      throw new Error(`Login is required`);
+    }
+
+    const finalPermissions = userPermission.values.filter((permission) =>
+      isPermissionAllowed({
+        userPermissions: req.user!.permissions,
+        permission,
+      })
+    );
+
+    return finalPermissions.map((permission) => permission.name);
   }
 
   @permissionsCheck("create")

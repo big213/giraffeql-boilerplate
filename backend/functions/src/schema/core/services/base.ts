@@ -1,8 +1,4 @@
-import {
-  ServiceFunctionInputs,
-  AccessControlMap,
-  ExternalQuery,
-} from "../../../types";
+import { ServiceFunctionInputs, AccessControlMap } from "../../../types";
 import { userPermission } from "../../enums";
 import { GiraffeqlRootResolverType } from "giraffeql";
 import { PermissionsError } from "../helpers/error";
@@ -22,7 +18,7 @@ export abstract class BaseService {
   }
 
   // standard ones are 'get', 'getPaginator', 'update', 'create', 'delete'
-  accessControl?: AccessControlMap;
+  accessControlMap?: AccessControlMap;
 
   constructor(typename?: string) {
     const camelCaseTypename =
@@ -32,52 +28,65 @@ export abstract class BaseService {
   }
 
   async testPermissions(
-    operation: string,
+    permissionKey: string,
     { req, rootResolver, fieldPath, args, query }: ServiceFunctionInputs
   ): Promise<boolean> {
     try {
       // if logged in, attempt to verify permissions using the permissions array
       if (req.user) {
-        // check against permissions array first. allow if found.
+        // check against permissions array first. if the user has any of these permissions, allow
         const passablePermissionsArray = [
-          userPermission.A_A,
-          userPermission[this.typename + "_x"],
-          userPermission[this.typename + "_" + operation],
-        ];
+          userPermission["*"],
+          userPermission[`${this.typename}/*`],
+          userPermission[`${this.typename}/${permissionKey}`],
+        ].filter((e) => e);
 
         if (
           req.user.permissions.some((ele) =>
             passablePermissionsArray.includes(ele)
           )
-        )
+        ) {
           return true;
+        }
       }
 
-      // if that failed, fall back to accessControl
-      // deny by default if no accessControl object
-      let allowed = false;
-      if (this.accessControl) {
-        const validatedOperation =
-          operation in this.accessControl ? operation : "*";
-        // if operation not in the accessControl object, deny
-        allowed = this.accessControl[validatedOperation]
-          ? await this.accessControl[validatedOperation]({
-              req,
-              rootResolver,
-              fieldPath,
-              args,
-              query,
-            })
-          : false;
+      // if that failed, fall back to accessControlMap map
+
+      // if no access control object, throw err
+      if (!this.accessControlMap) {
+        throw new Error(
+          `Access control map not defined for type: '${this.typename}'`
+        );
       }
 
-      if (!allowed) {
-        throw new PermissionsError({
+      // if the permissionKey doesn't exist in the accessControlMap object, default to "*"
+      const accessControlMapFn =
+        this.accessControlMap[
+          permissionKey in this.accessControlMap ? permissionKey : "*"
+        ];
+
+      if (!accessControlMapFn) {
+        throw new Error(
+          `Access control function (or fallback) not found on type: '${this.typename}' for permissionKey: '${permissionKey}'`
+        );
+      }
+
+      // if operation not in the accessControlMap object, deny
+      if (
+        !(await accessControlMapFn({
+          req,
+          rootResolver,
           fieldPath,
-        });
+          args,
+          query,
+        }))
+      ) {
+        throw new Error(
+          `Access control failed for permissionKey: '${permissionKey}'`
+        );
       }
 
-      return allowed;
+      return true;
     } catch (err: unknown) {
       // if the error is an error but not a permissions error, convert it into a permissions error with the same message
       if (err instanceof Error && !(err instanceof PermissionsError)) {

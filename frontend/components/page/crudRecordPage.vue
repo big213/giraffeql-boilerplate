@@ -11,9 +11,7 @@
           <component
             :is="paginationComponent"
             :view-definition="
-              expandTypeObject
-                ? expandTypeObject.viewDefinition
-                : viewDefinition
+              expandTypeObject ? expandTypeObject.view : viewDefinition
             "
             :page-options="isChildComponent ? subPageOptions : pageOptions"
             :locked-filters="
@@ -55,7 +53,8 @@
 <script>
 import CrudRecordInterface from '~/components/interface/crud/crudRecordInterface.vue'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
-import { capitalizeString, generateCrudRecordRoute } from '~/services/base'
+import { capitalizeString } from '~/services/base'
+import { generateCrudRecordRoute } from '~/services/route'
 import { mapGetters } from 'vuex'
 import CircularLoader from '~/components/common/circularLoader.vue'
 
@@ -158,6 +157,20 @@ export default {
   },
 
   created() {
+    // if legacy pageOptions param is provided, automatically replace that with o
+    if (this.$route.query.pageOptions) {
+      this.$router.replace({
+        path: this.$route.path,
+        query: {
+          ...this.$route.query,
+          pageOptions: undefined,
+          o: this.$route.query.pageOptions,
+        },
+      })
+      // returning because changing $route.query.o will trigger reset already
+      return
+    }
+
     this.reset()
   },
 
@@ -221,7 +234,7 @@ export default {
 
       this.$router.replace(
         generateCrudRecordRoute(this, {
-          path: this.$route.path,
+          viewDefinition: this.viewDefinition,
           pageOptions:
             await this.viewDefinition.paginationOptions.defaultPageOptions(
               this

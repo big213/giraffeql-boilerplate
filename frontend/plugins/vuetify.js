@@ -1,4 +1,4 @@
-import { defaultLightMode } from '~/services/config'
+import { defaultLightMode } from '~/config'
 
 export default (context) => {
   if (process.client) {

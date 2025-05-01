@@ -1,7 +1,10 @@
 import {
+  generateMemoizedEntityGetter,
   generateMemoizedEnumGetter,
-  generateMemoizedGetter,
+  memoize,
 } from '~/services/base'
+import { executeApiRequest } from './api'
+import { UserEntity } from '~/models/entities'
 
 export const getCurrentUser = function (that) {
   const user = that.$store.getters['auth/user']
@@ -19,12 +22,15 @@ export const getCurrentUser = function (that) {
   )
 }
 
-export const getUsers = generateMemoizedGetter('getUserPaginator', [
-  'id',
-  'name',
-  'avatarUrl',
-  '__typename',
-])
+export async function getCurrentUserAvailablePermissions(that) {
+  const data = await executeApiRequest({
+    getCurrentUserAvailablePermissions: true,
+  })
+
+  return data
+}
+
+export const getUsers = generateMemoizedEntityGetter(UserEntity)
 
 /** START Enum Getters */
 export const getUserRoleEnumValues = generateMemoizedEnumGetter(

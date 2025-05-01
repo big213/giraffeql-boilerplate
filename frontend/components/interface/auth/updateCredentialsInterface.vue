@@ -127,9 +127,9 @@ export default {
 
         await sendEmailVerification(currentUser)
 
-        this.$notifier.showSnackbar({
-          message: 'Verification email sent',
-          variant: 'success',
+        this.$root.$emit('showSnackbar', {
+          message: `Verification email sent`,
+          color: 'success',
         })
       } catch (err) {
         handleError(this, err)
@@ -173,9 +173,9 @@ export default {
 
         this.reset()
 
-        this.$notifier.showSnackbar({
-          message: 'User login information updated successfully',
-          variant: 'success',
+        this.$root.$emit('showSnackbar', {
+          message: `User login information updated successfully`,
+          color: 'success',
         })
       } catch (err) {
         handleError(this, err)

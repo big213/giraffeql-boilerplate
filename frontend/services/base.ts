@@ -1,25 +1,33 @@
 import { format } from 'timeago.js'
 import { convertArrayToCSV } from 'convert-array-to-csv'
-import { executeApiRequest, GiraffeqlError } from '~/services/api'
-import { CrudInputObject, CrudRawFilterObject } from '~/types/misc'
+import { executeApiRequest, GiraffeqlError } from './api'
+import {
+  CrudFilterObject,
+  CrudInputObject,
+  CrudRawFilterObject,
+} from '../types/misc'
 import { Root } from '../../schema'
-import { PriceObject } from '~/types'
-import * as entities from '~/models/entities'
+import {
+  FilterInputFieldDefinition,
+  InputDefinition,
+  InputFieldDefinition,
+  NestedOptions,
+  PriceObject,
+  RenderDefinition,
+  RenderFieldDefinition,
+} from '~/types'
+import { generateViewRecordRoute } from './route'
+import { EntityDefinition } from '~/types/entity'
+import { ViewDefinition } from '~/types/view'
 
 type StringKeyObject = { [x: string]: any }
 
-export function getIcon(typename: string | undefined) {
-  if (!typename) return null
-
-  return entities[`${capitalizeString(typename)}Entity`]?.icon ?? null
-}
-
-export function formatAsCurrency(input: number | null) {
+export function formatAsCurrency(input: number | null, currencySymbol = '$') {
   const validatedInput = input ?? 0
 
   return validatedInput < 0
-    ? `-$${(validatedInput * -1).toFixed(2)}`
-    : `$${validatedInput.toFixed(2)}`
+    ? `-${currencySymbol}${(validatedInput * -1).toFixed(2)}`
+    : `${currencySymbol}${validatedInput.toFixed(2)}`
 }
 
 export function timeout(ms: number): Promise<void> {
@@ -209,9 +217,9 @@ export function capitalizeString(str: string | undefined): string {
 
 export async function copyToClipboard(that, content) {
   await navigator.clipboard.writeText(content)
-  that.$notifier.showSnackbar({
+  that.$root.$emit('showSnackbar', {
     message: 'Copied to Clipboard',
-    variant: 'success',
+    color: 'success',
   })
 }
 
@@ -275,11 +283,18 @@ export function isObject(ele: unknown): ele is StringKeyObject {
   return Object.prototype.toString.call(ele) === '[object Object]'
 }
 
+export function isId(ele: unknown) {
+  return typeof ele === 'string' || typeof ele === 'number'
+}
+
 export function collapseObject(obj: StringKeyObject): StringKeyObject | null {
   const returnObject = {}
   const nestedFieldsSet: Set<string> = new Set()
 
   for (const field in obj) {
+    // if the field is undefined, skip
+    if (obj[field] === undefined) continue
+
     if (field.match(/\./)) {
       const firstPart = field.substr(0, field.indexOf('.'))
       const secondPart = field.substr(field.indexOf('.') + 1)
@@ -343,9 +358,9 @@ export function downloadCSV(
   name = 'file'
 ): void {
   try {
-    that.$notifier.showSnackbar({
+    that.$root.$emit('showSnackbar', {
       message: 'File download started',
-      variant: 'success',
+      color: 'success',
     })
 
     const csvString = convertArrayToCSV(dataArray)
@@ -368,7 +383,7 @@ export function handleError(that, err) {
   if (that) {
     // error thrown by server
     if (err instanceof GiraffeqlError) {
-      that.$notifier.showSnackbar({
+      that.$root.$emit('showSnackbar', {
         message: `${err.message}${
           err.data.fieldPath
             ? ` at [${err.data.fieldPath
@@ -376,8 +391,8 @@ export function handleError(that, err) {
                 .join('-')}]`
             : ''
         }`,
-        variant: 'error',
-        copyableMessage: JSON.stringify(
+        color: 'error',
+        copyableText: JSON.stringify(
           {
             ...err.data,
             query: err.query,
@@ -391,10 +406,10 @@ export function handleError(that, err) {
       console.log(err)
     } else {
       // error thrown on client side
-      that.$notifier.showSnackbar({
+      that.$root.$emit('showSnackbar', {
         message: err.message,
-        variant: 'error',
-        copyableMessage: JSON.stringify(
+        color: 'error',
+        copyableText: JSON.stringify(
           {
             message: err.message,
             type: 'clientError',
@@ -422,123 +437,7 @@ export function generateLoginError(setRedirect = true) {
   return new Error('Login required')
 }
 
-export function generateNavRouteObject(
-  that,
-  {
-    viewDefinition,
-    path,
-    pageOptions,
-    title,
-  }: {
-    viewDefinition: any
-    path?: string
-    pageOptions?: any
-    title?: string
-  }
-) {
-  return {
-    icon: viewDefinition.entity.icon,
-    title: title ?? viewDefinition.title ?? viewDefinition.entity.pluralName,
-    to: generateCrudRecordRoute(that, {
-      path,
-      typename: viewDefinition.entity.typename,
-      routeType: viewDefinition.routeType,
-      pageOptions:
-        pageOptions === null
-          ? null
-          : {
-              search: '',
-              filters: [],
-              sort: 'updatedAt-desc',
-              ...pageOptions,
-            },
-    }),
-  }
-}
-
-export function generateCrudRecordRoute(
-  that,
-  {
-    path,
-    typename,
-    routeType,
-    queryParams,
-    pageOptions,
-  }: {
-    path?: string
-    typename?: string
-    routeType?: string
-    queryParams?: any
-    pageOptions?: any
-  }
-) {
-  // either path or typename/routeType required
-  if (!path && !(typename && routeType)) {
-    throw new Error('One of path or typename/routeType required')
-  }
-
-  return that.$router.resolve({
-    path: path ?? `/${routeType!}/${camelToKebabCase(typename!)}`,
-    query: {
-      ...queryParams,
-      ...(pageOptions && {
-        o: encodeURIComponent(btoa(JSON.stringify(pageOptions))),
-      }),
-    },
-  }).href
-}
-
-// either path or routeKey/routeType required
-export function generateViewRecordRoute(
-  that,
-  {
-    path,
-    routeKey,
-    routeType,
-    queryParams,
-    id,
-    expandKey,
-    miniMode,
-    showComments = false,
-  }: {
-    path?: string
-    routeKey?: string
-    routeType?: string
-    queryParams?: any
-    id?: string
-    expandKey?: string | null
-    miniMode?: boolean
-    showComments?: boolean
-  }
-) {
-  // either path or typename/routeType required
-  if (!path && !(routeKey && routeType)) {
-    throw new Error('One of path or typename/routeType required')
-  }
-
-  return that.$router.resolve({
-    path: path ?? `/${routeType!}/view/${camelToKebabCase(routeKey!)}`,
-    query: {
-      id,
-      e: expandKey,
-      c: showComments ? null : undefined,
-      m: miniMode ? '1' : undefined,
-      ...queryParams,
-    },
-  }).href
-}
-
-export function enterRoute(that, route: string, openInNew = false) {
-  if (!route) return
-
-  if (openInNew) {
-    window.open(route, '_blank')
-  } else {
-    that.$router.push(route)
-  }
-}
-
-export function getPaginatorData(that, operation, query, args) {
+export function getPaginatorData(operation, query, args) {
   return executeApiRequest(<any>{
     [operation]: {
       paginatorInfo: {
@@ -557,7 +456,6 @@ export function getPaginatorData(that, operation, query, args) {
 
 // executes a giraffeql paginated operation 100 rows at a time until no more results are returned
 export async function collectPaginatorData(
-  that,
   operation,
   query,
   args = {},
@@ -569,7 +467,7 @@ export async function collectPaginatorData(
 
   let hasMore = true
   while (hasMore) {
-    const data = <any>await getPaginatorData(that, operation, query, {
+    const data = <any>await getPaginatorData(operation, query, {
       ...args,
       first: fetchRows,
       after: afterCursor,
@@ -638,7 +536,7 @@ export function convertCSVToJSON(text: string) {
     p = l
   }
   const objArray: StringKeyObject[] = []
-  const headers = ret[0]
+  const headers = ret[0].map((ele) => ele.trim())
   for (let k = 1; k < ret.length; k++) {
     const o = {}
     let hasUndefined = false
@@ -663,55 +561,58 @@ export const viewportToPixelsMap = {
   xl: +Infinity,
 }
 
-export function lookupInputField(viewDefinition, field: string) {
-  const fieldInfo = viewDefinition.inputFields[field]
+export function lookupInputDefinition(
+  viewDefinition: ViewDefinition,
+  fieldKey: string
+): InputDefinition {
+  const validatedInputDefinition = viewDefinition.inputFields[fieldKey]
 
   // field unknown, abort
-  if (!fieldInfo)
+  if (!validatedInputDefinition)
     throw new Error(
-      `Unknown input field on ${viewDefinition.entity.typename}: '${field}'`
+      `Unknown input field on ${viewDefinition.entity.typename}: '${fieldKey}'`
     )
 
-  return fieldInfo
+  return validatedInputDefinition
 }
 
-export function lookupRenderField(viewDefinition, field: string) {
-  const fieldInfo = viewDefinition.renderFields[field]
+export function lookupRenderDefinition(
+  viewDefinition: ViewDefinition,
+  fieldKey: string
+): RenderDefinition {
+  const validatedRenderDefinition = viewDefinition.renderFields[fieldKey]
 
   // field unknown, abort
-  if (!fieldInfo)
+  if (!validatedRenderDefinition)
     throw new Error(
-      `Unknown render field on ${viewDefinition.entity.typename}: '${field}'`
+      `Unknown render field on ${viewDefinition.entity.typename}: '${fieldKey}'`
     )
 
-  return fieldInfo
+  return validatedRenderDefinition
 }
 
 export function populateInputObject(
   that,
   {
     inputObject,
-    selectedItem,
-    item,
-    loadOptions = true,
+    parentItem,
+    fetchEntities = false,
   }: {
     inputObject: CrudInputObject
-    selectedItem: any | undefined
-    item: any | undefined
-    loadOptions?: boolean
+    parentItem: any | undefined
+    fetchEntities?: boolean
   }
 ) {
   const promisesArray: Promise<any>[] = []
-  if (inputObject.inputOptions?.inputType === 'value-array') {
+  if (inputObject.inputDefinition.inputType === 'value-array') {
     // if it is a value-array, recursively process the nestedValueArray
     inputObject.nestedInputsArray.forEach((nestedInputArray) => {
       nestedInputArray.forEach((nestedInputObject) => {
         promisesArray.push(
           ...populateInputObject(that, {
             inputObject: nestedInputObject.inputObject,
-            selectedItem,
-            item,
-            loadOptions,
+            parentItem,
+            fetchEntities: true, // for nested inputs, always fetch the entities
           })
         )
       })
@@ -719,24 +620,25 @@ export function populateInputObject(
   } else {
     // for stripe-pi, need to fetch the stripeAccount and clientSecret
     if (
-      inputObject.inputOptions?.inputType === 'stripe-pi' ||
-      inputObject.inputOptions?.inputType === 'stripe-pi-editable'
+      inputObject.inputDefinition.inputType === 'stripe-pi' ||
+      inputObject.inputDefinition.inputType === 'stripe-pi-editable'
     ) {
-      if (!inputObject.inputOptions?.paymentOptions) {
+      if (!inputObject.inputDefinition.paymentOptions) {
         throw new Error(`Stripe payments misconfigured`)
       }
 
       const initialQuantity =
-        inputObject.inputOptions.paymentOptions.quantityOptions?.default?.()
+        inputObject.inputDefinition.paymentOptions.quantityOptions?.default?.() ??
+        0
 
       const initialPriceObject =
-        inputObject.inputOptions.paymentOptions.getPriceObject?.(
+        inputObject.inputDefinition.paymentOptions.getPriceObject?.(
           that,
-          item,
+          parentItem,
           initialQuantity,
-          inputObject.inputOptions.paymentOptions.quantityOptions?.getDiscountScheme?.(
+          inputObject.inputDefinition.paymentOptions.quantityOptions?.getDiscountScheme?.(
             that,
-            item
+            parentItem
           )
         )
 
@@ -744,11 +646,11 @@ export function populateInputObject(
         initialPriceObject.price - (initialPriceObject.discount ?? 0)
 
       promisesArray.push(
-        inputObject.inputOptions.paymentOptions
+        inputObject.inputDefinition.paymentOptions
           .getPaymentIntent(
             that,
             inputObject,
-            selectedItem,
+            parentItem,
             initialQuantity,
             finalPrice
           )
@@ -761,30 +663,46 @@ export function populateInputObject(
       inputObject.secondaryInputValue = initialQuantity
     }
 
-    if (loadOptions && inputObject.inputOptions?.getOptions) {
+    // if there are options to be loaded, fetch the options and convert any strings to objects *if it's not a text-combobox, which could load values that aren't in the options*
+    // also only process this if not hidden and readonly
+    if (
+      inputObject.inputDefinition.getOptions &&
+      !(inputObject.hidden && inputObject.readonly)
+    ) {
       inputObject.loading = true
       promisesArray.push(
-        inputObject.inputOptions.getOptions(that, selectedItem).then((res) => {
+        inputObject.inputDefinition.getOptions(that).then((res) => {
           // set the options
           inputObject.options = res
 
-          // if autocomplete or combobox, attempt to translate the inputObject.value based on the options
-          if (
-            inputObject.inputOptions?.inputType === 'type-autocomplete' ||
-            inputObject.inputOptions?.inputType === 'type-combobox'
-          ) {
-            // if the inputObject.value is an object, must already be selected (no need to convert)
-            if (!isObject(inputObject.value)) {
-              inputObject.value =
-                inputObject.options.find(
-                  (ele) => ele.id === inputObject.value
-                ) ?? null
+          // if it's a text-combobox, skip converting the strings to objects
+          if (inputObject.inputDefinition.inputType !== 'text-combobox') {
+            // if it's an array of Ids, or an ID, look it up
+            if (Array.isArray(inputObject.value)) {
+              inputObject.value = inputObject.value.map((value) => {
+                // if it's an entity, do the lookup of the id, translating id to obj. but if it's not an ID, assume it's already an obj
+                if (inputObject.inputDefinition.entity) {
+                  return isId(value)
+                    ? inputObject.options.find((ele) => ele.id === value)
+                    : value
+                } else {
+                  // if it's not an entity, it should be a string
+                  return inputObject.options.find((ele) => ele === value)
+                }
+              })
+            } else if (isId(inputObject.value)) {
+              if (inputObject.inputDefinition.entity) {
+                inputObject.value =
+                  inputObject.options.find(
+                    (ele) => ele.id === inputObject.value
+                  ) ?? null
+              } else {
+                inputObject.value =
+                  inputObject.options.find(
+                    (ele) => ele === inputObject.value
+                  ) ?? null
+              }
             }
-          } else if (
-            inputObject.inputOptions?.inputType === 'type-autocomplete-multiple'
-          ) {
-            // for multiple types, inputObject.value should contain the values already
-            inputObject.value = inputObject.value ?? []
           }
 
           inputObject.loading = false
@@ -792,53 +710,71 @@ export function populateInputObject(
       )
     }
 
-    // if no getOptions and has a typename, populate the options/value with the specific entry (if not already populated previously, i.e. converted from string to obj)
+    // if it's an entity but no getOptions, need to manually fetch the options one at a time
     if (
-      inputObject.inputOptions?.entity &&
-      !inputObject.inputOptions.getOptions &&
-      (!inputObject.value || !isObject(inputObject.value))
+      inputObject.inputDefinition.entity &&
+      !inputObject.inputDefinition.getOptions
     ) {
-      const entity = inputObject.inputOptions.entity
-
       const originalFieldValue = inputObject.value
-      inputObject.value = null // set this to null initially while the results load, to prevent console error
 
-      // if input is both hidden AND readonly, must be due to locked and hidden input. Can safely skip the lookup
-      if (inputObject.hidden && inputObject.readonly) {
+      const entity = inputObject.inputDefinition.entity
+
+      // if no name or avatar, just use the id
+      if (!entity.nameField && !entity.avatarField) {
         inputObject.value = {
           id: originalFieldValue,
         }
-      } else {
-        if (originalFieldValue && originalFieldValue !== '__undefined') {
-          // if no name or avatar, just use the id
-          if (!entity.nameField && !entity.avatarField) {
-            inputObject.value = {
-              id: originalFieldValue,
-            }
-          } else {
-            promisesArray.push(
-              executeApiRequest(<any>{
-                [`get${capitalizeString(entity.typename)}`]: {
-                  id: true,
-                  ...(entity.nameField && {
-                    [entity.nameField]: true,
-                  }),
-                  ...(entity.avatarField && {
-                    [entity.avatarField]: true,
-                  }),
-                  __args: {
-                    id: originalFieldValue,
+      } else if (fetchEntities) {
+        if (Array.isArray(originalFieldValue)) {
+          originalFieldValue.forEach((value, index) => {
+            if (isId(value)) {
+              promisesArray.push(
+                executeApiRequest(<any>{
+                  [`get${capitalizeString(entity.typename)}`]: {
+                    id: true,
+                    ...(entity.nameField && {
+                      [entity.nameField]: true,
+                    }),
+                    ...(entity.avatarField && {
+                      [entity.avatarField]: true,
+                    }),
+                    __args: {
+                      id: value,
+                    },
                   },
-                },
-              })
-                .then((res) => {
-                  // change value to object
-                  inputObject.value = res
-                  inputObject.options = [res]
                 })
-                .catch((e) => e)
-            )
-          }
+                  .then((res) => {
+                    // change value to object (at index)
+                    inputObject.value[index] = res
+                    inputObject.options.push(res)
+                  })
+                  .catch((e) => e)
+              )
+            }
+          })
+        } else if (isId(originalFieldValue)) {
+          promisesArray.push(
+            executeApiRequest(<any>{
+              [`get${capitalizeString(entity.typename)}`]: {
+                id: true,
+                ...(entity.nameField && {
+                  [entity.nameField]: true,
+                }),
+                ...(entity.avatarField && {
+                  [entity.avatarField]: true,
+                }),
+                __args: {
+                  id: originalFieldValue,
+                },
+              },
+            })
+              .then((res) => {
+                // change value to object
+                inputObject.value = res
+                inputObject.options = [res]
+              })
+              .catch((e) => e)
+          )
         }
       }
     }
@@ -849,103 +785,253 @@ export function populateInputObject(
 
 export function addNestedInputObject(
   that,
-  parentInputObject,
-  inputValue: any = null
+  parentInputObject: CrudInputObject,
+  inputValue?: any
 ) {
+  if (!parentInputObject.inputDefinition.nestedOptions) {
+    throw new Error(`inputDefinition.nestedOptions not defined`)
+  }
+
   parentInputObject.nestedInputsArray.push(
-    parentInputObject.inputOptions.nestedOptions.fields.map(
-      (nestedFieldInfo) => {
+    parentInputObject.inputDefinition.nestedOptions.fields.map(
+      (nestedFieldDefinition) => {
+        const inputObject = generateInputObject(that, nestedFieldDefinition)
+
+        // populate the value if there is an inputValue
+        inputObject.value =
+          (inputValue
+            ? getNestedProperty(inputValue, inputObject.fieldPath)
+            : null) ??
+          nestedFieldDefinition.inputDefinition.getInitialValue?.(that) ??
+          null
+
+        // if it is an entity, populate the value and options fields
+        if (inputObject.inputDefinition.entity) {
+          inputObject.value = getNestedProperty(
+            inputValue,
+            inputObject.fieldKey
+          )
+
+          // if the value is defined and there is no getOptions fn, populate it as the only option
+          if (inputObject.value && !inputObject.inputDefinition.getOptions) {
+            inputObject.options = [inputObject.value]
+          }
+        }
+
         return {
-          nestedFieldInfo,
-          inputObject: {
-            fieldInfo: nestedFieldInfo,
-            closeable: false,
-            label:
-              nestedFieldInfo.text ??
-              camelCaseToCapitalizedString(nestedFieldInfo.key),
-            inputOptions: nestedFieldInfo.inputOptions,
-            value:
-              (inputValue ? inputValue[nestedFieldInfo.key] : null) ??
-              nestedFieldInfo.inputOptions?.getInitialValue?.(that) ??
-              null,
-            options: [],
-            cols: nestedFieldInfo.cols,
-            nestedInputsArray: [],
-          },
+          nestedInputFieldDefinition: nestedFieldDefinition,
+          inputObject,
         }
       }
     )
   )
 }
 
-export async function processQuery(
+export async function processRenderQuery(
   that,
-  viewDefinition,
-  fields: string[],
-  renderMode = false
+  {
+    renderFieldDefinitions,
+    rawFields,
+  }: {
+    renderFieldDefinitions: RenderFieldDefinition[]
+    rawFields?: string[]
+  }
 ) {
-  // build the query async
-  const query = { id: true, __typename: true }
-  for (const field of fields) {
-    // skip if key is __typename
-    if (field === '__typename') continue
+  // always fetch id and typename fields, and any raw fields
+  const requiredFields = ['id', '__typename'].concat(rawFields ?? [])
 
-    const fieldInfo = (renderMode ? lookupRenderField : lookupInputField)(
-      viewDefinition,
-      field
-    )
+  const query = requiredFields.reduce((total, field) => {
+    total[field] = true
+    return total
+  }, {})
+
+  for (const { fieldKey, renderDefinition } of renderFieldDefinitions) {
+    // skip if key is __typename
+    if (fieldKey === '__typename') continue
+
+    // renderDefinition should always be defined by this point
+    if (!renderDefinition) throw new Error(`renderDefinition not defined`)
 
     // skip if loadIf provided and it returns false
-    if (fieldInfo.loadIf && !fieldInfo.loadIf(that)) {
+    if (renderDefinition.loadIf?.(that)) {
       continue
+    }
+
+    // if main fieldInfo has args and passes loadIf, process them
+    if (renderDefinition.args) {
+      for (const argObject of renderDefinition.args) {
+        query[`${argObject.path}.__args`] = await argObject.getArgs(that)
+      }
     }
 
     const fieldsToAdd: Set<string> = new Set()
 
     // in export mode, generally will only be fetching the first field
-    if (fieldInfo.fields) {
-      fieldInfo.fields.forEach((field) => fieldsToAdd.add(field))
+    if (renderDefinition.fields) {
+      renderDefinition.fields.forEach((field) => fieldsToAdd.add(field))
     } else {
-      fieldsToAdd.add(field)
+      fieldsToAdd.add(fieldKey)
     }
 
     // process fields
     fieldsToAdd.forEach(async (field) => {
-      const currentFieldInfo = renderMode
-        ? viewDefinition.renderFields[field]
-        : viewDefinition.inputFields[field]
-
-      // add a serializer if there is one for the field
-      if (currentFieldInfo) {
-        // skip if loadIf provided and it returns false
-        if (currentFieldInfo.loadIf && !currentFieldInfo.loadIf(that)) {
-          return
-        }
-
-        // if field has args, process them
-        if (currentFieldInfo.args) {
-          currentFieldInfo.args.forEach((argObject) => {
-            query[`${argObject.path}.__args`] = argObject.getArgs(that)
-          })
-        }
-      }
-
       query[field] = true
     })
+  }
 
-    // if main fieldInfo has args and passes loadIf, process them
-    if (fieldInfo.args) {
-      fieldInfo.args.forEach((argObject) => {
-        query[`${argObject.path}.__args`] = argObject.getArgs(that)
+  return collapseObject(query)
+}
+
+function getAllNestedFields(
+  nestedOptions: NestedOptions,
+  parentPath: string[] = []
+) {
+  const nestedFields: string[] = []
+  nestedOptions.fields.forEach((nestedFieldDefinition) => {
+    // if it has more nested options, go deeper. else add it to nestedFields
+    if (nestedFieldDefinition.inputDefinition?.nestedOptions) {
+      nestedFields.push(
+        ...getAllNestedFields(
+          nestedFieldDefinition.inputDefinition.nestedOptions,
+          parentPath.concat(nestedFieldDefinition.fieldKey)
+        )
+      )
+    } else {
+      const currentPath = parentPath
+        .concat(nestedFieldDefinition.fieldKey)
+        .join('.')
+      // if it is an entity, append 'id', __typename, and other relevant fields
+      if (nestedFieldDefinition.inputDefinition?.entity) {
+        nestedFields.push(
+          ...[
+            'id',
+            '__typename',
+            nestedFieldDefinition!.inputDefinition.entity.nameField,
+            nestedFieldDefinition.inputDefinition.entity.avatarField,
+          ]
+            .filter((e) => e)
+            .map((nestedField) => `${currentPath}.${nestedField}`)
+        )
+      } else {
+        nestedFields.push(currentPath)
+      }
+    }
+  })
+  return nestedFields
+}
+
+export function processInputDefinitions(
+  viewDefinition: ViewDefinition,
+  fields: (string | InputFieldDefinition)[]
+) {
+  return fields.map((fieldElement) => {
+    // if it's a string, convert it to a light version of the inputFieldDefinition
+    const inputFieldDefinition =
+      typeof fieldElement === 'string'
+        ? {
+            fieldKey: fieldElement,
+          }
+        : fieldElement
+
+    // set the inputDefinition in the object if it is not defined
+    if (!inputFieldDefinition.inputDefinition) {
+      inputFieldDefinition.inputDefinition = lookupInputDefinition(
+        viewDefinition,
+        inputFieldDefinition.fieldKey
+      )
+    }
+
+    return inputFieldDefinition
+  })
+}
+
+export function processRenderDefinitions(
+  viewDefinition: ViewDefinition,
+  fields: (string | RenderFieldDefinition)[]
+) {
+  return fields.map((fieldElement) => {
+    // if it's a string, convert it to a light version of the renderFieldDefinition
+    const renderFieldDefinition =
+      typeof fieldElement === 'string'
+        ? {
+            fieldKey: fieldElement,
+          }
+        : fieldElement
+
+    // set the renderDefinition in the object if it is not defined
+    if (!renderFieldDefinition.renderDefinition) {
+      renderFieldDefinition.renderDefinition = lookupRenderDefinition(
+        viewDefinition,
+        renderFieldDefinition.fieldKey
+      )
+    }
+
+    return renderFieldDefinition
+  })
+}
+
+export async function processInputQuery(
+  inputFieldDefinitions: InputFieldDefinition[]
+) {
+  // always fetch id and typename fields
+  const query = { id: true, __typename: true }
+
+  // fields must be raw fields
+  for (const { fieldKey, inputDefinition } of inputFieldDefinitions) {
+    // skip if key is __typename
+    if (fieldKey === '__typename') continue
+
+    // inputDefinition should always be defined by this point
+    if (!inputDefinition) throw new Error(`inputDefinition not defined`)
+
+    // recursively check for nested fields, and add those to query too
+    if (inputDefinition.nestedOptions) {
+      const allNestedFields = getAllNestedFields(
+        inputDefinition.nestedOptions,
+        [fieldKey]
+      )
+
+      allNestedFields.forEach((nestedField) => {
+        query[nestedField] = true
       })
     }
+
+    // if it's a multiple-file type, add certain fields
+    if (inputDefinition.inputType === 'multiple-file') {
+      ;[
+        'id',
+        'name',
+        'size',
+        'contentType',
+        'location',
+        'servingUrl',
+        inputDefinition.useFirebaseUrl ? 'downloadUrl' : null,
+      ]
+        .filter((e) => e)
+        .forEach((nestedField) => {
+          query[`${fieldKey}.${nestedField}`] = true
+        })
+    }
+
+    // if it's an entity, add certain nested fields
+    if (inputDefinition.entity) {
+      ;[
+        'id',
+        '__typename',
+        inputDefinition.entity.nameField,
+        inputDefinition.entity.avatarField,
+      ]
+        .filter((e) => e)
+        .forEach((nestedField) => {
+          query[`${fieldKey}.${nestedField}`] = true
+        })
+    }
+
+    // add the requested field
+    query[fieldKey] = true
   }
 
-  return {
-    query: {
-      ...collapseObject(query),
-    },
-  }
+  return collapseObject(query)
 }
 
 // apiKey -> api-key
@@ -965,15 +1051,75 @@ export function kebabToCamelCase(str: string) {
 }
 
 export function generateFilterByObjectArray(
-  crudFilterObjects: CrudRawFilterObject[]
+  crudRawFilterObjects: CrudRawFilterObject[],
+  crudFilterObjects: CrudFilterObject[]
 ) {
-  const filterByObject = crudFilterObjects.reduce((total, rawFilterObject) => {
-    const primaryField = rawFilterObject.field
+  const filterByObject = crudFilterObjects.reduce((total, crudFilterObject) => {
+    const fieldPath = crudFilterObject.inputObject.fieldPath
 
-    if (!total[primaryField]) total[primaryField] = {}
+    // if value is undefined or null, exclude it entirely
+    if (
+      crudFilterObject.inputObject.value === undefined ||
+      crudFilterObject.inputObject.value === null
+    ) {
+      return total
+    }
 
-    // if value is '__undefined', exclude it entirely
-    if (rawFilterObject.value === '__undefined') return total
+    if (!total[fieldPath]) total[fieldPath] = {}
+
+    let value
+
+    const timeLanguageMatch =
+      typeof crudFilterObject.inputObject.value === 'string' &&
+      crudFilterObject.inputObject.value.match(/^__t:(.*)/)
+
+    // if value matches __t:now(), parse the time language
+    if (timeLanguageMatch) {
+      value = parseTimeLanguage(timeLanguageMatch[1])
+    } else if (
+      (crudFilterObject.filterInputFieldDefinition.operator === 'in' ||
+        crudFilterObject.filterInputFieldDefinition.operator === 'nin') &&
+      Array.isArray(crudFilterObject.inputObject.value)
+    ) {
+      // if the operator is in/nin, need to properly map inputs into an array of ids
+      value = crudFilterObject.inputObject.value.map((ele) =>
+        typeof ele === 'string' ? ele : ele.id
+      )
+    } else if (isObject(crudFilterObject.inputObject.value)) {
+      // if it's an object, fetch the id field
+      value = crudFilterObject.inputObject.value.id
+    } else {
+      value = crudFilterObject.inputObject.value
+    }
+
+    // do final parseValue before passing to function
+    total[fieldPath][crudFilterObject.filterInputFieldDefinition.operator] =
+      crudFilterObject.inputObject.inputDefinition.parseValue
+        ? crudFilterObject.inputObject.inputDefinition.parseValue(value)
+        : value
+
+    // always delete if n(in) an empty array, which would throw an API error
+    if (
+      crudFilterObject.filterInputFieldDefinition.operator === 'in' ||
+      crudFilterObject.filterInputFieldDefinition.operator === 'nin'
+    ) {
+      const finalValue =
+        total[fieldPath][crudFilterObject.filterInputFieldDefinition.operator]
+
+      if (Array.isArray(finalValue) && !finalValue.length) {
+        delete total[fieldPath][
+          crudFilterObject.filterInputFieldDefinition.operator
+        ]
+      }
+    }
+
+    return total
+  }, {})
+
+  crudRawFilterObjects.reduce((total, rawFilterObject) => {
+    const fieldPath = rawFilterObject.field
+
+    if (!total[fieldPath]) total[fieldPath] = {}
 
     let value
 
@@ -983,68 +1129,80 @@ export function generateFilterByObjectArray(
 
     // if value matches __t:now(), parse the time language
     if (timeLanguageMatch) {
-      if (timeLanguageMatch) {
-        value = parseTimeLanguage(timeLanguageMatch[1])
-      }
-    } else if (rawFilterObject.value === '__null') {
-      // parse '__null' to null
-      value = null
+      value = parseTimeLanguage(timeLanguageMatch[1])
     } else {
       value = rawFilterObject.value
     }
 
-    // if the operator is in/nin, need to properly map inputs into an array of ids
-    if (
-      rawFilterObject.operator === 'in' ||
-      rawFilterObject.operator === 'nin'
-    ) {
-      if (Array.isArray(value)) {
-        value = value.map((ele) => (typeof ele === 'string' ? ele : ele.id))
-      }
-    }
-
-    total[primaryField][rawFilterObject.operator] = value
+    total[fieldPath][rawFilterObject.operator] = value
 
     // always delete if n(in) an empty array, which would throw an API error
     if (
       rawFilterObject.operator === 'in' ||
       rawFilterObject.operator === 'nin'
     ) {
-      const finalValue = total[primaryField][rawFilterObject.operator]
+      const finalValue = total[fieldPath][rawFilterObject.operator]
 
       if (Array.isArray(finalValue) && !finalValue.length) {
-        delete total[primaryField][rawFilterObject.operator]
+        delete total[fieldPath][rawFilterObject.operator]
       }
     }
 
     return total
-  }, {})
+  }, filterByObject)
 
   return Object.keys(filterByObject).length > 0 ? [filterByObject] : []
 }
 
-export async function processInputObject(that, inputObject, inputObjectArray) {
+export async function processInputObjectArray(
+  that,
+  inputObjectArray: CrudInputObject[]
+) {
+  const inputs = {}
+  for (const inputObject of inputObjectArray) {
+    // special case: if it's an entity + ['type-autocomplete-multiple', 'multiple-select'] inputType, use the fieldKey instead (no trailing '.id')
+    const fieldPath =
+      inputObject.inputDefinition.entity &&
+      inputObject.inputDefinition.inputType &&
+      ['type-autocomplete-multiple', 'multiple-select'].includes(
+        inputObject.inputDefinition.inputType
+      )
+        ? inputObject.fieldKey
+        : inputObject.fieldPath
+
+    inputs[fieldPath] = await processInputObject(
+      that,
+      inputObject,
+      inputObjectArray
+    )
+  }
+
+  return inputs
+}
+
+export async function processInputObject(
+  that,
+  inputObject: CrudInputObject,
+  inputObjectArray: CrudInputObject[]
+) {
   let value
 
-  if (inputObject.inputOptions?.inputType === 'value-array') {
+  if (inputObject.inputDefinition.inputType === 'value-array') {
     // if it is a value array, need to assemble the value as an array
     value = []
     for (const nestedInputArray of inputObject.nestedInputsArray) {
-      const obj = {}
-      for (const nestedInputObject of nestedInputArray) {
-        obj[nestedInputObject.nestedFieldInfo.key] = await processInputObject(
-          that,
-          nestedInputObject.inputObject,
-          inputObjectArray
-        )
-      }
-      value.push(obj)
+      const nestedInputs = await processInputObjectArray(
+        that,
+        nestedInputArray.map((ele) => ele.inputObject)
+      )
+
+      value.push(collapseObject(nestedInputs))
     }
   } else {
     // if the fieldInfo.inputType === 'type-combobox', it came from a combo box. need to handle accordingly
     if (
-      inputObject.inputOptions?.inputType === 'type-combobox' &&
-      inputObject.inputOptions.entity
+      inputObject.inputDefinition.inputType === 'type-combobox' &&
+      inputObject.inputDefinition.entity
     ) {
       // if value is string OR value is null and inputValue is string, create the object
       // first case happens if the user clicks away from the input before submitting
@@ -1057,8 +1215,9 @@ export async function processInputObject(that, inputObject, inputObjectArray) {
         // expecting either string or obj
         // create the item, get its id.
         const results = <any>await executeApiRequest(<any>{
-          ['create' +
-          capitalizeString(inputObject.inputOptions.entity.typename)]: {
+          [`create${capitalizeString(
+            inputObject.inputDefinition.entity.typename
+          )}`]: {
             id: true,
             name: true,
             __args: {
@@ -1066,15 +1225,18 @@ export async function processInputObject(that, inputObject, inputObjectArray) {
                 typeof inputObject.value === 'string'
                   ? inputObject.value
                   : inputObject.inputValue,
-              ...(inputObject.inputOptions.getCreateArgs &&
-                inputObject.inputOptions.getCreateArgs(that, inputObjectArray)),
+              ...(inputObject.inputDefinition.getCreateArgs &&
+                inputObject.inputDefinition.getCreateArgs(
+                  that,
+                  inputObjectArray
+                )),
             },
           },
         })
 
         // force reload of memoized options, if any
-        if (inputObject.inputOptions.getOptions) {
-          inputObject.inputOptions
+        if (inputObject.inputDefinition.getOptions) {
+          inputObject.inputDefinition
             .getOptions(that, true)
             .then((res) => (inputObject.options = res))
         }
@@ -1086,9 +1248,9 @@ export async function processInputObject(that, inputObject, inputObjectArray) {
         value = inputObject.value.id
       }
     } else if (
-      inputObject.inputOptions?.inputType === 'type-autocomplete' ||
-      inputObject.inputOptions?.inputType === 'type-autocomplete-multiple' ||
-      inputObject.inputOptions?.inputType === 'select'
+      inputObject.inputDefinition.inputType === 'type-autocomplete' ||
+      inputObject.inputDefinition.inputType === 'type-autocomplete-multiple' ||
+      inputObject.inputDefinition.inputType === 'select'
     ) {
       // as we are using return-object option, the entire object will be returned for autocompletes/selects, unless it is null or a number
       value = isObject(inputObject.value)
@@ -1108,8 +1270,8 @@ export async function processInputObject(that, inputObject, inputObjectArray) {
     if (value === '__null') value = null
   }
 
-  return inputObject.inputOptions?.parseValue
-    ? inputObject.inputOptions.parseValue(value)
+  return inputObject.inputDefinition.parseValue
+    ? inputObject.inputDefinition.parseValue(value)
     : value
 }
 
@@ -1133,6 +1295,7 @@ export function memoize(memoizedFn) {
 
   return function () {
     // first arg is always gonna be that, so we will exclude it
+    // 2nd arg is forceReload
     const [that, forceReload, ...otherArgs] = arguments
     const args = JSON.stringify(otherArgs)
     cache[args] = forceReload
@@ -1142,7 +1305,10 @@ export function memoize(memoizedFn) {
   }
 }
 
-export function generateMemoizedGetter(operation: string, fields: string[]) {
+export function generateMemoizedEntityGetter(
+  entity: EntityDefinition,
+  additionalFields?: string[]
+) {
   return <any>memoize(function (
     that,
     _forceReload,
@@ -1154,10 +1320,18 @@ export function generateMemoizedGetter(operation: string, fields: string[]) {
       sortBy?: any[]
     } = {}
   ) {
+    const validatedFields = <string[]>(
+      [
+        'id',
+        '__typename',
+        ...(additionalFields ?? []),
+        entity.nameField,
+        entity.avatarField,
+      ].filter((e) => e)
+    )
     return collectPaginatorData(
-      that,
-      operation,
-      fields.reduce((total, field) => {
+      `get${capitalizeString(entity.typename)}Paginator`,
+      validatedFields.reduce((total, field) => {
         total[field] = true
         return total
       }, {}),
@@ -1184,9 +1358,8 @@ export function userHasPermissions(that, requiredPermissions: string[]) {
     return false
   }
 
-  // if user has A_A permissions, automatically allow
-  if (that.$store.getters['auth/user'].allPermissions.includes('A_A'))
-    return true
+  // if user has * permissions, automatically allow
+  if (that.$store.getters['auth/user'].allPermissions.includes('*')) return true
 
   return requiredPermissions.every((permission) =>
     that.$store.getters['auth/user'].allPermissions.includes(permission)
@@ -1201,13 +1374,13 @@ export function userHasRole(that, role: string) {
   return that.$store.getters['auth/user'].role === role
 }
 
-export function loadTypeSearchResults(that, inputObject) {
+export function loadTypeSearchResults(that, inputObject: CrudInputObject) {
   // if no typename, abort
-  if (!inputObject.inputOptions?.entity) {
+  if (!inputObject.inputDefinition.entity) {
     throw new Error('Entity required for type-search')
   }
 
-  const entity = inputObject.inputOptions.entity
+  const entity = inputObject.inputDefinition.entity
 
   // if no nameField, abort
   if (!entity.nameField) {
@@ -1229,11 +1402,14 @@ export function loadTypeSearchResults(that, inputObject) {
         first: 20,
         search: {
           query: inputObject.inputValue?.trim(), // trim spaces
-          params: inputObject.inputOptions?.searchParams?.(that, that.allItems),
+          params: inputObject.inputDefinition.searchParams?.(
+            that,
+            that.allItems
+          ),
         },
         filterBy: [],
         sortBy: [],
-        ...inputObject.inputOptions?.lookupParams?.(that, that.allItems),
+        ...inputObject.inputDefinition.lookupParams?.(that, that.allItems),
       },
     },
   }).then((results: any) => results.edges.map((edge) => edge.node))
@@ -1243,14 +1419,12 @@ export function generateShareUrl(
   that,
   {
     routeKey,
-    routeType = 'i',
     id,
     showComments,
     miniMode,
     expandKey,
   }: {
     routeKey: string
-    routeType?: string
     id: string
     showComments?: boolean
     miniMode?: boolean
@@ -1260,8 +1434,10 @@ export function generateShareUrl(
   return (
     window.location.origin +
     generateViewRecordRoute(that, {
-      routeKey,
-      routeType,
+      routeObject: {
+        routeKey,
+        routeType: 'public',
+      },
       id,
       showComments,
       miniMode,
@@ -1324,8 +1500,11 @@ export function redirectToLogin(that, redirectPath?: string) {
 export function camelCaseToCapitalizedString(camelCaseString: string) {
   // Add a space before each uppercase letter and convert all letters to lowercase
   // also ignore any trailing ".id"
+  // if it is nested, fetch the last element only (after removing the .id)
   const spacedString = camelCaseString
     .replace(/\.id$/, '')
+    .split('.')
+    .pop()!
     .replace(/([a-z])([A-Z])/g, '$1 $2')
 
   // Split the string into words, capitalize the first letter of each word, and join them back
@@ -1335,4 +1514,73 @@ export function camelCaseToCapitalizedString(camelCaseString: string) {
     .join(' ') // Join the words back into a single string
 
   return capitalizedString
+}
+
+export function enterRoute(that, route: string, openInNew = false) {
+  if (!route) return
+
+  if (openInNew) {
+    window.open(route, '_blank')
+  } else {
+    that.$router.push(route)
+  }
+}
+
+export function getFieldPath({
+  fieldKey,
+  inputDefinition,
+}: {
+  fieldKey: string
+  inputDefinition: InputDefinition
+}) {
+  // if it's an entity type, append the "id" part (unless it's a 'multiple' type)
+  return inputDefinition.entity ? `${fieldKey}.id` : fieldKey
+}
+
+// initializes an inputObject
+export function generateInputObject(
+  that,
+  inputFieldDefinition: InputFieldDefinition | FilterInputFieldDefinition
+) {
+  // inputFieldDefinition.inputDefinition should be defined by this point
+  if (!inputFieldDefinition.inputDefinition) {
+    throw new Error(
+      `inputDefinition for fieldKey: '${inputFieldDefinition.fieldKey}' not defined`
+    )
+  }
+
+  const fieldPath = getFieldPath({
+    fieldKey: inputFieldDefinition.fieldKey,
+    inputDefinition: inputFieldDefinition.inputDefinition,
+  })
+
+  const inputObject: CrudInputObject = {
+    fieldKey: inputFieldDefinition.fieldKey,
+    fieldPath,
+    // if text in inputFieldDefinition, it is FilterInputFieldDefinition
+    label:
+      ('text' in inputFieldDefinition ? inputFieldDefinition.text : null) ??
+      inputFieldDefinition.inputDefinition.text ??
+      camelCaseToCapitalizedString(inputFieldDefinition.fieldKey),
+    closeable: false,
+    inputDefinition: inputFieldDefinition.inputDefinition,
+    value: null,
+    inputValue: null,
+    secondaryInputValue: null,
+    handleFileAdded: inputFieldDefinition.handleFileAdded,
+    options: [],
+    readonly: false,
+    hidden: false,
+    loading: false,
+    focused: false,
+    cols: inputFieldDefinition.cols,
+    generation: 0,
+    parentInput: null,
+    nestedInputsArray: [],
+    inputData: null,
+    hideIf: inputFieldDefinition.hideIf,
+    watch: inputFieldDefinition.watch,
+  }
+
+  return inputObject
 }

@@ -4,7 +4,7 @@ import { BaseUserView } from '../base'
 
 export const PublicUserView: ViewDefinition = {
   ...BaseUserView,
-  routeType: 'i',
+  routeType: 'public',
   title: `Public ${UserEntity.pluralName}`,
   paginationOptions: {
     ...BaseUserView.paginationOptions!,
@@ -17,10 +17,10 @@ export const PublicUserView: ViewDefinition = {
         },
       ]
     },
-    filterOptions: [],
-    headerOptions: [
+    filters: [],
+    headers: [
       {
-        field: 'nameWithAvatar',
+        fieldKey: 'nameWithAvatar',
         hideIfGrid: true,
       },
     ],

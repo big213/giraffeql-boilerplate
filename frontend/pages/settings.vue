@@ -14,7 +14,7 @@
       <v-col>
         <v-card class="elevation-12">
           <EditRecordInterface
-            :selected-item="selectedItem"
+            :parent-item="parentItem"
             :view-definition="viewDefinition"
             mode="update"
             :generation="generation"
@@ -57,7 +57,7 @@ export default {
   },
 
   computed: {
-    selectedItem() {
+    parentItem() {
       return {
         id: this.$store.getters['auth/user'].id,
       }

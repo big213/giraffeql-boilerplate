@@ -1,5 +1,5 @@
 <template>
-  <div style="white-space: initial">
+  <span style="white-space: initial">
     <span
       v-for="(record, index) in records"
       :class="records.length > 1 ? 'mr-2' : null"
@@ -15,14 +15,16 @@
         offset-y
         top
         open-mode="openInDialog"
+        :chip-max-width="options?.chipMaxWidth"
         :disabled="disablePreview"
-      ></PreviewRecordMenu>
+      >
+      </PreviewRecordMenu>
       <v-chip v-else-if="emptyText" small
         ><i>{{ emptyText }}</i></v-chip
       >
     </span>
     <i v-if="!records.length && emptyText">{{ emptyText }}</i>
-  </div>
+  </span>
 </template>
 
 <script>

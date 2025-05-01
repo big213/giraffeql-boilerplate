@@ -7,7 +7,7 @@ import {
   capitalizeString,
   generateTimeAgoString,
   generateFilterByObjectArray,
-  lookupInputField,
+  lookupInputDefinition,
 } from '~/services/base'
 import EditRecordInterface from '~/components/interface/crud/editRecordInterface.vue'
 import PreviewableFilesColumn from '~/components/table/previewableFilesColumn.vue'
@@ -117,7 +117,7 @@ export default {
       return capitalizeString(this.viewDefinition.entity.typename)
     },
 
-    selectedItem() {
+    lockedFields() {
       return this.lockedFilters.reduce((total, crudFilterObject) => {
         total[crudFilterObject.field] = crudFilterObject.value
         return total
@@ -125,8 +125,8 @@ export default {
     },
 
     // SortObject
-    sortOptions() {
-      return this.viewDefinition.paginationOptions.sortOptions ?? []
+    sortFields() {
+      return this.viewDefinition.paginationOptions.sortFields ?? []
     },
 
     // extracted from the pageOptions object, if any
@@ -222,9 +222,9 @@ export default {
         })
 
         // snackbar and then reload comments
-        this.$notifier.showSnackbar({
+        this.$root.$emit('showSnackbar', {
           message: `${this.viewDefinition.entity.name} deleted`,
-          variant: 'success',
+          color: 'success',
         })
 
         // remove comment directly from the records
@@ -276,7 +276,7 @@ export default {
             sortBy: this.currentSortObject
               ? [
                   {
-                    field: this.currentSortObject.field,
+                    field: this.currentSortObject.fieldPath,
                     desc: this.currentSortObject.desc,
                   },
                 ]
@@ -327,7 +327,6 @@ export default {
 
             if (typesToFetch[type].size) {
               const results = await collectPaginatorData(
-                this,
                 `get${capitalizeString(type)}Paginator`,
                 fieldsToFetch.reduce((total, val) => {
                   total[val] = true
@@ -387,8 +386,7 @@ export default {
       // set the currentSortObject to the parentRecordInfo.initialSortKey if any
       if (resetSort && this.initialSortKey) {
         this.currentSortObject =
-          this.sortOptions.find((ele) => ele.key === this.initialSortKey) ??
-          null
+          this.sortFields.find((ele) => ele.key === this.initialSortKey) ?? null
       }
 
       this.loadMorePosts()

@@ -1,5 +1,5 @@
+import { Scalars } from "../../scalars";
 import { Admin } from "../../services";
-import * as Scalars from "../../scalars";
 import {
   GiraffeqlInputFieldType,
   GiraffeqlInputType,
@@ -7,20 +7,6 @@ import {
 } from "giraffeql";
 
 export default {
-  executeAdminFunction: new GiraffeqlRootResolverType({
-    name: "executeAdminFunction",
-    restOptions: {
-      method: "get",
-      route: "/executeAdminFunction",
-    },
-    type: Scalars.unknown,
-    allowNull: false,
-    args: new GiraffeqlInputFieldType({
-      required: true,
-      type: Scalars.string,
-    }),
-    resolver: (inputs) => Admin.executeAdminFunction(inputs),
-  }),
   executeGoogleApiRequest: new GiraffeqlRootResolverType({
     name: "executeGoogleApiRequest",
     restOptions: {
@@ -43,7 +29,7 @@ export default {
             required: true,
             type: Scalars.url,
           }),
-          data: new GiraffeqlInputFieldType({
+          params: new GiraffeqlInputFieldType({
             allowNull: true,
             type: Scalars.unknown,
           }),
@@ -51,5 +37,34 @@ export default {
       }),
     }),
     resolver: (inputs) => Admin.executeGoogleApiRequest(inputs),
+  }),
+  getRepositoryReleases: new GiraffeqlRootResolverType({
+    name: "getRepositoryReleases",
+    type: Scalars.unknown,
+    allowNull: false,
+    arrayOptions: {
+      allowNullElement: false,
+    },
+    args: new GiraffeqlInputFieldType({
+      required: true,
+      type: new GiraffeqlInputType({
+        name: "getRepositoryReleases",
+        description: "Input object for getRepositoryReleases",
+        fields: {
+          first: new GiraffeqlInputFieldType({
+            type: Scalars.positiveNumber,
+            required: true,
+          }),
+        },
+      }),
+    }),
+    resolver: (inputs) => Admin.getRepositoryReleases(inputs),
+  }),
+
+  getRepositoryLatestVersion: new GiraffeqlRootResolverType({
+    name: "getRepositoryLatestVersion",
+    type: Scalars.unknown,
+    allowNull: true,
+    resolver: (inputs) => Admin.getRepositoryLatestVersion(inputs),
   }),
 };

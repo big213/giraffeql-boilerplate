@@ -1,4 +1,4 @@
-import { InputFieldDefinition } from '.'
+import { InputDefinition, InputFieldDefinition } from '.'
 
 export type ActionDefinition = {
   title: string
@@ -27,24 +27,20 @@ export type ActionDefinition = {
 
   // function that runs when action is successfully completed
   onSuccess?: (that, item) => void
-  inputFields: {
-    fieldPath: string
-    definition: InputFieldDefinition
 
-    watch?: (that, val, prev) => void
+  fields: ActionInputFieldDefinition[]
 
-    // number of cols the input should take. defaults to 12
-    cols?: number
-
-    // do not render the input, but otherwise load it
-    hideIf?: (that, item, inputsArray) => boolean
-
-    // exclude the input entirely at initialization based on the snapshot
-    excludeIf?: (that, item, selectedItem) => boolean
-  }[]
-
-  // function that will use the selectedItem (if any) to modify the args fed into the operation
+  // function that will use the parenItem to modify the args fed into the operation
   argsModifier?: (that, item, args) => void
-  // modifier function that will use the original item to assemble the selectedItem (for pre-populating fields in the executeActionInterface)
-  selectedItemModifier?: (that, item) => any
+  // modifier function that will use the original item to assemble the lockedFields (for pre-populating fields in the executeActionInterface)
+  getLockedFields?: (that, item) => any
+}
+
+export type ActionInputFieldDefinition = InputFieldDefinition & {
+  inputDefinition: InputDefinition
+  // should this input be hidden if it is locked? -- only applies to create and actions
+  hideIfLocked?: boolean
+
+  // exclude the input entirely at initialization based on the snapshot -- only applies to create and actions
+  excludeIf?: (that, item, lockedFields) => boolean
 }

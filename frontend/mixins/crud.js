@@ -5,26 +5,28 @@ import GenericInput from '~/components/input/genericInput.vue'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 import CircularLoader from '~/components/common/circularLoader.vue'
 import Hero from '~/components/interface/crud/hero/hero.vue'
+import FieldColumn from '~/components/interface/render/fieldColumn.vue'
 import {
   getNestedProperty,
   generateTimeAgoString,
   capitalizeString,
-  isObject,
   getCurrentDate,
   downloadCSV,
   handleError,
   getPaginatorData,
   collectPaginatorData,
   viewportToPixelsMap,
-  lookupRenderField,
   populateInputObject,
-  processQuery,
+  processRenderQuery,
   generateFilterByObjectArray,
   collapseObject,
-  generateCrudRecordRoute,
   camelCaseToCapitalizedString,
+  generateInputObject,
+  processRenderDefinitions,
+  processInputDefinitions,
 } from '~/services/base'
-import { defaultGridView } from '~/services/config'
+import { generateCrudRecordRoute } from '~/services/route'
+import { defaultGridView } from '~/config'
 import { executeApiRequest } from '~/services/api'
 
 export default {
@@ -37,6 +39,7 @@ export default {
     GenericInput,
     PreviewRecordChip,
     CircularLoader,
+    FieldColumn,
   },
 
   props: {
@@ -159,7 +162,8 @@ export default {
       dialogs: {
         editRecord: false,
         expandRecord: false,
-        selectedItem: null,
+        lockedFields: null,
+        parentItem: null,
         editMode: 'view',
         customFields: null,
       },
@@ -212,8 +216,8 @@ export default {
     },
 
     // type: SortOption[]
-    sortOptions() {
-      return this.viewDefinition.paginationOptions.sortOptions ?? []
+    sortFields() {
+      return this.viewDefinition.paginationOptions.sortFields ?? []
     },
 
     // if this.hiddenHeaders is defined, override the default exclude headers on the viewDefinition.paginationOptions
@@ -232,60 +236,52 @@ export default {
       return this.viewDefinition.childTypes.filter((e) => e.showRowIfGrid)
     },
 
-    // type: viewDefinition.paginationOptions.headers to CrudHeaderObject[]
-    headerOptions() {
-      const headerOptions = this.viewDefinition.paginationOptions.headerOptions
-        .filter(
-          (headerInfo) => !this.hiddenHeadersComputed.includes(headerInfo.field)
-        )
-        .filter((headerInfo) => {
+    // type: viewDefinition.paginationOptions.headers to CrudHeaderFieldDefinition[]
+    headers() {
+      const renderFieldDefinitions = processRenderDefinitions(
+        this.viewDefinition,
+        this.viewDefinition.paginationOptions.headers
+      )
+
+      const headers = renderFieldDefinitions
+        .filter((headerFieldDefinition) => {
+          // if it's been specifically hidden, exclude
+          if (
+            this.hiddenHeadersComputed.includes(headerFieldDefinition.fieldKey)
+          )
+            return false
+
           // if there is a hideIf function, check it
-          if (headerInfo.hideIf && headerInfo.hideIf(this)) return false
+          if (headerFieldDefinition.hideIf?.(this)) return false
 
           // if hideIfGrid/hideIfList, check it
-          if (headerInfo.hideIfGrid && this.isGrid) return false
+          if (headerFieldDefinition.hideIfGrid && this.isGrid) return false
 
-          if (headerInfo.hideIfList && !this.isGrid) return false
+          if (headerFieldDefinition.hideIfList && !this.isGrid) return false
 
           // if isDialog, hide column if isDialog === true
-          if (this.isDialog && headerInfo.hideIfDialog) return false
+          if (this.isDialog && headerFieldDefinition.hideIfDialog) return false
 
           // allow if no hideUnder
-          if (!headerInfo.hideUnder) return true
+          if (!headerFieldDefinition.hideUnder) return true
 
           // filter out if current viewport is less than the specified hideUnder
           return (
             viewportToPixelsMap[this.$vuetify.breakpoint.name] >=
-            viewportToPixelsMap[headerInfo.hideUnder]
+            viewportToPixelsMap[headerFieldDefinition.hideUnder]
           )
         })
-        .map((headerInfo, index) => {
-          const fieldInfo = lookupRenderField(
-            this.viewDefinition,
-            headerInfo.field
-          )
-
-          const primaryField = fieldInfo.fields
-            ? fieldInfo.fields[0]
-            : headerInfo.field
-
+        .map((headerFieldDefinition) => {
           return {
+            fieldKey: headerFieldDefinition.fieldKey,
             text:
-              fieldInfo.text ?? camelCaseToCapitalizedString(headerInfo.field),
-            align: headerInfo.align ?? 'left',
-            value: primaryField,
+              headerFieldDefinition.renderDefinition.text ??
+              camelCaseToCapitalizedString(headerFieldDefinition.fieldKey),
+            renderDefinition: headerFieldDefinition.renderDefinition,
+            align: headerFieldDefinition.align ?? 'left',
             sortable: false,
-            width: headerInfo.width ?? null,
-            fieldInfo,
-            hideTitleIfGrid: headerInfo.hideTitleIfGrid ?? false,
-            // equal to pathPrefix if provided
-            // else equal to the field if single-field
-            // else equal to null if multiple-field
-            path:
-              fieldInfo.pathPrefix ??
-              (fieldInfo.fields && fieldInfo.fields.length > 1
-                ? null
-                : primaryField),
+            width: headerFieldDefinition.width ?? null,
+            hideTitleIfGrid: headerFieldDefinition.hideTitleIfGrid ?? false,
           }
         })
         .concat(
@@ -293,7 +289,7 @@ export default {
             ? []
             : {
                 text: 'Actions',
-                value: null,
+                fieldKey: null,
                 width: '50px',
                 sortable: false,
                 ...this.viewDefinition.paginationOptions.headerActionOptions,
@@ -301,23 +297,11 @@ export default {
         )
 
       // if no headerOption has null width, set the first one to null width
-      if (
-        headerOptions.length &&
-        !headerOptions.some((headerInfo) => !headerInfo.width)
-      ) {
-        headerOptions[0].width = null
+      if (headers.length && !headers.some((headerInfo) => !headerInfo.width)) {
+        headers[0].width = null
       }
 
-      return headerOptions
-    },
-
-    // type: CrudRawFilterObject[]
-    rawFilters() {
-      return this.pageOptions?.filters ?? []
-    },
-
-    allFilters() {
-      return this.rawFilters.concat(this.lockedFiltersComputed)
+      return headers
     },
 
     lockedFiltersComputed() {
@@ -337,7 +321,7 @@ export default {
     childInterfaceComponent() {
       return this.expandTypeObject
         ? this.expandTypeObject.component ||
-            this.expandTypeObject.viewDefinition.paginationOptions.component ||
+            this.expandTypeObject.view.paginationOptions.component ||
             'CrudRecordInterface'
         : null
     },
@@ -353,28 +337,22 @@ export default {
     },
     visibleFiltersArray() {
       return this.filterInputsArray.filter(
-        (ele) => !this.hiddenFilters.includes(ele.filterObject.field)
+        (ele) => !this.hiddenFilters.includes(ele.inputObject.fieldKey)
       )
     },
     visiblePresetFiltersArray() {
       return this.filterInputsArray.filter(
         (ele) =>
-          ele.filterObject.preset &&
-          !this.hiddenFilters.includes(ele.filterObject.field)
+          ele.filterInputFieldDefinition.preset &&
+          !this.hiddenFilters.includes(ele.inputObject.fieldKey)
       )
     },
 
     visibleChipsFiltersArray() {
       return this.filterInputsArray.filter(
         (ele) =>
-          ele.filterObject.chipOptions &&
-          !this.hiddenFilters.includes(ele.filterObject.field)
-      )
-    },
-
-    visibleRawFiltersArray() {
-      return this.rawFilters.filter(
-        (ele) => !this.hiddenFilters.includes(ele.field)
+          ele.filterInputFieldDefinition.chipOptions &&
+          !this.hiddenFilters.includes(ele.inputObject.fieldKey)
       )
     },
 
@@ -395,29 +373,42 @@ export default {
 
       return [
         {
-          field: this.viewDefinition.entity.typename.toLowerCase() + '.id',
+          field: `${this.viewDefinition.entity.typename}.id`,
           operator: 'eq',
           value: this.expandedItem.id,
         },
       ]
     },
 
+    hiddenSubHeaders() {
+      // use the childType's excludeHeaders, else default to the current typename
+      return (
+        this.expandTypeObject?.excludeHeaders ?? [
+          this.viewDefinition.entity.typename,
+        ]
+      )
+    },
+
     hiddenSubFilters() {
-      if (!this.expandedItems.length) return []
+      if (!this.expandTypeObject) return []
 
       // is there an excludeFilters array on the expandTypeObject? if so, use that
-      return [this.viewDefinition.entity.typename.toLowerCase() + '.id'].concat(
+      return [`${this.viewDefinition.entity.typename}.id`].concat(
         this.expandTypeObject.excludeFilters ?? []
       )
     },
 
     visibleFiltersCount() {
-      return this.visibleRawFiltersArray.length + (this.search ? 1 : 0)
+      const visibleRawFilters = (this.pageOptions?.filters ?? []).filter(
+        (ele) => !this.hiddenFilters.includes(ele.field)
+      )
+
+      return visibleRawFilters.length + (this.search ? 1 : 0)
     },
 
     hasFilters() {
       return (
-        this.viewDefinition.paginationOptions.filterOptions?.length ||
+        this.viewDefinition.paginationOptions.filters?.length ||
         this.viewDefinition.paginationOptions.distanceFilterOptions?.length >
           0 ||
         this.viewDefinition.paginationOptions.searchOptions
@@ -426,9 +417,8 @@ export default {
 
     hasPresetFilters() {
       return (
-        this.viewDefinition.paginationOptions.filterOptions.filter(
-          (e) => e.preset
-        ).length > 0 ||
+        this.viewDefinition.paginationOptions.filters.filter((e) => e.preset)
+          .length > 0 ||
         this.viewDefinition.paginationOptions.searchOptions?.preset
       )
     },
@@ -447,8 +437,12 @@ export default {
       )
     },
 
-    hideAddButton() {
+    hideCreateButton() {
       return this.viewDefinition.createOptions?.hideIf?.(this)
+    },
+
+    hideGenerateButton() {
+      return this.viewDefinition.generateOptions?.hideIf?.(this)
     },
   },
 
@@ -704,7 +698,7 @@ export default {
       }
     },
 
-    handleSearchDialogSubmit(searchInput) {
+    handleSearchDialogSubmit(searchInput = null) {
       this.searchInput = searchInput
       this.updatePageOptions()
     },
@@ -840,22 +834,17 @@ export default {
         this.viewDefinition.paginationOptions.handleGridElementClick(this, item)
     },
 
-    getTableRowData(headerItem, item) {
-      // need to go deeper if nested
-      return getNestedProperty(item, headerItem.value)
-    },
-
     generatePaginatorArgs(pagination = true) {
-      const sortBy = (
-        this.currentSortObject
-          ? [
-              {
-                field: this.currentSortObject.field,
-                desc: this.currentSortObject.desc,
-              },
-            ]
-          : []
-      ).concat(this.currentSortObject?.additionalSortObjects ?? [])
+      const sortBy = this.currentSortObject
+        ? [
+            {
+              fieldPath: this.currentSortObject.fieldPath,
+              desc: this.currentSortObject.desc,
+            },
+          ]
+            .concat(this.currentSortObject?.additionalSortObjects ?? [])
+            .map(({ fieldPath: field, desc }) => ({ field, desc }))
+        : []
 
       const getSearchParams =
         this.viewDefinition.paginationOptions.searchOptions?.getParams
@@ -899,7 +888,10 @@ export default {
           after: this.endCursor ?? undefined,
         }),
         sortBy,
-        filterBy: generateFilterByObjectArray(this.allFilters),
+        filterBy: generateFilterByObjectArray(
+          this.lockedFiltersComputed,
+          this.filterInputsArray
+        ),
         ...(distanceParams && {
           distance: distanceParams,
         }),
@@ -918,7 +910,7 @@ export default {
       this.loading.exportData = true
       try {
         // fields required
-        if (!this.viewDefinition.paginationOptions.downloadOptions.fields) {
+        if (!this.viewDefinition.paginationOptions.downloadOptions) {
           throw new Error(`Downloads not configured for this record type`)
         }
 
@@ -926,7 +918,7 @@ export default {
           this.viewDefinition.paginationOptions.downloadOptions.fields.reduce(
             (total, fieldObject) => {
               // if args has hideIf and if it returns false, skip this field entirely
-              if (!fieldObject.hideIf && fieldObject.hideIf(this)) return total
+              if (fieldObject.hideIf?.(this)) return total
 
               if (fieldObject.args) {
                 // else add the args
@@ -935,7 +927,7 @@ export default {
                 })
               }
 
-              total[fieldObject.field] = true
+              total[fieldObject.fieldPath] = true
               return total
             },
             {}
@@ -944,8 +936,7 @@ export default {
 
         // fetch data
         const results = await collectPaginatorData(
-          this,
-          'get' + this.capitalizedType + 'Paginator',
+          `get${this.capitalizedType}Paginator`,
           query,
           this.generatePaginatorArgs(false)
         )
@@ -957,14 +948,16 @@ export default {
           this.viewDefinition.paginationOptions.downloadOptions.fields.forEach(
             (fieldObject) => {
               // skip if hideIf returns true
-              if (fieldObject.hideIf && fieldObject.hideIf(this)) {
+              if (fieldObject.hideIf?.(this)) {
                 return
               }
 
-              returnItem[fieldObject.field] = getNestedProperty(
-                item,
-                fieldObject.field
-              )
+              const value = getNestedProperty(item, fieldObject.fieldPath)
+
+              returnItem[fieldObject.title ?? fieldObject.fieldPath] =
+                fieldObject.serialize
+                  ? fieldObject.serialize(this, value)
+                  : value
             }
           )
 
@@ -998,11 +991,16 @@ export default {
               crudFilterObject.inputObject.value !== undefined
           )
           .map((crudFilterObject) => ({
-            field: crudFilterObject.filterObject.field,
-            operator: crudFilterObject.filterObject.operator,
-            // if object, must be from return-object. get the id
-            value: isObject(crudFilterObject.inputObject.value)
-              ? crudFilterObject.inputObject.value.id
+            field: crudFilterObject.inputObject.fieldPath,
+            operator: crudFilterObject.filterInputFieldDefinition.operator,
+            // if it's an entity, get the id (if array, map to array of ids)
+            value: crudFilterObject.filterInputFieldDefinition.inputDefinition
+              .entity
+              ? crudFilterObject.filterInputFieldDefinition.operator.match(
+                  /^(n?)in$/
+                )
+                ? crudFilterObject.inputObject.value.map((ele) => ele.id)
+                : crudFilterObject.inputObject.value.id
               : crudFilterObject.inputObject.value,
           })),
         distance: this.distanceFilterOptions
@@ -1024,16 +1022,16 @@ export default {
       this.filterChanged = false
     },
 
-    handleAddButtonClick() {
-      if (this.viewDefinition.createOptions.customAction) {
-        this.viewDefinition.createOptions.customAction(this, this.parentItem)
-      } else {
-        this.openAddRecordDialog()
-      }
+    openGenerateRecordDialog() {
+      // open the dialog
+      this.$root.$emit('openExecuteActionDialog', {
+        action: this.viewDefinition.generateOptions.action,
+        parentItem: this.parentItem,
+      })
     },
 
-    openAddRecordDialog() {
-      const initializedRecord = this.lockedFiltersComputed.reduce(
+    openCreateRecordDialog() {
+      const lockedFields = this.lockedFiltersComputed.reduce(
         (total, crudFilterObject) => {
           total[crudFilterObject.field] = crudFilterObject.value
           return total
@@ -1041,11 +1039,11 @@ export default {
         {}
       )
 
-      this.openEditDialog('create', initializedRecord)
+      this.openEditDialog({ mode: 'create', lockedFields })
     },
 
     openImportRecordDialog() {
-      const initializedRecord = this.lockedFiltersComputed.reduce(
+      const lockedFields = this.lockedFiltersComputed.reduce(
         (total, crudFilterObject) => {
           total[crudFilterObject.field] = crudFilterObject.value
           return total
@@ -1053,22 +1051,32 @@ export default {
         {}
       )
 
-      this.openEditDialog('import', initializedRecord)
+      this.openEditDialog({ mode: 'import', lockedFields })
     },
 
-    openEditItemDialog(selectedItem, customFields) {
-      this.openEditDialog('update', selectedItem, customFields)
+    openEditItemDialog(parentItem, fieldKey) {
+      this.openEditDialog({
+        mode: 'update',
+        parentItem,
+        customFields: [fieldKey],
+      })
     },
 
-    openEditDialog(mode, selectedItem, customFields) {
+    openEditDialog({ mode, lockedFields, parentItem, customFields }) {
       this.dialogs.editMode = mode
-      this.openDialog('editRecord', selectedItem, customFields)
+      this.openDialog({
+        dialogName: 'editRecord',
+        lockedFields,
+        parentItem,
+        customFields,
+      })
     },
 
-    openDialog(dialogName, item, customFields) {
+    openDialog({ dialogName, lockedFields, parentItem = null, customFields }) {
       if (dialogName in this.dialogs) {
         this.dialogs[dialogName] = true
-        this.dialogs.selectedItem = item
+        this.dialogs.lockedFields = lockedFields
+        this.dialogs.parentItem = parentItem
         this.dialogs.customFields = customFields
       }
     },
@@ -1081,8 +1089,7 @@ export default {
       ) {
         this.$router.push(
           generateCrudRecordRoute(this, {
-            routeType: this.viewDefinition.routeType,
-            typename: this.viewDefinition.entity.typename,
+            viewDefinition: this.viewDefinition,
             pageOptions:
               this.viewDefinition.paginationOptions.defaultPageOptions?.(this),
           })
@@ -1139,17 +1146,17 @@ export default {
     },
     // if itemId is specific, it will fetch only that specific ID
     async fetchData(itemId = null) {
-      const fields = this.viewDefinition.paginationOptions.headerOptions
-        .map((headerInfo) => headerInfo.field)
-        .concat(this.viewDefinition.requiredFields ?? [])
-        .concat(this.viewDefinition.paginationOptions.requiredFields ?? [])
-
-      const { query } = await processQuery(
-        this,
+      const renderFieldDefinitions = processRenderDefinitions(
         this.viewDefinition,
-        fields,
-        true
+        this.viewDefinition.paginationOptions.headers
       )
+      const query = await processRenderQuery(this, {
+        renderFieldDefinitions,
+        rawFields: [
+          ...(this.viewDefinition.requiredFields ?? []),
+          ...(this.viewDefinition.paginationOptions.requiredFields ?? []),
+        ],
+      })
 
       if (itemId) {
         const result = await executeApiRequest({
@@ -1164,8 +1171,7 @@ export default {
         return result
       } else {
         const results = await getPaginatorData(
-          this,
-          'get' + this.capitalizedType + 'Paginator',
+          `get${this.capitalizedType}Paginator`,
           query,
           this.generatePaginatorArgs(true)
         )
@@ -1180,7 +1186,6 @@ export default {
       if (showLoader) this.loading.loadData = true
       try {
         const results = await this.fetchData()
-
         // if reloadGeneration is behind the latest one, do not load the results into this.records, as the loadData request has been superseded
         if (currentReloadGeneration < this.reloadGeneration) return
 
@@ -1195,55 +1200,49 @@ export default {
       if (showLoader) this.loading.loadData = false
     },
 
-    // syncs the pageOptions
-    async syncPageOptions(syncFilters = false) {
-      // sync the search
-      this.searchInput = this.search || ''
-
-      // sync the sort
-      const sort = this.pageOptions?.sort
-      this.currentSortObject =
-        this.sortOptions.find((sortObject) => sortObject.key === sort) ?? null
-
-      // sync the filters
-      if (syncFilters) {
-        if (this.rawFilters.length > 0) {
-          const inputFieldsSet = new Set(this.filterInputsArray)
-          await Promise.all(
-            this.rawFilters.map(async (rawFilterObject) => {
-              const matchingFilterObject = this.filterInputsArray.find(
-                (crudFilterObject) =>
-                  crudFilterObject.filterObject.field ===
-                    rawFilterObject.field &&
-                  crudFilterObject.filterObject.operator ===
-                    rawFilterObject.operator
-              )
-
-              if (matchingFilterObject) {
-                matchingFilterObject.inputObject.value =
-                  rawFilterObject.value === '__undefined'
-                    ? null
-                    : rawFilterObject.value
-
-                // populate inputObjects if we need to translate any IDs to objects. Do NOT populate the options
-                await populateInputObject(this, {
-                  inputObject: matchingFilterObject.inputObject,
-                  loadOptions: false,
-                  selectedItem: this.parentItem,
-                })
-
-                // remove from set
-                inputFieldsSet.delete(matchingFilterObject)
-              }
-            })
+    async syncFilters() {
+      // loop through all filters and sync with the pageOptions
+      await Promise.all(
+        this.filterInputsArray.map(async (crudFilterObject) => {
+          const { inputObject, filterInputFieldDefinition } = crudFilterObject
+          // sync the filters
+          const matchingRawFilterObject = this.pageOptions?.filters?.find(
+            (rawFilterObject) =>
+              rawFilterObject.field === inputObject.fieldPath &&
+              rawFilterObject.operator === filterInputFieldDefinition.operator
           )
 
-          // clears any input fields with no matching filterObject
-          inputFieldsSet.forEach((ele) => (ele.inputObject.value = null))
-        }
+          // if there's a matching raw filter object, set the value to that
+          if (matchingRawFilterObject) {
+            inputObject.value = matchingRawFilterObject.value
+          } else {
+            // if not, reset it
+            inputObject.value = null
+          }
 
-        this.filterChanged = false
-      }
+          // populate inputObjects if we need to translate any IDs to objects, and also populate any options
+          await populateInputObject(this, {
+            inputObject,
+            parentItem: this.parentItem,
+            fetchEntities: true,
+          })
+        })
+      )
+    },
+
+    // syncs the pageOptions with the input fields, like searchInput, currentSortObject, filters etc.
+    async syncPageOptions() {
+      // sync the search
+      this.searchInput = this.search ?? ''
+
+      // sync the sort
+      this.currentSortObject = this.pageOptions?.sort
+        ? this.sortFields.find(
+            (sortObject) => sortObject.key === this.pageOptions.sort
+          ) ?? null
+        : null
+
+      await this.syncFilters()
 
       // sync the distance filters
       const distancePageOptions = this.pageOptions?.distance
@@ -1277,6 +1276,59 @@ export default {
       // also need to emit to parent (if any)
       this.$emit('record-changed')
       this.reset()
+    },
+
+    async initializeFilters() {
+      try {
+        // initialize filter inputs
+        const inputFieldDefinitions = processInputDefinitions(
+          this.viewDefinition,
+          this.viewDefinition.paginationOptions.filters
+        )
+
+        this.filterInputsArray = await Promise.all(
+          inputFieldDefinitions.map(async (filterInputFieldDefinition) => {
+            // if operator is in/nin and the inputType does not return an array, throw err
+            if (
+              filterInputFieldDefinition.operator.match(/^(n?)in$/) &&
+              !filterInputFieldDefinition.inputDefinition.inputType?.match(
+                /multiple/
+              )
+            ) {
+              throw new Error(
+                `Must use a 'multiple' inputType for n(in) operator`
+              )
+            }
+
+            const inputObject = generateInputObject(
+              this,
+              filterInputFieldDefinition
+            )
+
+            return {
+              filterInputFieldDefinition,
+              inputObject,
+            }
+          })
+        )
+
+        // initialize distanceFilterOptions, if any
+        this.distanceFilterOptions = []
+        if (this.viewDefinition.paginationOptions.distanceFilterOptions) {
+          for (const distanceFilterObject of this.viewDefinition
+            .paginationOptions.distanceFilterOptions) {
+            this.distanceFilterOptions.push({
+              definition: distanceFilterObject,
+              latitudeValue: null,
+              longitudeValue: null,
+              gtValue: null,
+              ltValue: null,
+            })
+          }
+        }
+      } catch (err) {
+        handleError(this, err)
+      }
     },
 
     async reset({
@@ -1319,74 +1371,7 @@ export default {
       let pageOptionsUpdated = false
 
       if (initFilters) {
-        // initialize filter inputs
-        this.filterInputsArray = await Promise.all(
-          this.viewDefinition.paginationOptions.filterOptions.map(
-            async (filterObject) => {
-              // sync the filters
-              const filters = this.pageOptions?.filters
-              let matchingRawFilterObject
-              // was this filter set in the pageOptions?
-              if (filters) {
-                matchingRawFilterObject = filters.find(
-                  (rawFilterObject) =>
-                    rawFilterObject.field === filterObject.field &&
-                    rawFilterObject.operator === filterObject.operator
-                )
-              }
-
-              const inputObject = {
-                fieldKey: filterObject.field,
-                primaryField: filterObject.field,
-                viewDefinition: this.viewDefinition,
-                label:
-                  filterObject.text ??
-                  camelCaseToCapitalizedString(filterObject.field),
-                closeable: false,
-                inputOptions: filterObject.inputOptions,
-                value: matchingRawFilterObject
-                  ? matchingRawFilterObject.value
-                  : null,
-                inputValue: null,
-                options: [],
-                readonly: false,
-                loading: false,
-                focused: false,
-                cols: filterObject.cols,
-                generation: 0,
-                parentInput: null,
-                nestedInputsArray: [],
-                inputData: null,
-              }
-
-              // populate inputObjects if we need to translate any IDs to objects, and also populate any options
-              await populateInputObject(this, {
-                inputObject,
-                selectedItem: this.parentItem,
-              })
-
-              return {
-                filterObject,
-                inputObject,
-              }
-            }
-          )
-        )
-
-        // initialize distanceFilterOptions, if any
-        this.distanceFilterOptions = []
-        if (this.viewDefinition.paginationOptions.distanceFilterOptions) {
-          for (const distanceFilterObject of this.viewDefinition
-            .paginationOptions.distanceFilterOptions) {
-            this.distanceFilterOptions.push({
-              definition: distanceFilterObject,
-              latitudeValue: null,
-              longitudeValue: null,
-              gtValue: null,
-              ltValue: null,
-            })
-          }
-        }
+        await this.initializeFilters()
 
         // if pageOptions is undefined, use the defaultPageOptions fn if any
         if (
@@ -1401,9 +1386,9 @@ export default {
           pageOptionsUpdated = true
         }
 
-        this.syncPageOptions(false)
+        this.syncPageOptions()
       } else {
-        this.syncPageOptions(true)
+        this.syncPageOptions()
       }
 
       // sync the grid options

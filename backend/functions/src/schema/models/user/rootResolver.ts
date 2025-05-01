@@ -1,6 +1,7 @@
 import { User } from "../../services";
 import { generateBaseRootResolvers } from "../../core/helpers/rootResolver";
 import { GiraffeqlRootResolverType, lookupSymbol } from "giraffeql";
+import { Scalars } from "../../scalars";
 
 export default {
   getCurrentUser: new GiraffeqlRootResolverType({
@@ -15,6 +16,16 @@ export default {
     allowNull: false,
     type: User.typeDefLookup,
     resolver: (inputs) => User.syncRecord(inputs),
+  }),
+
+  getCurrentUserAvailablePermissions: new GiraffeqlRootResolverType({
+    name: "getCurrentUserAvailablePermissions",
+    allowNull: false,
+    type: Scalars.userPermission,
+    arrayOptions: {
+      allowNullElement: false,
+    },
+    resolver: (inputs) => User.getCurrentUserAvailablePermissions(inputs),
   }),
 
   ...generateBaseRootResolvers({

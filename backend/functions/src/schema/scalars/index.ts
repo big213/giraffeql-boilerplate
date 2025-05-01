@@ -2,30 +2,44 @@ import * as enums from "../enums";
 
 import { BaseScalars } from "giraffeql";
 
-// base scalars
-export const string = BaseScalars.string;
-// export const number = BaseScalars.number;
-// export const boolean = BaseScalars.boolean;
-export const unknown = BaseScalars.unknown;
-
 // added scalars
-export { number } from "./number"; // replacing the built-in number type to automatically parse Number-like strings
-export { boolean } from "./boolean"; // replacing the built-in boolean type to automatically parse "true" and "false" as booleans
-export { positiveNumber } from "./positiveNumber";
-export { negativeNumber } from "./negativeNumber";
-export { positiveNumberAndZero } from "./positiveNumberAndZero";
-export { negativeNumberAndZero } from "./negativeNumberAndZero";
-export { imageUrl } from "./imageUrl";
-export { url } from "./url";
-export { unixTimestamp } from "./unixTimestamp";
-export { date } from "./date";
-export { id } from "./id";
-export { regex } from "./regex";
-export { json } from "./json";
-export { jsonString } from "./jsonString";
-export { email } from "./email";
+import { number } from "./number";
+import { boolean } from "./boolean";
+import { positiveNumber } from "./positiveNumber";
+import { negativeNumber } from "./negativeNumber";
+import { positiveNumberAndZero } from "./positiveNumberAndZero";
+import { negativeNumberAndZero } from "./negativeNumberAndZero";
+import { imageUrl } from "./imageUrl";
+import { url } from "./url";
+import { unixTimestamp } from "./unixTimestamp";
+import { date } from "./date";
+import { id } from "./id";
+import { regex } from "./regex";
+import { json } from "./json";
+import { jsonString } from "./jsonString";
+import { email } from "./email";
 
-// generate the scalar types
-export const userRole = enums.userRole.generateScalarType();
-export const userPermission = enums.userPermission.generateScalarType();
-/** END ENUM Scalar Types */
+export const Scalars = {
+  string: BaseScalars.string,
+  unknown: BaseScalars.unknown,
+  number, // replacing the built-in number type to automatically parse Number-like strings
+  boolean, // replacing the built-in boolean type to automatically parse "true" and "false" as booleans
+  positiveNumber,
+  negativeNumber,
+  positiveNumberAndZero,
+  negativeNumberAndZero,
+  imageUrl,
+  url,
+  unixTimestamp,
+  date,
+  id,
+  regex,
+  json,
+  jsonString,
+  email,
+
+  // generate the enum scalar types
+  userRole: enums.userRole.getScalarType(),
+  userPermission: enums.userPermission.getScalarType(),
+  /** END ENUM Scalar Types */
+};

@@ -1,5 +1,10 @@
 <template>
-  <v-menu v-if="item" v-model="open" v-bind="$attrs">
+  <v-menu
+    v-if="item"
+    v-model="open"
+    v-bind="$attrs"
+    :disabled="!previewDefinition"
+  >
     <!-- pass through scoped slots -->
     <template v-slot:activator="slotData">
       <slot v-if="$scopedSlots.activator" name="activator" v-bind="slotData" />
@@ -9,10 +14,11 @@
         small
         v-bind="slotData.attrs"
         v-on="slotData.on"
+        :style="chipMaxWidth ? `maxWidth: ${chipMaxWidth}` : null"
       ></PreviewRecordChip>
     </template>
-    <v-card>
-      <div v-if="hasHeroOptions">
+    <v-card v-if="previewDefinition">
+      <div v-if="previewDefinition.heroOptions">
         <component
           :is="heroComponent"
           :item="item"
@@ -20,15 +26,15 @@
           :entity="previewDefinition.entity"
         ></component>
       </div>
-      <v-list v-if="hasLineItems">
+      <v-list v-if="fields.length > 0 || !previewDefinition.heroOptions">
         <v-list-item>
-          <v-list-item-avatar v-if="!hasHeroOptions">
+          <v-list-item-avatar v-if="!previewDefinition.heroOptions">
             <v-img v-if="item.avatar" :src="item.avatar" />
-            <v-icon v-else>{{ fallbackIcon }} </v-icon>
+            <v-icon v-else>{{ previewDefinition.entity.icon }} </v-icon>
           </v-list-item-avatar>
           <v-list-item-content>
             <template>
-              <v-list-item-title v-if="!hasHeroOptions">
+              <v-list-item-title v-if="!previewDefinition.heroOptions">
                 <i v-if="item.name === undefined">{{ item.id }}</i>
                 <span v-else> {{ item.name }}</span>
               </v-list-item-title>
@@ -37,16 +43,19 @@
                 indeterminate
               ></v-progress-linear>
               <template v-else-if="itemData">
-                <v-list-item-subtitle v-for="(field, i) in fields" :key="i"
-                  >{{ renderFieldTitle(field) }}:
+                <v-list-item-subtitle
+                  v-for="(previewObject, i) in renderFieldsArray"
+                  :key="i"
+                  >{{ previewObject.text }}:
                   <component
-                    v-if="getFieldComponent(field)"
-                    :is="getFieldComponent(field)"
+                    v-if="previewObject.renderDefinition.component"
+                    :is="previewObject.renderDefinition.component"
                     :item="itemData"
-                    :field-path="getFieldPath(field)"
+                    :render-field-definition="previewObject"
+                    display-mode="preview"
                     style="display: inline"
                   ></component>
-                  <span v-else>{{ itemData[field] }}</span>
+                  <span v-else>{{ previewObject.value }}</span>
                 </v-list-item-subtitle>
               </template>
             </template>
@@ -55,25 +64,33 @@
       </v-list>
       <v-divider></v-divider>
       <v-card-actions
-        v-if="previewDefinition.followOptions && !isViewButtonHidden"
+        v-if="
+          previewDefinition.followOptions && !previewDefinition.hideViewButton
+        "
       >
         <FollowButton
           v-if="
-            !isFollowButtonHidden && itemData && previewDefinition.followOptions
+            !previewDefinition.hideFollowButton &&
+            itemData &&
+            previewDefinition.followOptions
           "
           color="primary"
           :item="itemData"
           :follow-options="previewDefinition.followOptions"
         ></FollowButton>
         <v-spacer></v-spacer>
-        <v-btn v-if="!isViewButtonHidden" color="primary" @click="openPage()">
+        <v-btn
+          v-if="!previewDefinition.hideViewButton"
+          color="primary"
+          @click="openPage()"
+        >
           <v-icon v-if="openMode === 'openInNew'" left>mdi-open-in-new</v-icon>
           View
         </v-btn>
       </v-card-actions>
-      <div v-if="actions.length" class="pa-2">
+      <div v-if="previewDefinition.actions?.length" class="pa-2">
         <v-btn
-          v-for="(action, index) in actions"
+          v-for="(action, index) in previewDefinition.actions"
           :key="index"
           block
           color="primary"
@@ -97,11 +114,12 @@
 import {
   handleError,
   capitalizeString,
-  enterRoute,
-  generateViewRecordRoute,
-  processQuery,
+  processRenderQuery,
   camelCaseToCapitalizedString,
+  enterRoute,
+  getNestedProperty,
 } from '~/services/base'
+import { generateViewRecordRoute } from '~/services/route'
 import { executeApiRequest } from '~/services/api'
 import FollowButton from '~/components/button/followButton.vue'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
@@ -132,12 +150,15 @@ export default {
         return ['emit', 'openInNew', 'openInDialog'].includes(value)
       },
     },
+
+    chipMaxWidth: {},
   },
 
   data() {
     return {
       open: false,
       itemData: null,
+      renderFieldsArray: [],
       loading: {
         loadData: false,
       },
@@ -145,38 +166,16 @@ export default {
   },
 
   computed: {
-    fallbackIcon() {
-      return this.previewDefinition.entity.icon
-    },
-    capitalizedType() {
-      return capitalizeString(this.typenameComputed)
-    },
     typenameComputed() {
       return this.typename ?? this.item.__typename
     },
-    // must exist
+    // if not exists, the preview will be disabled
     previewDefinition() {
       return previews[`${capitalizeString(this.typenameComputed)}Preview`]
     },
     // if previewOptions is not specified, default to showing typename only
     fields() {
-      return this.previewDefinition.fields
-    },
-    actions() {
-      return this.previewDefinition?.actions ?? []
-    },
-    hasHeroOptions() {
-      return !!this.previewDefinition?.heroOptions
-    },
-    hasLineItems() {
-      return this.fields.length > 0 || !this.hasHeroOptions
-    },
-    isViewButtonHidden() {
-      return !!this.previewDefinition?.hideViewButton
-    },
-
-    isFollowButtonHidden() {
-      return !!this.previewDefinition?.hideFollowButton
+      return this.previewDefinition?.fields
     },
 
     heroComponent() {
@@ -196,45 +195,26 @@ export default {
       action.handleClick(this, this.item)
     },
 
-    renderFieldTitle(field) {
-      return field === '__typename'
-        ? 'Type'
-        : this.previewDefinition.renderFields?.[field]?.text ??
-            camelCaseToCapitalizedString(field)
-    },
-
-    getFieldComponent(field) {
-      return this.previewDefinition.renderFields?.[field]?.component
-    },
-
-    // pathPrefix, OR fields[0], OR the name of the field
-    getFieldPath(field) {
-      const fieldInfo = this.previewDefinition.renderFields?.[field]
-
-      if (!fieldInfo) return null
-
-      return (
-        fieldInfo.pathPrefix ??
-        (fieldInfo.fields && fieldInfo.fields.length > 1 ? null : field)
-      )
-    },
-
     openPage() {
       if (this.openMode === 'openInNew') {
         enterRoute(
           this,
           generateViewRecordRoute(this, {
-            routeKey: this.typenameComputed,
-            routeType: 'i',
+            routeObject: {
+              routeType: 'public',
+              routeKey: this.typenameComputed,
+            },
             id: this.item.id,
           }),
           true
         )
       } else if (this.openMode === 'openInDialog') {
         this.$root.$emit('openEditRecordDialog', {
-          viewDefinition: 'Public' + this.capitalizedType,
+          viewDefinition: `Public${capitalizeString(
+            this.typenameComputed
+          )}View`,
           mode: 'view',
-          selectedItem: {
+          parentItem: {
             id: this.item.id,
           },
         })
@@ -247,16 +227,16 @@ export default {
     async loadData() {
       this.loading.loadData = true
       try {
-        const { query } =
-          this.previewDefinition &&
-          (await processQuery(this, this.previewDefinition, this.fields, true))
+        const renderFieldDefinitions = this.previewDefinition.fields
 
-        this.itemData = await executeApiRequest({
-          [`get${this.capitalizedType}`]: {
-            id: true,
-            __typename: true,
+        const query = await processRenderQuery(this, {
+          renderFieldDefinitions,
+        })
+
+        const data = await executeApiRequest({
+          [`get${capitalizeString(this.typenameComputed)}`]: {
             ...query,
-            ...(this.previewDefinition.followOptions && {
+            ...(this.previewDefinition?.followOptions && {
               currentUserFollowLink: {
                 id: true,
               },
@@ -266,6 +246,28 @@ export default {
             },
           },
         })
+
+        this.itemData = data
+
+        // load the renderFieldsArray
+        this.renderFieldsArray = await Promise.all(
+          renderFieldDefinitions.map((renderFieldDefinition) => {
+            const previewObject = {
+              fieldKey: renderFieldDefinition.fieldKey,
+              text:
+                renderFieldDefinition.renderDefinition.text ??
+                camelCaseToCapitalizedString(renderFieldDefinition.fieldKey),
+              renderDefinition: renderFieldDefinition.renderDefinition,
+              value: getNestedProperty(data, renderFieldDefinition.fieldKey),
+              readonly: true,
+              generation: 0,
+              verticalMode: renderFieldDefinition.verticalMode ?? false,
+              hideIf: renderFieldDefinition.hideIf,
+            }
+
+            return previewObject
+          })
+        )
       } catch (err) {
         handleError(this, err)
       }
@@ -273,7 +275,9 @@ export default {
     },
 
     reset() {
-      this.loadData()
+      if (this.previewDefinition) {
+        this.loadData()
+      }
     },
   },
 }

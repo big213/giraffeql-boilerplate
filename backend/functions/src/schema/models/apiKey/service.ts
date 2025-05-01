@@ -33,7 +33,7 @@ export class ApiKeyService extends PaginatedService {
 
   groupByFieldsMap = {};
 
-  accessControl: AccessControlMap = {
+  accessControlMap: AccessControlMap = {
     /*
     Allow if:
     - args.user is currentUser
@@ -56,7 +56,7 @@ export class ApiKeyService extends PaginatedService {
     Allow if:
     - user.id is currentUser
     */
-    update: allowIfRecordFieldIsCurrentUserFn(this, "user.id"),
+    update: allowIfRecordFieldIsCurrentUserFn(this, "user.id", "item"),
 
     /*
     Allow if:

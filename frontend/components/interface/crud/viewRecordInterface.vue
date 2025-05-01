@@ -19,44 +19,31 @@
           <v-simple-table>
             <template v-slot:default>
               <tbody>
-                <tr v-for="(item, i) in visibleInputsArray" :key="i">
-                  <td v-if="item.verticalMode" colspan="2" class="pb-3">
+                <tr
+                  v-for="(viewObject, i) in visibleRenderFieldsArray"
+                  :key="i"
+                >
+                  <td v-if="viewObject.verticalMode" colspan="2" class="pb-3">
                     <div class="pt-3 subtitle-2 text-decoration-underline">
-                      {{ item.label }}
+                      {{ viewObject.text }}
                     </div>
-                    <component
-                      :is="item.fieldInfo.component"
-                      v-if="item.fieldInfo.component"
+                    <FieldColumn
+                      :render-object="viewObject"
                       :item="currentItem"
-                      :field-path="getFieldPath(item)"
-                      :options="item.fieldInfo.renderOptions"
                       display-mode="view"
                       @edit-item="openEditItemDialog"
-                      @submit="$emit('handleSubmit')"
-                      @item-updated="handleItemUpdated()"
-                    ></component>
-                    <span v-else class="break-space">{{
-                      getNestedProperty(currentItem, item.field)
-                    }}</span>
+                    />
                   </td>
-                  <td v-if="!item.verticalMode" style="width: 150px">
-                    <span class="subtitle-2">{{ item.label }}</span>
+                  <td v-if="!viewObject.verticalMode" style="width: 150px">
+                    <span class="subtitle-2">{{ viewObject.text }}</span>
                   </td>
-                  <td v-if="!item.verticalMode">
-                    <component
-                      :is="item.fieldInfo.component"
-                      v-if="item.fieldInfo.component"
+                  <td v-if="!viewObject.verticalMode">
+                    <FieldColumn
+                      :render-object="viewObject"
                       :item="currentItem"
-                      :field-path="getFieldPath(item)"
-                      :options="item.fieldInfo.renderOptions"
                       display-mode="view"
                       @edit-item="openEditItemDialog"
-                      @submit="$emit('handleSubmit')"
-                      @item-updated="handleItemUpdated()"
-                    ></component>
-                    <span v-else class="break-space">{{
-                      getNestedProperty(currentItem, item.field)
-                    }}</span>
+                    />
                   </td>
                 </tr>
               </tbody>

@@ -51,7 +51,7 @@ if (!fs.existsSync(`frontend/models/actions/${actionName}.ts`)) {
 // add the entry to index.ts
 insertStatementBeforeInFile({
   filePath: `frontend/models/actions/index.ts`,
-  beforePhrase: `/** END Actions Import */`,
+  beforePhrase: `/** END Action Model Import */`,
   statement: `export { ${actionName} } from './${actionName}'`,
 });
 

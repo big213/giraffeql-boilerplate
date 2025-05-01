@@ -19,5 +19,5 @@ export class {{ capitalizedTypename }}Service extends PaginatedService {
     name: {},
   };
 
-  accessControl: AccessControlMap = {};
+  accessControlMap: AccessControlMap = {};
 }

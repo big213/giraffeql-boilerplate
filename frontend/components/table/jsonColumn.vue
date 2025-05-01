@@ -10,7 +10,7 @@ export default {
 
   computed: {
     displayStr() {
-      return this.currentValue
+      return typeof this.currentValue === 'string'
         ? JSON.parse(this.currentValue)
         : this.currentValue
     },

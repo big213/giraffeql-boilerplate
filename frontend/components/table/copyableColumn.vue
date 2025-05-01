@@ -1,7 +1,15 @@
 <template>
-  <span v-if="currentValue" @click.stop="copyToClipboard(currentValue)">
-    <v-chip small class="pointer-cursor"
-      >{{ currentValue }}<v-icon small right>mdi-content-copy</v-icon></v-chip
+  <span>
+    <v-chip
+      v-if="currentValue"
+      small
+      class="pointer-cursor"
+      :title="currentValue"
+      :style="computedStyle"
+      @click.stop="copyToClipboard(currentValue)"
+    >
+      <v-icon small left>mdi-content-copy</v-icon>
+      <span>{{ currentValue }}</span></v-chip
     >
   </span>
 </template>
@@ -12,6 +20,14 @@ import columnMixin from '~/mixins/column'
 
 export default {
   mixins: [columnMixin],
+
+  computed: {
+    computedStyle() {
+      return this.options?.maxWidth
+        ? `max-width: ${this.options.maxWidth}`
+        : null
+    },
+  },
 
   methods: {
     copyToClipboard(content) {

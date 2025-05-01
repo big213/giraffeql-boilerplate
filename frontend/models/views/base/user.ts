@@ -10,67 +10,56 @@ import {
   getUserPermissionEnumValues,
   getUserRoleEnumValues,
 } from '~/services/dropdown'
-import ChipColumn from '~/components/table/chipColumn.vue'
 import { userRoleMap } from '~/services/constants'
-import BooleanColumn from '~/components/table/booleanColumn.vue'
-import FollowColumn from '~/components/table/followColumn.vue'
+import { Columns } from '~/services/components'
 
 export const BaseUserView: ViewDefinition = {
-  routeType: 'a',
+  routeType: 'base',
+  routeKey: UserEntity.typename,
   entity: UserEntity,
-
   requiredFields: ['avatarUrl', 'name'],
   inputFields: {
     ...generateBaseInputFields(UserEntity),
     email: {},
     password: {},
     role: {
-      inputOptions: {
-        inputType: 'select',
-        getOptions: getUserRoleEnumValues,
-      },
+      inputType: 'select',
+      getOptions: getUserRoleEnumValues,
     },
     permissions: {
-      inputOptions: {
-        inputType: 'multiple-select',
-        getOptions: getUserPermissionEnumValues,
-      },
+      inputType: 'multiple-select',
+      getOptions: getUserPermissionEnumValues,
     },
     isPublic: {
-      inputOptions: {
-        inputType: 'switch',
-        getInitialValue: () => true,
-      },
+      inputType: 'switch',
+      getInitialValue: () => true,
     },
     allowEmailNotifications: {
-      text: 'Allow Email Notifications',
-      inputOptions: {
-        inputType: 'switch',
-        getInitialValue: () => true,
-      },
+      inputType: 'switch',
+      getInitialValue: () => true,
     },
   },
   renderFields: {
     ...generateBaseRenderFields(UserEntity),
     email: {},
     role: {
-      component: ChipColumn,
+      component: Columns.ChipColumn,
       renderOptions: {
         smallMode: true,
         valuesMap: userRoleMap,
       },
     },
     isPublic: {
-      component: BooleanColumn,
+      component: Columns.BooleanColumn,
     },
     permissions: {},
     allowEmailNotifications: {
-      component: BooleanColumn,
+      component: Columns.BooleanColumn,
     },
     currentUserFollowing: {
       text: 'Follow',
       fields: ['currentUserFollowLink.id'],
-      component: FollowColumn,
+      component: Columns.FollowColumn,
       renderOptions: {
         followOptions: {
           entity: UserUserFollowLinkEntity,
@@ -81,37 +70,32 @@ export const BaseUserView: ViewDefinition = {
   paginationOptions: {
     searchOptions: {},
     heroOptions: {},
-    filterOptions: [
+    filters: [
       {
-        field: 'role',
+        fieldKey: 'role',
         operator: 'eq',
-        inputOptions: {
-          inputType: 'select',
-          getOptions: getUserRoleEnumValues,
-          clearable: true,
-        },
       },
     ],
     ...generateClickRowToOpenDialogOptions(),
-    sortOptions: [
-      ...generateSortOptions({ field: 'createdAt' }),
-      ...generateSortOptions({ field: 'updatedAt' }),
+    sortFields: [
+      ...generateSortOptions({ fieldPath: 'createdAt' }),
+      ...generateSortOptions({ fieldPath: 'updatedAt' }),
     ],
-    headerOptions: [
+    headers: [
       {
-        field: 'nameWithAvatar',
+        fieldKey: 'nameWithAvatar',
         hideIfGrid: true,
       },
       {
-        field: 'email',
+        fieldKey: 'email',
         width: '150px',
       },
       {
-        field: 'role',
+        fieldKey: 'role',
         width: '150px',
       },
       {
-        field: 'updatedAt',
+        fieldKey: 'updatedAt',
         width: '150px',
       },
     ],

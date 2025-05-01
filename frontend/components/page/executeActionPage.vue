@@ -23,7 +23,7 @@
               :is="interfaceComponent"
               :action-definition="actionDefinition"
               :item="item"
-              :selected-item="selectedItem"
+              :locked-fields="lockedFields"
               dialog-mode
               :generation="generation"
               @handle-submit="handleSubmit()"
@@ -59,7 +59,7 @@ export default {
       generation: 0,
 
       item: null,
-      selectedItem: null,
+      lockedFields: null,
     }
   },
 
@@ -92,9 +92,9 @@ export default {
       this.generation++
     },
 
-    handleItemUpdate(item, selectedItem) {
+    handleItemUpdate(item, lockedFields) {
       this.item = item
-      this.selectedItem = selectedItem
+      this.lockedFields = lockedFields
       this.generation++
     },
   },

@@ -3,18 +3,19 @@ import {
   getNestedProperty,
   handleError,
   capitalizeString,
-  serializeNestedProperty,
-  lookupRenderField,
-  processQuery,
+  processRenderQuery,
   camelCaseToCapitalizedString,
+  processRenderDefinitions,
 } from '~/services/base'
 import CircularLoader from '~/components/common/circularLoader.vue'
 import Hero from '~/components/interface/crud/hero/hero.vue'
 import { logAnalyticsEvent } from '~/services/analytics'
+import FieldColumn from '~/components/interface/render/fieldColumn.vue'
 
 export default {
   components: {
     CircularLoader,
+    FieldColumn,
   },
 
   data() {
@@ -27,12 +28,12 @@ export default {
 
       currentItem: null,
 
-      inputsArray: [],
+      renderFieldsArray: [],
     }
   },
 
   props: {
-    selectedItem: {
+    parentItem: {
       type: Object,
       required: true,
     },
@@ -88,22 +89,17 @@ export default {
       return this.viewDefinition.viewOptions.fields
     },
 
-    visibleInputsArray() {
-      // if hideIf is specified, check if the input should be visible
-      return this.inputsArray.filter((inputObject) => {
-        const hideIf = inputObject.hideIf
-
-        if (hideIf) {
-          return !hideIf(
+    visibleRenderFieldsArray() {
+      // if hideIf is specified, check if the render field should be visible
+      return this.renderFieldsArray.filter(
+        (viewObject) =>
+          !viewObject.hideIf?.(
             this,
-            inputObject.value,
+            viewObject.value,
             this.currentItem,
-            this.inputsArray
+            this.renderFieldsArray
           )
-        }
-
-        return true
-      })
+      )
     },
 
     heroComponent() {
@@ -148,53 +144,35 @@ export default {
       }
     },
 
-    getFieldPath(inputObject) {
-      const primaryField = inputObject.fieldInfo.fields
-        ? inputObject.fieldInfo.fields[0]
-        : inputObject.field
-
-      return (
-        inputObject.fieldInfo.pathPrefix ??
-        (inputObject.fieldInfo.fields && inputObject.fieldInfo.fields.length > 1
-          ? null
-          : primaryField)
-      )
-    },
-
-    openEditItemDialog(item, updateFields) {
+    openEditItemDialog(item, fieldKey) {
       this.$root.$emit('openEditRecordDialog', {
         viewDefinition: this.viewDefinition,
-        selectedItem: item,
+        parentItem: item,
         mode: 'update',
-        customFields: updateFields,
+        customFields: [fieldKey],
       })
-    },
-
-    handleItemUpdated() {
-      this.$emit('item-updated')
-      this.reset()
     },
 
     async loadRecord(showLoader = true) {
       if (showLoader) this.loading.loadRecord = true
       try {
-        const fields = this.fields.map((fieldElement) =>
-          typeof fieldElement === 'string' ? fieldElement : fieldElement.field
+        const renderFieldDefinitions = processRenderDefinitions(
+          this.viewDefinition,
+          this.fields
         )
 
-        const { query } = await processQuery(
-          this,
-          this.viewDefinition,
-          fields
-            .concat(this.viewDefinition.requiredFields ?? [])
-            .concat(this.viewDefinition.viewOptions.requiredFields ?? []),
-          true
-        )
+        const query = await processRenderQuery(this, {
+          renderFieldDefinitions,
+          rawFields: [
+            ...(this.viewDefinition.requiredFields ?? []),
+            ...(this.viewDefinition.viewOptions.requiredFields ?? []),
+          ],
+        })
         const data = await executeApiRequest({
           [`get${this.capitalizedType}`]: {
             ...query,
             __args: {
-              id: this.selectedItem.id,
+              id: this.parentItem.id,
             },
           },
         })
@@ -209,39 +187,23 @@ export default {
           onSuccess(this, data)
         }
 
-        // build inputs Array
-        this.inputsArray = await Promise.all(
-          this.fields.map((fieldElement) => {
-            const fieldKey =
-              typeof fieldElement === 'string'
-                ? fieldElement
-                : fieldElement.field
-
-            const fieldInfo = lookupRenderField(this.viewDefinition, fieldKey)
-
-            const fieldValue = fieldInfo.hidden
-              ? null
-              : getNestedProperty(data, fieldKey)
-
-            const inputObject = {
-              label: fieldInfo.text ?? camelCaseToCapitalizedString(fieldKey),
-              field: fieldInfo.fields ? fieldInfo.fields[0] : fieldKey,
-              fieldInfo,
-              value: fieldValue, // already serialized
-              options: [],
+        // build render fields Array
+        this.renderFieldsArray = await Promise.all(
+          renderFieldDefinitions.map((renderFieldDefinition) => {
+            const viewObject = {
+              fieldKey: renderFieldDefinition.fieldKey,
+              text:
+                renderFieldDefinition.renderDefinition.text ??
+                camelCaseToCapitalizedString(renderFieldDefinition.fieldKey),
+              renderDefinition: renderFieldDefinition.renderDefinition,
+              value: getNestedProperty(data, renderFieldDefinition.fieldKey),
               readonly: true,
               generation: 0,
-              verticalMode:
-                typeof fieldElement === 'string'
-                  ? false
-                  : fieldElement.verticalMode ?? false,
-              hideIf:
-                typeof fieldElement === 'string'
-                  ? undefined
-                  : fieldElement.hideIf,
+              verticalMode: renderFieldDefinition.verticalMode ?? false,
+              hideIf: renderFieldDefinition.hideIf,
             }
 
-            return inputObject
+            return viewObject
           })
         )
       } catch (err) {

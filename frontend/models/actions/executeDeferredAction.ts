@@ -4,10 +4,10 @@ export const executeDeferredAction: ActionDefinition = {
   title: 'Execute Deferred Action',
   icon: 'mdi-code-tags',
   operationName: 'executeDeferredAction',
-  inputFields: [
+  fields: [
     {
-      fieldPath: 'code',
-      definition: {
+      fieldKey: 'code',
+      inputDefinition: {
         text: 'Code',
       },
     },
@@ -19,9 +19,9 @@ export const executeDeferredAction: ActionDefinition = {
     }
   },
   onSuccess: (that, item) => {
-    that.$notifier.showSnackbar({
+    that.$root.$emit('showSnackbar', {
       message: `${item.successMessage}`,
-      variant: 'success',
+      color: 'success',
     })
   },
 }

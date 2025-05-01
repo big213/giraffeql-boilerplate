@@ -1,83 +1,79 @@
 import { ViewDefinition } from '~/types/view'
-import CopyableColumn from '~/components/table/copyableColumn.vue'
 import { ApiKeyEntity, UserEntity } from '~/models/entities'
 import {
   generateBaseInputFields,
   generateBaseRenderFields,
+  generateClickRowToOpenDialogOptions,
   generateJoinableInputField,
   generatePreviewableRecordRenderField,
   generateSortOptions,
 } from '~/services/view'
-import { getUserPermissionEnumValues } from '~/services/dropdown'
+import { getCurrentUserAvailablePermissions } from '~/services/dropdown'
+import { Columns } from '~/services/components'
 
 export const BaseApiKeyView: ViewDefinition = {
-  routeType: 'a',
+  routeType: 'base',
+  routeKey: ApiKeyEntity.typename,
   entity: ApiKeyEntity,
   inputFields: {
     ...generateBaseInputFields(ApiKeyEntity),
-    code: {
-      text: 'Code',
-    },
+    code: {},
     permissions: {
-      text: 'Permissions',
-      inputOptions: {
-        inputType: 'multiple-select',
-        getOptions: getUserPermissionEnumValues,
-      },
+      inputType: 'multiple-select',
+      getOptions: getCurrentUserAvailablePermissions,
+      getInitialValue: () => null,
     },
-    'user.id': generateJoinableInputField({
+    user: generateJoinableInputField({
       entity: UserEntity,
     }),
   },
   renderFields: {
     ...generateBaseRenderFields(ApiKeyEntity),
     code: {
-      text: 'Code',
-      component: CopyableColumn,
+      component: Columns.CopyableColumn,
     },
     permissions: {},
+    allowedPermissions: {},
     user: generatePreviewableRecordRenderField({
-      fieldname: 'user',
       entity: UserEntity,
     }),
   },
   paginationOptions: {
     searchOptions: undefined,
-    filterOptions: [],
-    handleRowClick: (that, props) => {
-      that.openEditDialog('view', props.item)
-    },
-    handleGridElementClick: (that, item) => {
-      that.openEditDialog('view', item)
-    },
-    sortOptions: [
-      ...generateSortOptions({ field: 'createdAt' }),
-      ...generateSortOptions({ field: 'updatedAt' }),
+    filters: [],
+    ...generateClickRowToOpenDialogOptions(),
+    sortFields: [
+      ...generateSortOptions({ fieldPath: 'createdAt' }),
+      ...generateSortOptions({ fieldPath: 'updatedAt' }),
     ],
-    headerOptions: [
+    headers: [
       {
-        field: 'name',
+        fieldKey: 'name',
         hideIfGrid: true,
       },
       {
-        field: 'code',
+        fieldKey: 'user',
+        width: '200px',
+      },
+      {
+        fieldKey: 'code',
         width: '250px',
       },
       {
-        field: 'updatedAt',
+        fieldKey: 'updatedAt',
         width: '150px',
       },
     ],
   },
 
   createOptions: {
-    fields: ['name', 'permissions', 'user.id'],
+    fields: ['name', 'permissions', 'user'],
   },
   updateOptions: {
     fields: ['name', 'permissions'],
   },
   viewOptions: {
-    fields: ['name', 'permissions', 'code', 'user'],
+    fields: ['name', 'permissions', 'allowedPermissions', 'code', 'user'],
   },
   enterOptions: {},
   deleteOptions: {},

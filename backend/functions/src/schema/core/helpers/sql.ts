@@ -333,7 +333,8 @@ export function standardizeSelectInput(
   if (Array.isArray(selectInput)) {
     // is array, need to process
     // standardize all to SqlSimpleSelectObject
-    return selectInput
+    // also remove all duplicate values
+    return [...new Set(selectInput)]
       .map((ele) => (typeof ele === "string" ? { field: ele } : ele))
       .reduce((selectObject, simpleSelectObject) => {
         selectObject[simpleSelectObject.as ?? simpleSelectObject.field] =
@@ -706,7 +707,7 @@ function applyKnexWhere(
             if (whereSubObject.value.length < 1) {
               whereSubstatement = "FALSE";
               throw new Error(
-                "Must provide non-empty array for (n)in operators"
+                `Must provide non-empty array for (n)in operators on field: ${whereSubObject.field}`
               );
             } else {
               const operatorPrefix = operator === "nin" ? "NOT " : "";
@@ -1322,6 +1323,11 @@ export async function updateTableRow(sqlQuery: SqlUpdateQuery) {
       fieldsObjectMap,
       tableIndexMap
     );
+
+    // if any joins required, throw err as this is not supported by knex currently (update + joins)
+    if (Object.keys(joinObjectMap).length) {
+      throw new Error(`Joins not allowed with update operations currently`);
+    }
 
     // check if there is a sql setter on the field
     const currentTypeDef = objectTypeDefs.get(sqlQuery.table);

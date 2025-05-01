@@ -1,13 +1,19 @@
 import { Enum } from "../core/helpers/enum";
 
 export class userPermission extends Enum {
-  static readonly A_A = new userPermission("A_A");
-  static readonly user_x = new userPermission("user_x");
-  static readonly user_get = new userPermission("user_get");
-  static readonly user_getMultiple = new userPermission("user_getMultiple");
-  static readonly user_update = new userPermission("user_update");
-  static readonly user_create = new userPermission("user_create");
-  static readonly user_delete = new userPermission("user_delete");
+  // * allows global access
+  static readonly "*" = new userPermission("*");
 
-  static readonly file_getMultiple = new userPermission("file_getMultiple");
+  // entity/* allows access to any permission starting with entity/
+  static readonly "user/*" = new userPermission("user/*");
+
+  static readonly "user/get" = new userPermission("user/get");
+  static readonly "user/getPaginator" = new userPermission("user/getPaginator");
+  static readonly "user/update" = new userPermission("user/update");
+  static readonly "user/create" = new userPermission("user/create");
+  static readonly "user/delete" = new userPermission("user/delete");
+
+  static readonly "file/getPaginator" = new userPermission("file/getPaginator");
+
+  // other permissions should *not* contain "/"
 }

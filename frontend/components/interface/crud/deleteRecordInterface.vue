@@ -30,7 +30,7 @@ import {
 
 export default {
   props: {
-    selectedItem: {
+    parentItem: {
       type: Object,
       required: true,
     },
@@ -51,8 +51,8 @@ export default {
     // default to name || id
     itemIdentifier() {
       return this.viewDefinition.entity.nameField
-        ? this.selectedItem[this.viewDefinition.entity.nameField]
-        : this.selectedItem.id
+        ? this.parentItem[this.viewDefinition.entity.nameField]
+        : this.parentItem.id
     },
   },
 
@@ -70,14 +70,14 @@ export default {
                 )
               : undefined),
             __args: {
-              id: this.selectedItem.id,
+              id: this.parentItem.id,
             },
           },
         })
 
-        this.$notifier.showSnackbar({
+        this.$root.$emit('showSnackbar', {
           message: `${this.viewDefinition.entity.name}Deleted`,
-          variant: 'success',
+          color: 'success',
         })
 
         // run any custom onSuccess functions

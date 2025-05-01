@@ -26,7 +26,7 @@
 <script>
 import { executeApiRequest } from '~/services/api'
 import { generateTimeAgoString } from '~/services/base'
-import { siteGithubRepositoryUrl } from '~/services/config'
+import { siteGithubRepositoryUrl } from '~/config'
 
 export default {
   data() {

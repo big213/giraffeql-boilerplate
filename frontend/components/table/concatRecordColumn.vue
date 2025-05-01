@@ -40,7 +40,7 @@ export default {
 
   computed: {
     records() {
-      if (!Array.isArray(this.options.fields)) return []
+      if (!Array.isArray(this.options?.fields)) return []
 
       return this.options.fields.reduce((total, fieldPath) => {
         const value = getNestedProperty(this.currentValue, fieldPath)

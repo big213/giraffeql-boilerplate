@@ -2,12 +2,13 @@
   <CrudRecordPage
     v-if="currentView"
     :view-definition="currentView"
-    :locked-filters="lockedFilters"
   ></CrudRecordPage>
   <v-container v-else fill-height>
     <v-layout align-center justify-center>
       <div>
-        <span class="display-1 pl-2">Invalid Type: {{ type }}</span>
+        <span class="display-1 pl-2"
+          >Invalid view: {{ routePath }}/{{ type }}</span
+        >
       </div>
     </v-layout>
   </v-container>
@@ -15,13 +16,17 @@
 
 <script>
 import CrudRecordPage from '~/components/page/crudRecordPage.vue'
+import * as views from '~/models/views'
 import { capitalizeString, kebabToCamelCase } from '~/services/base'
-import * as myViews from '~/models/views/my'
+import { routePathMap } from '~/config'
 
 export default {
   async asyncData({ params }) {
     const type = kebabToCamelCase(params.type)
-    return { type }
+    return {
+      type,
+      routePath: params.routePath,
+    }
   },
 
   middleware: ['router-auth-redirect'],
@@ -32,20 +37,12 @@ export default {
 
   computed: {
     currentView() {
-      return myViews[`My${capitalizeString(this.type)}View`]
-    },
+      const { routeType } = routePathMap[this.routePath]
+      if (!routeType) return null
 
-    lockedFilters() {
-      // defaults to "createdBy" is current user
-      return (
-        this.currentView?.paginationOptions?.defaultLockedFilters?.(this) ?? [
-          {
-            field: 'createdBy.id',
-            operator: 'eq',
-            value: this.$store.getters['auth/user'].id,
-          },
-        ]
-      )
+      return views[
+        `${capitalizeString(routeType)}${capitalizeString(this.type)}View`
+      ]
     },
   },
 }

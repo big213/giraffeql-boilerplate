@@ -22,7 +22,7 @@ export class UserUserFollowLinkService extends LinkService {
 
   groupByFieldsMap = {};
 
-  accessControl: AccessControlMap = {
+  accessControlMap: AccessControlMap = {
     /*
     Allow if:
     - args.user is currentUser

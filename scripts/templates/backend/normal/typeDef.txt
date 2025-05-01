@@ -1,5 +1,5 @@
 import { User, {{ capitalizedTypename }} } from "../../services";
-import { GiraffeqlObjectType, ObjectTypeDefinition } from "giraffeql";
+import { GiraffeqlObjectType } from "giraffeql";
 import {
   generateIdField,
   generateTimestampFields,
@@ -9,9 +9,9 @@ import {
   generateTypenameField,
   processTypeDef
 } from "../../core/helpers/typeDef";
-import * as Scalars from "../../scalars";
+import { Scalars } from "../../scalars";
 
-export default new GiraffeqlObjectType(<ObjectTypeDefinition>processTypeDef({
+export default new GiraffeqlObjectType(processTypeDef({
   name: {{ capitalizedTypename }}.typename,
   description: "{{ capitalizedTypename }} type",
   fields: {

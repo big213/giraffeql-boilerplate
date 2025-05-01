@@ -35,7 +35,7 @@ export class FileService extends PaginatedService {
 
   groupByFieldsMap = {};
 
-  accessControl: AccessControlMap = {
+  accessControlMap: AccessControlMap = {
     /*
     Allow if:
     - is logged in
@@ -58,7 +58,7 @@ export class FileService extends PaginatedService {
     Allow if:
     - user created the item
     */
-    update: allowIfRecordFieldIsCurrentUserFn(this, "createdBy.id"),
+    update: allowIfRecordFieldIsCurrentUserFn(this, "createdBy.id", "item"),
 
     /*
     Allow if:

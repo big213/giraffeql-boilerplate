@@ -2,6 +2,9 @@ import { ApiKey, User } from "../schema/services";
 import { auth } from "firebase-admin";
 import { userRole } from "../schema/enums";
 import {
+  getAllowedApiKeyPermissions,
+  getUserPermissions,
+  isPermissionAllowed,
   parsePermissions,
   userRoleToPermissionsMap,
 } from "../schema/helpers/permissions";
@@ -73,16 +76,14 @@ export async function validateToken(bearerToken: string): Promise<ContextUser> {
     }
 
     const id = user.id;
-    const role = userRole.fromUnknown(user.role);
-
-    const userPermissions = (userRoleToPermissionsMap[role.name] ?? []).concat(
-      parsePermissions(user.permissions)
-    );
 
     const contextUser: ContextUser = {
       id,
-      role,
-      permissions: userPermissions,
+      role: userRole.parseNoNulls(user.role),
+      permissions: getUserPermissions({
+        role: user.role,
+        permissions: user.permissions,
+      }),
       isApiKey: false,
     };
 
@@ -106,23 +107,27 @@ export async function validateApiKey(code: string): Promise<ContextUser> {
       true
     );
 
-    const role = userRole.fromUnknown(apiKey["user.role"]);
+    const role = userRole.parseNoNulls(apiKey["user.role"]);
 
     // calculate the user's permissions
     const userPermissions = (userRoleToPermissionsMap[role.name] ?? []).concat(
-      parsePermissions(apiKey["user.permissions"])
+      parsePermissions(apiKey["user.permissions"]) ?? []
     );
 
     // calculate the permissions associated with the apiKey
     const apiKeyPermissions = parsePermissions(apiKey.permissions);
 
+    // if apiKeyPermissions is null, just return all of the permissions
+    // else return all apiKeyPermissions that can be validated based on userPermissions
+    const allowedPermissions = getAllowedApiKeyPermissions({
+      userPermissions,
+      apiKeyPermissions,
+    });
+
     return {
       id: apiKey["user.id"],
       role,
-      // the api key's permissions is a subset of the apiKey.permissions
-      permissions: apiKeyPermissions
-        ? userPermissions.filter((ele) => apiKeyPermissions.includes(ele))
-        : userPermissions,
+      permissions: allowedPermissions,
       isApiKey: true,
     };
   } catch (err: unknown) {

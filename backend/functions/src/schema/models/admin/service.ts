@@ -1,85 +1,165 @@
 import { AccessControlMap, ServiceFunctionInputs } from "../../../types";
 import { BaseService } from "../../core/services";
 import { permissionsCheck } from "../../core/helpers/permissions";
-import { storage } from "firebase-admin";
-import { File } from "../../services";
-import { getGoogleApiResponse } from "../../helpers/google";
+import { executeGoogleApiRequest } from "../../helpers/google";
+import { githubOrganization, githubRepository } from "../../../config";
+import { executeGithubGraphqlRequest } from "../../helpers/github";
 
 export class AdminService extends BaseService {
   accessControl: AccessControlMap = {
-    google: () => true,
+    // google: () => true,
     validateAddress: () => true,
+    releases: () => true,
   };
-
-  @permissionsCheck("admin")
-  async executeAdminFunction({
-    req,
-    fieldPath,
-    args,
-    query,
-  }: ServiceFunctionInputs) {
-    return "done";
-  }
-
-  /**
-   * Should be run on prod database
-   */
-  async syncFiles() {
-    // build the set of all known files
-    const knownFiles = await File.getAllSqlRecord({
-      select: ["location"],
-      where: [],
-    });
-
-    const locationsSet: Set<string> = new Set();
-
-    knownFiles.forEach((knownFile) => {
-      locationsSet.add(`source/${knownFile.location}`);
-    });
-
-    // get the list of all files in the source bucket
-    const bucket = storage().bucket();
-    const [files] = await bucket.getFiles({
-      autoPaginate: true,
-      matchGlob: "source/**",
-    });
-
-    const filesDeleted: string[] = [];
-
-    for (const file of files) {
-      const filename = file.metadata.name;
-      // check if it is not a directory, and doesn't exist in the knownFiles directory.
-      // also make sure it is not in the permanent or source/dev folder
-      if (!filename.match(/\/$/) && !locationsSet.has(filename)) {
-        if (filename.match(/^source\/(dev|permanent)\//)) {
-          continue;
-        }
-
-        // await file.delete();
-        filesDeleted.push(filename);
-      }
-    }
-
-    console.log(filesDeleted);
-  }
 
   @permissionsCheck("google")
   async executeGoogleApiRequest({
     req,
+    rootResolver,
     fieldPath,
     args,
     query,
   }: ServiceFunctionInputs) {
-    try {
-      const data = await getGoogleApiResponse({
-        method: args.method,
-        url: args.url,
-        data: args.data,
-      });
+    const data = await executeGoogleApiRequest({
+      method: args.method,
+      url: args.url,
+      params: args.data,
+    });
 
-      return data;
-    } catch (err: any) {
-      return err.response.data.error;
+    return data;
+  }
+
+  @permissionsCheck("releases")
+  async getRepositoryReleases({
+    req,
+    rootResolver,
+    fieldPath,
+    args,
+    query,
+  }: ServiceFunctionInputs): Promise<any> {
+    try {
+      if (githubOrganization.value()) {
+        const response = await executeGithubGraphqlRequest({
+          query: `
+            query { 
+              viewer { 
+                organization(login: "${githubOrganization.value()}") {
+                  repository(name: "${githubRepository.value()}") {
+                    releases(first: ${args.first}, orderBy: {
+                      field: CREATED_AT,
+                      direction: DESC
+                    }) {
+                      edges {
+                        node {
+                          id
+                          tagName
+                          name
+                          descriptionHTML
+                          isLatest
+                          publishedAt
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+    `,
+        });
+
+        return response.viewer.organization.repository.releases.edges.map(
+          (edge) => edge.node
+        );
+      } else {
+        // if no organization specified, lookup repository directly
+        const response = await executeGithubGraphqlRequest({
+          query: `
+            query { 
+              viewer { 
+                repository(name: "${githubRepository.value()}") {
+                  releases(first: ${args.first}, orderBy: {
+                    field: CREATED_AT,
+                    direction: DESC
+                  }) {
+                    edges {
+                      node {
+                        id
+                        tagName
+                        name
+                        descriptionHTML
+                        isLatest
+                        publishedAt
+                      }
+                    }
+                  }
+                }
+              }
+            }
+    `,
+        });
+
+        return response.viewer.repository.releases.edges.map(
+          (edge) => edge.node
+        );
+      }
+    } catch (err) {
+      throw new Error(
+        `Unable to fetch the requested data from the repository provider`
+      );
+    }
+  }
+
+  @permissionsCheck("releases")
+  async getRepositoryLatestVersion({
+    req,
+    rootResolver,
+    fieldPath,
+    args,
+    query,
+  }: ServiceFunctionInputs): Promise<any> {
+    try {
+      if (githubOrganization.value()) {
+        const response = await executeGithubGraphqlRequest({
+          query: `
+            query { 
+              viewer { 
+                organization(login: "${githubOrganization.value()}") {
+                  repository(name: "${githubRepository.value()}") {
+                    latestRelease {
+                      tagName
+                      publishedAt
+                    }
+                  }
+                }
+              }
+            }
+    `,
+        });
+
+        return response.viewer.organization.repository.latestRelease;
+      } else {
+        // if no organization specified, lookup repository directly
+        const response = await executeGithubGraphqlRequest({
+          query: `
+            query { 
+              viewer { 
+                repository(name: "${githubRepository.value()}") {
+                  latestRelease {
+                    tagName
+                    publishedAt
+                  }
+                }
+              }
+            }
+    `,
+        });
+
+        return response.viewer.repository.latestRelease;
+      }
+    } catch (err) {
+      throw new Error(
+        `Unable to fetch the requested data from the repository provider`
+      );
     }
   }
 }

@@ -1,5 +1,5 @@
 <template>
-  <v-container v-if="loading.loadRecord || !selectedItem" fill-height>
+  <v-container v-if="loading.loadRecord || !currentItem" fill-height>
     <v-layout align-center justify-center>
       <div v-if="loading.loadRecord">
         <span class="display-1 pl-2"
@@ -18,12 +18,12 @@
     <v-layout justify-center align-center column d-block>
       <v-row>
         <v-col v-if="recordMode === 'minimized'" cols="12">
-          <PreviewRecordChip :value="selectedItem">
+          <PreviewRecordChip :value="currentItem">
             <template v-slot:rightIcon>
               <RecordActionMenu
-                v-if="!hideActions"
+                v-if="!viewDefinition.pageOptions?.hideActions"
                 :view-definition="viewDefinition"
-                :item="selectedItem"
+                :item="currentItem"
                 hide-enter
                 expand-mode="emit"
                 left
@@ -57,7 +57,7 @@
           <v-card class="elevation-12">
             <component
               :is="currentInterface"
-              :selected-item="selectedItem"
+              :parent-item="currentItem"
               :view-definition="viewDefinition"
               :generation="generation"
               :reset-instruction="recordResetInstruction"
@@ -79,20 +79,24 @@
                   >
                     <v-icon>mdi-comment</v-icon>
                   </v-btn>
-                  <v-btn v-if="!hideRefresh" icon @click="reset()">
+                  <v-btn
+                    v-if="!viewDefinition.pageOptions?.hideRefresh"
+                    icon
+                    @click="reset()"
+                  >
                     <v-icon>mdi-refresh</v-icon>
                   </v-btn>
                   <v-btn
                     v-if="viewDefinition.pageOptions?.dedicatedShareButton"
                     icon
-                    @click="openEditDialog('share')"
+                    @click="openEditDialog({ mode: 'share' })"
                   >
                     <v-icon>mdi-share-variant</v-icon></v-btn
                   >
                   <RecordActionMenu
-                    v-if="!hideActions"
+                    v-if="!viewDefinition.pageOptions?.hideActions"
                     :view-definition="viewDefinition"
-                    :item="selectedItem"
+                    :item="currentItem"
                     hide-view
                     hide-enter
                     expand-mode="emit"
@@ -108,7 +112,7 @@
                     </template>
                   </RecordActionMenu>
                   <v-btn
-                    v-if="!hideMinimize"
+                    v-if="!viewDefinition.pageOptions?.hideMinimize"
                     icon
                     @click="toggleRecordMinimized(true)"
                   >
@@ -151,17 +155,19 @@
           <v-card class="elevation-12">
             <component
               :is="paginationComponent"
-              :view-definition="expandTypeObject.viewDefinition"
+              :view-definition="expandTypeObject.view"
               :element-title="expandTypeObject.name"
               :icon="expandTypeObject.icon"
-              :hidden-headers="expandTypeObject.excludeHeaders"
+              :hidden-headers="hiddenSubHeaders"
               :locked-filters="lockedSubFilters"
               :page-options="isChildComponent ? subPageOptions : pageOptions"
               :hidden-filters="hiddenSubFilters"
               :hide-presets="!expandTypeObject.showPresets"
               :parent-item="parentItem"
               :breadcrumb-mode="!!expandTypeObject.breadcrumbOptions"
-              :hide-breadcrumbs="hideBreadcrumbs"
+              :hide-breadcrumbs="
+                expandTypeObject?.breadcrumbOptions?.hideBreadcrumbs
+              "
               :breadcrumb-items="breadcrumbItems"
               :is-child-component="isChildComponent"
               dense
@@ -190,10 +196,10 @@
         <v-col cols="12">
           <component
             :is="getExpandTypeComponent(item.expandTypeObject)"
-            :view-definition="item.expandTypeObject.viewDefinition"
+            :view-definition="item.expandTypeObject.view"
             :icon="item.expandTypeObject.icon"
-            :hidden-headers="item.expandTypeObject.excludeHeaders"
-            :locked-filters="getExpandTypeSubFilters(item.expandTypeObject)"
+            :hidden-headers="getHiddenSubFilters(item.expandTypeObject)"
+            :locked-filters="getHiddenSubHeaders(item.expandTypeObject)"
             :page-options="item.pageOptions"
             :hidden-filters="
               getExpandTypeHiddenSubFilters(item.expandTypeObject)
@@ -210,7 +216,7 @@
     <EditRecordDialog
       v-model="dialogs.editRecord"
       :view-definition="viewDefinition"
-      :selected-item="selectedItem"
+      :parent-item="currentItem"
       :mode="dialogs.editMode"
       @close="dialogs.editRecord = false"
       @handle-submit="handleSubmit"

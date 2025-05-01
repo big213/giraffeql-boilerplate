@@ -56,9 +56,9 @@ export default {
       try {
         if (!this.currentFile) throw new Error(`No file to download`)
 
-        this.$notifier.showSnackbar({
+        this.$root.$emit('showSnackbar', {
           message: `Download started`,
-          variant: 'success',
+          color: 'success',
         })
 
         // if there is custom downloadFile logic, use that

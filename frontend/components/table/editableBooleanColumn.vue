@@ -89,7 +89,7 @@ export default {
           [`update${capitalizeString(this.item.__typename)}`]: {
             __args: {
               fields: {
-                [this.fieldPath]: value,
+                [this.renderFieldDefinition.fieldKey]: value,
               },
               item: {
                 id: this.item.id,
@@ -100,9 +100,9 @@ export default {
 
         this.$root.$emit('refresh-interface', this.item.__typename)
 
-        this.$notifier.showSnackbar({
+        this.$root.$emit('showSnackbar', {
           message: `${capitalizeString(this.item.__typename)} updated`,
-          variant: 'success',
+          color: 'success',
         })
       } catch (err) {
         handleError(this, err)

@@ -1,9 +1,8 @@
 import { nanoid } from 'nanoid'
 import prettyBytes from 'pretty-bytes'
-import axios from 'axios'
 import { handleError } from '~/services/base'
 import { executeApiRequest } from '~/services/api'
-import { isDev, tempStoragePath } from './config'
+import { isDev, tempStoragePath } from '../config'
 import { UploadTask, ref, uploadBytesResumable } from 'firebase/storage'
 import { storage } from './fireinit'
 
@@ -156,13 +155,6 @@ export async function downloadFile(that, fileUrl, title) {
     const data = await fetch(fileUrl, {
       method: 'GET',
     })
-    /*
-    const data = await axios({
-      method: 'get',
-      url: fileUrl,
-      responseType: 'arraybuffer',
-    })
-      */
 
     forceFileDownload(data, title)
   } catch (err) {

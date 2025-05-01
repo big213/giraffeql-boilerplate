@@ -16,10 +16,9 @@
           >
             <GenericInput
               v-show="!inputObject.hidden"
-              :item="inputObject"
-              :parent-item="currentItem"
+              :input-object="inputObject"
+              :parent-item="parentItem"
               :all-items="inputsArray"
-              :selected-item="selectedItem"
               :key="i"
               ref="inputs"
               @handle-submit="handleSubmit()"

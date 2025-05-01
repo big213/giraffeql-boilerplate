@@ -1,5 +1,15 @@
+import { routePathMap } from '~/config'
+
 export default function ({ store, redirect, route }) {
-  // if user is not logged in, save the route and direct to login page
+  // if routePath is set, only redirect if login is required
+  if (
+    route.params.routePath &&
+    !routePathMap[route.params.routePath]?.loginRequired
+  ) {
+    return
+  }
+
+  // if user is not logged in and , save the route and direct to login page
   if (!store.getters['auth/firebaseUser']) {
     store.commit('auth/setRedirectPath', route.fullPath)
     redirect('/login')

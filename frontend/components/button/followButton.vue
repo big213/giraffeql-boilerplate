@@ -68,11 +68,12 @@ export default {
           })
           this.item.currentUserFollowLink = null
         }
-        this.$notifier.showSnackbar({
+
+        this.$root.$emit('showSnackbar', {
           message: `${capitalizeString(this.item.__typename)} ${
             this.item.currentUserFollowLink ? '' : 'Un-'
           }Followed`,
-          variant: 'success',
+          color: 'success',
         })
       } catch (err) {
         handleError(this, err)

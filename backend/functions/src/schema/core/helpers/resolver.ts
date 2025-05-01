@@ -565,51 +565,15 @@ async function handleAggregatedQueries({
     const dataloaderFn = typeDef.dataloader;
     const nestedResolver = nestedResolverNodeMap[field].nested;
     if (dataloaderFn && nestedResolverNodeMap[field].query) {
-      const keySet = new Set();
-
-      // aggregate ids
-      resultsArray.forEach((result) => {
-        if (!result) return;
-        // if it is an array of ids, need to add them each individually
-        if (Array.isArray(result[field])) {
-          result[field].forEach((nestedResult) => keySet.add(nestedResult));
-        } else {
-          keySet.add(result[field]);
-        }
-      });
-
-      // set ids in data
-      const idArray = [...keySet];
-
-      // lookup all the ids
-      const aggregatedResults = await dataloaderFn({
+      // if it has a dataloader, pass the fields to dataloader and have it replace the relevant fields in-place
+      await dataloaderFn({
         req,
         rootResolver,
         args,
         query: nestedResolverNodeMap[field].query,
         fieldPath: currentFieldPath,
-        idArray,
-      });
-
-      // build id -> record map
-      const recordMap = new Map();
-      aggregatedResults.forEach((result: any) => {
-        recordMap.set(result.id, result);
-      });
-
-      // join the records in memory
-      resultsArray.forEach((result) => {
-        if (!result) return;
-
-        // if it is an array of ids, need to map them each individually
-        if (Array.isArray(result[field])) {
-          // if not found, exclude entirely
-          result[field] = result[field]
-            .map((id) => recordMap.get(id) ?? null)
-            .filter((ele) => ele);
-        } else {
-          result[field] = recordMap.get(result[field]);
-        }
+        resultsArray,
+        field,
       });
     } else if (nestedResolver) {
       // if field does not have a dataloader, it must be nested.

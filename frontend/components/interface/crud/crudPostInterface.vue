@@ -40,8 +40,7 @@
               <EditRecordInterface
                 :view-definition="viewDefinition"
                 mode="create"
-                :selected-item="selectedItem"
-                hide-locked-fields
+                :locked-fields="lockedFields"
                 :hidden-fields="hiddenFields"
                 @handle-submit="handlePostSubmit()"
               ></EditRecordInterface>
@@ -133,7 +132,7 @@
                   v-else
                   :view-definition="viewDefinition"
                   mode="update"
-                  :selected-item="props.item"
+                  :parent-item="props.item"
                   :return-fields="returnFields"
                   @handle-submit="handlePostUpdate(props, $event)"
                 >

@@ -1,13 +1,14 @@
 import {
-  EditFieldDefinition,
+  CreateInputFieldDefinition,
   ExportFieldDefinition,
-  FilterObject,
-  HeaderObject,
+  FilterInputFieldDefinition,
   ImportFieldDefinition,
-  InputFieldDefinition,
-  RenderFieldDefinition,
-  SortObject,
-  ViewFieldDefinition,
+  RenderDefinition,
+  EditInputFieldDefinition,
+  ViewRenderFieldDefinition,
+  HeaderRenderFieldDefinition,
+  SortFieldDefinition,
+  InputDefinition,
 } from '.'
 import { ActionDefinition } from './action'
 import { EntityDefinition } from './entity'
@@ -18,7 +19,7 @@ export type PageOptions = {
   // required fields for the page, if any
   fields?: string[]
 
-  // custom function that will return the lookup params, if any
+  // custom function that will return the lookup params, if any. like { id: 123 }
   getLookupParams?: (that) => any
 
   // whether or not to render the record as a full page (12 cols), rather than centered with an offset
@@ -53,7 +54,8 @@ export type DialogOptions = {
 
 export type CreateOptions = {
   // required: fields that can be added
-  fields: (string | EditFieldDefinition)[]
+  fields: (string | CreateInputFieldDefinition)[]
+
   // custom component
   component?: any
   // if not createX, the custom create operation name
@@ -61,9 +63,6 @@ export type CreateOptions = {
 
   // custom function to modify the inputs in-place before they get sent as args
   inputsModifier?: (that, inputs) => void
-
-  // custom action when the "new" button is clicked, if any. item refers to parentItem, if any
-  customAction?: (that, parentItem) => void
 
   // fields to return after editing (for use in onSuccess, etc) -- array in dot notation
   returnFields?: string[]
@@ -84,12 +83,23 @@ export type CreateOptions = {
   icon?: string
 }
 
+// a way to create stuff using an actionDefinition, instead of using preset fields
+export type GenerateOptions = {
+  action: ActionDefinition
+
+  // under what conditions will the button be hidden?
+  hideIf?: (that) => boolean
+
+  buttonText?: string
+  buttonIcon?: string
+}
+
 export type UpdateOptions = {
   // required: fields that can be added
   // a function can be provided instead, which will determine the fields dynamically based on that/item
   fields:
-    | (string | EditFieldDefinition)[]
-    | ((that, item) => (string | EditFieldDefinition)[])
+    | (string | EditInputFieldDefinition)[]
+    | ((that, item) => (string | EditInputFieldDefinition)[])
   // custom component
   component?: any
   // if not createX, the custom create operation name
@@ -142,7 +152,7 @@ export type DeleteOptions = {
 
 export type ViewOptions = {
   // required: fields that can be viewed
-  fields: (string | ViewFieldDefinition)[]
+  fields: (string | ViewRenderFieldDefinition)[]
 
   // additional fields required (but not shown)
   requiredFields?: string[]
@@ -199,9 +209,10 @@ export type PostOptions = {
   initialSortKey?: string
 
   // custom function for generating the lockedFilters for filtering the posts, if any
-  getLockedFilters?: (that, selectedItem) => any
+  getLockedFilters?: (that, item) => any
 }
 
+// requires CreateOptions to be defined
 export type CopyOptions = {
   // required: fields that should be copied
   fields: string[]
@@ -233,14 +244,15 @@ export type EnterOptions = {}
 export type ExpandTypeObject = {
   // the key that will be associated with this in the URL
   key: string
-  // viewDefinition is required unless it is a custom component
-  viewDefinition?: ViewDefinition
-  component?: any
+  // viewDefinition is required unless it is a custom component (currently required because custom components are not supported)
+  view: ViewDefinition
+  // component?: any // not currently implemented
   // name for the expandType, otherwise viewDefinition.entity.name will be used
   name?: string
   // icon for the expandType, otherwise viewDefinition.entity.icon will be used
   icon?: string
   // function that will replace the lockedSubFilters() computed property in crud.js if provided
+  // if not provided, will default to something based on the parent item (parent item.id eq value)
   lockedFilters?: (that, item) => CrudRawFilterObject[]
   // headers fields that should not be shown
   excludeHeaders?: string[]
@@ -317,16 +329,17 @@ export type ViewDefinition = {
   entity: EntityDefinition
   preview?: PreviewDefinition
   inputFields: {
-    [x in string]: InputFieldDefinition
+    [x in string]: InputDefinition
   }
   renderFields: {
-    [x in string]: RenderFieldDefinition
+    [x in string]: RenderDefinition
   }
   pageOptions?: {} & PageOptions
   paginationOptions?: {} & PaginationOptions
   dialogOptions?: {} & DialogOptions
 
   createOptions?: {} & CreateOptions
+  generateOptions?: {} & GenerateOptions
   updateOptions?: {} & UpdateOptions
   deleteOptions?: {} & DeleteOptions
   viewOptions?: {} & ViewOptions
@@ -340,6 +353,7 @@ export type ViewDefinition = {
 
   // extra fields
   routeType: string
+  routeKey: string
 
   // override title for this view (defaults to typename)
   title?: string
@@ -365,7 +379,7 @@ export type PaginationOptions = {
   defaultLockedFilters?: (that: any) => CrudRawFilterObject[]
 
   // all of the possible usable filters
-  filterOptions?: FilterObject[]
+  filters?: FilterInputFieldDefinition[]
 
   distanceFilterOptions?: {
     key: string
@@ -374,7 +388,7 @@ export type PaginationOptions = {
     defaultValue?: (that) => Promise<any>
   }[]
 
-  sortOptions?: SortObject[]
+  sortFields?: SortFieldDefinition[]
 
   // fields required but not shown, such as fields needed for heroOptions
   requiredFields?: string[]
@@ -404,7 +418,7 @@ export type PaginationOptions = {
   hideRefresh?: boolean
 
   // the headers of the table
-  headerOptions: HeaderObject[]
+  headers: HeaderRenderFieldDefinition[]
 
   // header fields that should be hidden
   excludeHeaders?: string[]
@@ -433,7 +447,7 @@ export type PaginationOptions = {
   component?: any
   // can the results be downloaded?
   downloadOptions?: {
-    // custom fields to download
+    // fields to download
     fields: ExportFieldDefinition[]
   }
 

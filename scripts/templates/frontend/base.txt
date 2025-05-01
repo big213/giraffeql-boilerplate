@@ -1,28 +1,38 @@
-import type { RecordInfo } from '~/types'
-import { generateBaseFields, generateSortOptions } from '~/services/recordInfo'
-import { Simple{{ capitalizedTypename }} } from '../simple'
+import type { ViewDefinition } from '~/types/view'
+import { {{ capitalizedTypename }}Entity } from '~/models/entities'
+import {
+  generateBaseInputFields,
+  generateBaseRenderFields,
+  generateClickRowToOpenDialogOptions,
+  generateSortOptions,
+} from '~/services/view'
 
-export const {{ capitalizedTypename }}: RecordInfo<'{{ typename }}'> = {
-  ...Simple{{ capitalizedTypename }},
-  routeType: 'a',
-  fields: {
-    ...generateBaseFields(Simple{{ capitalizedTypename }}),
+export const Base{{ capitalizedTypename }}View: ViewDefinition = {
+  routeType: 'base',
+  routeKey: {{ capitalizedTypename }}Entity.typename,
+  entity: {{ capitalizedTypename }}Entity,
+  inputFields: {
+    ...generateBaseInputFields({{ capitalizedTypename }}Entity),
+  },
+  renderFields: {
+    ...generateBaseRenderFields({{ capitalizedTypename }}Entity),
   },
   paginationOptions: {
     searchOptions: undefined,
-    filterOptions: [],
+    filters: [],
+    ...generateClickRowToOpenDialogOptions(),
     heroOptions: {},
-    sortOptions: [
-      ...generateSortOptions("createdAt"),
-      ...generateSortOptions("updatedAt"),
+    sortFields: [
+      ...generateSortOptions({ fieldPath: 'createdAt' }),
+      ...generateSortOptions({ fieldPath: 'updatedAt' }),
     ],
-    headerOptions: [
+    headers: [
       {
-        field: 'nameWithAvatar',
+        fieldKey: 'nameWithAvatar',
         hideIfGrid: true,
       },
       {
-        field: 'updatedAt',
+        fieldKey: 'updatedAt',
         width: '150px',
       },
     ],
@@ -40,5 +50,5 @@ export const {{ capitalizedTypename }}: RecordInfo<'{{ typename }}'> = {
   enterOptions: {},
   deleteOptions: {},
   shareOptions: {},
-  expandTypes: [],
+  childTypes: [],
 }

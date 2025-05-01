@@ -32,6 +32,8 @@ export default {
 
   generate: {
     routes() {
+      const { routeTypesMap } = require('./config')
+
       function retrieveRouteNamesFromDirectory(directory) {
         return readdirSync(directory)
           .map((filename) => filename.match(/^(.*)\.ts$/)?.[1])
@@ -49,16 +51,19 @@ export default {
           .join('')
       }
 
+      function getRoutePath(routeType) {
+        const { routePath } = routeTypesMap[routeType]
+        if (!routePath)
+          throw new Error(`routeType: '${routeType}' not mapped to routePath`)
+
+        return routePath
+      }
+
       // build the routesMap by loading the contents of the models directory
       const routesMap = {
         view: {},
         crud: {},
         action: retrieveRouteNamesFromDirectory('models/actions'),
-      }
-
-      const specialRoutesMap = {
-        base: 'a',
-        public: 'i',
       }
 
       // get the remaining compound model dirs
@@ -77,17 +82,16 @@ export default {
 
       Object.entries(routesMap.view).forEach(([key, val]) => {
         val.forEach((type) => {
-          routes.add(
-            `/${specialRoutesMap[key] ?? key}/view/${camelToKebabCase(type)}`
-          )
+          const routePath = getRoutePath(key)
+
+          routes.add(`/${routePath}/view/${camelToKebabCase(type)}`)
         })
       })
 
       Object.entries(routesMap.crud).forEach(([key, val]) => {
         val.forEach((type) => {
-          routes.add(
-            `/${specialRoutesMap[key] ?? key}/${camelToKebabCase(type)}`
-          )
+          const routePath = getRoutePath(key)
+          routes.add(`/${routePath}/${camelToKebabCase(type)}`)
         })
       })
 
@@ -152,7 +156,6 @@ export default {
 
   // Plugins to run before rendering page (https://go.nuxtjs.dev/config-plugins)
   plugins: [
-    '@/plugins/notifier.js',
     '@/plugins/auth.js',
     '@/plugins/wysiwyg.js',
     '@/plugins/firebase.js',

@@ -1,35 +1,43 @@
-import axios, { Method } from "axios";
 import { credential } from "firebase-admin";
 import { projectID } from "firebase-functions/params";
 
-export async function getGoogleApiResponse({
+export async function executeGoogleApiRequest({
   method,
   url,
-  data,
+  params,
   headers,
+  overrideAccessToken,
 }: {
-  method: Method;
+  method: "post" | "get";
   url: string;
-  data: any;
+  params?: any;
   headers?: any;
+  overrideAccessToken?: string; // if provided, will use this instead of the application default credentials (mainly for local dev envs where the ADC is not available)
 }) {
-  try {
-    const accessToken = await credential.applicationDefault().getAccessToken();
+  const accessToken =
+    overrideAccessToken ??
+    (await credential
+      .applicationDefault()
+      .getAccessToken()
+      .then((res) => res.access_token));
 
-    const { data: responseData } = await axios.request({
-      url,
-      method,
-      headers: {
-        Authorization: `Bearer ${accessToken.access_token}`,
-        ...headers,
-      },
-      data,
-    });
+  const response = await fetch(url, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+      ...headers,
+    },
+    body: params ? JSON.stringify(params) : undefined,
+  });
 
-    return responseData;
-  } catch (err: any) {
-    return err.response.data.error;
+  if (!response.ok) {
+    throw new Error(`HTTP Error, status: ${response.status}`);
   }
+
+  const data = await response.json();
+
+  return data.data;
 }
 
 export async function getAddressInformation({
@@ -39,10 +47,10 @@ export async function getAddressInformation({
   address: string;
   countryCode: string;
 }): Promise<any> {
-  const data = await getGoogleApiResponse({
+  const data = await executeGoogleApiRequest({
     method: "post",
     url: "https://addressvalidation.googleapis.com/v1:validateAddress",
-    data: {
+    params: {
       address: {
         regionCode: countryCode,
         addressLines: [address],

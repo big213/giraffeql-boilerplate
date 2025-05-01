@@ -4,9 +4,9 @@ import { initializeApp } from "firebase-admin/app";
 import { serveImageBucket } from "../../src/config";
 import { PaginatedService } from "../../src/schema/core/services";
 const serviceAccount = require("../../key/service-account.json");
-import * as Scalars from "../../src/schema/scalars";
 import { writeFile } from "fs";
-
+import { Scalars } from "../../src/schema/scalars";
+Scalars;
 initializeApp({
   credential: credential.cert(serviceAccount),
   storageBucket: serveImageBucket.value(),

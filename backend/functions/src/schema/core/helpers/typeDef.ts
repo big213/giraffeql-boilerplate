@@ -19,9 +19,13 @@ import {
   GiraffeqlBaseError,
 } from "giraffeql";
 import { knex } from "../../../utils/knex";
-import { camelToSnake, isObject } from "./shared";
-import { BaseService, LinkService, PaginatedService } from "../services";
-import * as Scalars from "../../scalars";
+import { camelToSnake, getNestedProperty, isObject } from "./shared";
+import {
+  BaseService,
+  EnumService,
+  LinkService,
+  PaginatedService,
+} from "../services";
 import type {
   ObjectTypeDefSqlOptions,
   SqlType,
@@ -31,6 +35,7 @@ import { getObjectType } from "./resolver";
 import { fetchTableRows, SqlSelectQuery } from "./sql";
 import { Enum, Kenum } from "./enum";
 import { User } from "../../services";
+import { Scalars } from "../../scalars";
 
 type GenerateFieldParams = {
   name?: string;
@@ -42,6 +47,8 @@ type GenerateFieldParams = {
   defaultValue?: unknown;
   sqlOptions?: Partial<ObjectTypeDefSqlOptions> | null;
   typeDefOptions?: Partial<ObjectTypeDefinitionField>;
+  addable?: boolean;
+  updateable?: boolean;
 };
 
 // special type to indicate that it is a lookup attached to a specific service
@@ -87,6 +94,8 @@ export function generateStandardField(
     defaultValue,
     sqlType,
     type,
+    addable = true, // default is addable and updateable
+    updateable = true,
     sqlOptions,
     typeDefOptions,
   } = params;
@@ -108,8 +117,8 @@ export function generateStandardField(
         : undefined,
     hidden,
     nestHidden,
-    addable: true, // default addable and updateable
-    updateable: true,
+    addable,
+    updateable,
     ...typeDefOptions,
   };
   return typeDef;
@@ -122,29 +131,10 @@ export function generateGenericScalarField(
     arrayOptions?: ArrayOptions;
   } & GenerateFieldParams
 ) {
-  const {
-    description,
-    allowNull = true,
-    allowNullOutput,
-    arrayOptions,
-    defaultValue,
-    hidden,
-    nestHidden,
-    type,
-    sqlOptions,
-    typeDefOptions,
-  } = params;
+  const { type, ...remainingOptions } = params;
   return generateStandardField({
-    description,
-    allowNull,
-    allowNullOutput,
-    arrayOptions,
-    defaultValue,
-    hidden,
-    nestHidden,
     type: type ?? Scalars.string,
-    sqlOptions,
-    typeDefOptions,
+    ...remainingOptions,
   });
 }
 
@@ -154,25 +144,8 @@ export function generateStringField(
     length?: number;
   } & GenerateFieldParams
 ) {
-  const {
-    description,
-    allowNull = true,
-    allowNullOutput,
-    defaultValue,
-    hidden,
-    nestHidden,
-    type,
-    length = 255,
-    sqlOptions,
-    typeDefOptions,
-  } = params;
+  const { length = 255, sqlOptions, type, ...remainingOptions } = params;
   return generateStandardField({
-    description,
-    allowNull,
-    allowNullOutput,
-    defaultValue,
-    hidden,
-    nestHidden,
     sqlType: "string",
     type: type ?? Scalars.string,
     sqlOptions: {
@@ -181,8 +154,7 @@ export function generateStringField(
       },
       ...sqlOptions,
     },
-
-    typeDefOptions,
+    ...remainingOptions,
   });
 }
 
@@ -192,24 +164,8 @@ export function generateUnixTimestampField(
     nowOnly?: boolean; // if the unix timestamp can only be set to now()
   } & GenerateFieldParams
 ) {
-  const {
-    description,
-    allowNull = true,
-    allowNullOutput,
-    defaultValue,
-    hidden,
-    nestHidden,
-    sqlOptions,
-    typeDefOptions,
-    nowOnly,
-  } = params;
+  const { sqlOptions, nowOnly, ...remainingOptions } = params;
   return generateStandardField({
-    description,
-    allowNull,
-    allowNullOutput,
-    defaultValue,
-    hidden,
-    nestHidden,
     sqlType: "dateTime",
     type: Scalars.unixTimestamp,
     sqlOptions: {
@@ -219,66 +175,39 @@ export function generateUnixTimestampField(
         ? () => knex.fn.now()
         : (value: unknown) => {
             // if null, allow null value
-            if (value === null) return null;
+            if (value === null || value === undefined) return null;
             // if Date type, return that
             if (value instanceof Date) return value;
 
             if (typeof value !== "number")
-              throw new Error("Unix timestamp must be sent in seconds"); // should never happen
+              throw new Error(
+                "Unix timestamp must be sent in seconds, null, undefined, or Date"
+              ); // should never happen
+
             // assuming the timestamp is being sent in seconds
             return new Date(value * 1000);
           },
       ...sqlOptions,
     },
-    typeDefOptions,
+    ...remainingOptions,
   });
 }
 
 export function generateDateField(params: GenerateFieldParams) {
-  const {
-    description,
-    allowNull = true,
-    allowNullOutput,
-    defaultValue,
-    hidden,
-    nestHidden,
-    sqlOptions,
-    typeDefOptions,
-  } = params;
+  const { ...remainingOptions } = params;
   return generateStandardField({
-    description,
-    allowNull,
-    allowNullOutput,
-    defaultValue,
-    hidden,
-    nestHidden,
     sqlType: "date",
     type: Scalars.date,
-    sqlOptions,
-    typeDefOptions,
+    ...remainingOptions,
   });
 }
 
 export function generateTextField(params: GenerateFieldParams) {
-  const {
-    description,
-    allowNull = true,
-    allowNullOutput,
-    hidden,
-    nestHidden,
-    sqlOptions,
-    typeDefOptions,
-  } = params;
+  const { ...remainingOptions } = params;
   return generateStandardField({
-    description,
-    allowNull,
-    allowNullOutput,
-    hidden,
-    nestHidden,
     sqlType: "text",
     type: Scalars.string,
-    sqlOptions,
-    typeDefOptions,
+    ...remainingOptions,
   });
 }
 
@@ -290,24 +219,12 @@ export function generateIntegerField(
   }
 ) {
   const {
-    description,
-    allowNull = true,
-    allowNullOutput,
-    defaultValue,
-    hidden,
-    nestHidden,
     sqlOptions,
-    typeDefOptions,
     type = Scalars.number,
     bigInt = false,
+    ...remainingOptions
   } = params;
   return generateStandardField({
-    description,
-    allowNull,
-    allowNullOutput,
-    defaultValue,
-    hidden,
-    nestHidden,
     sqlType: bigInt ? "bigInteger" : "integer",
     type,
     sqlOptions: {
@@ -315,7 +232,7 @@ export function generateIntegerField(
       parseValue: (val) => (Number.isNaN(val) ? undefined : val),
       ...sqlOptions,
     },
-    typeDefOptions,
+    ...remainingOptions,
   });
 }
 
@@ -324,24 +241,8 @@ export function generateFloatField(
     type?: GiraffeqlScalarType;
   }
 ) {
-  const {
-    description,
-    allowNull = true,
-    allowNullOutput,
-    defaultValue,
-    hidden,
-    nestHidden,
-    sqlOptions,
-    typeDefOptions,
-    type = Scalars.number,
-  } = params;
+  const { sqlOptions, type = Scalars.number, ...remainingOptions } = params;
   return generateStandardField({
-    description,
-    allowNull,
-    allowNullOutput,
-    defaultValue,
-    hidden,
-    nestHidden,
     sqlType: "float",
     type,
     sqlOptions: {
@@ -349,7 +250,7 @@ export function generateFloatField(
       parseValue: (val) => (Number.isNaN(val) ? undefined : val),
       ...sqlOptions,
     },
-    typeDefOptions,
+    ...remainingOptions,
   });
 }
 
@@ -361,25 +262,13 @@ export function generateDecimalField(
   }
 ) {
   const {
-    description,
-    allowNull = true,
-    allowNullOutput,
-    defaultValue,
-    hidden,
-    nestHidden,
     sqlOptions,
-    typeDefOptions,
     scale = 2,
     precision = 8,
     type = Scalars.number,
+    ...remainingOptions
   } = params;
   return generateStandardField({
-    description,
-    allowNull,
-    allowNullOutput,
-    defaultValue,
-    hidden,
-    nestHidden,
     sqlType: "decimal",
     type,
     sqlOptions: {
@@ -391,68 +280,85 @@ export function generateDecimalField(
       },
       ...sqlOptions,
     },
-    typeDefOptions,
+    ...remainingOptions,
   });
 }
 
 export function generateBooleanField(params: GenerateFieldParams) {
-  const {
-    description,
-    allowNull = true,
-    allowNullOutput,
-    defaultValue,
-    hidden,
-    nestHidden,
-    sqlOptions,
-    typeDefOptions,
-  } = params;
+  const { ...remainingOptions } = params;
   return generateStandardField({
-    description,
-    allowNull,
-    allowNullOutput,
-    defaultValue,
-    hidden,
-    nestHidden,
     sqlType: "boolean",
     type: Scalars.boolean,
-    sqlOptions,
-    typeDefOptions,
+    ...remainingOptions,
   });
 }
 
 // array of [type], stored in DB as JSON
 export function generateArrayField(
   params: {
-    type: GiraffeqlScalarType | GiraffeqlObjectTypeLookup | GiraffeqlObjectType;
-    uniqueKeys?: string[];
+    type:
+      | GiraffeqlScalarType
+      | GiraffeqlObjectTypeLookup
+      | GiraffeqlObjectType
+      | GiraffeqlObjectTypeLookupService;
+    uniqueKeyPaths?: string[];
     allowNullElement?: boolean;
   } & GenerateFieldParams
 ) {
   const {
-    description,
     allowNull = true,
-    allowNullOutput,
     allowNullElement = false,
-    hidden,
-    nestHidden,
     type,
     sqlOptions,
+    uniqueKeyPaths,
     typeDefOptions,
-    uniqueKeys,
+    ...remainingOptions
   } = params;
+
+  // keeps track of the nested typeDefs, if any
+  const nestedServiceTypeDefMap: Map<string, GiraffeqlObjectTypeLookupService> =
+    new Map();
 
   // if adding a GiraffeqlObjectType, also need to register the equivalent GiraffeqlInputFieldType if it doesn't exist
   if (type instanceof GiraffeqlObjectType) {
+    // for any GiraffeqlObjectTypeLookupService fields, need to add it to nestedServiceTypeDefMap
+    Object.entries(type.definition.fields).forEach(([key, value]) => {
+      if (value.type instanceof GiraffeqlObjectTypeLookupService) {
+        nestedServiceTypeDefMap.set(key, value.type);
+      }
+    });
+
+    // if equivalent GiraffeqlInputFieldType doesn't exist, create one
     if (!inputTypeDefs.has(type.definition.name)) {
       const fields = Object.entries(type.definition.fields).reduce(
         (total, [key, value]) => {
-          // ONLY scalars processed at the moment
           if (value.type instanceof GiraffeqlScalarType) {
             total[key] = new GiraffeqlInputFieldType({
               type: value.type,
               allowNull: value.allowNull,
+              // unsure if arrays are supported at the moment
+              arrayOptions: value.arrayOptions,
               required: value.required,
             });
+          } else if (value.type instanceof GiraffeqlObjectTypeLookupService) {
+            total[key] = new GiraffeqlInputFieldType({
+              type: value.type.service.inputTypeDefLookup,
+              required: value.required,
+              // unsure if arrays are supported at the moment
+              arrayOptions: value.arrayOptions,
+              allowNull: value.allowNullInput,
+            });
+          } else if (value.type instanceof GiraffeqlObjectTypeLookup) {
+            total[key] = new GiraffeqlInputFieldType({
+              type: new GiraffeqlInputTypeLookup(value.type.name),
+              required: value.required,
+              // unsure if arrays are supported at the moment
+              arrayOptions: value.arrayOptions,
+              allowNull: value.allowNullInput,
+            });
+          } else {
+            // GiraffeqlObjectType not supported
+            throw new Error(`GiraffeqlObjectType not currently supported`);
           }
 
           return total;
@@ -469,26 +375,26 @@ export function generateArrayField(
   }
 
   return generateStandardField({
-    description,
     arrayOptions: {
       allowNullElement,
     },
     allowNull,
-    allowNullOutput,
-    hidden,
-    nestHidden,
     sqlType: "jsonb",
     type,
     ...(!allowNull && { defaultValue: [] }),
     sqlOptions: {
       // necessary for inserting JSON into DB properly
       parseValue: (val) => {
-        // if uniqueKeys, confirm that there are no duplicates given the key combinations
-        if (val && uniqueKeys) {
+        // if uniqueKeyPaths, confirm that there are no duplicates given the key combinations (assuming it is not an array of scalars)
+        if (val && uniqueKeyPaths && !(type instanceof GiraffeqlScalarType)) {
           const uniqueValues = new Set();
 
           val.forEach((ele) => {
-            const keyValue = uniqueKeys.map((key) => ele[key]).join("-");
+            if (!ele) return;
+
+            const keyValue = uniqueKeyPaths
+              .map((keyPath) => getNestedProperty(ele, keyPath))
+              .join("-");
 
             if (uniqueValues.has(keyValue)) {
               throw new Error(
@@ -501,11 +407,137 @@ export function generateArrayField(
 
         return JSON.stringify(val);
       },
+
       ...sqlOptions,
     },
     typeDefOptions: {
       ...typeDefOptions,
+      dataloader:
+        type instanceof GiraffeqlObjectTypeLookupService
+          ? async ({
+              req,
+              rootResolver,
+              query,
+              fieldPath,
+              resultsArray,
+              field,
+            }) => {
+              // elements is expected to be an array of ids in this case
+              const elements: any[] = [];
+
+              // aggregate elements
+              resultsArray.forEach((result) => {
+                if (!result) return;
+                // if it is an array of ids, need to add them each individually
+                if (Array.isArray(result[field])) {
+                  elements.push(...result[field]);
+                }
+              });
+
+              // if no elements empty, return
+              if (!elements.length) return;
+
+              // aggregator function that must accept elements = [1, 2, 3, ...]
+              const aggregatedResults = await getObjectType({
+                typename: type.service.typename,
+                req,
+                rootResolver,
+                fieldPath,
+                additionalSelect: [
+                  {
+                    field: "id", // always add the required id field, in case it wasn't requested in the query
+                  },
+                ],
+                externalQuery: query,
+                sqlParams: {
+                  where: [{ field: "id", operator: "in", value: elements }],
+                },
+              });
+
+              // build id -> record map
+              const recordMap = new Map();
+              aggregatedResults.forEach((result: any) => {
+                recordMap.set(result.id, result);
+              });
+
+              // join the records in memory
+              resultsArray.forEach((result) => {
+                if (!result) return;
+
+                // if it is an array of ids, need to map them each individually
+                if (Array.isArray(result[field])) {
+                  // if not found, exclude entirely
+                  result[field] = result[field]
+                    .map((id) => recordMap.get(id) ?? null)
+                    .filter((ele) => ele);
+                }
+              });
+            }
+          : nestedServiceTypeDefMap.size
+          ? async ({
+              req,
+              rootResolver,
+              query,
+              fieldPath,
+              resultsArray,
+              field,
+            }) => {
+              // elements is expected to be an array of objects in this case (due to nested type)
+              const elements: any[] = [];
+
+              // aggregate elements
+              resultsArray.forEach((result) => {
+                if (!result) return;
+                // if it is an array of ids, need to add them each individually
+                if (Array.isArray(result[field])) {
+                  elements.push(...result[field]);
+                }
+              });
+
+              // if no elements empty, return
+              if (!elements.length) return;
+
+              // for each typeDef element of the array, extract the Ids
+              for (const [
+                fieldKey,
+                typeDefLookupService,
+              ] of nestedServiceTypeDefMap) {
+                const idsArray = elements.map((ele) => ele[fieldKey]);
+
+                // fetch the results
+                const aggregatedResults = await getObjectType({
+                  typename: typeDefLookupService.service.typename,
+                  req,
+                  rootResolver,
+                  fieldPath,
+                  additionalSelect: [
+                    {
+                      field: "id", // always add the required id field, in case it wasn't requested in the query
+                    },
+                  ],
+                  externalQuery: query[fieldKey],
+                  sqlParams: {
+                    where: [{ field: "id", operator: "in", value: idsArray }],
+                  },
+                });
+
+                // build id -> record map
+                const recordMap = new Map();
+                aggregatedResults.forEach((result: any) => {
+                  recordMap.set(result.id, result);
+                });
+
+                // join the records in memory
+                elements.forEach((element) => {
+                  if (!element) return;
+
+                  element[fieldKey] = recordMap.get(element[fieldKey]) ?? null;
+                });
+              }
+            }
+          : undefined,
     },
+    ...remainingOptions,
   });
 }
 
@@ -513,19 +545,24 @@ export function generateArrayField(
 export function generateJSONField(
   params: {
     // custom type can be Scalars.jsonString, Scalars.json, or some other custom json structure
-    type?: GiraffeqlScalarType | GiraffeqlObjectType;
+    type?:
+      | GiraffeqlScalarType
+      | GiraffeqlObjectTypeLookup
+      | GiraffeqlObjectType
+      | GiraffeqlObjectTypeLookupService;
   } & GenerateFieldParams
 ) {
   const {
     type = Scalars.jsonString,
-    description,
-    allowNull = true,
-    allowNullOutput,
-    hidden,
-    nestHidden,
     sqlOptions,
     typeDefOptions,
+    ...remainingOptions
   } = params;
+
+  // keeps track of the nested typeDefs, if any
+  // (realistically, this would only be used instead of generateJoinableField if the field is a nested object type, e.g. { user: 123, foo: 'bar' })
+  const nestedServiceTypeDefMap: Map<string, GiraffeqlObjectTypeLookupService> =
+    new Map();
 
   // if type is a giraffeqlObjectType, need to also generate and register the matching input
   if (type instanceof GiraffeqlObjectType) {
@@ -535,24 +572,34 @@ export function generateJSONField(
         name: inputName,
         description: type.definition.description,
         fields: Object.entries(type.definition.fields).reduce(
-          (total, [key, val]) => {
-            // currently only allowed to put scalars in nested json objects (sorry)
-            if (val.type instanceof GiraffeqlScalarType) {
+          (total, [key, value]) => {
+            if (value.type instanceof GiraffeqlScalarType) {
               total[key] = new GiraffeqlInputFieldType({
-                type: val.type,
-                required: true,
-                arrayOptions: val.arrayOptions,
-                allowNull: val.allowNullInput,
+                type: value.type,
+                required: value.required,
+                arrayOptions: value.arrayOptions,
+                allowNull: value.allowNullInput,
               });
-            } else if (val.type instanceof GiraffeqlObjectTypeLookup) {
-              // also allowing GiraffeqlObjectTypeLookup
+            } else if (value.type instanceof GiraffeqlObjectTypeLookupService) {
+              nestedServiceTypeDefMap.set(key, value.type);
               total[key] = new GiraffeqlInputFieldType({
-                type: new GiraffeqlInputTypeLookup(val.type.name),
-                required: true,
-                arrayOptions: val.arrayOptions,
-                allowNull: val.allowNullInput,
+                type: value.type.service.inputTypeDefLookup,
+                required: value.required,
+                arrayOptions: value.arrayOptions,
+                allowNull: value.allowNullInput,
               });
+            } else if (value.type instanceof GiraffeqlObjectTypeLookup) {
+              total[key] = new GiraffeqlInputFieldType({
+                type: new GiraffeqlInputTypeLookup(value.type.name),
+                required: value.required,
+                arrayOptions: value.arrayOptions,
+                allowNull: value.allowNullInput,
+              });
+            } else {
+              // GiraffeqlObjectType not supported
+              throw new Error(`GiraffeqlObjectType not currently supported`);
             }
+
             return total;
           },
           {}
@@ -562,11 +609,6 @@ export function generateJSONField(
   }
 
   return generateStandardField({
-    description,
-    allowNull,
-    allowNullOutput,
-    hidden,
-    nestHidden,
     sqlType: "jsonb",
     type,
     sqlOptions: {
@@ -578,40 +620,86 @@ export function generateJSONField(
     },
     typeDefOptions: {
       ...typeDefOptions,
+      dataloader: nestedServiceTypeDefMap.size
+        ? async ({
+            req,
+            rootResolver,
+            query,
+            fieldPath,
+            resultsArray,
+            field,
+          }) => {
+            // elements is expected to be an array of objects in this case (due to nested type)
+            const elements: any[] = [];
+
+            // aggregate elements
+            resultsArray.forEach((result) => {
+              if (!result) return;
+              // if it is an array of ids, need to add them each individually
+              if (result[field]) {
+                elements.push(...result[field]);
+              }
+            });
+
+            // if no elements empty, return
+            if (!elements.length) return;
+
+            // for each typeDef element of the array, extract the Ids
+            for (const [
+              fieldKey,
+              typeDefLookupService,
+            ] of nestedServiceTypeDefMap) {
+              const idsArray = elements.map((ele) => ele[fieldKey]);
+
+              // fetch the results
+              const aggregatedResults = await getObjectType({
+                typename: typeDefLookupService.service.typename,
+                req,
+                rootResolver,
+                fieldPath,
+                additionalSelect: [
+                  {
+                    field: "id", // always add the required id field, in case it wasn't requested in the query
+                  },
+                ],
+                externalQuery: query[fieldKey],
+                sqlParams: {
+                  where: [{ field: "id", operator: "in", value: idsArray }],
+                },
+              });
+
+              // build id -> record map
+              const recordMap = new Map();
+              aggregatedResults.forEach((result: any) => {
+                recordMap.set(result.id, result);
+              });
+
+              // join the records in memory
+              elements.forEach((element) => {
+                if (!element) return;
+
+                element[fieldKey] = recordMap.get(element[fieldKey] ?? null);
+              });
+            }
+          }
+        : undefined,
     },
+    ...remainingOptions,
   });
 }
 
 // should handle kenums too
 export function generateEnumField(
   params: {
-    scalarDefinition: GiraffeqlScalarType;
-    isKenum?: boolean;
+    service: EnumService;
     defaultValue?: Enum | Kenum;
   } & GenerateFieldParams
 ) {
-  const {
-    description,
-    allowNull = true,
-    allowNullOutput,
-    defaultValue, // must be abcEnum
-    hidden,
-    nestHidden,
-    scalarDefinition,
-    sqlOptions,
-    typeDefOptions,
-    isKenum = false,
-  } = params;
-
+  const { defaultValue, service, sqlOptions, ...remainingOptions } = params;
   return generateStandardField({
-    description,
-    allowNull,
-    allowNullOutput,
     defaultValue: defaultValue?.parsed,
-    hidden,
-    nestHidden,
-    sqlType: isKenum ? "integer" : "string",
-    type: scalarDefinition,
+    sqlType: service.enum.type === "Kenum" ? "integer" : "string",
+    type: service.scalarDefinition,
     sqlOptions: {
       parseValue: (value: unknown) => {
         // if Enum type, return the parsed value (for storing in DB)
@@ -624,7 +712,7 @@ export function generateEnumField(
       },
       ...sqlOptions,
     },
-    typeDefOptions,
+    ...remainingOptions,
   });
 }
 
@@ -641,7 +729,7 @@ export function generateKeyValueArray(
     keyType = Scalars.string,
     valueType = Scalars.string,
     allowNullValue = false,
-    ...remainingParams
+    ...remainingOptions
   } = params;
 
   let finalObjectName: string;
@@ -704,7 +792,7 @@ export function generateKeyValueArray(
   return generateArrayField({
     allowNullElement: false,
     type: new GiraffeqlObjectTypeLookup(finalObjectName),
-    ...remainingParams,
+    ...remainingOptions,
   });
 }
 
@@ -719,14 +807,16 @@ export function generateTimestampFields() {
       allowNull: false,
       defaultValue: knex.fn.now(),
       sqlOptions: { field: "created_at" },
-      typeDefOptions: { addable: false, updateable: false }, // not addable or updateable
+      addable: false,
+      updateable: false, // not addable or updateable
     }),
     updatedAt: generateUnixTimestampField({
       description: "When the record was last updated",
       allowNull: false,
       defaultValue: knex.fn.now(),
       sqlOptions: { field: "updated_at" },
-      typeDefOptions: { addable: false, updateable: false }, // not addable or updateable
+      addable: false,
+      updateable: false, // not addable or updateable
       nowOnly: true,
     }),
   };
@@ -739,7 +829,8 @@ export function generateIdField(service: PaginatedService) {
       allowNull: false,
       sqlType: service.primaryKeyAutoIncrement ? "integer" : "string",
       type: service.primaryKeyAutoIncrement ? Scalars.number : Scalars.id,
-      typeDefOptions: { addable: false, updateable: false }, // not addable or updateable
+      addable: false,
+      updateable: false, // not addable or updateable
     }),
   };
 }
@@ -750,10 +841,10 @@ export function generateTypenameField(service: BaseService) {
       description: "The typename of the record",
       allowNull: false,
       type: Scalars.string,
+      addable: false,
+      updateable: false,
       typeDefOptions: {
         resolver: () => service.typename,
-        addable: false,
-        updateable: false, // not addable or updateable
       },
     }),
   };
@@ -770,7 +861,8 @@ export function generateCreatedByField(
       sqlOptions: {
         field: "created_by",
       },
-      typeDefOptions: { addable: false, updateable: false }, // not addable or updateable
+      addable: false,
+      updateable: false, // not addable or updateable
     }),
   };
 }
@@ -780,101 +872,15 @@ export function generateJoinableField(
     service: PaginatedService;
   } & GenerateFieldParams
 ) {
-  const {
-    description,
-    allowNull = true,
-    allowNullOutput,
-    defaultValue,
-    hidden,
-    sqlOptions,
-    typeDefOptions,
-    service,
-  } = params;
+  const { sqlOptions, service, ...remainingOptions } = params;
   return generateStandardField({
-    description,
-    allowNull,
-    allowNullOutput,
-    defaultValue,
-    hidden,
     sqlType: service.primaryKeyAutoIncrement ? "integer" : "string",
     type: service.typeDefLookup,
-    typeDefOptions,
     sqlOptions: {
       joinType: service.typename,
       ...sqlOptions,
     },
-  });
-}
-
-// alternative strategy for "joins"
-export function generateDataloadableField(
-  params: {
-    service: PaginatedService;
-    isArray?: boolean;
-  } & GenerateFieldParams
-) {
-  const {
-    description,
-    allowNull = true,
-    allowNullOutput,
-    isArray = false,
-    defaultValue,
-    hidden,
-    service,
-    sqlOptions,
-    typeDefOptions,
-  } = params;
-  return generateStandardField({
-    description,
-    allowNull,
-    allowNullOutput,
-    defaultValue:
-      defaultValue === undefined && isArray && !allowNullOutput
-        ? []
-        : defaultValue,
-    hidden,
-    sqlType: service.primaryKeyAutoIncrement ? "integer" : "string",
-    type: service.typeDefLookup,
-    sqlOptions: {
-      ...(isArray && {
-        // necessary for inserting JSON into DB properly
-        parseValue: (val) => {
-          // storing in DB as JSON: ["id1", "id2", ...]
-          return JSON.stringify(val);
-        },
-        type: "jsonb",
-      }),
-      ...sqlOptions,
-    },
-    typeDefOptions: {
-      dataloader: ({ req, rootResolver, query, fieldPath, idArray }) => {
-        // if idArray empty, return empty array
-        if (!idArray.length) return Promise.resolve([]);
-        // aggregator function that must accept idArray = [1, 2, 3, ...]
-        return getObjectType({
-          typename: service.typename,
-          req,
-          rootResolver,
-          fieldPath,
-          additionalSelect: [
-            {
-              field: "id", // always add the required id field, in case it wasn't requested in the query
-            },
-          ],
-          externalQuery: query,
-          sqlParams: {
-            where: [{ field: "id", operator: "in", value: idArray }],
-          },
-        });
-      },
-      ...(isArray && {
-        arrayOptions: {
-          // nulls are filtered out automatically by dataloader
-          allowNullElement: false,
-        },
-      }),
-      ...typeDefOptions,
-    },
+    ...remainingOptions,
   });
 }
 
@@ -1268,7 +1274,7 @@ export function generatePaginatorPivotResolverObject({
   }
 
   return <ObjectTypeDefinitionField>{
-    type: new GiraffeqlObjectType(<ObjectTypeDefinition>{
+    type: new GiraffeqlObjectType({
       name: `${pivotService.typename}Paginator`,
       description: "Paginator",
       fields: {
@@ -1993,10 +1999,7 @@ export function generateLinkTypeDef(
       service: servicesObjectMap[field].service,
       allowNull: servicesObjectMap[field].allowNull ?? false,
       allowNullOutput: servicesObjectMap[field].allowNullOutput,
-      typeDefOptions: {
-        addable: true,
-        updateable: servicesObjectMap[field].updateable ?? true,
-      },
+      updateable: servicesObjectMap[field].updateable ?? true,
       sqlOptions: {
         unique: "compositeIndex",
         ...(servicesObjectMap[field].sqlField && {
@@ -2006,7 +2009,7 @@ export function generateLinkTypeDef(
     });
   }
 
-  return <ObjectTypeDefinition>processTypeDef({
+  return processTypeDef({
     name: currentService.typename,
     description: "Link type",
     fields: {

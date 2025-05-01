@@ -32,7 +32,7 @@ import { copyToClipboard, generateShareUrl } from '~/services/base'
 
 export default {
   props: {
-    selectedItem: {
+    parentItem: {
       type: Object,
       required: true,
     },
@@ -48,19 +48,19 @@ export default {
         ? this.viewDefinition.shareOptions.getUrl(
             this,
             this.viewDefinition,
-            this.selectedItem.id
+            this.parentItem.id
           )
         : generateShareUrl(this, {
-            routeKey: this.viewDefinition.entity.typename,
-            id: this.selectedItem.id,
+            routeKey: this.viewDefinition.routeKey,
+            id: this.parentItem.id,
             showComments: true,
           })
     },
     // default to name || id
     itemIdentifier() {
       return this.viewDefinition.entity.nameField
-        ? this.selectedItem[this.viewDefinition.entity.nameField]
-        : this.selectedItem.id
+        ? this.parentItem[this.viewDefinition.entity.nameField]
+        : this.parentItem.id
     },
   },
 

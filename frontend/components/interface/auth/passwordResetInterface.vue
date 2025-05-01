@@ -56,9 +56,9 @@ export default {
           url: window.location.origin + '/login',
         })
 
-        this.$notifier.showSnackbar({
-          message: 'Password reset email sent',
-          variant: 'success',
+        this.$root.$emit('showSnackbar', {
+          message: `Password reset email sent`,
+          color: 'success',
         })
       } catch (err) {
         handleError(this, err)

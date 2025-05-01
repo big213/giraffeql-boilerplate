@@ -1,16 +1,12 @@
-import { RenderFieldDefinition } from '.'
+import { RenderDefinition, RenderFieldDefinition } from '.'
 import { EntityDefinition } from './entity'
 import { FollowOptions, HeroOptions } from './view'
 
 export type PreviewDefinition = {
   entity: EntityDefinition
 
-  renderFields: {
-    [x in string]: RenderFieldDefinition
-  }
-
-  // required: fields that can be previewed
-  fields: string[]
+  // required: fields that can be previewed -- no lookups allowed
+  fields: PreviewRenderFieldDefinition[]
 
   // should the previewOptions interface show a hero image/text at the top
   heroOptions?: HeroOptions
@@ -27,3 +23,8 @@ export type PreviewDefinition = {
 
   followOptions?: {} & FollowOptions
 }
+
+export type PreviewRenderFieldDefinition = {
+  // renderDefinition is always required in this case
+  renderDefinition: RenderDefinition
+} & RenderFieldDefinition

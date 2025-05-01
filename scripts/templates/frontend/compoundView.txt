@@ -1,0 +1,12 @@
+import { ViewDefinition } from '~/types/view'
+import { Base{{ capitalizedTypename }}View } from '../base'
+
+export const {{ capitalizedRouteType }}{{ capitalizedName }}View: ViewDefinition = {
+  ...Base{{ capitalizedTypename }}View,
+  routeType: '{{ routeType }}',
+  routeKey: '{{ name }}',
+  title: `{{ capitalizedRouteType }} ${Base{{ capitalizedTypename }}View.entity.pluralName}`,
+  paginationOptions: {
+    ...Base{{ capitalizedTypename }}View.paginationOptions!,
+  },
+}

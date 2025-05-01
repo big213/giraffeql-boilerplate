@@ -7,18 +7,80 @@ import { objectOnlyHasFields } from "../core/helpers/shared";
 import { User } from "../services";
 
 export const userRoleToPermissionsMap = {
-  [userRole.ADMIN.name]: [userPermission.A_A],
+  [userRole.ADMIN.name]: [userPermission["*"]],
   [userRole.NORMAL.name]: [],
 };
 
 export function parsePermissions(
   permissions: null | string[]
-): userPermission[] {
-  if (!permissions) return [];
+): userPermission[] | null {
+  if (!permissions) return null;
 
   return permissions.map((permission) =>
-    userPermission.fromUnknown(permission)
+    userPermission.parseNoNulls(permission)
   );
+}
+
+// gets all of the user's permissions, with inputs as raw fields from the database
+export function getUserPermissions({
+  role,
+  permissions,
+}: {
+  role: unknown;
+  permissions: string[] | null;
+}) {
+  const currentUserRole = userRole.parseNoNulls(role);
+
+  return (userRoleToPermissionsMap[currentUserRole.name] ?? []).concat(
+    parsePermissions(permissions) ?? []
+  );
+}
+
+// filter the apiKey.permissions based on the userPermissions
+
+export function getAllowedApiKeyPermissions({
+  userPermissions,
+  apiKeyPermissions,
+}: {
+  userPermissions: userPermission[];
+  apiKeyPermissions: userPermission[] | null;
+}) {
+  return apiKeyPermissions
+    ? apiKeyPermissions.filter((permission) =>
+        isPermissionAllowed({
+          userPermissions: userPermissions,
+          permission,
+        })
+      )
+    : userPermissions;
+}
+
+// is the permission allowed given the array of userPermissions?
+export function isPermissionAllowed({
+  userPermissions,
+  permission,
+}: {
+  userPermissions: userPermission[];
+  permission: userPermission;
+}) {
+  // if the userPermissions has *, allow all requested permissions
+  if (userPermissions.includes(userPermission["*"])) return true;
+
+  // if it has the specific permission, allow
+  if (userPermissions.includes(permission)) return true;
+
+  // if the permission contains "/", check to see if the wildcard permission is present
+  const serviceNameMatches = permission.name.match(/^(\w+)\/(\w+)$/);
+  if (serviceNameMatches) {
+    const serviceName = serviceNameMatches[1];
+
+    const wildcardPermission = userPermission[`${serviceName}/*`];
+
+    if (wildcardPermission && userPermissions.includes(wildcardPermission))
+      return true;
+  }
+
+  return false;
 }
 
 export function generateUserAdminGuard(): AccessControlFunction {
@@ -82,14 +144,27 @@ export function allFiltersSynced(filterByArray: any, fieldPath: string) {
   });
 }
 
-export function validateQueryFields(query: any, allowedFields: string[]) {
-  if (isObject(query) && objectOnlyHasFields(query, allowedFields)) {
+export function validateQueryFields(
+  query: any,
+  allowedFields: string[],
+  allowBaseFields = true
+) {
+  if (
+    isObject(query) &&
+    objectOnlyHasFields(
+      query,
+      allowedFields.concat(
+        allowBaseFields ? ["id", "__typename", "createdAt", "updatedAt"] : []
+      )
+    )
+  ) {
     return true;
   }
 
   return false;
 }
 
+// note: risky to use since it would need to be maintained when new fields are added
 export function queryExcludesFields(
   query: StringKeyObject | null | undefined,
   fields: string[]
@@ -131,12 +206,22 @@ export function allowIfRecordFieldIsCurrentUserFn(
   };
 }
 
-export function allowIfFilteringByCurrentUserFn(fieldPath: string) {
+// if fieldPath is an array of strings, run the filterPassesTest individually to make sure it's always the same filter that is passing
+export function allowIfFilteringByCurrentUserFn(fieldPath: string | string[]) {
+  const fieldPaths = Array.isArray(fieldPath) ? fieldPath : [fieldPath];
+
   return async function ({ req, args }) {
+    // if at least one of the fieldPaths passes, allow
     if (
-      await filterPassesTest(args.filterBy, (filterObject) => {
-        return isCurrentUser(req, filterObject[fieldPath]?.eq);
-      })
+      (
+        await Promise.all(
+          fieldPaths.map((fieldPath) =>
+            filterPassesTest(args.filterBy, (filterObject) =>
+              isCurrentUser(req, filterObject[fieldPath]?.eq)
+            )
+          )
+        )
+      ).some((res) => res)
     ) {
       return true;
     }

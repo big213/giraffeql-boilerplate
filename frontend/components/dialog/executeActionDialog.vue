@@ -9,8 +9,8 @@
     <component
       :is="interfaceComponent"
       :action-definition="actionDefinition"
-      :item="item"
-      :selected-item="selectedItem"
+      :parent-item="parentItem"
+      :locked-fields="lockedFields"
       dialog-mode
       :generation="generation"
       @handle-submit="handleSubmit"
@@ -22,8 +22,12 @@
           <v-toolbar-title>
             <span class="headline">{{ actionDefinition.title }}</span>
           </v-toolbar-title>
-          <v-divider v-if="item" class="mx-4" inset vertical></v-divider>
-          <PreviewRecordChip v-if="item" :value="item" class="pointer-cursor">
+          <v-divider v-if="parentItem" class="mx-4" inset vertical></v-divider>
+          <PreviewRecordChip
+            v-if="parentItem"
+            :value="parentItem"
+            class="pointer-cursor"
+          >
           </PreviewRecordChip>
           <v-spacer></v-spacer>
           <v-btn icon @click="close()">
@@ -48,11 +52,11 @@ export default {
   },
 
   props: {
-    item: {
+    parentItem: {
       type: Object,
     },
 
-    selectedItem: {
+    lockedFields: {
       type: Object,
     },
 

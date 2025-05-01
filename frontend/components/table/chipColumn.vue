@@ -7,9 +7,9 @@
     >
       <MappedChip
         v-if="element"
-        :small="smallMode"
+        :small="options?.smallMode"
         :value="element"
-        :values-map="valuesMap"
+        :values-map="options?.valuesMap"
       >
       </MappedChip>
       <v-chip v-else-if="emptyText" small
@@ -17,14 +17,6 @@
       >
     </span>
     <i v-if="!elements.length && emptyText">{{ emptyText }}</i>
-    <v-icon
-      v-if="editable"
-      small
-      right
-      slot="right-icon"
-      @click.stop="openEditFieldDialog()"
-      >mdi-pencil</v-icon
-    >
   </div>
 </template>
 
@@ -61,24 +53,6 @@ export default {
 
     emptyText() {
       return this.options?.emptyText
-    },
-
-    smallMode() {
-      return this.options?.smallMode
-    },
-
-    valuesMap() {
-      return this.options?.valuesMap
-    },
-
-    editable() {
-      return this.options?.editable
-    },
-  },
-
-  methods: {
-    openEditFieldDialog() {
-      this.$emit('edit-item', this.item, [this.fieldPath])
     },
   },
 }

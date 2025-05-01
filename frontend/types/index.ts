@@ -1,10 +1,83 @@
 import { FilterByField } from '../../schema'
 import { EntityDefinition } from './entity'
 
-export type InputOptions = {} & {
-  inputType: InputType
+export type InputFieldDefinition = {
+  fieldKey: string
+  // if inputDefinition is undefined, will attempt lookup using fieldKey (if available)
+  inputDefinition?: InputDefinition
+  cols?: number
+  handleFileAdded?: (that, inputsArray, inputObject, fileRecord) => void
+  hideIf?: (that, parentItem, inputsArray) => boolean
 
-  getOptions?: (that, item) => Promise<any[]>
+  watch?: (that, val, prev) => void
+}
+
+export type NestedOptions = {
+  entryName?: string
+  pluralEntryName?: string
+  fields: NestedInputFieldDefinition[]
+}
+
+export type NestedInputFieldDefinition = {
+  // fieldKey is always required, as string lookups not allowed
+  inputDefinition: InputDefinition
+} & InputFieldDefinition
+
+export type SortFieldDefinition = {
+  text?: string
+  fieldPath: string
+  key: string
+  desc: boolean
+  additionalSortObjects?: {
+    fieldPath: string
+    desc: boolean
+  }[]
+}
+
+export type FilterInputFieldDefinition = InputFieldDefinition & {
+  text?: string // if overriding the inputDefinition.text
+  operator: keyof FilterByField<any>
+  preset?: boolean // should this filter show up as a preset
+  // should this filter show up in the special chip filters section? (only certain types supported)
+  chipOptions?: {
+    component?: any // a custom component for the chips, if any
+  }
+}
+
+export type InputType =
+  | 'html'
+  | 'single-image-url'
+  | 'multiple-image'
+  | 'multiple-file'
+  | 'single-file-url'
+  | 'value-array'
+  | 'datepicker'
+  | 'datetimepicker'
+  | 'switch'
+  | 'checkbox'
+  | 'boolean-select'
+  | 'stripe-cc'
+  | 'stripe-pi'
+  | 'stripe-pi-editable'
+  | 'textarea'
+  | 'type-combobox' // type-combobox allows the user to add new type inputs on the fly. if getOptions is provided, it will not fetch from server and instead just use the getOptions results
+  | 'type-autocomplete' // type-autocomplete allows user to type in stuff and get suggestions from the server. if getOptions is provided, those will be the initial search results only
+  | 'type-autocomplete-multiple' // same as type-autocomplete but allows for multiple inputs
+  | 'select' // standard select -- works with text or types
+  | 'multiple-select' // multiple select -- works with text or types
+  | 'text-autocomplete' // validate text input using server-side calls
+  | 'text-combobox' // validate text input using server-side calls, but selection not required
+  | 'rating' // rating from 1 to 5
+  | 'text'
+
+export type InputDefinition = {} & {
+  // if not provided, will default to text field
+  inputType?: InputType
+
+  // the label for the field
+  text?: string
+
+  getOptions?: (that, forceReload?) => Promise<any[]>
   getInitialValue?: (that) => unknown
 
   // submitting to API, in filterBy and create/update functions
@@ -15,14 +88,15 @@ export type InputOptions = {} & {
   // is the field nullable? if so, we will add some text saying that to the input
   optional?: boolean
 
-  // should the "clear" X button be visible?
-  clearable?: boolean
-
   // for type-autocomplete, whether or not to load results from the server if getOptions is provided
   loadServerResults?: boolean
 
   // for type-autocomplete, type-combobox, multiple-select -- a way to fully customize the chip appearance. will override the hasAvatar
   selectionComponent?: any
+
+  // for multiple-select and select mainly -- a way to customize the appearance of enum-based chips using a simple valuesMap. will take precedence over selectionComponent
+  selectionValuesMap?: any
+
   // for avatar
   // fallbackIcon?: string
   // the nested type for this input if it is value-array
@@ -47,14 +121,14 @@ export type InputOptions = {} & {
       discountScheme?
     ) => PriceObject
     // for stripe-pi and stripe-pi-editable input types, function that returns the instanceOptions (in the genericInput)
-    getPaymentIntent: (that, inputObject, selectedItem, quantity, amount) => any
+    getPaymentIntent: (that, inputObject, parentItem, quantity, amount) => any
 
     // for stripe-pi, if there is a paypal option
     paypalOptions?: {
       createPaypalOrder: (
         that,
         inputObject,
-        selectedItem,
+        parentItem,
         quantity,
         amount
       ) => any
@@ -99,94 +173,14 @@ export type InputOptions = {} & {
   nestedOptions?: NestedOptions
 }
 
-export type NestedOptions = {
-  entryName?: string
-  pluralEntryName?: string
-  fields: {
-    key: string
-    text?: string
-    inputOptions?: InputOptions
-    cols?: number
-  }[]
-}
-
-export type SortObject = {
-  text?: string
-  field: string
-  key: string
-  desc: boolean
-  additionalSortObjects?: {
-    field: string
-    desc: boolean
-  }[]
-}
-
-export type FilterObject = {
-  text?: string
-  field: string
-  operator: keyof FilterByField<any>
-  inputOptions?: InputOptions
-  cols?: number
-  preset?: boolean // should this filter show up as a preset
-  // should this filter show up in the special chip filters section? (only certain types supported)
-  chipOptions?: {
-    component?: any // a custom component for the chips, if any
-  }
-}
-
-export type HeaderObject = {
-  field: string
-  width?: string
-  sortable?: boolean
-  align?: string
-  hideUnder?: 'sm' | 'md' | 'lg' | 'xl' // hide this column if viewport is smaller than this
-  hideIfDialog?: boolean // hide this column if shown in a dialog element
-  hideIfGrid?: boolean // hide this column if in grid mode
-  hideIfList?: boolean // hide this column if in list mode
-  hideIf?: (that) => boolean
-  hideTitleIfGrid?: boolean // hide the header if in a grid
-}
-
-export type InputType =
-  | 'html'
-  | 'single-image-url'
-  | 'multiple-image'
-  | 'multiple-file'
-  | 'single-file-url'
-  | 'value-array'
-  | 'datepicker'
-  | 'datetimepicker'
-  | 'switch'
-  | 'checkbox'
-  | 'stripe-cc'
-  | 'stripe-pi'
-  | 'stripe-pi-editable'
-  | 'textarea'
-  | 'type-combobox' // type-combobox allows the user to add new type inputs on the fly. if getOptions is provided, it will not fetch from server and instead just use the getOptions results
-  | 'type-autocomplete' // type-autocomplete allows user to type in stuff and get suggestions from the server. if getOptions is provided, those will be the initial search results only
-  | 'type-autocomplete-multiple' // same as type-autocomplete but allows for multiple inputs
-  | 'select' // standard select -- works with text or types
-  | 'multiple-select' // multiple select -- works with text or types
-  | 'text-autocomplete' // validate text input using server-side calls
-  | 'text-combobox' // validate text input using server-side calls, but selection not required
-  | 'rating' // rating from 1 to 5
-  | 'text'
-
-export type InputFieldDefinition = {
-  text?: string
-  // special options pertaining to the specific inputType
-  inputOptions?: InputOptions
-  // if not provided, will default to a text field
-} & {}
-
-export type RenderFieldDefinition = {
+export type RenderDefinition = {
   // label
   text?: string
   // which fields are required -- if none, assumes [x] *is* the only field
   fields?: string[]
 
   // path leading up to the field. i.e. item.blah
-  pathPrefix?: string
+  pathPrefix?: string | null
 
   // adds __args fields to the requesting query as necessary
   args?: {
@@ -201,34 +195,54 @@ export type RenderFieldDefinition = {
   renderOptions?: RenderOptions
 
   component?: any // component for rendering the field in table
+
+  editOptions?: {
+    mode?: 'right' | 'left' // how will the edit dialog be activated? if undefined, will default to right
+
+    fieldKey?: string // the field to be edited, if different from the default fieldKey
+  }
 }
 
 export type RenderOptions = {
   [x: string]: any
 }
 
-export type EditFieldDefinition = {
-  field: string
-  cols?: number
-  handleFileAdded?: (that, inputsArray, inputObject, fileRecord) => void
-  hideIf?: (that, inputsArray) => boolean
-  watch?: (that, val, prev) => void
+export type CreateInputFieldDefinition = InputFieldDefinition & {
+  // should this input be hidden if it is locked? -- only applies to create and actions
+  hideIfLocked?: boolean
+
+  // exclude the input entirely at initialization based on the snapshot -- only applies to create and actions
+  excludeIf?: (that, item, lockedFields) => boolean
 }
 
-export type ViewFieldDefinition = {
-  field: string
-  hideIf?: (that, fieldValue, item, inputsArray) => boolean
+export type EditInputFieldDefinition = InputFieldDefinition & {}
 
+export type HeaderRenderFieldDefinition = {
+  width?: string
+  align?: string
+  hideUnder?: 'sm' | 'md' | 'lg' | 'xl' // hide this column if viewport is smaller than this
+  hideIfDialog?: boolean // hide this column if shown in a dialog element
+  hideIfGrid?: boolean // hide this column if in grid mode
+  hideIfList?: boolean // hide this column if in list mode
+  hideIf?: (that) => boolean
+  hideTitleIfGrid?: boolean // hide the header if in a grid
+} & RenderFieldDefinition
+
+export type ViewRenderFieldDefinition = {
   // whether or not to show the key:val combo vertically
   verticalMode?: boolean
+} & RenderFieldDefinition
+
+export type RenderFieldDefinition = {
+  // if renderDefinition is undefined, attempt to look it up using the fieldKey
+  fieldKey: string
+  renderDefinition?: RenderDefinition
+  hideIf?: (that, fieldValue, item, inputsArray) => boolean
 }
 
 export type ImportFieldDefinition = {
-  // the corresponding field, for use with selectedItem binding
-  field: string
-
   // the fieldpath that should be imported, in dot notation
-  path?: string
+  fieldPath: string
 
   // for parsing CSV imports
   parseValue?: (val: any) => unknown
@@ -236,7 +250,9 @@ export type ImportFieldDefinition = {
 
 export type ExportFieldDefinition = {
   // the fieldpath that should be exported
-  field: string
+  fieldPath: string
+
+  title?: string
 
   // should the field be excluded if this returns true
   hideIf?: (that) => boolean
@@ -245,6 +261,8 @@ export type ExportFieldDefinition = {
     getArgs: (that) => any
     path: string
   }[]
+
+  serialize?: (that, value) => any
 }
 
 export type PriceObject = {

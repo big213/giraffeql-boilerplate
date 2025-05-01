@@ -57,7 +57,7 @@
 </template>
 
 <script>
-import { siteName, siteDescription } from '~/services/config'
+import { siteName, siteDescription } from '~/config'
 
 export default {
   data() {

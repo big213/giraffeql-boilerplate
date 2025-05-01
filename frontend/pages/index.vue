@@ -73,7 +73,7 @@ import {
   siteContactEmail,
   siteDiscordLink,
   logoHasLightVariant,
-} from '~/services/config'
+} from '~/config'
 import ReleaseHistory from '~/components/common/releaseHistory.vue'
 import * as views from '~/models/views'
 

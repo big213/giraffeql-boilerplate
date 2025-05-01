@@ -1,4 +1,4 @@
-import { executeApiRequest } from '~/services/api'
+import { executeApiRequest } from './api'
 import { handleError, timeout } from './base'
 import { auth } from './fireinit'
 

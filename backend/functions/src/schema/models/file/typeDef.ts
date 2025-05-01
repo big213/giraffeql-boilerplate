@@ -1,5 +1,5 @@
 import { User, File } from "../../services";
-import { GiraffeqlObjectType, ObjectTypeDefinition } from "giraffeql";
+import { GiraffeqlObjectType } from "giraffeql";
 import {
   generateIdField,
   generateCreatedByField,
@@ -9,14 +9,14 @@ import {
   processTypeDef,
   generateTimestampFields,
 } from "../../core/helpers/typeDef";
-import * as Scalars from "../../scalars";
 import { storage } from "firebase-admin";
 import { getDownloadURL } from "firebase-admin/storage";
-import { serveImageCdnUrl, serveImageSourcePath } from "../../../config";
+import { serveImageSourcePath } from "../../../config";
 import { generateServingUrl } from "../../helpers/file";
+import { Scalars } from "../../scalars";
 
 export default new GiraffeqlObjectType(
-  <ObjectTypeDefinition>processTypeDef({
+  processTypeDef({
     name: File.typename,
     description: "File",
     fields: {
@@ -25,16 +25,18 @@ export default new GiraffeqlObjectType(
       name: generateStringField({ allowNull: false }),
       size: generateIntegerField({
         allowNull: false,
-        typeDefOptions: { addable: false, updateable: false },
+        addable: false,
+        updateable: false,
         bigInt: true,
       }),
       location: generateStringField({
         allowNull: false,
-        typeDefOptions: { addable: true, updateable: false },
+        updateable: false,
       }),
       contentType: generateStringField({
         allowNull: false,
-        typeDefOptions: { addable: false, updateable: false },
+        addable: false,
+        updateable: false,
       }),
       servingUrl: {
         type: Scalars.url,
@@ -79,7 +81,7 @@ export default new GiraffeqlObjectType(
       },
       parentKey: generateStringField({
         allowNull: true,
-        typeDefOptions: { addable: true, updateable: false },
+        updateable: false,
       }),
       ...generateTimestampFields(),
       ...generateCreatedByField(User),

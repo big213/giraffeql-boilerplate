@@ -5,12 +5,21 @@ import { BaseUserView } from '../base'
 export const MyProfileView: ViewDefinition = {
   ...BaseUserView,
   routeType: 'my',
+  routeKey: 'profile',
   title: `My Profile`,
   updateOptions: {
     fields: ['avatarUrl', 'name', 'description', 'isPublic'],
     onSuccess: (that) => {
       // refresh the store entry after editing profile
       handleUserRefreshed(that)
+    },
+  },
+  pageOptions: {
+    ...BaseUserView.pageOptions,
+    getLookupParams: (that) => {
+      return {
+        id: that.$store.getters['auth/user']?.id,
+      }
     },
   },
   viewOptions: {

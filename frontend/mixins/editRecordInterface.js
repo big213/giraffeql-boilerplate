@@ -4,18 +4,17 @@ import {
   getNestedProperty,
   capitalizeString,
   handleError,
-  serializeNestedProperty,
   setInputValue,
   getInputValue,
   getInputObject,
   populateInputObject,
-  addNestedInputObject,
-  processInputObject,
-  processQuery,
+  processInputQuery,
   timeout,
   buildQueryFromFieldPathArray,
-  lookupInputField,
-  camelCaseToCapitalizedString,
+  generateInputObject,
+  addNestedInputObject,
+  processInputDefinitions,
+  processInputObjectArray,
 } from '~/services/base'
 import GenericInput from '~/components/input/genericInput.vue'
 import CircularLoader from '~/components/common/circularLoader.vue'
@@ -26,10 +25,9 @@ export default {
     CircularLoader,
   },
   props: {
-    // only required for edit mode
-    selectedItem: {
-      type: Object,
-    },
+    lockedFields: {},
+
+    parentItem: {},
 
     viewDefinition: {
       type: Object,
@@ -59,12 +57,6 @@ export default {
     generation: {
       type: Number,
       default: 0,
-    },
-
-    // to hide any fields that are locked via selectedItem
-    hideLockedFields: {
-      type: Boolean,
-      default: false,
     },
 
     // additional fields to hide
@@ -117,19 +109,10 @@ export default {
         this.mode === 'update' &&
         typeof this.viewDefinition.updateOptions.fields === 'function'
       ) {
-        return this.viewDefinition.updateOptions.fields(this, this.selectedItem)
+        return this.viewDefinition.updateOptions.fields(this, this.parentItem)
       }
 
       return this.viewDefinition[`${this.mode}Options`].fields
-    },
-
-    // extracts the field from any EditFieldDefinitions
-    rawFields() {
-      if (!this.fields) return []
-
-      return this.fields.map((fieldElement) =>
-        typeof fieldElement === 'string' ? fieldElement : fieldElement.field
-      )
     },
 
     capitalizedType() {
@@ -157,7 +140,7 @@ export default {
     visibleInputsArray() {
       return this.inputsArray.filter((inputObject) => {
         if (inputObject.hideIf)
-          return !inputObject.hideIf(this, this.inputsArray)
+          return !inputObject.hideIf(this, this.parentItem, this.inputsArray)
 
         return true
       })
@@ -165,7 +148,7 @@ export default {
   },
 
   watch: {
-    selectedItem() {
+    lockedFields() {
       this.reset()
     },
     generation() {
@@ -237,15 +220,7 @@ export default {
           await timeout(500)
         }
 
-        const inputs = {}
-
-        for (const inputObject of this.inputsArray) {
-          inputs[inputObject.primaryField] = await processInputObject(
-            this,
-            inputObject,
-            this.inputsArray
-          )
-        }
+        const inputs = await processInputObjectArray(this, this.inputsArray)
 
         // add/copy mode
         let data
@@ -293,7 +268,7 @@ export default {
                 : undefined),
               __args: {
                 item: {
-                  id: this.selectedItem.id,
+                  id: this.parentItem.id,
                 },
                 fields: collapseObject(inputs),
               },
@@ -301,13 +276,13 @@ export default {
           })
         }
 
-        this.$notifier.showSnackbar({
+        this.$root.$emit('showSnackbar', {
           message: `${this.viewDefinition.entity.name} ${
             this.mode === 'create' || this.mode === 'copy'
               ? 'Created'
               : 'Updated'
           }`,
-          variant: 'success',
+          color: 'success',
         })
 
         this.handleSubmitSuccess(data)
@@ -347,17 +322,18 @@ export default {
     async loadRecord() {
       this.loading.loadRecord = true
       try {
-        const { query } = await processQuery(
-          this,
+        const originalInputFieldDefinitions = processInputDefinitions(
           this.viewDefinition,
-          this.rawFields
+          this.fields
         )
+
+        const query = await processInputQuery(originalInputFieldDefinitions)
 
         const data = await executeApiRequest({
           [`get${this.capitalizedType}`]: {
             ...query,
             __args: {
-              id: this.selectedItem.id,
+              id: this.parentItem.id,
             },
           },
         })
@@ -365,72 +341,40 @@ export default {
         // save record
         this.currentItem = data
 
-        // if copy mode, load all add fields
-        const inputFields =
-          this.mode === 'copy'
-            ? this.viewDefinition.createOptions.fields
-            : this.fields
-
         // keep track of promises relating to dropdowns/options
         const dropdownPromises = []
 
+        // for copy mode, use the createOption fields. else use the original fields
+        const inputFieldDefinitions =
+          this.mode === 'copy'
+            ? processInputDefinitions(
+                this.viewDefinition,
+                this.viewDefinition.createOptions.fields
+              )
+            : originalInputFieldDefinitions
+
         // build inputs Array
         this.inputsArray = await Promise.all(
-          inputFields.map(async (fieldElement) => {
-            const fieldKey =
-              typeof fieldElement === 'string'
-                ? fieldElement
-                : fieldElement.field
-
-            const fieldInfo = lookupInputField(this.viewDefinition, fieldKey)
-
-            const primaryField = fieldKey
-
-            const inputObject = {
-              fieldKey,
-              primaryField,
-              fieldInfo,
-              viewDefinition: this.viewDefinition,
-              label: fieldInfo.text ?? camelCaseToCapitalizedString(fieldKey),
-              closeable: false,
-              inputOptions: fieldInfo.inputOptions,
-              value: null,
-              handleFileAdded:
-                typeof fieldElement === 'string'
-                  ? null
-                  : fieldElement.handleFileAdded,
-              options: [],
-              readonly: this.mode === 'view',
-              loading: false,
-              focused: false,
-              cols: typeof fieldElement === 'string' ? null : fieldElement.cols,
-              generation: 0,
-              parentInput: null,
-              nestedInputsArray: [],
-              inputData: null,
-              hideIf:
-                typeof fieldElement === 'string'
-                  ? undefined
-                  : fieldElement.hideIf,
-              watch:
-                typeof fieldElement === 'string'
-                  ? undefined
-                  : fieldElement.watch,
-            }
+          inputFieldDefinitions.map(async (inputFieldDefinition) => {
+            const inputObject = generateInputObject(this, inputFieldDefinition)
 
             // if copy mode and fieldKey not in original fields, use default
-            if (this.mode === 'copy' && !this.rawFields.includes(fieldKey)) {
-              inputObject.value = fieldInfo.inputOptions?.getInitialValue
-                ? await fieldInfo.inputOptions.getInitialValue(this)
-                : null
+            if (
+              this.mode === 'copy' &&
+              !originalInputFieldDefinitions.some(
+                (inputFieldDefinition) =>
+                  inputFieldDefinition.fieldKey === inputObject.fieldKey
+              )
+            ) {
+              inputObject.value =
+                (await inputObject.inputDefinition.getInitialValue?.(this)) ??
+                null
             } else {
-              inputObject.value = fieldInfo.hidden
-                ? null
-                : getNestedProperty(data, primaryField)
+              inputObject.value = getNestedProperty(data, inputObject.fieldKey)
             }
 
             // if it is an array, populate the nestedInputsArray
-            if (inputObject.inputOptions?.inputType === 'value-array') {
+            if (inputObject.inputDefinition.inputType === 'value-array') {
               if (Array.isArray(inputObject.value)) {
                 inputObject.value.forEach((ele) =>
                   addNestedInputObject(this, inputObject, ele)
@@ -438,17 +382,32 @@ export default {
               }
             }
 
+            // if it is an entity, populate the value and options fields
+            if (inputObject.inputDefinition.entity) {
+              inputObject.value = getNestedProperty(data, inputObject.fieldKey)
+
+              // if the value is defined and there is no getOptions fn, populate it as the only option
+              if (
+                inputObject.value &&
+                !inputObject.inputDefinition.getOptions
+              ) {
+                inputObject.options = [inputObject.value]
+              }
+            }
+
             // populate inputObjects if we need to translate any IDs to objects, and also populate any options
             dropdownPromises.push(
               ...populateInputObject(this, {
                 inputObject,
-                selectedItem: this.selectedItem,
+                parentItem: this.parentItem,
+                fetchEntities: this.mode !== 'update',
               })
             )
 
             return inputObject
           })
         )
+
         // do post-processing on inputsArray, if function provided
         if (this.mode === 'update') {
           this.viewDefinition.updateOptions.afterLoaded &&
@@ -500,12 +459,12 @@ export default {
         // skip any fieldKeys that should be excluded
         if (excludeKeys.includes(inputObject.fieldKey)) return
 
-        if (this.selectedItem && inputObject.fieldKey in this.selectedItem) {
-          inputObject.value = this.selectedItem[inputObject.fieldKey]
+        // check lockedFields, and reset the value of such fields
+        if (this.lockedFields && inputObject.fieldPath in this.lockedFields) {
+          inputObject.value = this.lockedFields[inputObject.fieldKey]
         } else {
-          inputObject.value = inputObject.inputOptions?.getInitialValue
-            ? await inputObject.inputOptions.getInitialValue(this)
-            : null
+          inputObject.value =
+            (await inputObject.inputDefinition.getInitialValue?.(this)) ?? null
         }
 
         // increment inputObject.generation to reset inputs, if necessary
@@ -521,67 +480,41 @@ export default {
           throw new Error('Creation of this record is not configured')
         }
 
+        const inputFieldDefinitions = processInputDefinitions(
+          this.viewDefinition,
+          this.fields
+        )
+
         this.inputsArray = await Promise.all(
-          this.fields.map(async (fieldElement) => {
-            const fieldKey =
-              typeof fieldElement === 'string'
-                ? fieldElement
-                : fieldElement.field
+          inputFieldDefinitions.map(async (inputFieldDefinition) => {
+            const inputObject = generateInputObject(this, inputFieldDefinition)
 
-            const fieldInfo = lookupInputField(this.viewDefinition, fieldKey)
-
-            const inputObject = {
-              fieldKey,
-              primaryField: fieldKey,
-              fieldInfo,
-              viewDefinition: this.viewDefinition,
-              label: fieldInfo.text ?? camelCaseToCapitalizedString(fieldKey),
-              closeable: false,
-              inputOptions: fieldInfo.inputOptions,
-              value: null,
-              inputValue: null,
-              handleFileAdded:
-                typeof fieldElement === 'string'
-                  ? null
-                  : fieldElement.handleFileAdded,
-              options: [],
-              readonly: false,
-              hidden: this.hiddenFields.includes(fieldKey),
-              loading: false,
-              focused: false,
-              cols: typeof fieldElement === 'string' ? null : fieldElement.cols,
-              generation: 0,
-              parentInput: null,
-              nestedInputsArray: [],
-              inputData: null,
-              hideIf:
-                typeof fieldElement === 'string'
-                  ? undefined
-                  : fieldElement.hideIf,
-              watch:
-                typeof fieldElement === 'string'
-                  ? undefined
-                  : fieldElement.watch,
+            // if there are hiddenFields, check if this is one of them
+            if (this.hiddenFields.includes(inputObject.fieldKey)) {
+              inputObject.hidden = true
             }
 
-            // is the field in selectedItem? if so, use that and set field to readonly
+            // is the field in lockedFields? if so, use that and set field to readonly
             if (
-              this.selectedItem &&
-              fieldKey in this.selectedItem &&
-              this.selectedItem[fieldKey] !== undefined
+              this.lockedFields &&
+              inputObject.fieldPath in this.lockedFields &&
+              this.lockedFields[inputObject.fieldPath] !== undefined
             ) {
-              inputObject.value = this.selectedItem[fieldKey]
+              inputObject.value = this.lockedFields[inputObject.fieldPath]
               inputObject.readonly = true
-              // if hideLockedFields, also set those fields to hidden
-              if (this.hideLockedFields) inputObject.hidden = true
+
+              // if createFieldDefinition.hideIfLocked, also set those fields to hidden
+              if (inputFieldDefinition.hideIfLocked) {
+                inputObject.hidden = true
+              }
             } else {
-              inputObject.value = fieldInfo.inputOptions?.getInitialValue
-                ? await fieldInfo.inputOptions.getInitialValue(this)
-                : null
+              inputObject.value =
+                (await inputObject.inputDefinition.getInitialValue?.(this)) ??
+                null
             }
 
             // if it is an array, populate the nestedInputsArray
-            if (inputObject.inputOptions?.inputType === 'value-array') {
+            if (inputObject.inputDefinition.inputType === 'value-array') {
               if (Array.isArray(inputObject.value)) {
                 inputObject.value.forEach((ele) =>
                   addNestedInputObject(this, inputObject, ele)
@@ -593,7 +526,8 @@ export default {
             await Promise.all(
               populateInputObject(this, {
                 inputObject,
-                selectedItem: this.selectedItem,
+                parentItem: this.parentItem,
+                fetchEntities: true,
               })
             )
 
@@ -643,7 +577,7 @@ export default {
       // duplicate misc inputs, if any
       this.miscInputs = JSON.parse(JSON.stringify(this.originalMiscInputs))
 
-      // load dropdowns in this.inputOptions
+      // load dropdowns
       this.loadDropdowns()
 
       // set all loading to false (could have been stuck from previous operations)

@@ -1,17 +1,20 @@
 <template>
   <div>
     <v-text-field
-      v-if="!item.inputOptions || item.inputOptions.inputType === 'text'"
-      v-model="item.value"
-      :label="`${item.label}${
-        item.inputOptions?.optional ? ` (optional)` : ''
+      v-if="
+        !inputObject.inputDefinition.inputType ||
+        inputObject.inputDefinition.inputType === 'text'
+      "
+      v-model="inputObject.value"
+      :label="`${inputObject.label}${
+        inputObject.inputDefinition.optional ? ` (optional)` : ''
       }`"
       :readonly="isReadonly"
-      :rules="item.inputOptions?.inputRules"
-      :hint="item.inputOptions?.hint"
-      :loading="item.loading"
+      :rules="inputObject.inputDefinition.inputRules"
+      :hint="inputObject.inputDefinition.hint"
+      :loading="inputObject.loading"
       :append-icon="appendIcon"
-      :append-outer-icon="item.closeable ? 'mdi-close' : null"
+      :append-outer-icon="inputObject.closeable ? 'mdi-close' : null"
       persistent-hint
       filled
       dense
@@ -24,21 +27,21 @@
       @input="triggerInput()"
     ></v-text-field>
     <div
-      v-else-if="item.inputOptions?.inputType === 'html'"
+      v-else-if="inputObject.inputDefinition.inputType === 'html'"
       class="mb-4"
       style="background-color: white; color: black"
     >
-      <wysiwyg v-model="item.value" />
+      <wysiwyg v-model="inputObject.value" />
     </div>
     <div
-      v-else-if="item.inputOptions?.inputType === 'multiple-file'"
+      v-else-if="inputObject.inputDefinition.inputType === 'multiple-file'"
       class="mb-4 text-left highlighted-bg"
     >
       <v-container v-if="filesData.length">
         <Draggable
           v-model="filesData"
           class="row"
-          :disabled="item.readonly"
+          :disabled="inputObject.readonly"
           @change="handleFilesDataUpdate()"
         >
           <v-col
@@ -46,16 +49,16 @@
             :key="file.id"
             cols="12"
             class="py-2"
-            :sm="item.inputOptions?.mediaMode ? 3 : 6"
+            :sm="inputObject.inputDefinition.mediaMode ? 3 : 6"
           >
             <MediaChip
-              v-if="item.inputOptions?.mediaMode"
+              v-if="inputObject.inputDefinition.mediaMode"
               :file="file"
               draggable
               close
               openable
-              :readonly="item.readonly"
-              :use-firebase-url="item.inputOptions?.useFirebaseUrl"
+              :readonly="inputObject.readonly"
+              :use-firebase-url="inputObject.inputDefinition.useFirebaseUrl"
               @handleCloseClick="removeFileByIndex(index)"
             ></MediaChip>
             <FileChip
@@ -64,7 +67,7 @@
               downloadable
               small
               label
-              :close="!item.readonly"
+              :close="!inputObject.readonly"
               close-icon="mdi-close-outline"
               class="mr-2"
               @handleCloseClick="removeFileByIndex(index)"
@@ -75,17 +78,17 @@
       <div v-cloak @drop.prevent="handleMultipleDropFile" @dragover.prevent>
         <v-file-input
           v-model="tempInput"
-          :label="`${item.label} (Drag and Drop)${
-            item.inputOptions.optional ? ` (optional)` : ''
+          :label="`${inputObject.label} (Drag and Drop)${
+            inputObject.inputDefinition.optional ? ` (optional)` : ''
           }${
-            item.inputOptions?.limit
-              ? ` (Limit ${item.inputOptions.limit})`
+            inputObject.inputDefinition.limit
+              ? ` (Limit ${inputObject.inputDefinition.limit})`
               : ''
           }`"
           multiple
           :accept="acceptedFiles"
-          :hint="item.inputOptions.hint"
-          :loading="item.loading"
+          :hint="inputObject.inputDefinition.hint"
+          :loading="inputObject.loading"
           persistent-hint
           :clearable="false"
           @change="handleMultipleFileInputChange"
@@ -111,7 +114,7 @@
       </div>
     </div>
     <div
-      v-else-if="item.inputOptions?.inputType === 'single-file-url'"
+      v-else-if="inputObject.inputDefinition.inputType === 'single-file-url'"
       class="mb-4 highlighted-bg"
       :class="isReadonly ? 'text-center' : 'd-flex text-left'"
       v-cloak
@@ -119,7 +122,7 @@
       @dragover.prevent
     >
       <label
-        v-if="!item.loading"
+        v-if="!inputObject.loading"
         :for="`file-upload-${$vnode.key}`"
         class="custom-file-upload pt-5 text-center"
         style="width: 100px"
@@ -132,8 +135,10 @@
         class="custom-file-upload pt-3 text-center"
         style="width: 100px"
       >
-        <v-progress-circular :value="item.inputValue.progress" size="48"
-          >{{ item.inputValue.progress.toFixed(0) }}%</v-progress-circular
+        <v-progress-circular :value="inputObject.inputValue.progress" size="48"
+          >{{
+            inputObject.inputValue.progress.toFixed(0)
+          }}%</v-progress-circular
         >
       </label>
       <input
@@ -144,17 +149,17 @@
         @change="handleSingleFileInputChange"
       />
       <v-text-field
-        v-model="item.value"
-        :label="`${item.label}${
-          item.inputOptions.optional ? ` (optional)` : ''
+        v-model="inputObject.value"
+        :label="`${inputObject.label}${
+          inputObject.inputDefinition.optional ? ` (optional)` : ''
         }`"
         :readonly="isReadonly"
-        :rules="item.inputOptions.inputRules"
-        :hint="item.inputOptions.hint"
-        :disabled="item.loading"
-        :loading="item.loading"
+        :rules="inputObject.inputDefinition.inputRules"
+        :hint="inputObject.inputDefinition.hint"
+        :disabled="inputObject.loading"
+        :loading="inputObject.loading"
         :append-icon="appendIcon"
-        :append-outer-icon="item.closeable ? 'mdi-close' : null"
+        :append-outer-icon="inputObject.closeable ? 'mdi-close' : null"
         persistent-hint
         filled
         dense
@@ -166,7 +171,7 @@
       ></v-text-field>
     </div>
     <div
-      v-else-if="item.inputOptions?.inputType === 'single-image-url'"
+      v-else-if="inputObject.inputDefinition.inputType === 'single-image-url'"
       class="mb-4 highlighted-bg text-center"
       v-cloak
       @drop.prevent="handleDropEvent"
@@ -174,18 +179,22 @@
     >
       <div
         v-if="
-          !item.inputOptions || (!item.inputOptions.avatarOptions && item.value)
+          !inputObject.inputDefinition ||
+          (!inputObject.inputDefinition.avatarOptions && inputObject.value)
         "
         class="pt-2"
       >
-        <v-img :src="item.value" contain max-height="200"></v-img>
+        <v-img :src="inputObject.value" contain max-height="200"></v-img>
       </div>
       <div class="d-flex text-left pt-2">
         <v-avatar
-          v-if="item.inputOptions && item.inputOptions.avatarOptions"
+          v-if="
+            inputObject.inputDefinition &&
+            inputObject.inputDefinition.avatarOptions
+          "
           size="64"
         >
-          <v-img v-if="item.value" :src="item.value"></v-img>
+          <v-img v-if="inputObject.value" :src="inputObject.value"></v-img>
           <v-icon v-else>{{ fallbackIcon }}</v-icon>
         </v-avatar>
         <label
@@ -203,16 +212,16 @@
           @change="handleSingleFileInputChange"
         />
         <v-text-field
-          v-model="item.value"
-          :label="`${item.label}${
-            item.inputOptions.optional ? ` (optional)` : ''
+          v-model="inputObject.value"
+          :label="`${inputObject.label}${
+            inputObject.inputDefinition.optional ? ` (optional)` : ''
           }`"
           :readonly="isReadonly"
-          :rules="item.inputOptions.inputRules"
-          :hint="item.inputOptions.hint"
-          :loading="item.loading"
+          :rules="inputObject.inputDefinition.inputRules"
+          :hint="inputObject.inputDefinition.hint"
+          :loading="inputObject.loading"
           :append-icon="appendIcon"
-          :append-outer-icon="item.closeable ? 'mdi-close' : null"
+          :append-outer-icon="inputObject.closeable ? 'mdi-close' : null"
           persistent-hint
           filled
           dense
@@ -225,53 +234,59 @@
       </div>
     </div>
     <v-textarea
-      v-else-if="item.inputOptions?.inputType === 'textarea'"
-      v-model="item.value"
+      v-else-if="inputObject.inputDefinition.inputType === 'textarea'"
+      v-model="inputObject.value"
       filled
       rows="3"
       dense
       class="py-0"
-      :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
+      :label="`${inputObject.label}${
+        inputObject.inputDefinition.optional ? ` (optional)` : ''
+      }`"
       :readonly="isReadonly"
       :append-icon="appendIcon"
-      :append-outer-icon="item.closeable ? 'mdi-close' : null"
-      :hint="item.inputOptions.hint"
-      :loading="item.loading"
+      :append-outer-icon="inputObject.closeable ? 'mdi-close' : null"
+      :hint="inputObject.inputDefinition.hint"
+      :loading="inputObject.loading"
       persistent-hint
       @click:append="handleClear()"
       @click:append-outer="handleClose()"
     ></v-textarea>
     <v-switch
-      v-else-if="item.inputOptions?.inputType === 'switch'"
-      v-model="item.value"
-      :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
+      v-else-if="inputObject.inputDefinition.inputType === 'switch'"
+      v-model="inputObject.value"
+      :label="`${inputObject.label}${
+        inputObject.inputDefinition.optional ? ` (optional)` : ''
+      }`"
       :readonly="isReadonly"
       :append-icon="appendIcon"
-      :append-outer-icon="item.closeable ? 'mdi-close' : null"
-      :hint="item.inputOptions.hint"
-      :loading="item.loading"
+      :append-outer-icon="inputObject.closeable ? 'mdi-close' : null"
+      :hint="inputObject.inputDefinition.hint"
+      :loading="inputObject.loading"
       persistent-hint
       v-on="$listeners"
       @click:append="handleClear()"
       @click:append-outer="handleClose()"
     ></v-switch>
     <v-checkbox
-      v-else-if="item.inputOptions?.inputType === 'checkbox'"
-      v-model="item.value"
-      :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
+      v-else-if="inputObject.inputDefinition.inputType === 'checkbox'"
+      v-model="inputObject.value"
+      :label="`${inputObject.label}${
+        inputObject.inputDefinition.optional ? ` (optional)` : ''
+      }`"
       :readonly="isReadonly"
       :append-icon="appendIcon"
-      :append-outer-icon="item.closeable ? 'mdi-close' : null"
-      :hint="item.inputOptions.hint"
-      :loading="item.loading"
+      :append-outer-icon="inputObject.closeable ? 'mdi-close' : null"
+      :hint="inputObject.inputDefinition.hint"
+      :loading="inputObject.loading"
       persistent-hint
       v-on="$listeners"
       @click:append="handleClear()"
       @click:append-outer="handleClose()"
     ></v-checkbox>
     <v-menu
-      v-else-if="item.inputOptions?.inputType === 'datepicker'"
-      v-model="item.focused"
+      v-else-if="inputObject.inputDefinition.inputType === 'datepicker'"
+      v-model="inputObject.focused"
       :close-on-content-click="false"
       :nudge-right="40"
       transition="scale-transition"
@@ -280,15 +295,15 @@
     >
       <template v-slot:activator="{ on, attrs }">
         <v-text-field
-          v-model="item.value"
-          :label="`${item.label}${
-            item.inputOptions.optional ? ` (optional)` : ''
+          v-model="inputObject.value"
+          :label="`${inputObject.label}${
+            inputObject.inputDefinition.optional ? ` (optional)` : ''
           }`"
           :readonly="isReadonly"
           :append-icon="appendIcon"
-          :append-outer-icon="item.closeable ? 'mdi-close' : null"
-          :hint="item.inputOptions.hint"
-          :loading="item.loading"
+          :append-outer-icon="inputObject.closeable ? 'mdi-close' : null"
+          :hint="inputObject.inputDefinition.hint"
+          :loading="inputObject.loading"
           persistent-hint
           filled
           autocomplete="off"
@@ -304,20 +319,22 @@
         color="primary"
         no-title
         :readonly="isReadonly"
-        @input="item.focused = false"
+        @input="inputObject.focused = false"
         @change="applyDatePickerInput"
       ></v-date-picker>
     </v-menu>
     <v-text-field
-      v-else-if="item.inputOptions?.inputType === 'datetimepicker'"
+      v-else-if="inputObject.inputDefinition.inputType === 'datetimepicker'"
       v-model="tempInput"
-      :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
+      :label="`${inputObject.label}${
+        inputObject.inputDefinition.optional ? ` (optional)` : ''
+      }`"
       :readonly="isReadonly"
-      :rules="item.inputOptions.inputRules"
-      :hint="item.inputOptions.hint"
-      :loading="item.loading"
+      :rules="inputObject.inputDefinition.inputRules"
+      :hint="inputObject.inputDefinition.hint"
+      :loading="inputObject.loading"
       :append-icon="appendIcon"
-      :append-outer-icon="item.closeable ? 'mdi-close' : null"
+      :append-outer-icon="inputObject.closeable ? 'mdi-close' : null"
       persistent-hint
       filled
       dense
@@ -330,278 +347,228 @@
       @input="handleDateTimeInputChange($event) || triggerInput()"
     ></v-text-field>
     <v-combobox
-      v-else-if="item.inputOptions?.inputType === 'type-combobox'"
+      v-else-if="inputObject.inputDefinition.inputType === 'type-combobox'"
       ref="combobox"
-      v-model="item.value"
-      :search-input.sync="item.inputValue"
-      :items="item.options"
-      :item-text="item.inputOptions.entity?.nameField"
+      v-model="inputObject.value"
+      :search-input.sync="inputObject.inputValue"
+      :items="inputObject.options"
+      :item-text="inputObject.inputDefinition.entity?.nameField"
       item-value="id"
-      :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
+      :label="`${inputObject.label}${
+        inputObject.inputDefinition.optional ? ` (optional)` : ''
+      }`"
       :readonly="isReadonly"
       :append-icon="appendIcon"
-      :append-outer-icon="item.closeable ? 'mdi-close' : null"
-      :hint="item.inputOptions.hint"
-      :loading="item.loading"
+      :append-outer-icon="inputObject.closeable ? 'mdi-close' : null"
+      :hint="inputObject.inputDefinition.hint"
+      :loading="inputObject.loading"
       persistent-hint
       filled
       hide-no-data
       :no-filter="
-        !item.inputOptions.getOptions || item.inputOptions?.loadServerResults
+        !inputObject.inputDefinition.getOptions ||
+        inputObject.inputDefinition.loadServerResults
       "
       class="py-0"
-      :chips="!!item.inputOptions.entity"
+      :chips="!!inputObject.inputDefinition.entity"
       v-on="$listeners"
-      @update:search-input="handleSearchUpdate(item)"
-      @blur="item.focused = false"
-      @focus="item.focused = true"
+      @update:search-input="handleSearchUpdate(inputObject)"
+      @blur="inputObject.focused = false"
+      @focus="inputObject.focused = true"
       @click:append="handleClear()"
       @click:append-outer="handleClose()"
     >
-      <template
-        v-if="
-          item.inputOptions.entity?.avatarField ||
-          item.inputOptions.selectionComponent
-        "
-        v-slot:item="data"
-      >
-        <component
-          v-if="item.inputOptions.selectionComponent"
-          :is="item.inputOptions.selectionComponent"
-          :value="data.item"
-        >
-        </component>
-        <v-chip v-else pill>
-          <v-avatar left>
-            <v-img v-if="data.item.avatarUrl" :src="data.item.avatarUrl"></v-img
-            ><v-icon v-else>{{ icon }} </v-icon>
-          </v-avatar>
-          {{ data.item.name }}
-        </v-chip>
+      <template v-slot:item="data">
+        <InputSelectionChip
+          :input-object="inputObject"
+          :item="data.item"
+        ></InputSelectionChip>
       </template>
-      <template
-        v-if="
-          item.inputOptions.entity?.avatarField ||
-          item.inputOptions.selectionComponent
-        "
-        v-slot:selection="data"
-      >
-        <component
-          v-if="item.inputOptions.selectionComponent"
-          :is="item.inputOptions.selectionComponent"
-          :value="data.item"
-        >
-        </component>
-        <v-chip v-else v-bind="data.attrs" pill>
-          <v-avatar left>
-            <v-img v-if="data.item.avatarUrl" :src="data.item.avatarUrl"></v-img
-            ><v-icon v-else>{{ icon }}</v-icon>
-          </v-avatar>
-          {{ standardizeComboboxName(data.item) }}
-        </v-chip>
+      <template v-slot:selection="data">
+        <InputSelectionChip
+          :input-object="inputObject"
+          :item="data.item"
+        ></InputSelectionChip>
       </template>
     </v-combobox>
     <v-autocomplete
       v-else-if="
-        item.inputOptions.inputType === 'type-autocomplete' ||
-        item.inputOptions.inputType === 'type-autocomplete-multiple'
+        inputObject.inputDefinition.inputType === 'type-autocomplete' ||
+        inputObject.inputDefinition.inputType === 'type-autocomplete-multiple'
       "
-      v-model="item.value"
-      :search-input.sync="item.inputValue"
-      :items="item.options"
-      :multiple="item.inputOptions.inputType === 'type-autocomplete-multiple'"
-      :item-text="item.inputOptions.entity.nameField"
+      v-model="inputObject.value"
+      :search-input.sync="inputObject.inputValue"
+      :items="inputObject.options"
+      :multiple="
+        inputObject.inputDefinition.inputType === 'type-autocomplete-multiple'
+      "
+      :item-text="inputObject.inputDefinition.entity.nameField"
       item-value="id"
-      :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
+      :label="`${inputObject.label}${
+        inputObject.inputDefinition.optional ? ` (optional)` : ''
+      }`"
       :readonly="isReadonly"
       :append-icon="appendIcon"
-      :append-outer-icon="item.closeable ? 'mdi-close' : null"
-      :hint="item.inputOptions.hint"
-      :loading="item.loading"
+      :append-outer-icon="inputObject.closeable ? 'mdi-close' : null"
+      :hint="inputObject.inputDefinition.hint"
+      :loading="inputObject.loading"
       persistent-hint
       filled
       hide-no-data
       return-object
       :no-filter="
-        !item.inputOptions.getOptions || item.inputOptions?.loadServerResults
+        !inputObject.inputDefinition.getOptions ||
+        inputObject.inputDefinition.loadServerResults
       "
       class="py-0"
-      :chips="!!item.inputOptions.entity"
+      :chips="!!inputObject.inputDefinition.entity"
       v-on="$listeners"
-      @update:search-input="handleSearchUpdate(item)"
-      @blur="item.focused = false"
-      @focus="item.focused = true"
+      @update:search-input="handleSearchUpdate(inputObject)"
+      @blur="inputObject.focused = false"
+      @focus="inputObject.focused = true"
       @click:append="handleClear()"
       @click:append-outer="handleClose()"
     >
-      <template
-        v-if="
-          item.inputOptions.entity?.avatarField ||
-          item.inputOptions.selectionComponent
-        "
-        v-slot:item="data"
-      >
-        <component
-          v-if="item.inputOptions.selectionComponent"
-          :is="item.inputOptions.selectionComponent"
-          :value="data.item"
-        >
-        </component>
-        <v-chip v-else pill>
-          <v-avatar left>
-            <v-img v-if="data.item.avatarUrl" :src="data.item.avatarUrl"></v-img
-            ><v-icon v-else>{{ icon }} </v-icon>
-          </v-avatar>
-          {{ data.item.name }}
-        </v-chip>
+      <template v-slot:item="data">
+        <InputSelectionChip
+          :input-object="inputObject"
+          :item="data.item"
+        ></InputSelectionChip>
       </template>
-      <template
-        v-if="
-          item.inputOptions.entity?.avatarField ||
-          item.inputOptions.selectionComponent
-        "
-        v-slot:selection="data"
-      >
-        <component
-          v-if="item.inputOptions.selectionComponent"
-          :is="item.inputOptions.selectionComponent"
-          :value="data.item"
-        >
-        </component>
-        <v-chip v-else v-bind="data.attrs" pill>
-          <v-avatar left>
-            <v-img v-if="data.item.avatarUrl" :src="data.item.avatarUrl"></v-img
-            ><v-icon v-else>{{ icon }}</v-icon>
-          </v-avatar>
-          {{ data.item.name }}
-        </v-chip>
+      <template v-slot:selection="data">
+        <InputSelectionChip
+          :input-object="inputObject"
+          :item="data.item"
+        ></InputSelectionChip>
       </template>
     </v-autocomplete>
     <v-autocomplete
-      v-else-if="item.inputOptions?.inputType === 'text-autocomplete'"
-      v-model="item.value"
-      :search-input.sync="item.inputValue"
-      :items="item.options"
-      :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
+      v-else-if="inputObject.inputDefinition.inputType === 'text-autocomplete'"
+      v-model="inputObject.value"
+      :search-input.sync="inputObject.inputValue"
+      :items="inputObject.options"
+      :label="`${inputObject.label}${
+        inputObject.inputDefinition.optional ? ` (optional)` : ''
+      }`"
       :readonly="isReadonly"
       :append-icon="appendIcon"
-      :append-outer-icon="item.closeable ? 'mdi-close' : null"
-      :hint="item.inputOptions.hint"
-      :loading="item.loading"
+      :append-outer-icon="inputObject.closeable ? 'mdi-close' : null"
+      :hint="inputObject.inputDefinition.hint"
+      :loading="inputObject.loading"
       persistent-hint
       filled
       hide-no-data
       return-object
       :no-filter="
-        !item.inputOptions.getOptions || item.inputOptions?.loadServerResults
+        !inputObject.inputDefinition.getOptions ||
+        inputObject.inputDefinition.loadServerResults
       "
       class="py-0"
       v-on="$listeners"
-      @update:search-input="handleSearchUpdate(item)"
-      @blur="item.focused = false"
-      @focus="item.focused = true"
+      @update:search-input="handleSearchUpdate(inputObject)"
+      @blur="inputObject.focused = false"
+      @focus="inputObject.focused = true"
       @click:append="handleClear()"
       @click:append-outer="handleClose()"
     >
     </v-autocomplete>
-
     <v-combobox
-      v-else-if="item.inputOptions?.inputType === 'text-combobox'"
+      v-else-if="inputObject.inputDefinition.inputType === 'text-combobox'"
       ref="combobox"
-      v-model="item.value"
-      :search-input.sync="item.inputValue"
-      :items="item.options"
-      :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
+      v-model="inputObject.value"
+      :search-input.sync="inputObject.inputValue"
+      :items="inputObject.options"
+      :label="`${inputObject.label}${
+        inputObject.inputDefinition.optional ? ` (optional)` : ''
+      }`"
       :readonly="isReadonly"
       :append-icon="appendIcon"
-      :append-outer-icon="item.closeable ? 'mdi-close' : null"
-      :hint="item.inputOptions.hint"
-      :loading="item.loading"
+      :append-outer-icon="inputObject.closeable ? 'mdi-close' : null"
+      :hint="inputObject.inputDefinition.hint"
+      :loading="inputObject.loading"
       persistent-hint
       filled
       hide-no-data
       :no-filter="
-        !item.inputOptions.getOptions || item.inputOptions?.loadServerResults
+        !inputObject.inputDefinition.getOptions ||
+        inputObject.inputDefinition.loadServerResults
       "
       class="py-0"
       v-on="$listeners"
-      @update:search-input="handleSearchUpdate(item)"
-      @blur="item.focused = false"
-      @focus="item.focused = true"
+      @update:search-input="handleSearchUpdate(inputObject)"
+      @blur="inputObject.focused = false"
+      @focus="inputObject.focused = true"
       @click:append="handleClear()"
       @click:append-outer="handleClose()"
     >
     </v-combobox>
     <v-select
       v-else-if="
-        item.inputOptions.inputType === 'select' ||
-        item.inputOptions.inputType === 'multiple-select'
+        inputObject.inputDefinition.inputType === 'select' ||
+        inputObject.inputDefinition.inputType === 'multiple-select'
       "
-      v-model="item.value"
-      :items="item.options"
-      :multiple="item.inputOptions.inputType === 'multiple-select'"
+      v-model="inputObject.value"
+      :items="inputObject.options"
+      :multiple="inputObject.inputDefinition.inputType === 'multiple-select'"
       filled
-      :label="`${item.label}${item.inputOptions.optional ? ` (optional)` : ''}`"
+      :label="`${inputObject.label}${
+        inputObject.inputDefinition.optional ? ` (optional)` : ''
+      }`"
       :readonly="isReadonly"
       :append-icon="appendIcon"
-      :append-outer-icon="item.closeable ? 'mdi-close' : null"
-      :hint="item.inputOptions.hint"
-      :loading="item.loading"
+      :append-outer-icon="inputObject.closeable ? 'mdi-close' : null"
+      :hint="inputObject.inputDefinition.hint"
+      :loading="inputObject.loading"
       persistent-hint
       return-object
       item-text="name"
       item-value="id"
       class="py-0"
-      :chips="!!item.inputOptions.entity"
+      :chips="!!inputObject.inputDefinition.entity"
       v-on="$listeners"
       @click:append="handleClear()"
       @click:append-outer="handleClose()"
     >
-      <template
-        v-if="
-          item.inputOptions.entity?.avatarField ||
-          item.inputOptions.selectionComponent
-        "
-        v-slot:item="data"
-      >
-        <component
-          v-if="item.inputOptions.selectionComponent"
-          :is="item.inputOptions.selectionComponent"
-          :value="data.item"
-        >
-        </component>
-        <v-chip v-else pill>
-          <v-avatar left>
-            <v-img v-if="data.item.avatarUrl" :src="data.item.avatarUrl"></v-img
-            ><v-icon v-else>{{ icon }} </v-icon>
-          </v-avatar>
-          {{ data.item.name }}
-        </v-chip>
+      <template v-slot:item="data">
+        <InputSelectionChip
+          :input-object="inputObject"
+          :item="data.item"
+        ></InputSelectionChip>
       </template>
-      <template
-        v-if="
-          item.inputOptions.entity?.avatarField ||
-          item.inputOptions.selectionComponent
-        "
-        v-slot:selection="data"
-      >
-        <component
-          v-if="item.inputOptions.selectionComponent"
-          :is="item.inputOptions.selectionComponent"
-          :value="data.item"
-        >
-        </component>
-        <v-chip v-else v-bind="data.attrs" pill>
-          <v-avatar left>
-            <v-img v-if="data.item.avatarUrl" :src="data.item.avatarUrl"></v-img
-            ><v-icon v-else>{{ icon }}</v-icon>
-          </v-avatar>
-          {{ data.item.name }}
-        </v-chip>
+      <template v-slot:selection="data">
+        <InputSelectionChip
+          :input-object="inputObject"
+          :item="data.item"
+        ></InputSelectionChip>
       </template>
     </v-select>
+    <v-select
+      v-else-if="inputObject.inputDefinition.inputType === 'boolean-select'"
+      v-model="inputObject.value"
+      :items="[
+        { text: 'Yes', value: true },
+        { text: 'No', value: false },
+      ]"
+      filled
+      :label="`${inputObject.label}${
+        inputObject.inputDefinition.optional ? ` (optional)` : ''
+      }`"
+      :readonly="isReadonly"
+      :append-icon="appendIcon"
+      :append-outer-icon="inputObject.closeable ? 'mdi-close' : null"
+      :hint="inputObject.inputDefinition.hint"
+      :loading="inputObject.loading"
+      persistent-hint
+      item-text="text"
+      item-value="value"
+      class="py-0"
+      v-on="$listeners"
+      @click:append="handleClear()"
+      @click:append-outer="handleClose()"
+    >
+    </v-select>
     <div
-      v-else-if="item.inputOptions?.inputType === 'value-array'"
+      v-else-if="inputObject.inputDefinition.inputType === 'value-array'"
       class="rounded-sm mb-4"
     >
       <v-container class="highlighted-bg">
@@ -609,32 +576,35 @@
           <v-col cols="12">
             <div class="subtitle-1">
               {{
-                `${item.label}${
-                  item.inputOptions.optional ? ` (optional)` : ''
+                `${inputObject.label}${
+                  inputObject.inputDefinition.optional ? ` (optional)` : ''
                 }`
               }}
             </div>
-            <div v-if="item.inputOptions.hint">
-              {{ item.inputOptions.hint }}
+            <div v-if="inputObject.inputDefinition.hint">
+              {{ inputObject.inputDefinition.hint }}
             </div>
           </v-col>
         </v-row>
         <v-row>
           <v-col cols="12">
-            <div v-if="item.nestedInputsArray.length > 0">
+            <div v-if="inputObject.nestedInputsArray.length > 0">
               <Draggable
-                v-model="item.nestedInputsArray"
-                :disabled="item.readonly"
+                v-model="inputObject.nestedInputsArray"
+                :disabled="inputObject.readonly"
               >
                 <v-row
-                  v-for="(nestedInputArray, i) in item.nestedInputsArray"
+                  v-for="(nestedInputArray, i) in inputObject.nestedInputsArray"
                   :key="i"
                   class="highlighted-bg"
                 >
                   <v-col cols="12" class="pa-0 pb-1" key="-1">
                     <v-system-bar lights-out>
                       <v-icon @click="void 0">mdi-arrow-all</v-icon>
-                      {{ item.inputOptions.nestedOptions.entryName ?? 'Entry' }}
+                      {{
+                        inputObject.inputDefinition.nestedOptions.entryName ??
+                        'Entry'
+                      }}
                       #{{ i + 1 }}
                       <v-spacer></v-spacer>
                       <v-icon @click="removeRow(i)" color="error"
@@ -650,7 +620,7 @@
                     :key="j"
                   >
                     <GenericInput
-                      :item="nestedInputObject.inputObject"
+                      :input-object="nestedInputObject.inputObject"
                     ></GenericInput>
                   </v-col>
                 </v-row>
@@ -658,7 +628,10 @@
             </div>
             <div v-else class="pb-3">
               No
-              {{ item.inputOptions.nestedOptions.pluralEntryName ?? 'Entries' }}
+              {{
+                inputObject.inputDefinition.nestedOptions.pluralEntryName ??
+                'Entries'
+              }}
             </div>
           </v-col>
         </v-row>
@@ -666,7 +639,10 @@
           <v-col cols="12" class="pa-0">
             <v-btn small block>
               <v-icon left>mdi-plus</v-icon>
-              Add {{ item.inputOptions.nestedOptions.entryName ?? 'Entry' }}
+              Add
+              {{
+                inputObject.inputDefinition.nestedOptions.entryName ?? 'Entry'
+              }}
             </v-btn>
           </v-col>
         </v-row>
@@ -674,8 +650,8 @@
     </div>
     <div
       v-else-if="
-        item.inputOptions?.inputType === 'stripe-cc' ||
-        item.inputOptions?.inputType === 'stripe-pi'
+        inputObject.inputDefinition.inputType === 'stripe-cc' ||
+        inputObject.inputDefinition.inputType === 'stripe-pi'
       "
       class="pb-5 rounded-sm"
     >
@@ -690,8 +666,8 @@
               <div>{{ renderDiscountScheme() }}</div>
             </div>
             <v-text-field
-              v-if="item.inputOptions.paymentOptions.quantityOptions"
-              v-model="item.secondaryInputValue"
+              v-if="inputObject.inputDefinition.paymentOptions.quantityOptions"
+              v-model="inputObject.secondaryInputValue"
               label="Quantity"
               type="number"
               min="1"
@@ -707,11 +683,11 @@
                 >-- {{ renderDiscount() }}</span
               >
             </div>
-            <div v-if="item.inputOptions.hint">
-              {{ item.inputOptions.hint }}
+            <div v-if="inputObject.inputDefinition.hint">
+              {{ inputObject.inputDefinition.hint }}
             </div>
             <StripeElements
-              v-if="item.inputOptions?.inputType === 'stripe-cc'"
+              v-if="inputObject.inputDefinition.inputType === 'stripe-cc'"
               :stripe-key="stripeKey"
               :instance-options="instanceOptions"
               :elements-options="elementsOptions"
@@ -726,10 +702,12 @@
               />
             </StripeElements>
             <v-progress-linear
-              v-if="item.loading"
+              v-if="inputObject.loading"
               indeterminate
             ></v-progress-linear>
-            <div v-else-if="item.inputOptions?.inputType === 'stripe-pi'">
+            <div
+              v-else-if="inputObject.inputDefinition.inputType === 'stripe-pi'"
+            >
               <StripeElements
                 :stripe-key="stripeKey"
                 :instance-options="instanceOptionsComputed"
@@ -766,7 +744,7 @@
       </v-container>
     </div>
     <div
-      v-else-if="item.inputOptions?.inputType === 'stripe-pi-editable'"
+      v-else-if="inputObject.inputDefinition.inputType === 'stripe-pi-editable'"
       class="pb-5 rounded-sm"
     >
       <v-container class="highlighted-bg">
@@ -774,8 +752,8 @@
           <v-col cols="12">
             <v-text-field
               v-model="tempInput"
-              :label="`${item.label}${
-                item.inputOptions.optional ? ` (optional)` : ''
+              :label="`${inputObject.label}${
+                inputObject.inputDefinition.optional ? ` (optional)` : ''
               }`"
               filled
               dense
@@ -785,21 +763,21 @@
               @blur="handleStripePiEditableUpdate()"
               @keyup.enter="handleStripePiEditableUpdate()"
             ></v-text-field>
-            <div class="subtitle-1 mb-3" v-if="item.inputValue">
-              {{ `Charge ${formatAsCurrency(item.inputValue)}` }}
-              <span v-if="item.inputValue < 0.5" class="red--text"
+            <div class="subtitle-1 mb-3" v-if="inputObject.inputValue">
+              {{ `Charge ${formatAsCurrency(inputObject.inputValue)}` }}
+              <span v-if="inputObject.inputValue < 0.5" class="red--text"
                 >(Invalid Amount)</span
               >
             </div>
-            <div v-if="item.inputOptions.hint">
-              {{ item.inputOptions.hint }}
+            <div v-if="inputObject.inputDefinition.hint">
+              {{ inputObject.inputDefinition.hint }}
             </div>
             <v-progress-linear
-              v-if="item.loading"
+              v-if="inputObject.loading"
               indeterminate
             ></v-progress-linear>
             <StripeElements
-              v-else-if="item.inputValue > 0 && item.inputData"
+              v-else-if="inputObject.inputValue > 0 && inputObject.inputData"
               :stripe-key="stripeKey"
               :instance-options="instanceOptionsComputed"
               :elements-options="elementsOptionsComputed"
@@ -819,7 +797,7 @@
       </v-container>
     </div>
     <div
-      v-else-if="item.inputOptions?.inputType === 'rating'"
+      v-else-if="inputObject.inputDefinition.inputType === 'rating'"
       class="rounded-sm mb-4"
     >
       <v-container class="highlighted-bg">
@@ -827,20 +805,20 @@
           <v-col cols="12">
             <div class="subtitle-1">
               {{
-                `${item.label}${
-                  item.inputOptions.optional ? ` (optional)` : ''
+                `${inputObject.label}${
+                  inputObject.inputDefinition.optional ? ` (optional)` : ''
                 }`
               }}
             </div>
-            <div v-if="item.inputOptions.hint">
-              {{ item.inputOptions.hint }}
+            <div v-if="inputObject.inputDefinition.hint">
+              {{ inputObject.inputDefinition.hint }}
             </div>
           </v-col>
         </v-row>
         <v-row>
           <v-col cols="12" class="pt-0">
             <v-rating
-              v-model="item.value"
+              v-model="inputObject.value"
               length="5"
               color="yellow darken-2"
               background-color="grey lighten-1"
@@ -873,8 +851,9 @@ import {
 } from '~/services/base'
 import FileChip from '~/components/chip/fileChip.vue'
 import MediaChip from '~/components/chip/mediaChip.vue'
+import InputSelectionChip from '~/components/chip/inputSelectionChip.vue'
 import { StripeElements, StripeElement } from 'vue-stripe-elements-plus'
-import { hideNullInputIcon, paypalClientId } from '~/services/config'
+import { hideNullInputIcon, paypalClientId } from '~/config'
 
 export default {
   name: 'GenericInput',
@@ -882,12 +861,13 @@ export default {
     Draggable,
     FileChip,
     MediaChip,
+    InputSelectionChip,
     StripeElements,
     StripeElement,
   },
   props: {
     // type: CrudInputObject
-    item: {
+    inputObject: {
       type: Object,
       required: true,
     },
@@ -897,9 +877,6 @@ export default {
       default: () => [],
     },
     parentItem: {
-      type: Object,
-    },
-    selectedItem: {
       type: Object,
     },
   },
@@ -944,25 +921,26 @@ export default {
   computed: {
     hasPaypal() {
       return (
-        !!paypalClientId && this.item.inputOptions.paymentOptions.paypalOptions
+        !!paypalClientId &&
+        this.inputObject.inputDefinition.paymentOptions.paypalOptions
       )
     },
 
     instanceOptionsComputed() {
-      return this.item.inputData?.stripeAccount
+      return this.inputObject.inputData?.stripeAccount
         ? {
             ...this.instanceOptions,
-            stripeAccount: this.item.inputData.stripeAccount,
+            stripeAccount: this.inputObject.inputData.stripeAccount,
           }
         : this.instanceOptions
     },
 
     elementsOptionsComputed() {
       // if inputData.clientSecret, merge it into the elementsOptions
-      return this.item.inputData
+      return this.inputObject.inputData
         ? {
             ...this.elementsOptions,
-            clientSecret: this.item.inputData.clientSecret,
+            clientSecret: this.inputObject.inputData.clientSecret,
             appearance: {
               theme: this.$vuetify.theme.dark ? 'night' : 'stripe',
             },
@@ -971,36 +949,34 @@ export default {
     },
 
     isReadonly() {
-      return this.item.readonly
+      return this.inputObject.readonly
     },
 
     fallbackIcon() {
-      return this.item.inputOptions.avatarOptions?.fallbackIcon
+      return this.inputObject.inputDefinition.avatarOptions?.fallbackIcon
     },
 
     acceptedFiles() {
-      return this.item.inputOptions.contentType
+      return this.inputObject.inputDefinition.contentType
     },
 
     appendIcon() {
-      return this.item.value === null
+      return this.inputObject.value === null
         ? hideNullInputIcon
           ? null
           : 'mdi-null'
         : this.isReadonly
         ? null
-        : this.item.inputOptions?.clearable
-        ? 'mdi-close'
-        : null
+        : 'mdi-close'
     },
 
     inputParams() {
-      return this.item.inputOptions?.inputParams
+      return this.inputObject.inputDefinition.inputParams
     },
   },
 
   watch: {
-    'item.generation'() {
+    'inputObject.generation'() {
       this.reset()
     },
   },
@@ -1010,7 +986,10 @@ export default {
   },
 
   mounted() {
-    if (this.item.inputOptions?.inputType === 'stripe-pi' && this.hasPaypal) {
+    if (
+      this.inputObject.inputDefinition.inputType === 'stripe-pi' &&
+      this.hasPaypal
+    ) {
       this.renderPayPal()
     }
   },
@@ -1022,10 +1001,10 @@ export default {
       try {
         const priceObject = this.getPriceObject()
         const orderData =
-          await this.item.inputOptions.paymentOptions.paypalOptions.createPaypalOrder(
+          await this.inputObject.inputDefinition.paymentOptions.paypalOptions.createPaypalOrder(
             this,
-            this.item,
-            this.selectedItem,
+            this.inputObject,
+            this.parentItem,
             priceObject.quantity,
             priceObject.price
           )
@@ -1048,7 +1027,7 @@ export default {
     async capturePaypalOrder(data, actions) {
       try {
         const orderData =
-          await this.item.inputOptions.paymentOptions.paypalOptions.capturePaypalOrder(
+          await this.inputObject.inputDefinition.paymentOptions.paypalOptions.capturePaypalOrder(
             data.orderID
           )
 
@@ -1073,7 +1052,7 @@ export default {
           // Or go to another URL:  actions.redirect('thank_you.html');
 
           // succeeded, so will now submit
-          this.item.value = `paypal_${data.orderID}`
+          this.inputObject.value = `paypal_${data.orderID}`
           this.triggerSubmit()
         }
       } catch (err) {
@@ -1098,12 +1077,14 @@ export default {
     },
     renderDiscountScheme() {
       return parseDiscountScheme(
-        this.item.inputOptions.paymentOptions.quantityOptions?.getDiscountScheme?.(
+        this.inputObject.inputDefinition.paymentOptions.quantityOptions?.getDiscountScheme?.(
           this,
           this.parentItem
         )
       )
-        .map((item) => `Buy ${item.quantity}, Save ${item.discount}%`)
+        .map(
+          (item) => `Buy ${inputObject.quantity}, Save ${inputObject.discount}%`
+        )
         .join(' | ')
     },
 
@@ -1130,11 +1111,11 @@ export default {
     },
 
     getPriceObject() {
-      return this.item.inputOptions.paymentOptions?.getPriceObject?.(
+      return this.inputObject.inputDefinition.paymentOptions?.getPriceObject?.(
         this,
         this.parentItem,
-        this.item.secondaryInputValue,
-        this.item.inputOptions.paymentOptions.quantityOptions?.getDiscountScheme?.(
+        this.inputObject.secondaryInputValue,
+        this.inputObject.inputDefinition.paymentOptions.quantityOptions?.getDiscountScheme?.(
           this,
           this.parentItem
         )
@@ -1148,9 +1129,9 @@ export default {
 
     generateFileServingUrl,
     handleClear() {
-      this.item.value = null
+      this.inputObject.value = null
       this.tempInput = null
-      this.$emit('change', this.item.value)
+      this.$emit('change', this.inputObject.value)
     },
     handleClose() {
       this.$emit('handle-close')
@@ -1165,21 +1146,21 @@ export default {
     },
 
     applyDatePickerInput(val) {
-      this.item.value = val
-      this.$emit('change', this.item.value)
+      this.inputObject.value = val
+      this.$emit('change', this.inputObject.value)
     },
 
     // parse from date and time inputs to unixTimestamp
     handleDateTimeInputChange(_val) {
       if (!this.tempInput) {
-        this.item.value = null
+        this.inputObject.value = null
         return
       }
 
       // always set the input to the start of the day (only if the current input is null
       // no longer doing this
       /*
-      if (!this.item.value) {
+      if (!this.inputObject.value) {
         this.tempInput = this.tempInput.replace(/T(\d{2}):(\d{2})$/, 'T00:00')
       }
       */
@@ -1195,7 +1176,7 @@ export default {
       const hours = Number(dateTimeMatch[4])
       const minutes = Number(dateTimeMatch[5])
 
-      this.item.value =
+      this.inputObject.value =
         new Date(years, month - 1, day, hours, minutes, 0).getTime() / 1000
     },
 
@@ -1228,27 +1209,26 @@ export default {
     },
 
     addRow() {
-      addNestedInputObject(this, this.item)
+      addNestedInputObject(this, this.inputObject)
 
       // need to load the options
       populateInputObject(this, {
-        inputObject: this.item,
-        selectedItem: this.selectedItem,
-        item: this.parentItem,
-        loadOptions: true,
+        inputObject: this.inputObject,
+        parentItem: this.parentItem,
+        fetchEntities: true,
       })
     },
 
     removeRow(index) {
-      this.item.nestedInputsArray.splice(index, 1)
+      this.inputObject.nestedInputsArray.splice(index, 1)
     },
 
     handleSearchUpdate(inputObject) {
       try {
         // if getOptions already provided, no need to handle this
         if (
-          inputObject.inputOptions.getOptions &&
-          !inputObject.inputOptions?.loadServerResults
+          inputObject.inputDefinition.getOptions &&
+          !inputObject.inputDefinition.loadServerResults
         )
           return
 
@@ -1266,7 +1246,7 @@ export default {
 
         // if the input type does not have a name, do a slightly different check
         if (
-          !inputObject.inputOptions.entity.nameField &&
+          !inputObject.inputDefinition.entity.nameField &&
           (inputObject.value?.id ?? null) === inputObject.inputValue
         ) {
           return
@@ -1277,16 +1257,16 @@ export default {
 
         // if it is a text-autocomplete/combobox type and no getSuggestions function, throw err
         if (
-          inputObject.inputOptions?.inputType === 'text-autocomplete' ||
-          (inputObject.inputOptions?.inputType === 'text-combobox' &&
-            !inputObject.inputOptions.getSuggestions)
+          inputObject.inputDefinition.inputType === 'text-autocomplete' ||
+          (inputObject.inputDefinition.inputType === 'text-combobox' &&
+            !inputObject.inputDefinition.getSuggestions)
         ) {
           throw new Error(`getSuggestions function required`)
         }
 
         // set the load search result function if it is a text-autocomplete type
         const loadSearchResultsFn =
-          inputObject.inputOptions.getSuggestions ?? loadTypeSearchResults
+          inputObject.inputDefinition.getSuggestions ?? loadTypeSearchResults
 
         // delay new call 500ms
         this._timerId = setTimeout(async () => {
@@ -1310,7 +1290,7 @@ export default {
     },
 
     handleFilesDataUpdate() {
-      this.item.value = this.filesData.map((ele) => ele.id)
+      this.inputObject.value = this.filesData.map((ele) => ele.id)
     },
 
     handleMultipleFileInputClear(file) {
@@ -1336,7 +1316,7 @@ export default {
 
       // if no files left, set loading to false
       if (this.filesProcessingQueue.size < 1) {
-        this.item.loading = false
+        this.inputObject.loading = false
       }
     },
 
@@ -1350,7 +1330,7 @@ export default {
     handleDropEvent(e) {
       try {
         // if still loading, prevent
-        if (this.item.loading) {
+        if (this.inputObject.loading) {
           throw new Error(`File upload already in progress`)
         }
 
@@ -1363,7 +1343,7 @@ export default {
 
         const firstFile = files[0]
 
-        this.item.inputValue = initializeFileUploadObject(firstFile)
+        this.inputObject.inputValue = initializeFileUploadObject(firstFile)
 
         this.handleSingleFileInputChange()
       } catch (err) {
@@ -1378,7 +1358,7 @@ export default {
     processFilesQueue(newFiles) {
       try {
         // if the files processing + the files already uploaded + # of new files >= limit, throw err and clear
-        const limit = this.item.inputOptions?.limit
+        const limit = this.inputObject.inputDefinition.limit
         if (
           limit &&
           this.filesProcessingQueue.size +
@@ -1386,7 +1366,7 @@ export default {
             newFiles.length >
             limit
         ) {
-          this.item.loading = false
+          this.inputObject.loading = false
           // clear the temp input
           this.tempInput = []
           throw new Error(`Adding these files would exceed the file limit`)
@@ -1408,14 +1388,14 @@ export default {
         this.filesProcessingQueue.forEach((fileProcessObject, file) => {
           if (fileProcessObject.processed) return
 
-          this.$set(this.item, 'loading', true)
+          this.$set(this.inputObject, 'loading', true)
 
           fileProcessObject.processed = true
 
           uploadFile(
             this,
             fileProcessObject.fileUploadObject,
-            this.item.inputOptions?.useFirebaseUrl,
+            this.inputObject.inputDefinition.useFirebaseUrl,
             (fileUploadObject) => {
               // add finished fileRecord to filesData
               this.filesData.push(fileUploadObject.fileRecord)
@@ -1430,17 +1410,17 @@ export default {
               // emit the file to parent (in case it is needed)
               this.$emit(
                 'file-added',
-                this.item,
+                this.inputObject,
                 fileProcessObject.fileUploadObject.fileRecord
               )
 
               // if no files left, finish up
               if (this.tempInput.length < 1) {
-                this.item.loading = false
+                this.inputObject.loading = false
                 this.handleFilesDataUpdate()
-                this.$notifier.showSnackbar({
-                  message: 'File Uploaded',
-                  variant: 'success',
+                this.$root.$emit('showSnackbar', {
+                  message: `File Uploaded`,
+                  color: 'success',
                 })
               }
             }
@@ -1462,7 +1442,7 @@ export default {
     },
 
     handleSingleFileInputChange(event = null) {
-      const inputObject = this.item
+      const inputObject = this.inputObject
 
       // if event, user clicked the upload button and the file will be extracted from the event object
       if (event) {
@@ -1492,9 +1472,9 @@ export default {
       uploadFile(
         this,
         inputObject.inputValue,
-        inputObject.inputOptions?.useFirebaseUrl === true,
+        inputObject.inputDefinition.useFirebaseUrl === true,
         (fileUploadObject) => {
-          if (inputObject.inputOptions?.useFirebaseUrl) {
+          if (inputObject.inputDefinition.useFirebaseUrl) {
             inputObject.value = fileUploadObject.url
           } else {
             inputObject.value = fileUploadObject.servingUrl
@@ -1509,9 +1489,9 @@ export default {
           // emit the file to parent (in case it is needed)
           this.$emit('file-added', inputObject, fileUploadObject.fileRecord)
 
-          this.$notifier.showSnackbar({
-            message: 'File Uploaded',
-            variant: 'success',
+          this.$root.$emit('showSnackbar', {
+            message: `File Uploaded`,
+            color: 'success',
           })
         }
       )
@@ -1526,7 +1506,6 @@ export default {
             // only proceed if parent item is defined
             if (this.parentItem) {
               const fileData = await collectPaginatorData(
-                this,
                 'getFilePaginator',
                 {
                   id: true,
@@ -1577,14 +1556,17 @@ export default {
         return
       }
 
-      this.item.loading = true
+      this.inputObject.loading = true
       this.stripePiReady = false
       try {
         // update the inputValue
-        this.item.inputValue = priceObject.price
+        this.inputObject.inputValue = priceObject.price
 
         // min supported payment is $0.50
-        if (this.item.inputValue < 0.5 && this.item.inputValue !== 0) {
+        if (
+          this.inputObject.inputValue < 0.5 &&
+          this.inputObject.inputValue !== 0
+        ) {
           throw new Error(`Minimum payment amount is $0.50`)
         }
 
@@ -1592,49 +1574,52 @@ export default {
         this._tempData = JSON.stringify(priceObject)
 
         // load the updated inputData (paymentIntent)
-        this.item.inputData =
-          await this.item.inputOptions.paymentOptions.getPaymentIntent(
+        this.inputObject.inputData =
+          await this.inputObject.inputDefinition.paymentOptions.getPaymentIntent(
             this,
-            this.item,
-            this.selectedItem,
+            this.inputObject,
+            this.parentItem,
             priceObject.quantity,
             priceObject.price
           )
       } catch (err) {
         handleError(this, err)
         // if there is an error, set the inputData to null
-        this.item.inputData = null
+        this.inputObject.inputData = null
       }
-      this.item.loading = false
+      this.inputObject.loading = false
     },
 
     async handleStripePiEditableUpdate() {
-      this.item.loading = true
+      this.inputObject.loading = true
       this.stripePiReady = false
       try {
-        // parse the tempInput into item.inputValue
-        this.item.inputValue = Number(this.tempInput) || 0
+        // parse the tempInput into inputObject.inputValue
+        this.inputObject.inputValue = Number(this.tempInput) || 0
 
         // min supported payment is $0.50
-        if (this.item.inputValue < 0.5 && this.item.inputValue !== 0) {
+        if (
+          this.inputObject.inputValue < 0.5 &&
+          this.inputObject.inputValue !== 0
+        ) {
           throw new Error(`Minimum payment amount is $0.50`)
         }
 
         // load the updated inputData (paymentIntent)
-        this.item.inputData =
-          await this.item.inputOptions.paymentOptions.getPaymentIntent(
+        this.inputObject.inputData =
+          await this.inputObject.inputDefinition.paymentOptions.getPaymentIntent(
             this,
-            this.item,
-            this.selectedItem,
+            this.inputObject,
+            this.parentItem,
             undefined,
-            this.item.inputValue
+            this.inputObject.inputValue
           )
       } catch (err) {
         handleError(this, err)
         // if there is an error, set the inputData to null
-        this.item.inputData = null
+        this.inputObject.inputData = null
       }
-      this.item.loading = false
+      this.inputObject.loading = false
     },
 
     clearStripePiEditable() {
@@ -1646,18 +1631,18 @@ export default {
     async beforeSubmit() {
       // if inputType is stripe-pi or stripe-pi-editable, process the payment at this point
       if (
-        this.item.inputOptions?.inputType === 'stripe-pi' ||
-        this.item.inputOptions?.inputType === 'stripe-pi-editable'
+        this.inputObject.inputDefinition.inputType === 'stripe-pi' ||
+        this.inputObject.inputDefinition.inputType === 'stripe-pi-editable'
       ) {
         // if the value is already set, this must be due to having captured a paypal payment already, so will skip
-        if (this.item.value) return
+        if (this.inputObject.value) return
 
         // for stripe-pi-editable, if amount is <= 0, don't process
         if (
-          this.item.inputOptions?.inputType === 'stripe-pi-editable' &&
-          this.item.inputValue <= 0
+          this.inputObject.inputDefinition.inputType === 'stripe-pi-editable' &&
+          this.inputObject.inputValue <= 0
         ) {
-          this.item.value = null
+          this.inputObject.value = null
           return
         }
 
@@ -1677,7 +1662,7 @@ export default {
 
         const res = await groupComponent.instance.confirmPayment({
           elements: groupComponent.elements,
-          clientSecret: this.item.inputData.clientSecret,
+          clientSecret: this.inputObject.inputData.clientSecret,
           confirmParams: {
             return_url: window.location.href,
           },
@@ -1690,8 +1675,8 @@ export default {
           throw new Error(res.error.message)
         }
 
-        this.item.value = res.paymentIntent.id
-      } else if (this.item.inputOptions?.inputType === 'stripe-cc') {
+        this.inputObject.value = res.paymentIntent.id
+      } else if (this.inputObject.inputDefinition.inputType === 'stripe-cc') {
         const groupComponent = this.$refs.elms
         const cardComponent = this.$refs.card
         // Get stripe element
@@ -1702,7 +1687,7 @@ export default {
         const result = await groupComponent.instance.createToken(cardElement)
 
         if (result.token) {
-          this.item.value = result.token.id
+          this.inputObject.value = result.token.id
         } else if (result.error) {
           throw new Error(result.error.message)
         }
@@ -1710,9 +1695,9 @@ export default {
     },
 
     clearFileUploadQueue() {
-      if (this.item.filesQueue) {
+      if (this.inputObject.filesQueue) {
         // cancel any existing file uploads, clear out file queue
-        this.item.filesQueue.forEach((fileUploadObject) => {
+        this.inputObject.filesQueue.forEach((fileUploadObject) => {
           fileUploadObject.uploadTask?.cancel()
         })
       }
@@ -1727,31 +1712,33 @@ export default {
     },
 
     reset() {
-      switch (this.item.inputOptions?.inputType) {
+      switch (this.inputObject.inputDefinition.inputType) {
         case 'multiple-file':
           this.filesData = []
           this.tempInput = []
           this.filesProcessingQueue = new Map()
-          this.loadFiles(this.item)
+          this.loadFiles(this.inputObject)
           break
         case 'datepicker':
           // if the value is a number, transform it into string
-          if (!isNaN(Number(this.item.value))) {
-            this.item.value = generateDateLocaleString(this.item.value)
+          if (!isNaN(Number(this.inputObject.value))) {
+            this.inputObject.value = generateDateLocaleString(
+              this.inputObject.value
+            )
           }
-          this.syncDatePickerInput(this.item.inputValue)
+          this.syncDatePickerInput(this.inputObject.inputValue)
           break
         case 'datetimepicker':
-          // this.item.value is expected to be a unixTimestamp or null
-          this.syncDateTimePickerInput(this.item.value)
+          // this.inputObject.value is expected to be a unixTimestamp or null
+          this.syncDateTimePickerInput(this.inputObject.value)
           break
         case 'stripe-pi-editable':
-          this.tempInput = this.item.inputValue
+          this.tempInput = this.inputObject.inputValue
           break
         case 'type-combobox':
         case 'type-autocomplete':
         case 'type-autocomplete-multiple':
-          if (!this.item.inputOptions.entity) {
+          if (!this.inputObject.inputDefinition.entity) {
             throw new Error(
               `Entity required for combobox, autocomplete-(multiple) input types`
             )

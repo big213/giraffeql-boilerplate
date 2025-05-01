@@ -6,40 +6,35 @@ export default {
       type: Object,
       required: true,
     },
-    // could have dot notation for nested properties
-    fieldPath: {
-      type: String,
-    },
-    // special options that will be passed to the column component, if any. ** may be undefined **
-    options: {
+
+    renderFieldDefinition: {
+      required: true,
       type: Object,
     },
 
-    // where is this column displayed? null | 'crud' | 'view'
+    // where is this column displayed? null | 'crud' | 'view' | 'preview'
     displayMode: {
       type: String,
     },
   },
 
   computed: {
+    options() {
+      return this.renderFieldDefinition.renderDefinition.renderOptions
+    },
+
     currentValue() {
-      return this.fieldPath
-        ? getNestedProperty(this.item, this.fieldPath)
-        : this.item
+      // use a defined pathPrefix, else use the fieldKey, else null
+      const pathPrefix =
+        this.renderFieldDefinition.renderDefinition.pathPrefix === undefined
+          ? this.renderFieldDefinition.fieldKey
+          : this.renderFieldDefinition.renderDefinition.pathPrefix
+
+      return pathPrefix ? getNestedProperty(this.item, pathPrefix) : this.item
     },
   },
 
   methods: {
     getNestedProperty,
-
-    setColumnValue(value) {
-      const fieldParts = this.fieldPath.split('.')
-      if (fieldParts.length === 1) {
-        this.item[fieldParts[0]] = value
-      } else {
-        const lastField = fieldParts.pop()
-        getNestedProperty(this.item, fieldParts.join('.'))[lastField] = value
-      }
-    },
   },
 }

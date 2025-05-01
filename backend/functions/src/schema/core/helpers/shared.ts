@@ -190,10 +190,25 @@ export function getArgsNewValue(fields, item, fieldname) {
     );
   }
 
+  // stringifying to make arrays equal, if they have the same contents
   return fields[fieldname] !== undefined &&
-    fields[fieldname] !== item[fieldname]
+    JSON.stringify(fields[fieldname]) !== JSON.stringify(item[fieldname])
     ? fields[fieldname]
     : undefined;
+}
+
+// for all fields in updateFieldsObject, return undefined if unchanged, or the new value if changed (original value held in 'originalItem')
+export function getUpdatedFieldValues(
+  updateFieldsObject,
+  originalItem,
+  fields?: string[]
+): { [x: string]: any } {
+  return Object.entries(updateFieldsObject).reduce((total, [key, val]) => {
+    if (!fields || (fields && fields.includes(key))) {
+      total[key] = getArgsNewValue(updateFieldsObject, originalItem, key);
+    }
+    return total;
+  }, {});
 }
 
 // parses templateString and replaces with any params
@@ -211,4 +226,17 @@ export function processTemplate(
   });
 
   return templateStringModified;
+}
+
+export function getNestedProperty(obj: StringKeyObject, path: string) {
+  const pathArray = path.split(/\./);
+  let currentValue = obj;
+  for (const prop of pathArray) {
+    // if not object, return null;
+    if (!(currentValue && typeof currentValue === "object")) {
+      return null;
+    }
+    currentValue = currentValue[prop];
+  }
+  return currentValue;
 }

@@ -1,47 +1,35 @@
-import {
-  InputFieldDefinition,
-  InputOptions,
-  InputType,
-  RenderFieldDefinition,
-} from '~/types'
-import CopyableColumn from '~/components/table/copyableColumn.vue'
-import AvatarColumn from '~/components/table/avatarColumn.vue'
-import NameAvatarColumn from '~/components/table/nameAvatarColumn.vue'
-import TimeagoColumn from '~/components/table/timeagoColumn.vue'
-import RecordColumn from '~/components/table/recordColumn.vue'
+import type { InputDefinition, InputType, RenderDefinition } from '~/types'
 import { UserEntity } from '~/models/entities'
 import {
   camelCaseToCapitalizedString,
   enterRoute,
-  generateViewRecordRoute,
+  formatAsCurrency,
+  generateDateLocaleString,
+  generateTimeAgoString,
 } from './base'
-import { EntityDefinition } from '~/types/entity'
-import { ViewDefinition } from '~/types/view'
-import ShareLinkColumn from '~/components/table/shareLinkColumn.vue'
-import TruthyRecordColumn from '~/components/table/truthyRecordColumn.vue'
-import ConcatRecordColumn from '~/components/table/concatRecordColumn.vue'
-import FilesColumn from '~/components/table/filesColumn.vue'
-import PreviewableFilesColumn from '~/components/table/previewableFilesColumn.vue'
-import CurrencyColumn from '~/components/table/currencyColumn.vue'
+import type { EntityDefinition } from '~/types/entity'
+import type { ViewDefinition } from '~/types/view'
+import { generateViewRecordRoute } from './route'
+import { Columns } from './components'
 
 export function generateSortOptions({
-  field,
+  fieldPath,
   text,
 }: {
-  field: string
+  fieldPath: string
   text?: string
 }) {
   return [
     {
-      text: `${text ?? camelCaseToCapitalizedString(field)} (Desc)`,
-      field,
-      key: `${field}-desc`,
+      text: `${text ?? camelCaseToCapitalizedString(fieldPath)} (Desc)`,
+      fieldPath,
+      key: `${fieldPath}-desc`,
       desc: true,
     },
     {
-      text: `${text ?? camelCaseToCapitalizedString(field)} (Asc)`,
-      field,
-      key: `${field}-asc`,
+      text: `${text ?? camelCaseToCapitalizedString(fieldPath)} (Asc)`,
+      fieldPath,
+      key: `${fieldPath}-asc`,
       desc: false,
     },
   ]
@@ -55,10 +43,10 @@ export function generateClickRowToOpenDialogOptions(
 ) {
   return {
     handleRowClick: (that, props) => {
-      that.openEditDialog(action, props.item)
+      that.openEditDialog({ mode: action, parentItem: props.item })
     },
     handleGridElementClick: (that, item) => {
-      that.openEditDialog(action, item)
+      that.openEditDialog({ mode: action, parentItem: item })
     },
   }
 }
@@ -91,8 +79,7 @@ export function generateClickRowToEnterOptions({
       enterRoute(
         that,
         generateViewRecordRoute(that, {
-          routeKey: that.viewDefinition.entity.typename,
-          routeType: that.viewDefinition.routeType,
+          viewDefinition: that.viewDefinition,
           id: props.item.id,
           showComments: true,
           miniMode,
@@ -106,8 +93,7 @@ export function generateClickRowToEnterOptions({
       enterRoute(
         that,
         generateViewRecordRoute(that, {
-          routeKey: that.viewDefinition.entity.typename,
-          routeType: that.viewDefinition.routeType,
+          viewDefinition: that.viewDefinition,
           id: item.id,
           showComments: true,
           miniMode,
@@ -207,41 +193,41 @@ export function generatePreviewViewDefinition({
  */
 
 export function generateBaseRenderFields(entity: EntityDefinition): {
-  [x: string]: RenderFieldDefinition
+  [x: string]: RenderDefinition
 } {
   return {
     id: {
       text: 'ID',
-      component: CopyableColumn,
+      component: Columns.CopyableColumn,
     },
     ...(entity.nameField && {
       [entity.nameField]: {},
     }),
+    // if there is a separate nameInputField, also add that one
+    ...(entity.nameInputField &&
+      entity.nameInputField !== entity.nameField && {
+        [entity.nameInputField]: {},
+      }),
     ...(entity.avatarField && {
       [entity.avatarField]: {
-        component: AvatarColumn,
+        component: Columns.AvatarColumn,
         text: 'Avatar',
-        inputOptions: {
-          inputType: 'single-image-url' as InputType,
-          avatarOptions: {
-            fallbackIcon: entity.icon,
-          },
-        },
       },
     }),
     ...(entity.descriptionField && {
-      [entity.descriptionField]: {
-        inputOptions: {
-          inputType: 'textarea' as InputType,
-        },
-      },
+      [entity.descriptionField]: {},
     }),
     ...(entity.nameField &&
       entity.avatarField && {
         nameWithAvatar: {
           text: 'Name',
-          fields: ['name', 'avatarUrl'],
-          component: NameAvatarColumn,
+          fields: [entity.nameField, entity.avatarField],
+          component: Columns.NameAvatarColumn,
+          pathPrefix: null,
+          renderOptions: {
+            nameField: entity.nameField,
+            avatarUrlField: entity.avatarField,
+          },
         },
         record: generatePreviewableRecordRenderField({
           text: 'Record',
@@ -252,20 +238,16 @@ export function generateBaseRenderFields(entity: EntityDefinition): {
       fieldname: 'createdBy',
       entity: UserEntity,
     }),
-    createdAt: {
-      component: TimeagoColumn,
-    },
-    updatedAt: {
-      component: TimeagoColumn,
-    },
+    createdAt: generateTimeagoRenderField(),
+    updatedAt: generateTimeagoRenderField(),
   }
 }
 
-export function generateShareLinkRenderField(): RenderFieldDefinition {
+export function generateShareLinkRenderField(): RenderDefinition {
   return {
     text: 'Share Link',
     fields: ['id', '__typename'],
-    component: ShareLinkColumn,
+    component: Columns.ShareLinkColumn,
   }
 }
 
@@ -276,7 +258,7 @@ export function generateTruthyRecordRenderField({
 }: {
   text?: string
   fields: string[] // fieldPaths are OK
-}): RenderFieldDefinition {
+}): RenderDefinition {
   return {
     text,
     fields: fields.reduce((total, fieldPath) => {
@@ -290,7 +272,7 @@ export function generateTruthyRecordRenderField({
     renderOptions: {
       fields,
     },
-    component: TruthyRecordColumn,
+    component: Columns.TruthyRecordColumn,
   }
 }
 
@@ -301,7 +283,7 @@ export function generateConcatRecordRenderField({
 }: {
   text?: string
   fields: string[] // fieldPaths are OK
-}): RenderFieldDefinition {
+}): RenderDefinition {
   return {
     text,
     fields: fields.reduce((total, fieldPath) => {
@@ -315,7 +297,7 @@ export function generateConcatRecordRenderField({
     renderOptions: {
       fields,
     },
-    component: ConcatRecordColumn,
+    component: Columns.ConcatRecordColumn,
   }
 }
 
@@ -328,9 +310,11 @@ export function generatePreviewableRecordRenderField({
   fieldname?: string
   text?: string
   entity: EntityDefinition
-  renderDefinition?: RenderFieldDefinition
-}): RenderFieldDefinition {
-  const fieldnamePrefix = fieldname ? `${fieldname}.` : ''
+  renderDefinition?: RenderDefinition
+}): RenderDefinition {
+  // if no fieldname, assume entity.typename is fieldname
+  const validatedFieldname = fieldname ?? entity.typename
+  const fieldnamePrefix = validatedFieldname ? `${validatedFieldname}.` : ''
   return {
     text,
     fields: <string[]>(
@@ -341,8 +325,8 @@ export function generatePreviewableRecordRenderField({
         entity.avatarField ? `${fieldnamePrefix}${entity.avatarField}` : null,
       ].filter((e) => e)
     ),
-    pathPrefix: fieldname,
-    component: RecordColumn,
+    pathPrefix: validatedFieldname,
+    component: Columns.RecordColumn,
     ...renderDefinition,
   }
 }
@@ -363,8 +347,8 @@ export function generatePreviewableFilesRenderColumn({
   hideDownload?: boolean
   mediaMode?: boolean
   useFirebaseUrl?: boolean
-  renderDefinition?: RenderFieldDefinition
-}): RenderFieldDefinition {
+  renderDefinition?: RenderDefinition
+}): RenderDefinition {
   return {
     text,
     fields: <string[]>(
@@ -384,45 +368,115 @@ export function generatePreviewableFilesRenderColumn({
       hideDownload,
       useFirebaseUrl,
     },
-    component: mediaMode ? PreviewableFilesColumn : FilesColumn,
+    component: mediaMode ? Columns.PreviewableFilesColumn : Columns.FilesColumn,
     ...renderDefinition,
   }
 }
 
-export function generateCurrencyRenderField({
-  text,
-  renderDefinition,
-}: {
-  text?: string
-  renderDefinition?: RenderFieldDefinition
-}): RenderFieldDefinition {
+export function generateCurrencyRenderField(
+  renderDefinition: RenderDefinition = {}
+): RenderDefinition {
   return {
-    text,
-    component: CurrencyColumn,
     ...renderDefinition,
+    renderOptions: {
+      getDisplayStr: (currentValue, item) =>
+        currentValue === null ? 'N/A' : formatAsCurrency(currentValue),
+    },
+    component: Columns.StringColumn,
+  }
+}
+
+export function generatePercentRenderField(
+  renderDefinition: RenderDefinition = {}
+): RenderDefinition {
+  return {
+    ...renderDefinition,
+    renderOptions: {
+      getDisplayStr: (currentValue, item) =>
+        currentValue === null ? 'N/A' : `${currentValue * 100}%`,
+    },
+    component: Columns.StringColumn,
+  }
+}
+
+export function generateTimeagoRenderField(
+  renderDefinition: RenderDefinition = {}
+): RenderDefinition {
+  return {
+    ...renderDefinition,
+    renderOptions: {
+      getDisplayStr: (currentValue, item) =>
+        generateTimeAgoString(currentValue) || 'None',
+      getTitleStr: (currentValue, item) =>
+        generateDateLocaleString(currentValue) || 'None',
+    },
+    component: Columns.StringColumn,
+  }
+}
+
+export function generateSimplifiedTimeStringRenderField(
+  renderDefinition: RenderDefinition = {}
+): RenderDefinition {
+  return {
+    ...renderDefinition,
+    renderOptions: {
+      getDisplayStr: (currentValue, item) =>
+        generateDateLocaleString(currentValue, true) ?? 'None',
+      getTitleStr: (currentValue, item) =>
+        generateDateLocaleString(currentValue, true) ?? 'None',
+    },
+    component: Columns.StringColumn,
+  }
+}
+
+export function generateDateTimeRangeRenderField(
+  {
+    fromField,
+    untilField,
+  }: {
+    fromField: string
+    untilField: string
+  },
+  renderDefinition: RenderDefinition = {}
+): RenderDefinition {
+  return {
+    fields: [fromField, untilField],
+    ...renderDefinition,
+    renderOptions: {
+      getDisplayStr: (currentValue, item) => {
+        return `${
+          generateDateLocaleString(item[fromField], true) ?? 'None'
+        } - ${generateDateLocaleString(item[untilField], true) ?? 'None'}`
+      },
+      showTitle: true,
+    },
+    component: Columns.StringColumn,
   }
 }
 
 export function generateMultipleJoinableRenderField({
   fieldname,
   text,
+  entity,
   renderDefinition,
 }: {
-  fieldname: string
+  fieldname?: string
   text?: string
-  renderDefinition?: RenderFieldDefinition
-}): RenderFieldDefinition {
+  entity: EntityDefinition
+  renderDefinition?: RenderDefinition
+}): RenderDefinition {
+  const validatedFieldname = fieldname ?? entity.typename
   return {
     text,
     fields: [
-      `${fieldname}`,
-      `${fieldname}.id`,
-      `${fieldname}.name`,
-      `${fieldname}.__typename`,
-      `${fieldname}.avatarUrl`,
+      `${validatedFieldname}`,
+      `${validatedFieldname}.id`,
+      `${validatedFieldname}.name`,
+      `${validatedFieldname}.__typename`,
+      `${validatedFieldname}.avatarUrl`,
     ],
-    pathPrefix: fieldname,
-    component: RecordColumn,
+    pathPrefix: validatedFieldname,
+    component: Columns.RecordColumn,
     ...renderDefinition,
   }
 }
@@ -432,100 +486,110 @@ export function generateMultipleJoinableRenderField({
  */
 
 export function generateBaseInputFields(entity: EntityDefinition): {
-  [x: string]: InputFieldDefinition
+  [x: string]: InputDefinition
 } {
+  const nameInputField = entity.nameInputField ?? entity.nameField
   return {
-    ...(entity.nameField && {
-      [entity.nameField]: {},
+    ...(nameInputField && {
+      [nameInputField]: {},
     }),
     ...(entity.avatarField && {
       [entity.avatarField]: {
         text: 'Avatar',
-        inputOptions: {
-          inputType: 'single-image-url' as InputType,
-          avatarOptions: {
-            fallbackIcon: entity.icon,
-          },
+        inputType: 'single-image-url' as InputType,
+        avatarOptions: {
+          fallbackIcon: entity.icon,
         },
       },
     }),
     ...(entity.descriptionField && {
       [entity.descriptionField]: {
-        inputOptions: {
-          inputType: 'textarea' as InputType,
-        },
+        inputType: 'textarea' as InputType,
       },
     }),
   }
 }
 
 export function generateJoinableInputField({
-  text,
   entity,
   inputType = 'type-autocomplete',
+  ...remainingInputDefinition
 }: {
-  text?: string
   entity: EntityDefinition
-  inputType?: InputType
-}): InputFieldDefinition {
+} & InputDefinition): InputDefinition {
   return {
-    text,
-    inputOptions: {
-      inputType,
-      entity,
-    },
+    entity,
+    inputType,
+    ...remainingInputDefinition,
   }
 }
 
-export function generateCurrencyInputField({
-  text,
-  inputOptions,
-}: {
-  text?: string
-  inputOptions?: InputOptions
-}): InputFieldDefinition {
+export function generateCurrencyInputField(
+  inputDefinition: InputDefinition = {}
+): InputDefinition {
   return {
-    text,
-    inputOptions: {
-      inputType: 'text',
-      parseValue: (val) => {
-        if (!val) return val
-
-        return String(val).replace(/[^(\d|.|\-)]/g, '')
-      },
-      ...inputOptions,
-    },
+    inputType: 'text',
+    parseValue: currencyParser,
+    ...inputDefinition,
   }
 }
 
 export function generateMultipleJoinableInputField({
-  text,
   entity,
   inputType = 'type-autocomplete-multiple',
-  inputOptions,
+  ...remainingInputDefinition
 }: {
-  text: string
   entity: EntityDefinition
   inputType?: InputType
-  inputOptions?: InputOptions
-}): InputFieldDefinition {
+} & InputDefinition): InputDefinition {
   return {
-    text,
-    inputOptions: {
-      getInitialValue: () => [],
-      parseValue: (val) => {
-        // if not array, convert to empty array
-        if (!Array.isArray(val)) {
-          return []
-        }
+    inputType,
+    entity,
+    getInitialValue: () => [],
+    parseValue: (val) => {
+      // if not array, convert to empty array
+      if (!Array.isArray(val)) {
+        return []
+      }
 
-        // if array, extract the id field only
-        return val.map((ele) => ({ id: ele.id }))
-      },
-      ...inputOptions,
-      inputType,
-      entity,
+      // if array, extract the id field only
+      return val.map((ele) => ({ id: ele.id }))
     },
+    ...remainingInputDefinition,
+  }
+}
+
+export function generateFilesInputColumn({
+  inputType = 'multiple-file',
+  limit,
+  // solo mode essentially grabs the first file in the array, if any -- probably doesn't work at the moment
+  soloMode = false,
+  mediaMode = false,
+  useFirebaseUrl = false,
+  ...remainingInputDefinition
+}: {
+  inputType?: InputType
+  limit?: number
+  soloMode?: boolean
+  mediaMode?: boolean
+  useFirebaseUrl?: boolean
+} & InputDefinition = {}): InputDefinition {
+  return {
+    parseValue: (val) => {
+      if (!Array.isArray(val)) return soloMode ? null : []
+
+      const mappedValues = val.map((id) => ({ id }))
+
+      // if solo mode, get the first array element
+      return soloMode ? mappedValues[0] ?? null : mappedValues
+    },
+    getInitialValue: () => [],
+    contentType: mediaMode ? 'image/*' : undefined,
+    inputType,
+    useFirebaseUrl,
+    limit,
+    mediaMode,
+    ...remainingInputDefinition,
   }
 }
 
@@ -535,4 +599,27 @@ export function generateMultipleJoinableInputField({
 
 export function emptyStringToNullParser(val: any) {
   return typeof val === 'string' ? (val.trim() ? val : null) : val
+}
+
+// parses "-$2.02" to -2.02
+export function currencyParser(val: any) {
+  if (!val) return val
+
+  return String(val).replace(/[^(\d|.|\-)]/g, '')
+}
+
+// will parse "($2.02)" to "-2.02"
+export function excelCurrencyParser(val: any) {
+  return typeof val === 'string'
+    ? val.replace(/[$),\s]/g, '').replace(/^\(/, '-')
+    : val
+}
+
+// parses from '12/1/2024' to '2024-12-01'. if null, uses current date
+export function excelDateParser(val: any) {
+  return (val ? new Date(val) : new Date()).toISOString().split('T')[0]
+}
+
+export function booleanParser(val: any) {
+  return val === 'TRUE'
 }

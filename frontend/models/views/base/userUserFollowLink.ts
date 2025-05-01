@@ -9,14 +9,15 @@ import {
 } from '~/services/view'
 
 export const BaseUserUserFollowLinkView: ViewDefinition = {
-  routeType: 'a',
+  routeType: 'base',
+  routeKey: UserUserFollowLinkEntity.typename,
   entity: UserUserFollowLinkEntity,
   inputFields: {
     ...generateBaseInputFields(UserUserFollowLinkEntity),
-    'user.id': generateJoinableInputField({
+    user: generateJoinableInputField({
       entity: UserEntity,
     }),
-    'target.id': generateJoinableInputField({
+    target: generateJoinableInputField({
       entity: UserEntity,
     }),
   },
@@ -33,29 +34,29 @@ export const BaseUserUserFollowLinkView: ViewDefinition = {
   },
   paginationOptions: {
     searchOptions: undefined,
-    filterOptions: [],
-    sortOptions: [
-      ...generateSortOptions({ field: 'createdAt' }),
-      ...generateSortOptions({ field: 'updatedAt' }),
+    filters: [],
+    sortFields: [
+      ...generateSortOptions({ fieldPath: 'createdAt' }),
+      ...generateSortOptions({ fieldPath: 'updatedAt' }),
     ],
-    headerOptions: [
+    headers: [
       {
-        field: 'user',
+        fieldKey: 'user',
       },
       {
-        field: 'target',
+        fieldKey: 'target',
       },
       {
-        field: 'updatedAt',
+        fieldKey: 'updatedAt',
         width: '150px',
       },
     ],
   },
   createOptions: {
-    fields: ['user.id', 'target.id'],
+    fields: ['user', 'target'],
   },
   updateOptions: {
-    fields: ['user.id', 'target.id'],
+    fields: ['user', 'target'],
   },
   viewOptions: {
     fields: ['user', 'target'],

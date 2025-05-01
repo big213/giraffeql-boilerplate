@@ -21,7 +21,7 @@
 <script>
 import LoginInterface from '~/components/interface/auth/loginInterface.vue'
 import SocialLoginInterface from '~/components/interface/auth/socialLoginInterface.vue'
-import { socialLoginEnabled } from '~/services/config'
+import { socialLoginEnabled } from '~/config'
 
 export default {
   middleware: 'logged-in-redirect',

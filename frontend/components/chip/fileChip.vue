@@ -79,9 +79,9 @@ export default {
     async downloadFile() {
       this.loading.downloadFile = true
       try {
-        this.$notifier.showSnackbar({
+        this.$root.$emit('showSnackbar', {
           message: `Download started`,
-          variant: 'success',
+          color: 'success',
         })
 
         const data = await executeApiRequest({

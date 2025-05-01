@@ -19,5 +19,5 @@ export class {{ capitalizedTypename }}Service extends LinkService {
 
   groupByFieldsMap = {};
 
-  accessControl: AccessControlMap = {};
+  accessControlMap: AccessControlMap = {};
 }

@@ -16,7 +16,6 @@ import {
   SqlInsertQuery,
   SqlRawQuery,
   SqlSelectQuery,
-  SqlOrderByObject,
   SqlSimpleRawSelectObject,
   SqlSimpleSelectObject,
   SqlSumQuery,
@@ -37,16 +36,12 @@ import {
   objectTypeDefs,
   GiraffeqlInputType,
   GiraffeqlArgsError,
-  GiraffeqlInputTypeLookup,
   GiraffeqlInputFieldType,
   GiraffeqlInitializationError,
-  GiraffeqlScalarType,
   GiraffeqlBaseError,
-  lookupSymbol,
-  inputTypeDefs,
 } from "giraffeql";
 
-import { ExternalQuery, ServiceFunctionInputs } from "../../../types";
+import { ServiceFunctionInputs } from "../../../types";
 
 import {
   escapeRegExp,
@@ -55,9 +50,9 @@ import {
   generateCursorFromNode,
   btoa,
   capitalizeString,
+  getUpdatedFieldValues,
 } from "../helpers/shared";
 import { getObjectType } from "../helpers/resolver";
-import { Scalars } from "../..";
 import { knex } from "../../../utils/knex";
 import { generateSqlSingleFieldObject } from "../helpers/sqlHelper";
 import { Knex } from "knex";
@@ -65,9 +60,9 @@ import {
   getInputTypeDef,
   GiraffeqlInputTypeLookupService,
   GiraffeqlObjectTypeLookupService,
-  processLookupArgs,
 } from "../helpers/typeDef";
 import { ItemNotFoundError } from "../helpers/error";
+import { Scalars } from "../../scalars";
 
 export type FieldObject = {
   field?: string;
@@ -1094,6 +1089,8 @@ export class PaginatedService extends BaseService {
       true
     );
 
+    // const updatedFieldsObject = getUpdatedFieldValues(args.fields, item)
+
     await knex.transaction(async (transaction) => {
       await this.updateSqlRecord(
         {
@@ -1140,10 +1137,11 @@ export class PaginatedService extends BaseService {
     transaction?: Knex.Transaction
   ) {}
 
-  // retrieves the related services that should also be deleted when this record is also delated
+  // retrieves the related services that should also be deleted when this record is also delated. recursive option only applies if it is the same as the current service
   getOnDeleteEntries(): {
     service: PaginatedService;
     field?: string;
+    recursive?: boolean;
   }[] {
     return [];
   }
@@ -1186,12 +1184,46 @@ export class PaginatedService extends BaseService {
       });
 
       for (const deleteEntry of this.getOnDeleteEntries()) {
-        await deleteEntry.service.deleteSqlRecord({
-          where: {
-            [deleteEntry.field ?? this.typename]: item.id,
-          },
-          transaction,
-        });
+        if (deleteEntry.service === this && deleteEntry.recursive) {
+          // if it's the same service and deleting recursively, fetch the IDs of all child elements that need to be deleted, and then delete them all at once
+          const idsToDelete: any[] = [];
+
+          let newlyDiscoveredIdsToDelete: any[] = [item.id];
+
+          while (newlyDiscoveredIdsToDelete.length) {
+            const recordsToDelete = await deleteEntry.service.getAllSqlRecord({
+              select: ["id"],
+              where: [
+                {
+                  field: deleteEntry.field ?? this.typename,
+                  operator: "in",
+                  value: newlyDiscoveredIdsToDelete,
+                },
+              ],
+              transaction,
+            });
+
+            newlyDiscoveredIdsToDelete = recordsToDelete.map(
+              (record) => record.id
+            );
+
+            idsToDelete.push(...newlyDiscoveredIdsToDelete);
+          }
+
+          if (idsToDelete.length) {
+            await deleteEntry.service.deleteSqlRecord({
+              where: [{ field: "id", operator: "in", value: idsToDelete }],
+              transaction,
+            });
+          }
+        } else {
+          await deleteEntry.service.deleteSqlRecord({
+            where: {
+              [deleteEntry.field ?? this.typename]: item.id,
+            },
+            transaction,
+          });
+        }
       }
 
       // do post-delete fn, if any

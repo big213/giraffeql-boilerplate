@@ -1,5 +1,5 @@
-import { auth } from '~/services/fireinit'
 import { Root, GetQuery, GetResponse } from '../../schema'
+import { auth } from './fireinit'
 
 type GiraffeqlErrorData = {
   message: string
@@ -56,18 +56,16 @@ export async function executeApiRequest<Key extends keyof Root>(
     })
 
     if (!response.ok) {
-      console.log(response)
       // if error, attempt to fetch the response
       const errorResponse = await response.json()
 
       // if it has error field, use that to throw the err
-      response.headers
       if (errorResponse.error) {
         throw new GiraffeqlError({
           data: errorResponse.error,
           statusCode: response.status,
           query,
-          apiVersion: response.headers.get('api-version'),
+          apiVersion: response.headers.get('x-api-version'),
         })
       } else {
         throw new Error(`HTTP Error, status: ${response.status}`)

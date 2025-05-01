@@ -69,7 +69,7 @@
           }}</v-icon>
         </v-list-item-icon>
         <v-list-item-title>{{
-          viewDefinition.updateOptions.text || 'Update'
+          viewDefinition.updateOptions.text || 'Edit'
         }}</v-list-item-title>
       </v-list-item>
       <v-list-item
@@ -127,9 +127,9 @@
         </v-list-item>
       </template>
 
-      <v-divider v-if="viewDefinition.childTypes.length > 0"></v-divider>
+      <v-divider v-if="visibleChildTypes.length"></v-divider>
       <v-list-item
-        v-for="(expandObject, i) in viewDefinition.childTypes"
+        v-for="(expandObject, i) in visibleChildTypes"
         :key="i"
         dense
         @click="openExpandType(expandObject)"
@@ -137,11 +137,11 @@
       >
         <v-list-item-icon>
           <v-icon>{{
-            expandObject.icon ?? expandObject.viewDefinition.entity.icon
+            expandObject.icon ?? expandObject.view.entity.icon
           }}</v-icon>
         </v-list-item-icon>
         <v-list-item-title
-          >{{ expandObject.name ?? expandObject.viewDefinition.entity.name }}
+          >{{ expandObject.name ?? expandObject.view.entity.name }}
           <v-icon
             v-if="expandMode === 'openInNew'"
             small
@@ -156,11 +156,8 @@
 </template>
 
 <script>
-import {
-  enterRoute,
-  generateViewRecordRoute,
-  handleError,
-} from '~/services/base'
+import { handleError, enterRoute } from '~/services/base'
+import { generateViewRecordRoute } from '~/services/route'
 
 export default {
   props: {
@@ -206,6 +203,14 @@ export default {
       )
     },
 
+    visibleChildTypes() {
+      return (
+        this.viewDefinition.childTypes?.filter(
+          (expandTypeObject) => !expandTypeObject.hideIf?.(this, this.item)
+        ) ?? []
+      )
+    },
+
     isActionLoading() {
       return this.actionInputObjects.some(
         (actionInputObject) => actionInputObject.isLoading
@@ -228,7 +233,10 @@ export default {
     },
 
     openEditDialog(mode) {
-      this.$emit('handle-action-click', mode, this.item)
+      this.$emit('handle-action-click', {
+        mode,
+        parentItem: this.item,
+      })
     },
 
     openExpandType(expandTypeObject, openInNew = false) {
@@ -236,7 +244,7 @@ export default {
         this.$emit('handle-expand-click', expandTypeObject)
       else if (this.expandMode === 'openInDialog')
         this.$root.$emit('openCrudRecordDialog', {
-          viewDefinition: expandTypeObject.viewDefinition,
+          viewDefinition: expandTypeObject.view,
           lockedFilters: expandTypeObject.lockedFilters
             ? expandTypeObject.lockedFilters(this, this.item)
             : [],
@@ -266,7 +274,7 @@ export default {
       if (actionInputObject.isLoading) return
 
       const simpleActionOptions =
-        actionInputObject.actionObject.action.simpleActionOptions
+        actionInputObject.actionObject.simpleActionOptions
       const actionOptions = actionInputObject.actionObject.action
 
       const actionName =
@@ -284,19 +292,17 @@ export default {
         // if the action has actionOptions, open the dialog
         if (actionOptions) {
           this.$root.$emit('openExecuteActionDialog', {
-            actionDefinition: actionInputObject.actionObject.action,
-            selectedItem:
-              actionOptions.selectedItemModifier?.(this, this.item) ?? null,
-            item: this.item,
+            action: actionInputObject.actionObject.action,
+            parentItem: this.item,
           })
           return
         }
 
         // if the actionInputObject is already loading and it is asynchronous, prevent the action
         if (simpleActionOptions.isAsync && actionInputObject.isLoading) {
-          this.$notifier.showSnackbar({
-            message: 'Action currently in progress',
-            variant: 'warning',
+          this.$root.$emit('showSnackbar', {
+            message: `Action currently in progress`,
+            color: 'warning',
           })
           return
         }
@@ -314,9 +320,9 @@ export default {
           ) {
             await simpleActionOptions.handleClick(this, this.item)
           } else {
-            this.$notifier.showSnackbar({
-              message: 'Action cancelled',
-              variant: 'warning',
+            this.$root.$emit('showSnackbar', {
+              message: `Action cancelled`,
+              color: 'warning',
             })
           }
         } else {
@@ -333,8 +339,7 @@ export default {
       enterRoute(
         this,
         generateViewRecordRoute(this, {
-          routeKey: this.viewDefinition.entity.typename,
-          routeType: this.viewDefinition.routeType,
+          viewDefinition: this.viewDefinition,
           id: this.item.id,
           showComments: true,
         }),

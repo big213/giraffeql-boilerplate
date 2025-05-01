@@ -1,47 +1,58 @@
-import type { RecordInfo } from '~/types'
+import { ViewDefinition } from '~/types/view'
+import { {{ capitalizedTypename }}Entity, UserEntity } from '~/models/entities'
 import {
-  generateBaseLinkFields,
-  generatePreviewableJoinableField,
+  generateBaseInputFields,
+  generateBaseRenderFields,
+  generateJoinableInputField,
+  generatePreviewableRecordRenderField,
+  generateClickRowToOpenDialogOptions,
   generateSortOptions,
-} from '~/services/recordInfo'
-import { Simple{{ capitalizedTypename }} } from '../simple'
+} from '~/services/view'
 
-export const {{ capitalizedTypename }}: RecordInfo<'{{ typename }}'> = {
-  ...Simple{{ capitalizedTypename }},
-  routeType: 'a',
-  fields: {
-    ...generateBaseLinkFields(Simple{{ capitalizedTypename }}),
-    ...generatePreviewableJoinableField({
-      text: 'User',
-      fieldname: 'user',
-      typename: 'user',
+export const Base{{ capitalizedTypename }}View: ViewDefinition = {
+  routeType: 'base',
+  routeKey: '{{ typename }}',
+  entity: {{ capitalizedTypename }}Entity,
+  inputFields: {
+    ...generateBaseInputFields({{ capitalizedTypename }}Entity),
+    'user': generateJoinableInputField({
+      entity: UserEntity,
     }),
-    ...generatePreviewableJoinableField({
-      text: 'Target',
+    'target': generateJoinableInputField({
+      entity: UserEntity,
+    }),
+  },
+  renderFields: {
+    ...generateBaseRenderFields({{ capitalizedTypename }}Entity),
+    user: generatePreviewableRecordRenderField({
+      fieldname: 'user',
+      entity: UserEntity,
+    }),
+    target: generatePreviewableRecordRenderField({
       fieldname: 'target',
-      typename: 'user',
+      entity: UserEntity,
     }),
   },
   paginationOptions: {
     searchOptions: undefined,
-    filterOptions: [],
-    sortOptions: [
-      ...generateSortOptions("createdAt"),
-      ...generateSortOptions("updatedAt"),
+    filters: [],
+    sortFields: [
+      ...generateSortOptions({ fieldPath: 'createdAt' }),
+      ...generateSortOptions({ fieldPath: 'updatedAt' }),
     ],
-    headerOptions: [
+    ...generateClickRowToOpenDialogOptions(),
+    headers: [
       {
-        field: 'userRecord',
+        field: 'user',
       },
       {
-        field: 'targetRecord',
+        field: 'target',
       },
       {
         field: 'updatedAt',
         width: '150px',
       },
     ],
-    
   },
   createOptions: {
     fields: ['user', 'target'],
@@ -50,10 +61,10 @@ export const {{ capitalizedTypename }}: RecordInfo<'{{ typename }}'> = {
     fields: ['user', 'target'],
   },
   viewOptions: {
-    fields: ['userRecord', 'targetRecord'],
+    fields: ['user', 'target'],
   },
   enterOptions: {},
   deleteOptions: {},
   shareOptions: {},
-  expandTypes: [],
+  childTypes: [],
 }

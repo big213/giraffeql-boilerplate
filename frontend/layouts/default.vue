@@ -31,14 +31,20 @@
     <v-main>
       <nuxt />
     </v-main>
-
     <Footer :absolute="!fixed" app></Footer>
-    <Snackbar />
+    <Snackbar
+      v-if="snackbar"
+      v-model="snackbar.status"
+      :params="snackbar.params"
+      @input="snackbar = null"
+      @close="snackbar = null"
+    />
     <EditRecordDialog
       v-if="dialogs.editRecord"
       v-model="dialogs.editRecord.status"
       :view-definition="editRecordDialogViewDefinition"
-      :selected-item="dialogs.editRecord.selectedItem"
+      :locked-fields="dialogs.editRecord.lockedFields"
+      :parent-item="dialogs.editRecord.parentItem"
       :custom-fields="dialogs.editRecord.customFields"
       :special-mode="dialogs.editRecord.specialMode"
       :mode="dialogs.editRecord.mode"
@@ -60,9 +66,9 @@
     <ExecuteActionDialog
       v-if="dialogs.executeAction"
       v-model="dialogs.executeAction.status"
-      :action-definition="dialogs.executeAction.actionDefinition"
-      :item="dialogs.executeAction.item"
-      :selected-item="dialogs.executeAction.selectedItem"
+      :action-definition="dialogs.executeAction.action"
+      :parent-item="dialogs.executeAction.parentItem"
+      :locked-fields="dialogs.executeAction.lockedFields"
       @close="dialogs.executeAction = null"
     ></ExecuteActionDialog>
     <LoginDialog
@@ -76,7 +82,7 @@
 
 <script>
 import { mapGetters } from 'vuex'
-import Snackbar from '~/components/snackbar/snackbar.vue'
+import Snackbar from '~/components/common/snackbar.vue'
 import NavDrawer from '~/components/navigation/navDrawer.vue'
 import UserMenu from '~/components/navigation/userMenu.vue'
 import Footer from '~/components/navigation/footer.vue'
@@ -85,7 +91,7 @@ import CrudRecordDialog from '~/components/dialog/crudRecordDialog.vue'
 import ExecuteActionDialog from '~/components/dialog/executeActionDialog.vue'
 import LoginDialog from '~/components/dialog/loginDialog.vue'
 import * as views from '~/models/views'
-import { logoHasLightVariant } from '~/services/config'
+import { logoHasLightVariant } from '~/config'
 
 export default {
   components: {
@@ -111,6 +117,8 @@ export default {
         executeAction: null,
         login: null,
       },
+
+      snackbar: null,
 
       // { type: string; params: any }
       queuedAction: null,
@@ -161,7 +169,7 @@ export default {
     this.drawer = this.$vuetify.breakpoint.name !== 'xs'
 
     /*
-     ** Expecting viewDefinition, selectedItem, mode, customFields?, specialMode?
+     ** Expecting viewDefinition, lockedFields, parentItem, mode, customFields?, specialMode?
      */
     this.$root.$on('openEditRecordDialog', (params) => {
       // confirm the viewDefinition exists
@@ -201,13 +209,13 @@ export default {
     })
 
     /*
-     ** Expecting action: ActionDefinition, item?, selectedItem?
-     ** if actionOptions.selectedItemModifier is set, use that to generate the selectedItem
+     ** Expecting action: action, parentItem?, lockedFields?
+     ** if action.getLockedFields is set, use that to generate the lockedFields
      */
     this.$root.$on('openExecuteActionDialog', (params, loginDialog = false) => {
-      // if loginDialog (OR actionOptions.isLoginRequired) and not logged in, trigger the login dialog instead and queue the action
+      // if loginDialog (OR action.isLoginRequired) and not logged in, trigger the login dialog instead and queue the action
       if (
-        (loginDialog || params.actionOptions.isLoginRequired) &&
+        (loginDialog || params.action.isLoginRequired) &&
         !this.$store.getters['auth/user']
       ) {
         this.dialogs.login = {
@@ -223,13 +231,10 @@ export default {
       }
 
       this.$set(params, 'status', true)
-      if (params.actionOptions.selectedItemModifier) {
+      if (params.action.getLockedFields && params.lockedFields === undefined) {
         this.dialogs.executeAction = {
           ...params,
-          selectedItem: params.actionOptions.selectedItemModifier(
-            this,
-            params.item
-          ),
+          lockedFields: params.action.getLockedFields(this, params.parentItem),
         }
       } else {
         this.dialogs.executeAction = params
@@ -244,6 +249,28 @@ export default {
         }
 
         return
+      }
+    })
+
+    /*
+     ** Expecting message, color?, textColor?, copyableText?, timeout?
+     */
+    this.$root.$on('showSnackbar', (params) => {
+      // if there is already a snackbar, unset it and then set the new one with a 500 ms delay
+      if (this.snackbar) {
+        this.snackbar = null
+
+        setTimeout(() => {
+          this.snackbar = {
+            status: true,
+            params,
+          }
+        }, 250)
+      } else {
+        this.snackbar = {
+          status: true,
+          params,
+        }
       }
     })
   },

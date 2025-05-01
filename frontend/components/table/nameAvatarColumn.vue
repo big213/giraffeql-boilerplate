@@ -11,7 +11,7 @@
 
 <script>
 import columnMixin from '~/mixins/column'
-import { getIcon } from '~/services/base'
+import { getIcon } from '~/services/entity'
 
 export default {
   mixins: [columnMixin],

@@ -1,11 +1,8 @@
-import {
-  camelToKebabCase,
-  generateNavRouteObject,
-  userHasPermissions,
-} from './base'
+import { camelToKebabCase, userHasPermissions, userHasRole } from './base'
 import * as views from '../models/views'
 import * as actions from '../models/actions'
 import * as baseViews from '../models/views/base'
+import { generateNavRouteObject } from './route'
 
 export function generateNavDrawerItems(that) {
   return [
@@ -54,11 +51,11 @@ export function generateNavDrawerItems(that) {
           ],
         }
       : null,
-    userHasPermissions(that, ['A_A'])
+    userHasPermissions(that, ['*'])
       ? {
           title: 'Administration',
           items: [
-            userHasPermissions(that, ['A_A'])
+            userHasPermissions(that, ['*'])
               ? {
                   title: 'Models',
                   icon: 'mdi-star',
@@ -75,7 +72,7 @@ export function generateNavDrawerItems(that) {
                     ),
                 }
               : null,
-            userHasPermissions(that, ['A_A'])
+            userHasPermissions(that, ['*'])
               ? {
                   title: 'Actions',
                   icon: 'mdi-code-tags',

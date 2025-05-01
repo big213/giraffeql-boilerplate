@@ -15,10 +15,10 @@
             class="py-0"
           >
             <GenericInput
-              :item="inputObject"
-              :parent-item="item"
+              v-show="!inputObject.hidden"
+              :input-object="inputObject"
+              :parent-item="parentItem"
               :all-items="inputsArray"
-              :selected-item="selectedItem"
               :key="i"
               ref="inputs"
               @handle-submit="handleSubmit()"
@@ -50,14 +50,15 @@ import {
   collapseObject,
   handleError,
   populateInputObject,
-  addNestedInputObject,
   processInputObject,
   timeout,
   setInputValue,
   getInputValue,
   getInputObject,
-  camelCaseToCapitalizedString,
+  generateInputObject,
+  addNestedInputObject,
 } from '~/services/base'
+import { processInputObjectArray } from '../../../services/base'
 
 export default {
   components: {
@@ -65,11 +66,11 @@ export default {
     GenericInput,
   },
   props: {
-    item: {
+    parentItem: {
       type: Object,
     },
 
-    selectedItem: {
+    lockedFields: {
       type: Object,
     },
 
@@ -109,7 +110,7 @@ export default {
       return this.inputsArray.filter(
         (inputObject) =>
           !inputObject.hideIf ||
-          !inputObject.hideIf(this, this.item, this.inputsArray)
+          !inputObject.hideIf(this, this.parentItem, this.inputsArray)
       )
     },
 
@@ -118,7 +119,7 @@ export default {
     },
 
     hideActions() {
-      return !!this.actionDefinition.hideActionsIf?.(this, this.item)
+      return !!this.actionDefinition.hideActionsIf?.(this, this.parentItem)
     },
   },
 
@@ -159,10 +160,10 @@ export default {
       return getInputObject(this.inputsArray, key)
     },
 
-    handleParentItemUpdated(item, selectedItem) {
+    handleParentItemUpdated(item, lockedFields) {
       this.$emit('handle-parent-item-updated', item, {
-        ...this.selectedItem,
-        ...selectedItem,
+        ...this.lockedFields,
+        ...lockedFields,
       })
     },
 
@@ -183,25 +184,17 @@ export default {
           await timeout(500)
         }
 
-        const args = {}
-
-        for (const inputObject of this.inputsArray) {
-          args[inputObject.primaryField] = await processInputObject(
-            this,
-            inputObject,
-            this.inputsArray
-          )
-        }
+        const args = await processInputObjectArray(this, this.inputsArray)
 
         // do additional modification of the inputs object, if required
         if (this.actionDefinition.argsModifier) {
-          this.actionDefinition.argsModifier(this, this.item, args)
+          this.actionDefinition.argsModifier(this, this.parentItem, args)
         }
 
         if (this.actionDefinition.operationName) {
           const query = {
             [this.actionDefinition.operationName]: {
-              ...this.actionDefinition.getReturnQuery?.(this, this.item),
+              ...this.actionDefinition.getReturnQuery?.(this, this.parentItem),
               __args: collapseObject(args),
             },
           }
@@ -215,7 +208,7 @@ export default {
           // if no operationName, must have onSubmit function
           const data = await this.actionDefinition.onSubmit(
             this,
-            this.item,
+            this.parentItem,
             args
           )
           this.handleSubmitSuccess(data)
@@ -240,9 +233,9 @@ export default {
       if (onSuccess) {
         onSuccess(this, data)
       } else {
-        this.$notifier.showSnackbar({
+        this.$root.$emit('showSnackbar', {
           message: `Action: ${this.actionDefinition.title} completed successfully`,
-          variant: 'success',
+          color: 'success',
         })
       }
     },
@@ -252,57 +245,39 @@ export default {
       this.loading.initInputs = true
       try {
         this.inputsArray = await Promise.all(
-          this.actionDefinition.inputFields
-            .filter((input) =>
-              input.excludeIf
-                ? !input.excludeIf(this, this.item, this.selectedItem)
-                : true
+          this.actionDefinition.fields
+            .filter(
+              (input) =>
+                !input.excludeIf?.(this, this.parentItem, this.lockedFields)
             )
-            .map(async (inputDef) => {
-              const inputObject = {
-                fieldKey: inputDef.field,
-                primaryField: inputDef.field,
-                fieldInfo: inputDef.definition,
-                viewDefinition: null,
-                inputType: inputDef.definition.inputType,
-                label:
-                  inputDef.definition.text ??
-                  camelCaseToCapitalizedString(inputDef.field),
-                closeable: false,
-                inputOptions: inputDef.definition.inputOptions,
-                value: null,
-                inputValue: null,
-                secondaryInputValue: null,
-                options: [],
-                readonly: false,
-                loading: false,
-                focused: false,
-                cols: inputDef.cols,
-                generation: 0,
-                parentInput: null,
-                nestedInputsArray: [],
-                hideIf: inputDef.hideIf,
-                inputData: null,
-                watch: inputDef.watch,
-              }
+            .map(async (actionFieldDefinition) => {
+              const inputObject = generateInputObject(
+                this,
+                actionFieldDefinition
+              )
 
-              // is the field in selectedItem? if so, use that and set field to readonly
+              // is the field in lockedFields? if so, use that and set field to readonly
               if (
-                this.selectedItem &&
-                inputDef.field in this.selectedItem &&
-                this.selectedItem[inputDef.field] !== undefined
+                this.lockedFields &&
+                inputObject.fieldPath in this.lockedFields &&
+                this.lockedFields[inputObject.fieldPath] !== undefined
               ) {
-                inputObject.value = this.selectedItem[inputDef.field]
+                inputObject.value = this.lockedFields[inputObject.fieldPath]
                 inputObject.readonly = true
+
+                // if fieldInfo.hideIfLocked, also set those fields to hidden
+                if (actionFieldDefinition.hideIfLocked) {
+                  inputObject.hidden = true
+                }
               } else {
-                inputObject.value = inputDef.definition.inputOptions
-                  ?.getInitialValue
-                  ? await inputDef.definition.inputOptions.getInitialValue(this)
-                  : null
+                inputObject.value =
+                  (await actionFieldDefinition.inputDefinition.getInitialValue?.(
+                    this
+                  )) ?? null
               }
 
               // if it is an array, populate the nestedInputsArray
-              if (inputObject.inputOptions?.inputType === 'value-array') {
+              if (inputObject.inputDefinition.inputType === 'value-array') {
                 if (Array.isArray(inputObject.value)) {
                   inputObject.value.forEach((ele) =>
                     addNestedInputObject(this, inputObject, ele)
@@ -314,8 +289,8 @@ export default {
               await Promise.all(
                 populateInputObject(this, {
                   inputObject,
-                  selectedItem: this.selectedItem,
-                  item: this.item,
+                  parentItem: this.parentItem,
+                  fetchEntities: true,
                 })
               )
 

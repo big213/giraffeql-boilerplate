@@ -70,8 +70,9 @@
             class="py-0"
           >
             <GenericInput
-              :item="crudFilterObject.inputObject"
+              :input-object="crudFilterObject.inputObject"
               :key="i"
+              style="font-weight: initial"
               @change="updatePageOptions"
               @handle-input="filterChanged = true"
             ></GenericInput>
@@ -95,7 +96,7 @@
             v-if="crudFilterObject.inputObject.options.length"
             class="mb-2 title"
           >
-            {{ crudFilterObject.filterObject.text }}
+            {{ crudFilterObject.filterInputFieldDefinition.text }}
           </div>
           <div>
             <v-chip
@@ -108,8 +109,8 @@
             |
             <component
               :is="
-                crudFilterObject.filterObject.chipOptions.component ||
-                'PreviewRecordChip'
+                crudFilterObject.filterInputFieldDefinition.chipOptions
+                  .component || 'PreviewRecordChip'
               "
               v-for="(inputOption, j) in crudFilterObject.inputObject.options"
               :key="j"
@@ -185,18 +186,34 @@
           viewDefinition.entity.pluralName
         }}</v-toolbar-title>
         <v-divider
-          v-if="viewDefinition.createOptions && !hideAddButton"
+          v-if="viewDefinition.createOptions && !hideCreateButton"
           class="mx-4"
           inset
           vertical
         ></v-divider>
         <v-btn
-          v-if="viewDefinition.createOptions && !hideAddButton"
+          v-if="viewDefinition.createOptions && !hideCreateButton"
           color="primary"
-          @click="handleAddButtonClick()"
+          @click="openCreateRecordDialog()"
         >
           <v-icon left>mdi-plus</v-icon>
           New
+        </v-btn>
+        <v-divider
+          v-if="viewDefinition.generateOptions && !hideGenerateButton"
+          class="mx-4"
+          inset
+          vertical
+        ></v-divider>
+        <v-btn
+          v-if="viewDefinition.generateOptions && !hideGenerateButton"
+          color="primary"
+          @click="openGenerateRecordDialog()"
+        >
+          <v-icon left
+            >{{ viewDefinition.generateOptions.buttonIcon ?? 'mdi-plus' }}
+          </v-icon>
+          {{ viewDefinition.generateOptions.buttonText ?? 'Generate' }}
         </v-btn>
         <v-divider
           v-if="viewDefinition.paginationOptions.searchOptions"
@@ -215,6 +232,12 @@
             </v-badge>
           </template>
         </SearchDialog>
+        <v-chip v-if="search" class="ml-2"
+          >{{ search }}
+          <v-icon right color="pink" @click.stop="handleSearchDialogSubmit()"
+            >mdi-close</v-icon
+          >
+        </v-chip>
         <v-spacer></v-spacer>
         <v-btn
           v-if="viewDefinition.paginationOptions.showViewAll"
@@ -225,7 +248,7 @@
         </v-btn>
         <v-menu
           v-if="
-            sortOptions.length &&
+            sortFields.length &&
             !viewDefinition.paginationOptions.hideSortOptions
           "
           offset-y
@@ -246,7 +269,7 @@
           </template>
           <v-list dense>
             <v-list-item
-              v-for="sortObject in sortOptions"
+              v-for="sortObject in sortFields"
               :key="sortObject.key"
               :class="{ 'selected-bg': currentSortObject === sortObject }"
               @click="setCurrentSortOption(sortObject)"
@@ -340,8 +363,9 @@
             class="py-0"
           >
             <GenericInput
-              :item="crudFilterObject.inputObject"
+              :input-object="crudFilterObject.inputObject"
               :key="i"
+              style="font-weight: initial"
               @change="updatePageOptions"
               @handle-input="filterChanged = true"
             ></GenericInput>
@@ -480,28 +504,19 @@
                     ></component>
                   </div>
                   <v-list dense>
-                    <v-list-item
-                      v-for="(headerItem, j) in headerOptions"
-                      :key="j"
-                    >
-                      <v-list-item-content v-if="!headerItem.hideTitleIfGrid"
-                        >{{ headerItem.text }}:</v-list-item-content
+                    <v-list-item v-for="(headerObject, j) in headers" :key="j">
+                      <v-list-item-content v-if="!headerObject.hideTitleIfGrid"
+                        >{{ headerObject.text }}:</v-list-item-content
                       >
                       <v-list-item-content
-                        :class="{ 'text-right': !headerItem.hideTitleIfGrid }"
+                        :class="{ 'text-right': !headerObject.hideTitleIfGrid }"
                       >
-                        <component
-                          :is="headerItem.fieldInfo.component"
-                          v-if="headerItem.fieldInfo.component"
+                        <FieldColumn
+                          :render-object="headerObject"
                           :item="item"
-                          :field-path="headerItem.path"
-                          :options="headerItem.fieldInfo.renderOptions"
                           display-mode="crud"
                           @edit-item="openEditItemDialog"
-                        ></component>
-                        <span v-else>
-                          {{ getTableRowData(headerItem, item) }}
-                        </span>
+                        />
                       </v-list-item-content>
                     </v-list-item>
                   </v-list>
@@ -516,13 +531,9 @@
                       @click.stop="toggleGridExpand(item, expandObject)"
                     >
                       <v-icon left>{{
-                        expandObject.icon ||
-                        expandObject.viewDefinition.entity.icon
+                        expandObject.icon ?? expandObject.view.entity.icon
                       }}</v-icon>
-                      {{
-                        expandObject.name ||
-                        expandObject.viewDefinition.entity.name
-                      }}
+                      {{ expandObject.name ?? expandObject.view.entity.name }}
                     </v-btn>
                   </div>
 
@@ -589,7 +600,7 @@
       </v-data-iterator>
       <v-data-table
         v-else
-        :headers="headerOptions"
+        :headers="headers"
         :items="records"
         :loading="loading.loadData"
         loading-text="Loading... Please wait"
@@ -607,13 +618,13 @@
             @click="handleRowClick(props)"
           >
             <td
-              v-for="(headerItem, i) in headerOptions"
+              v-for="(headerObject, i) in headers"
               :key="i"
               class="v-data-table__mobile-row"
             >
               <div
                 v-if="
-                  headerItem.value === null &&
+                  headerObject.fieldKey === null &&
                   !viewDefinition.paginationOptions.hideActions
                 "
                 class="text-center"
@@ -636,21 +647,15 @@
               </div>
               <template v-else>
                 <div class="v-data-table__mobile-row__header">
-                  {{ headerItem.text }}
+                  {{ headerObject.text }}
                 </div>
                 <div class="v-data-table__mobile-row__cell truncate-mobile-row">
-                  <component
-                    :is="headerItem.fieldInfo.component"
-                    v-if="headerItem.fieldInfo.component"
+                  <FieldColumn
+                    :render-object="headerObject"
                     :item="props.item"
-                    :field-path="headerItem.path"
-                    :options="headerItem.fieldInfo.renderOptions"
                     display-mode="crud"
                     @edit-item="openEditItemDialog"
-                  ></component>
-                  <span v-else>
-                    {{ getTableRowData(headerItem, props.item) }}
-                  </span>
+                  />
                 </div>
               </template>
             </td>
@@ -666,12 +671,12 @@
             @click="handleRowClick(props)"
           >
             <td
-              v-for="(headerItem, i) in headerOptions"
+              v-for="(headerObject, i) in headers"
               :key="i"
-              :class="headerItem.align ? 'text-' + headerItem.align : null"
+              :class="headerObject.align ? `text-${headerObject.align}` : null"
               class="truncate"
             >
-              <div v-if="headerItem.value === null">
+              <div v-if="headerObject.fieldKey === null">
                 <RecordActionMenu
                   :view-definition="viewDefinition"
                   :item="props.item"
@@ -688,20 +693,13 @@
                   </template>
                 </RecordActionMenu>
               </div>
-              <span v-else>
-                <component
-                  :is="headerItem.fieldInfo.component"
-                  v-if="headerItem.fieldInfo.component"
-                  :item="props.item"
-                  :field-path="headerItem.path"
-                  :options="headerItem.fieldInfo.renderOptions"
-                  display-mode="crud"
-                  @edit-item="openEditItemDialog"
-                ></component>
-                <span v-else>
-                  {{ getTableRowData(headerItem, props.item) }}
-                </span>
-              </span>
+              <FieldColumn
+                v-else
+                :render-object="headerObject"
+                :item="props.item"
+                display-mode="crud"
+                @edit-item="openEditItemDialog"
+              />
             </td>
           </tr>
         </template>
@@ -740,10 +738,10 @@
             <div class="mb-2 expanded-table-bg">
               <component
                 :is="childInterfaceComponent"
-                :view-definition="expandTypeObject.viewDefinition"
+                :view-definition="expandTypeObject.view"
                 :icon="expandTypeObject.icon"
                 :element-title="expandTypeObject.name"
-                :hidden-headers="expandTypeObject.excludeHeaders"
+                :hidden-headers="hiddenSubHeaders"
                 :locked-filters="lockedSubFilters"
                 :page-options="subPageOptions"
                 :hidden-filters="hiddenSubFilters"
@@ -780,11 +778,11 @@
     <v-card-actions v-if="isDialog">
       <slot name="footer-action"></slot>
     </v-card-actions>
-
     <EditRecordDialog
       v-model="dialogs.editRecord"
       :view-definition="viewDefinition"
-      :selected-item="dialogs.selectedItem"
+      :parent-item="dialogs.parentItem ?? parentItem"
+      :locked-fields="dialogs.lockedFields"
       :mode="dialogs.editMode"
       :custom-fields="dialogs.customFields"
       @reload-parent="reset({ resetExpanded: true })"
@@ -799,7 +797,7 @@
       <component
         :is="childInterfaceComponent"
         v-if="dialogs.expandRecord && expandTypeObject"
-        :view-definition="expandTypeObject.viewDefinition"
+        :view-definition="expandTypeObject.view"
         :icon="expandTypeObject.icon"
         :element-title="expandTypeObject.name"
         :hidden-headers="expandTypeObject.excludeHeaders"

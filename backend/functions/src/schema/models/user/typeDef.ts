@@ -1,5 +1,5 @@
-import { ObjectTypeDefinition, GiraffeqlObjectType } from "giraffeql";
-import { User, UserUserFollowLink } from "../../services";
+import { GiraffeqlObjectType } from "giraffeql";
+import { User, UserRole, UserUserFollowLink } from "../../services";
 import {
   generateIdField,
   generateCreatedByField,
@@ -14,12 +14,12 @@ import {
   generateTimestampFields,
   generateTextField,
 } from "../../core/helpers/typeDef";
-import * as Scalars from "../../scalars";
 import { userRole } from "../../enums";
-import { userRoleToPermissionsMap } from "../../helpers/permissions";
+import { getUserPermissions } from "../../helpers/permissions";
+import { Scalars } from "../../scalars";
 
 export default new GiraffeqlObjectType(
-  <ObjectTypeDefinition>processTypeDef({
+  processTypeDef({
     name: User.typename,
     description: "User type",
     fields: {
@@ -31,7 +31,8 @@ export default new GiraffeqlObjectType(
         sqlOptions: {
           unique: true,
         },
-        typeDefOptions: { addable: false, updateable: false },
+        addable: false,
+        updateable: false,
         hidden: true,
       }),
       email: generateStringField({
@@ -59,10 +60,9 @@ export default new GiraffeqlObjectType(
         allowNull: true,
       }),
       role: generateEnumField({
-        scalarDefinition: Scalars.userRole,
+        service: UserRole,
         allowNull: false,
         defaultValue: userRole.NORMAL,
-        isKenum: true,
         nestHidden: true,
       }),
       permissions: generateArrayField({
@@ -78,25 +78,11 @@ export default new GiraffeqlObjectType(
         nestHidden: true,
         requiredSqlFields: ["role", "permissions"],
         allowNull: false,
-        resolver({ parentValue }) {
-          const role = parentValue.role;
-          const permissions = parentValue.permissions;
-
-          const allPermissions: string[] = [];
-
-          if (role) {
-            const roleName = userRole.fromUnknown(role).name;
-            if (roleName in userRoleToPermissionsMap) {
-              allPermissions.push(
-                ...userRoleToPermissionsMap[roleName].map((ele) => ele.name)
-              );
-            }
-          }
-
-          if (permissions) allPermissions.push(...permissions);
-
-          return allPermissions;
-        },
+        resolver: ({ parentValue }) =>
+          getUserPermissions({
+            role: parentValue.role,
+            permissions: parentValue.permissions,
+          }).map((permission) => permission.name),
       },
       isPublic: generateBooleanField({
         allowNull: false,

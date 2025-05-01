@@ -4,7 +4,11 @@ import RecordActionMenu from '~/components/menu/recordActionMenu.vue'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 import CrudPostInterface from '~/components/interface/crud/crudPostInterface.vue'
 import { executeApiRequest } from '~/services/api'
-import { capitalizeString, handleError, processQuery } from '~/services/base'
+import {
+  capitalizeString,
+  handleError,
+  processRenderQuery,
+} from '~/services/base'
 import { generatePreviewViewDefinition } from '~/services/view'
 import CrudRecordInterface from '~/components/interface/crud/crudRecordInterface.vue'
 import { mapGetters } from 'vuex'
@@ -34,7 +38,7 @@ export default {
 
   data() {
     return {
-      selectedItem: null,
+      currentItem: null,
       currentParentItem: null,
       expandTypeObject: null,
       subPageOptions: null,
@@ -76,9 +80,9 @@ export default {
     postLockedFilters() {
       return [
         {
-          field: this.viewDefinition.entity.typename,
+          field: `${this.viewDefinition.entity.typename}.id`,
           operator: 'eq',
-          value: this.selectedItem.id,
+          value: this.currentItem.id,
         },
       ]
     },
@@ -96,7 +100,7 @@ export default {
     },
 
     parentItem() {
-      return this.currentParentItem || this.selectedItem
+      return this.currentParentItem || this.currentItem
     },
 
     isExpanded() {
@@ -118,16 +122,19 @@ export default {
     currentInterface() {
       return this.viewDefinition.viewOptions.component || ViewRecordInterface
     },
-    hiddenSubFilters() {
-      if (!this.isExpanded) return []
 
-      return this.getExpandTypeHiddenSubFilters(this.expandTypeObject)
-    },
     lockedSubFilters() {
-      if (!this.isExpanded) return []
-
       return this.getExpandTypeSubFilters(this.expandTypeObject)
     },
+
+    hiddenSubHeaders() {
+      return this.getExpandTypeHiddenSubHeaders(this.expandTypeObject)
+    },
+
+    hiddenSubFilters() {
+      return this.getExpandTypeHiddenSubFilters(this.expandTypeObject)
+    },
+
     capitalizedTypename() {
       return capitalizeString(this.viewDefinition.entity.typename)
     },
@@ -135,7 +142,7 @@ export default {
     paginationComponent() {
       return (
         this.expandTypeObject.component ||
-        this.expandTypeObject.viewDefinition.paginationOptions.component ||
+        this.expandTypeObject.view.paginationOptions.component ||
         CrudRecordInterface
       )
     },
@@ -145,22 +152,6 @@ export default {
       return this.$route.query.o
         ? JSON.parse(atob(decodeURIComponent(this.$route.query.o)))
         : null
-    },
-
-    hideBreadcrumbs() {
-      return !!this.expandTypeObject?.breadcrumbOptions?.hideBreadcrumbs
-    },
-
-    hideActions() {
-      return this.viewDefinition.pageOptions?.hideActions
-    },
-
-    hideRefresh() {
-      return this.viewDefinition.pageOptions?.hideRefresh
-    },
-
-    hideMinimize() {
-      return this.viewDefinition.pageOptions?.hideMinimize
     },
   },
 
@@ -184,16 +175,21 @@ export default {
       }
       this.reset(true)
     },
-
-    '$route.query.o'(val) {
-      // if no pageOptions, automatically redirect if there is a defaultPageOptions
-      if (!val && this.viewDefinition.paginationOptions.defaultPageOptions) {
-        this.navigateToDefaultRoute()
-      }
-    },
   },
 
   created() {
+    // if legacy pageOptions param is provided, automatically replace that with o
+    if (this.$route.query.pageOptions) {
+      this.$router.replace({
+        path: this.$route.path,
+        query: {
+          ...this.$route.query,
+          pageOptions: undefined,
+          o: this.$route.query.pageOptions,
+        },
+      })
+    }
+
     this.reset(true)
 
     // listen for root refresh events
@@ -207,8 +203,8 @@ export default {
   methods: {
     refreshCb(typename, { id } = {}) {
       if (this.viewDefinition.entity.typename === typename) {
-        // if ID is provided and it is equal to the current selectedItem id, do hard refresh
-        if (id && id === this.selectedItem.id) {
+        // if ID is provided and it is equal to the current currentItem id, do hard refresh
+        if (id && id === this.currentItem.id) {
           this.reset(true)
         }
       }
@@ -217,12 +213,23 @@ export default {
     getExpandTypeComponent(expandTypeObject) {
       return (
         expandTypeObject.component ||
-        expandTypeObject.viewDefinition.paginationOptions.component ||
+        expandTypeObject.view.paginationOptions.component ||
         CrudRecordInterface
       )
     },
 
+    getExpandTypeHiddenSubHeaders(expandTypeObject) {
+      // use the childType's excludeHeaders, else default to the current typename
+      return (
+        expandTypeObject?.excludeHeaders ?? [
+          this.viewDefinition.entity.typename,
+        ]
+      )
+    },
+
     getExpandTypeSubFilters(expandTypeObject) {
+      if (!expandTypeObject) return []
+
       // is there a lockedFilters generator on the expandTypeObject? if so, use that
       if (expandTypeObject.lockedFilters) {
         return expandTypeObject.lockedFilters(this, this.parentItem)
@@ -230,7 +237,7 @@ export default {
 
       return [
         {
-          field: this.viewDefinition.entity.typename.toLowerCase() + '.id',
+          field: `${this.viewDefinition.entity.typename}.id`,
           operator: 'eq',
           value: this.parentItem.id,
         },
@@ -238,8 +245,10 @@ export default {
     },
 
     getExpandTypeHiddenSubFilters(expandTypeObject) {
+      if (!this.expandTypeObject) return []
+
       // is there an excludeFilters array on the expandTypeObject? if so, use that
-      return [this.viewDefinition.entity.typename.toLowerCase() + '.id'].concat(
+      return [`${this.viewDefinition.entity.typename}.id`].concat(
         expandTypeObject.excludeFilters ?? []
       )
     },
@@ -250,7 +259,7 @@ export default {
     },
 
     async handleReloadParentItem() {
-      if (!this.selectedItem) return
+      if (!this.currentItem) return
 
       // force reset of the table component, hiding the loader
       this.recordResetInstruction = { showLoader: false }
@@ -380,8 +389,8 @@ export default {
     openViewRecordDialog() {
       this.$root.$emit('openEditRecordDialog', {
         viewDefinition: this.viewDefinition,
-        selectedItem: {
-          id: this.selectedItem.id,
+        parentItem: {
+          id: this.currentItem.id,
         },
         mode: 'view',
       })
@@ -455,7 +464,7 @@ export default {
           this.breadcrumbItems = [
             {
               expandTypeObject: this.expandTypeObject,
-              item: this.selectedItem,
+              item: this.currentItem,
               isRoot: true,
             },
           ]
@@ -506,48 +515,45 @@ export default {
       // catches if the query is exactly the same
     },
 
-    openDialog(dialogName) {
+    openDialog({ dialogName }) {
       if (dialogName in this.dialogs) {
         this.dialogs[dialogName] = true
+        this.dialogs.parentItem = this.currentItem
       }
     },
 
-    openEditDialog(mode) {
+    openEditDialog({ mode }) {
       this.dialogs.editMode = mode
-      this.openDialog('editRecord')
+      this.openDialog({ dialogName: 'editRecord' })
     },
 
     async loadRecord() {
       this.loading.loadRecord = true
       try {
-        const fields = (this.viewDefinition.requiredFields ?? []).concat(
-          this.viewDefinition.pageOptions?.fields ?? []
-        )
-
-        // if the record type has name/avatar, also fetch those
-        if (this.viewDefinition.entity.nameField) fields.push('name')
-        if (this.viewDefinition.entity.avatarField) fields.push('avatarUrl')
-
-        const { query } = await processQuery(
-          this,
-          this.viewDefinition,
-          fields,
-          true
-        )
+        // if the record type has name/avatar, also fetch those. and any required fields
+        const query = await processRenderQuery(this, {
+          renderFieldDefinitions: [],
+          rawFields: [
+            ...(this.viewDefinition.requiredFields ?? []),
+            ...(this.viewDefinition.pageOptions?.requiredFields ?? []),
+            this.viewDefinition.entity.nameField,
+            this.viewDefinition.entity.avatarField,
+          ].filter((e) => e),
+        })
 
         const data = await executeApiRequest({
           [`get${this.capitalizedTypename}`]: {
             ...query,
             __args: {
-              ...this.lookupParams,
+              ...this.viewDefinition.pageOptions?.getLookupParams?.(this),
               ...(this.$route.query.id && { id: this.$route.query.id }),
             },
           },
         })
 
-        this.selectedItem = data
+        this.currentItem = data
       } catch (err) {
-        this.selectedItem = null
+        this.currentItem = null
         handleError(this, err)
       }
       this.loading.loadRecord = false
@@ -578,8 +584,8 @@ export default {
                   expandTypeObject: {
                     ...expandTypeObject,
                     viewDefinition: generatePreviewViewDefinition({
-                      viewDefinition: expandTypeObject.viewDefinition,
-                      title: `Latest ${expandTypeObject.viewDefinition.entity.pluralName}`,
+                      viewDefinition: expandTypeObject.view,
+                      title: `Latest ${expandTypeObject.view.entity.pluralName}`,
                     }),
                   },
                   pageOptions: undefined,

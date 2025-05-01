@@ -4,8 +4,10 @@
     <v-card-text :class="{ 'dialog-max-height': dialogMode }" class="py-0 mt-3">
       <v-alert type="info">
         CSV must have the following columns:
-        <br />
-        <span>{{ acceptedFieldsString }}</span>
+        <div>{{ acceptedFieldsString }}</div>
+        <v-btn @click="downloadTemplate()" color="primary" class="mt-2"
+          >Download Template File</v-btn
+        >
       </v-alert>
       <v-container>
         <v-row>
@@ -67,9 +69,8 @@ import {
 
 export default {
   props: {
-    selectedItem: {
+    lockedFields: {
       type: Object,
-      required: true,
     },
     viewDefinition: {
       type: Object,
@@ -117,8 +118,8 @@ export default {
     },
 
     acceptedFieldObjects() {
-      // need to exclude any fields in selectedItem that are not undefined
-      const excludeFields = Object.entries(this.selectedItem).reduce(
+      // need to exclude any fields in lockedFields that are not undefined
+      const excludeFields = Object.entries(this.lockedFields).reduce(
         (total, [key, val]) => {
           if (val !== undefined) total.push(key)
           return total
@@ -128,17 +129,15 @@ export default {
 
       return this.viewDefinition.paginationOptions.importOptions.fields.filter(
         (importFieldObject) => {
-          if (!importFieldObject.field) return true
+          if (!importFieldObject.fieldPath) return true
 
-          return !excludeFields.includes(importFieldObject.field)
+          return !excludeFields.includes(importFieldObject.fieldPath)
         }
       )
     },
 
     acceptedFieldsString() {
-      return this.acceptedFieldObjects
-        .map((ele) => ele.path ?? ele.field)
-        .join(', ')
+      return this.acceptedFieldObjects.map((ele) => ele.fieldPath).join(', ')
     },
   },
 
@@ -181,6 +180,28 @@ export default {
       }
     },
 
+    downloadTemplate() {
+      try {
+        const data = [
+          this.acceptedFieldObjects.reduce((total, fieldObject) => {
+            total[fieldObject.fieldPath] = null
+            return total
+          }, {}),
+        ]
+
+        // download as CSV
+        downloadCSV(
+          this,
+          data,
+          `Template${capitalizeString(
+            this.viewDefinition.entity.typename
+          )}${getCurrentDate()}`
+        )
+      } catch (err) {
+        handleError(this, err)
+      }
+    },
+
     handleFileUpload(file) {
       if (!file) return
       const reader = new FileReader()
@@ -194,7 +215,7 @@ export default {
           }
 
           const acceptedCsvFields = this.acceptedFieldObjects.map(
-            (fieldObject) => fieldObject.path ?? fieldObject.field
+            (fieldObject) => fieldObject.fieldPath
           )
 
           // check if only valid fields present (only need to do for first one)
@@ -206,21 +227,21 @@ export default {
           }
 
           const lockedFieldsMap = new Map()
-          for (const field in this.selectedItem) {
+          for (const field in this.lockedFields) {
             const fieldObject =
               this.viewDefinition.paginationOptions.importOptions.fields.find(
-                (innerFieldObject) => innerFieldObject.field === field
+                (innerFieldObject) => innerFieldObject.fieldPath === field
               )
             if (fieldObject) {
               lockedFieldsMap.set(
-                fieldObject.path ?? fieldObject.field,
-                this.selectedItem[fieldObject.field]
+                fieldObject.fieldPath,
+                this.lockedFields[fieldObject.fieldPath]
               )
             }
           }
 
           this.miscInputs.records = data.map((ele) => {
-            // inject any locked fields (via selectedItem) into data
+            // inject any locked fields (via lockedFields) into data
             lockedFieldsMap.forEach((val, key) => {
               ele[key] = val
             })
@@ -238,7 +259,7 @@ export default {
           this.acceptedFieldObjects.forEach((importFieldObject) => {
             if (importFieldObject.parseValue) {
               parseValueMap.set(
-                importFieldObject.field,
+                importFieldObject.fieldPath,
                 importFieldObject.parseValue
               )
             }
@@ -246,15 +267,16 @@ export default {
 
           // parse the data if there is a parse function for the field
           this.miscInputs.records.forEach((recordData) => {
-            for (const field in recordData.data) {
+            for (const fieldPath in recordData.data) {
               // is there a parseValue for this field?
-              const parseFn = parseValueMap.get(field)
+              const parseFn = parseValueMap.get(fieldPath)
               if (parseFn) {
-                recordData.data[field] = parseFn(recordData.data[field])
+                recordData.data[fieldPath] = parseFn(recordData.data[fieldPath])
               }
 
               // if the value is an empty string, parse this to null by default
-              if (recordData.data[field] === '') recordData.data[field] = null
+              if (recordData.data[fieldPath] === '')
+                recordData.data[fieldPath] = null
             }
 
             // run the inputsModifier, if any
@@ -279,9 +301,9 @@ export default {
             }
           })
 
-          this.$notifier.showSnackbar({
-            message: 'File uploaded',
-            variant: 'success',
+          this.$root.$emit('showSnackbar', {
+            message: `File uploaded`,
+            color: 'success',
           })
         } catch (err) {
           // reset records if any error with parsing
@@ -330,7 +352,7 @@ export default {
                       })
                     }
 
-                    total[fieldObject.field] = true
+                    total[fieldObject.fieldPath] = true
                     return total
                   },
                   {}
@@ -387,9 +409,9 @@ export default {
                   return
                 }
 
-                returnItem[fieldObject.field] = getNestedProperty(
+                returnItem[fieldObject.fieldPath] = getNestedProperty(
                   recordData.record,
-                  fieldObject.field
+                  fieldObject.fieldPath
                 )
               }
             )
@@ -410,9 +432,9 @@ export default {
           )
         }
 
-        this.$notifier.showSnackbar({
+        this.$root.$emit('showSnackbar', {
           message: `${this.recordsDone}/${this.miscInputs.records.length} Records Imported`,
-          variant: 'success',
+          color: 'success',
         })
 
         this.$emit('close')
