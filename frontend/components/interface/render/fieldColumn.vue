@@ -53,7 +53,6 @@ export default {
 
   methods: {
     openEditItemDialog() {
-      console.log(1)
       this.$emit(
         'edit-item',
         this.item,

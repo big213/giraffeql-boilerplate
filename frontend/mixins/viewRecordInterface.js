@@ -79,10 +79,6 @@ export default {
       return this.loading.loadRecord
     },
 
-    capitalizedType() {
-      return capitalizeString(this.viewDefinition.entity.typename)
-    },
-
     fields() {
       if (this.customFields) return this.customFields
 
@@ -169,7 +165,7 @@ export default {
           ],
         })
         const data = await executeApiRequest({
-          [`get${this.capitalizedType}`]: {
+          [`${this.viewDefinition.entity.typename}Get`]: {
             ...query,
             __args: {
               id: this.parentItem.id,

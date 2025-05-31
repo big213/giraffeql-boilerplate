@@ -135,10 +135,6 @@ export default {
       return this.getExpandTypeHiddenSubFilters(this.expandTypeObject)
     },
 
-    capitalizedTypename() {
-      return capitalizeString(this.viewDefinition.entity.typename)
-    },
-
     paginationComponent() {
       return (
         this.expandTypeObject.component ||
@@ -542,7 +538,7 @@ export default {
         })
 
         const data = await executeApiRequest({
-          [`get${this.capitalizedTypename}`]: {
+          [`${this.viewDefinition.entity.typename}Get`]: {
             ...query,
             __args: {
               ...this.viewDefinition.pageOptions?.getLookupParams?.(this),

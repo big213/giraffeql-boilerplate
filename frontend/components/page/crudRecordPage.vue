@@ -141,9 +141,7 @@ export default {
         this.viewDefinition.paginationOptions.component || CrudRecordInterface
       )
     },
-    capitalizedTypename() {
-      return capitalizeString(this.viewDefinition.entity.typename)
-    },
+
     // type: CrudPageOptions | null
     pageOptions() {
       return this.$route.query.o

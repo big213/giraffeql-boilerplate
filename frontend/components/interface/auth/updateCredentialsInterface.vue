@@ -157,7 +157,7 @@ export default {
 
           // also update email on the api
           await executeApiRequest({
-            syncCurrentUser: {
+            userSyncCurrent: {
               id: true,
             },
           })

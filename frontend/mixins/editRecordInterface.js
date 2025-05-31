@@ -2,7 +2,6 @@ import { executeApiRequest } from '~/services/api'
 import {
   collapseObject,
   getNestedProperty,
-  capitalizeString,
   handleError,
   setInputValue,
   getInputValue,
@@ -115,9 +114,6 @@ export default {
       return this.viewDefinition[`${this.mode}Options`].fields
     },
 
-    capitalizedType() {
-      return capitalizeString(this.viewDefinition.entity.typename)
-    },
     title() {
       return (
         (this.mode === 'create' || this.mode === 'copy'
@@ -233,7 +229,7 @@ export default {
           data = await executeApiRequest(
             {
               [this.viewDefinition.createOptions.operationName ??
-              `create${this.capitalizedType}`]: {
+              `${this.viewDefinition.entity.typename}Create`]: {
                 id: true,
                 __typename: true,
                 ...this.returnFields,
@@ -257,7 +253,7 @@ export default {
 
           data = await executeApiRequest({
             [this.viewDefinition.updateOptions.operationName ??
-            `update${this.capitalizedType}`]: {
+            `${this.viewDefinition.entity.typename}Update`]: {
               id: true,
               __typename: true,
               ...this.returnFields,
@@ -330,7 +326,7 @@ export default {
         const query = await processInputQuery(originalInputFieldDefinitions)
 
         const data = await executeApiRequest({
-          [`get${this.capitalizedType}`]: {
+          [`${this.viewDefinition.entity.typename}Get`]: {
             ...query,
             __args: {
               id: this.parentItem.id,

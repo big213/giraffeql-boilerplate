@@ -22,7 +22,10 @@ import { ViewDefinition } from '~/types/view'
 
 type StringKeyObject = { [x: string]: any }
 
-export function formatAsCurrency(input: number | null, currencySymbol = '$') {
+export function formatAsCurrency(
+  input: number | null,
+  currencySymbol: string | null | undefined = '$'
+) {
   const validatedInput = input ?? 0
 
   return validatedInput < 0
@@ -248,7 +251,7 @@ export function serializeNestedProperty(
 
 export function getNestedProperty(obj: StringKeyObject, path: string) {
   const pathArray = path.split(/\./)
-  let currentValue = obj
+  let currentValue: any = obj
   for (const prop of pathArray) {
     // if not object, return null;
     if (!(currentValue && typeof currentValue === 'object')) {
@@ -730,7 +733,7 @@ export function populateInputObject(
             if (isId(value)) {
               promisesArray.push(
                 executeApiRequest(<any>{
-                  [`get${capitalizeString(entity.typename)}`]: {
+                  [`${entity.typename}Get`]: {
                     id: true,
                     ...(entity.nameField && {
                       [entity.nameField]: true,
@@ -755,7 +758,7 @@ export function populateInputObject(
         } else if (isId(originalFieldValue)) {
           promisesArray.push(
             executeApiRequest(<any>{
-              [`get${capitalizeString(entity.typename)}`]: {
+              [`${entity.typename}Get`]: {
                 id: true,
                 ...(entity.nameField && {
                   [entity.nameField]: true,
@@ -1215,9 +1218,7 @@ export async function processInputObject(
         // expecting either string or obj
         // create the item, get its id.
         const results = <any>await executeApiRequest(<any>{
-          [`create${capitalizeString(
-            inputObject.inputDefinition.entity.typename
-          )}`]: {
+          [`${inputObject.inputDefinition.entity.typename}Create`]: {
             id: true,
             name: true,
             __args: {
@@ -1330,7 +1331,7 @@ export function generateMemoizedEntityGetter(
       ].filter((e) => e)
     )
     return collectPaginatorData(
-      `get${capitalizeString(entity.typename)}Paginator`,
+      `${entity.typename}GetPaginator`,
       validatedFields.reduce((total, field) => {
         total[field] = true
         return total
@@ -1359,7 +1360,8 @@ export function userHasPermissions(that, requiredPermissions: string[]) {
   }
 
   // if user has * permissions, automatically allow
-  if (that.$store.getters['auth/user'].allPermissions.includes('*')) return true
+  if (that.$store.getters['auth/user'].allPermissions.includes('*/*'))
+    return true
 
   return requiredPermissions.every((permission) =>
     that.$store.getters['auth/user'].allPermissions.includes(permission)
@@ -1388,7 +1390,7 @@ export function loadTypeSearchResults(that, inputObject: CrudInputObject) {
   }
 
   return executeApiRequest(<any>{
-    [`get${capitalizeString(entity.typename)}Paginator`]: {
+    [`${entity.typename}GetPaginator`]: {
       edges: {
         node: {
           id: true,

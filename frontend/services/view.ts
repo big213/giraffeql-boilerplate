@@ -6,6 +6,7 @@ import {
   formatAsCurrency,
   generateDateLocaleString,
   generateTimeAgoString,
+  getNestedProperty,
 } from './base'
 import type { EntityDefinition } from '~/types/entity'
 import type { ViewDefinition } from '~/types/view'
@@ -373,14 +374,29 @@ export function generatePreviewableFilesRenderColumn({
   }
 }
 
+// if currencySymbolFieldPath, the field must be made available (usually through requiredFields)
 export function generateCurrencyRenderField(
+  {
+    currencySymbolFieldPath,
+    currencySymbol = '$',
+  }: {
+    currencySymbolFieldPath?: string
+    currencySymbol?: string
+  } = {},
   renderDefinition: RenderDefinition = {}
 ): RenderDefinition {
   return {
     ...renderDefinition,
     renderOptions: {
       getDisplayStr: (currentValue, item) =>
-        currentValue === null ? 'N/A' : formatAsCurrency(currentValue),
+        currentValue === null
+          ? 'N/A'
+          : formatAsCurrency(
+              currentValue,
+              currencySymbolFieldPath
+                ? getNestedProperty(item, currencySymbolFieldPath)
+                : currencySymbol
+            ),
     },
     component: Columns.StringColumn,
   }

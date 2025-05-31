@@ -18,7 +18,8 @@
             :to="item.to"
             nuxt
             router
-            exact-path
+            :exact="item.exactUrl"
+            :exact-path="!item.exactUrl"
           >
             <v-list-item-action>
               <v-icon>{{ item.icon }}</v-icon>
@@ -34,7 +35,14 @@
               </v-list-item-content>
             </template>
             <template v-for="(childItem, k) in item.items">
-              <v-list-item :key="k" :to="childItem.to" nuxt router exact-path>
+              <v-list-item
+                :key="k"
+                :to="childItem.to"
+                nuxt
+                router
+                :exact="childItem.exactUrl"
+                :exact-path="!childItem.exactUrl"
+              >
                 <v-list-item-content>
                   <v-list-item-title>{{ childItem.title }}</v-list-item-title>
                 </v-list-item-content>

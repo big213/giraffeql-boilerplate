@@ -1,2 +1,2 @@
-export { executeDeferredAction } from './executeDeferredAction'
+export { deferredActionExecute } from './deferredActionExecute'
 /** END Action Model Import */

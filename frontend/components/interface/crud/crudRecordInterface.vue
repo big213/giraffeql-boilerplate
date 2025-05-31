@@ -221,19 +221,17 @@
           inset
           vertical
         ></v-divider>
-        <SearchDialog
-          v-if="viewDefinition.paginationOptions.searchOptions"
-          v-model="searchInput"
+        <v-btn
+          v-if="viewDefinition.paginationOptions.searchOptions && !search"
+          icon
+          @click="dialogs.search = true"
           @handleSubmit="handleSearchDialogSubmit"
         >
-          <template slot="icon">
-            <v-badge :value="!!search" dot color="secondary" title="Search">
-              <v-icon>mdi-magnify</v-icon>
-            </v-badge>
-          </template>
-        </SearchDialog>
-        <v-chip v-if="search" class="ml-2"
-          >{{ search }}
+          <v-icon>mdi-magnify</v-icon>
+        </v-btn>
+        <v-chip v-if="search" @click="dialogs.search = true">
+          <v-icon left>mdi-magnify</v-icon>
+          {{ search }}
           <v-icon right color="pink" @click.stop="handleSearchDialogSubmit()"
             >mdi-close</v-icon
           >
@@ -789,6 +787,14 @@
       @reload-parent-item="$emit('reload-parent-item')"
       @close="dialogs.editRecord = false"
     ></EditRecordDialog>
+    <SearchDialog
+      v-if="viewDefinition.paginationOptions.searchOptions"
+      v-model="dialogs.search"
+      :input="searchInput"
+      @handle-submit="handleSearchDialogSubmit"
+      @close="dialogs.search = false"
+    >
+    </SearchDialog>
     <v-dialog
       v-model="dialogs.expandRecord"
       scrollable

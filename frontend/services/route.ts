@@ -10,10 +10,12 @@ export function generateNavRouteObject(
     viewDefinition,
     pageOptions,
     title,
+    exactUrl,
   }: {
     viewDefinition: ViewDefinition
     pageOptions?: any
     title?: string
+    exactUrl?: boolean
   }
 ) {
   return {
@@ -31,6 +33,7 @@ export function generateNavRouteObject(
               ...pageOptions,
             },
     }),
+    exactUrl,
   }
 }
 

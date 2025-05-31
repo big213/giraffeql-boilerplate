@@ -197,28 +197,6 @@ export class UserService extends PaginatedService {
     return results[0];
   }
 
-  @permissionsCheck("getCurrentUser")
-  async getCurrentUserAvailablePermissions({
-    req,
-    rootResolver,
-    fieldPath,
-    args,
-    query,
-  }: ServiceFunctionInputs) {
-    if (!req.user) {
-      throw new Error(`Login is required`);
-    }
-
-    const finalPermissions = userPermission.values.filter((permission) =>
-      isPermissionAllowed({
-        userPermissions: req.user!.permissions,
-        permission,
-      })
-    );
-
-    return finalPermissions.map((permission) => permission.name);
-  }
-
   @permissionsCheck("create")
   async createRecord({
     req,

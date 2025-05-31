@@ -2,7 +2,7 @@ import { Enum } from "../core/helpers/enum";
 
 export class userPermission extends Enum {
   // * allows global access
-  static readonly "*" = new userPermission("*");
+  static readonly "*/*" = new userPermission("*/*");
 
   // entity/* allows access to any permission starting with entity/
   static readonly "user/*" = new userPermission("user/*");

@@ -51,11 +51,11 @@ export function generateNavDrawerItems(that) {
           ],
         }
       : null,
-    userHasPermissions(that, ['*'])
+    userHasPermissions(that, ['*/*'])
       ? {
           title: 'Administration',
           items: [
-            userHasPermissions(that, ['*'])
+            userHasPermissions(that, ['*/*'])
               ? {
                   title: 'Models',
                   icon: 'mdi-star',
@@ -72,7 +72,7 @@ export function generateNavDrawerItems(that) {
                     ),
                 }
               : null,
-            userHasPermissions(that, ['*'])
+            userHasPermissions(that, ['*/*'])
               ? {
                   title: 'Actions',
                   icon: 'mdi-code-tags',

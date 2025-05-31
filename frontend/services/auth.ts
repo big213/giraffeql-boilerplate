@@ -11,8 +11,8 @@ export async function handleLogin(that, store, redirect, authPayload) {
 
   try {
     // get the current user from the API
-    const currentUser = await executeApiRequest<'getCurrentUser'>({
-      getCurrentUser: {
+    const currentUser = await executeApiRequest<'userGetCurrent'>({
+      userGetCurrent: {
         id: true,
         email: true,
         name: true,

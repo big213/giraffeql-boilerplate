@@ -4,28 +4,18 @@ import { GiraffeqlRootResolverType, lookupSymbol } from "giraffeql";
 import { Scalars } from "../../scalars";
 
 export default {
-  getCurrentUser: new GiraffeqlRootResolverType({
-    name: "getCurrentUser",
+  userGetCurrent: new GiraffeqlRootResolverType({
+    name: "userGetCurrent",
     allowNull: false,
     type: User.typeDefLookup,
     resolver: (inputs) => User.getCurrentUser(inputs),
   }),
 
-  syncCurrentUser: new GiraffeqlRootResolverType({
-    name: "syncCurrentUser",
+  userSyncCurrent: new GiraffeqlRootResolverType({
+    name: "userSyncCurrent",
     allowNull: false,
     type: User.typeDefLookup,
     resolver: (inputs) => User.syncRecord(inputs),
-  }),
-
-  getCurrentUserAvailablePermissions: new GiraffeqlRootResolverType({
-    name: "getCurrentUserAvailablePermissions",
-    allowNull: false,
-    type: Scalars.userPermission,
-    arrayOptions: {
-      allowNullElement: false,
-    },
-    resolver: (inputs) => User.getCurrentUserAvailablePermissions(inputs),
   }),
 
   ...generateBaseRootResolvers({

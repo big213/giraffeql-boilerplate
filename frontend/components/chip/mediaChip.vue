@@ -109,7 +109,7 @@ export default {
         })
 
         const data = await executeApiRequest({
-          getFile: {
+          fileGet: {
             signedUrl: true,
             __args: {
               id: this.file.id,

@@ -113,10 +113,6 @@ export default {
       return this.loading.loadMorePosts || this.loading.loadRecord
     },
 
-    capitalizedType() {
-      return capitalizeString(this.viewDefinition.entity.typename)
-    },
-
     lockedFields() {
       return this.lockedFilters.reduce((total, crudFilterObject) => {
         total[crudFilterObject.field] = crudFilterObject.value
@@ -214,7 +210,7 @@ export default {
     async deletePost(props) {
       try {
         await executeApiRequest({
-          [`delete${this.capitalizedType}`]: {
+          [`${this.viewDefinition.entity.typename}Delete`]: {
             __args: {
               id: props.item.id,
             },
@@ -257,7 +253,7 @@ export default {
     // the query can be overriden and customized based on the requirements
     fetchMorePosts() {
       return executeApiRequest({
-        [`get${this.capitalizedType}Paginator`]: {
+        [`${this.viewDefinition.entity.typename}GetPaginator`]: {
           paginatorInfo: {
             endCursor: true,
             total: true,
@@ -327,7 +323,7 @@ export default {
 
             if (typesToFetch[type].size) {
               const results = await collectPaginatorData(
-                `get${capitalizeString(type)}Paginator`,
+                `${type}GetPaginator`,
                 fieldsToFetch.reduce((total, val) => {
                   total[val] = true
                   return total

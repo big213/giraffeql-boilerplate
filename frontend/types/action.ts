@@ -7,8 +7,8 @@ export type ActionDefinition = {
   // if there is a singular giraffeql operation to execute
   operationName?: string
 
-  // if there is a custom function to execute when submitted
-  onSubmit?: (that, item, args) => void
+  // if there is a custom function to execute when submitted. the item returned will be passed to onSuccess function as "item"
+  onSubmit?: (that, item, args) => Promise<any> | any
 
   // is login required? if so, it will redirect to login if not logged in
   isLoginRequired?: boolean

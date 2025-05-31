@@ -3,7 +3,6 @@ import {
   generateMemoizedEnumGetter,
   memoize,
 } from '~/services/base'
-import { executeApiRequest } from './api'
 import { UserEntity } from '~/models/entities'
 
 export const getCurrentUser = function (that) {
@@ -22,15 +21,12 @@ export const getCurrentUser = function (that) {
   )
 }
 
-export async function getCurrentUserAvailablePermissions(that) {
-  const data = await executeApiRequest({
-    getCurrentUserAvailablePermissions: true,
-  })
+export const getCurrentUserAllPermissions = (that) =>
+  Promise.resolve(that.$store.getters['auth/user']?.allPermissions ?? [])
 
-  return data
-}
-
-export const getUsers = generateMemoizedEntityGetter(UserEntity)
+/** START Entity Getters */
+export const getUserOptions = generateMemoizedEntityGetter(UserEntity)
+/** END Entity Getters */
 
 /** START Enum Getters */
 export const getUserRoleEnumValues = generateMemoizedEnumGetter(

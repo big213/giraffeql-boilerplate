@@ -2,7 +2,6 @@ import { ServiceFunctionInputs, AccessControlMap } from "../../../types";
 import { userPermission } from "../../enums";
 import { GiraffeqlRootResolverType } from "giraffeql";
 import { PermissionsError } from "../helpers/error";
-import { debugMode } from "../../../config";
 
 export abstract class BaseService {
   typename: string;
@@ -36,7 +35,7 @@ export abstract class BaseService {
       if (req.user) {
         // check against permissions array first. if the user has any of these permissions, allow
         const passablePermissionsArray = [
-          userPermission["*"],
+          userPermission["*/*"],
           userPermission[`${this.typename}/*`],
           userPermission[`${this.typename}/${permissionKey}`],
         ].filter((e) => e);
@@ -59,10 +58,10 @@ export abstract class BaseService {
         );
       }
 
-      // if the permissionKey doesn't exist in the accessControlMap object, default to "*"
+      // if the permissionKey doesn't exist in the accessControlMap object, default to "*/*"
       const accessControlMapFn =
         this.accessControlMap[
-          permissionKey in this.accessControlMap ? permissionKey : "*"
+          permissionKey in this.accessControlMap ? permissionKey : "*/*"
         ];
 
       if (!accessControlMapFn) {

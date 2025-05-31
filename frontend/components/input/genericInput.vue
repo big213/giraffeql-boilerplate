@@ -1506,7 +1506,7 @@ export default {
             // only proceed if parent item is defined
             if (this.parentItem) {
               const fileData = await collectPaginatorData(
-                'getFilePaginator',
+                'fileGetPaginator',
                 {
                   id: true,
                   name: true,

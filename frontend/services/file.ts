@@ -78,8 +78,8 @@ export function uploadFile(
     async () => {
       try {
         // finished uploading. register file with API.
-        const fileRecord = await executeApiRequest<'createFile'>({
-          createFile: {
+        const fileRecord = await executeApiRequest<'fileCreate'>({
+          fileCreate: {
             id: true,
             name: true,
             size: true,

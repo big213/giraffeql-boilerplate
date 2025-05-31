@@ -8,8 +8,8 @@ import {
   generatePreviewableRecordRenderField,
   generateSortOptions,
 } from '~/services/view'
-import { getCurrentUserAvailablePermissions } from '~/services/dropdown'
 import { Columns } from '~/services/components'
+import { getCurrentUserAllPermissions } from '~/services/dropdown'
 
 export const BaseApiKeyView: ViewDefinition = {
   routeType: 'base',
@@ -20,7 +20,8 @@ export const BaseApiKeyView: ViewDefinition = {
     code: {},
     permissions: {
       inputType: 'multiple-select',
-      getOptions: getCurrentUserAvailablePermissions,
+      // the options are the permissions of the current user
+      getOptions: getCurrentUserAllPermissions,
       getInitialValue: () => null,
     },
     user: generateJoinableInputField({

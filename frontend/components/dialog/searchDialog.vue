@@ -1,22 +1,14 @@
 <template>
-  <v-dialog v-model="dialog" width="500">
-    <template v-slot:activator="{ on, attrs }">
-      <v-btn icon v-bind="attrs" v-on="on">
-        <slot name="icon">
-          <v-icon>mdi-magnify</v-icon>
-        </slot>
-      </v-btn>
-    </template>
+  <v-dialog width="500" v-bind="$attrs" v-on="$listeners">
     <v-card>
       <v-card-text class="pb-0 pt-5">
         <v-text-field
           ref="search"
-          :value="value"
+          v-model="inputValue"
           prepend-icon="mdi-magnify"
           outlined
           label="Search query (Enter to submit)"
           clearable
-          @input="$emit('input', $event)"
           @keyup.enter="submit()"
         ></v-text-field>
       </v-card-text>
@@ -27,21 +19,25 @@
 <script>
 export default {
   props: {
-    value: {
+    input: {
       type: String,
-      default: () => null,
     },
   },
 
   data() {
     return {
-      dialog: false,
+      inputValue: null,
     }
   },
 
   watch: {
-    dialog(val) {
+    '$attrs.value'(val) {
       if (!val) return
+
+      // on open, sync the value with the input
+      if (val) {
+        this.inputValue = this.input
+      }
 
       setTimeout(() => {
         this.$refs.search.focus()
@@ -51,8 +47,8 @@ export default {
 
   methods: {
     submit() {
-      this.$emit('handleSubmit', this.value)
-      this.dialog = false
+      this.$emit('handle-submit', this.inputValue)
+      this.$emit('close')
     },
   },
 }

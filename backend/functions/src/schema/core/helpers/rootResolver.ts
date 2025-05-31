@@ -106,10 +106,9 @@ export function generateBaseRootResolvers({
   const rootResolvers = {};
 
   methods.forEach((method) => {
-    const capitalizedMethod = capitalizeString(method.type);
     switch (method.type) {
       case "get": {
-        const methodName = `${method.type}${capitalizedClass}`;
+        const methodName = `${service.typename}Get`;
         rootResolvers[methodName] = new GiraffeqlRootResolverType({
           name: methodName,
           ...(method.restOptions && {
@@ -133,7 +132,7 @@ export function generateBaseRootResolvers({
       }
       case "stats": {
         if (service instanceof PaginatedService) {
-          const methodName = `get${capitalizeString(service.typename)}Stats`;
+          const methodName = `${service.typename}GetStats`;
           rootResolvers[methodName] = new GiraffeqlRootResolverType(<
             RootResolverDefinition
           >{
@@ -155,9 +154,7 @@ export function generateBaseRootResolvers({
       }
       case "getPaginator": {
         if (service instanceof PaginatedService) {
-          const methodName = `get${capitalizeString(
-            service.typename
-          )}Paginator`;
+          const methodName = `${service.typename}GetPaginator`;
           rootResolvers[methodName] = new GiraffeqlRootResolverType(<
             RootResolverDefinition
           >{
@@ -179,9 +176,7 @@ export function generateBaseRootResolvers({
       }
       case "getAggregator": {
         if (service instanceof PaginatedService) {
-          const methodName = `get${capitalizeString(
-            service.typename
-          )}Aggregator`;
+          const methodName = `${service.typename}GetAggregator`;
           rootResolvers[methodName] = new GiraffeqlRootResolverType(<
             RootResolverDefinition
           >{
@@ -202,7 +197,7 @@ export function generateBaseRootResolvers({
         break;
       }
       case "delete": {
-        const methodName = `${method.type}${capitalizedClass}`;
+        const methodName = `${service.typename}Delete`;
         rootResolvers[methodName] = new GiraffeqlRootResolverType({
           name: methodName,
           ...(method.restOptions && {
@@ -224,7 +219,7 @@ export function generateBaseRootResolvers({
       }
       case "update": {
         const updateArgs = {};
-        const methodName = `${method.type}${capitalizedClass}`;
+        const methodName = `${service.typename}Update`;
         Object.entries(service.getTypeDef().definition.fields).forEach(
           ([key, typeDefField]) => {
             let typeField = typeDefField.type;
@@ -320,7 +315,7 @@ export function generateBaseRootResolvers({
       }
       case "create": {
         const createArgs = {};
-        const methodName = `${method.type}${capitalizedClass}`;
+        const methodName = `${service.typename}Create`;
         Object.entries(service.getTypeDef().definition.fields).forEach(
           ([key, typeDefField]) => {
             let typeField = typeDefField.type;

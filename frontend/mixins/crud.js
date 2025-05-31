@@ -166,6 +166,7 @@ export default {
         parentItem: null,
         editMode: 'view',
         customFields: null,
+        search: false,
       },
 
       loading: {
@@ -332,9 +333,6 @@ export default {
       )
     },
 
-    capitalizedType() {
-      return capitalizeString(this.viewDefinition.entity.typename)
-    },
     visibleFiltersArray() {
       return this.filterInputsArray.filter(
         (ele) => !this.hiddenFilters.includes(ele.inputObject.fieldKey)
@@ -936,7 +934,7 @@ export default {
 
         // fetch data
         const results = await collectPaginatorData(
-          `get${this.capitalizedType}Paginator`,
+          `${this.viewDefinition.entity.typename}GetPaginator`,
           query,
           this.generatePaginatorArgs(false)
         )
@@ -972,7 +970,9 @@ export default {
         downloadCSV(
           this,
           data,
-          `Export${this.capitalizedType}${getCurrentDate()}`
+          `Export${capitalizeString(
+            this.viewDefinition.entity.typename
+          )}${getCurrentDate()}`
         )
       } catch (err) {
         handleError(this, err)
@@ -1160,7 +1160,7 @@ export default {
 
       if (itemId) {
         const result = await executeApiRequest({
-          [`get${this.capitalizedType}`]: {
+          [`${this.viewDefinition.entity.typename}Get`]: {
             ...query,
             __args: {
               id: itemId,
@@ -1171,7 +1171,7 @@ export default {
         return result
       } else {
         const results = await getPaginatorData(
-          `get${this.capitalizedType}Paginator`,
+          `${this.viewDefinition.entity.typename}GetPaginator`,
           query,
           this.generatePaginatorArgs(true)
         )

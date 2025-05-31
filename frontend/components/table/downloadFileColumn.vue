@@ -64,7 +64,7 @@ export default {
         // if there is custom downloadFile logic, use that
         const fileRecord = await (this.options?.getFile?.(this, this.item) ??
           executeApiRequest({
-            getFile: {
+            fileGet: {
               name: true,
               signedUrl: true,
               __args: {

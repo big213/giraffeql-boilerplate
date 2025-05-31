@@ -1,1 +1,1 @@
-// common functions here
+// common functions here (project-specific)

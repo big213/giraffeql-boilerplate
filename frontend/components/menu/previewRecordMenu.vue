@@ -234,7 +234,7 @@ export default {
         })
 
         const data = await executeApiRequest({
-          [`get${capitalizeString(this.typenameComputed)}`]: {
+          [`${this.typenameComputed}Get`]: {
             ...query,
             ...(this.previewDefinition?.followOptions && {
               currentUserFollowLink: {

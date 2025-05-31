@@ -86,7 +86,7 @@ export default {
       this.loading.submit = true
       try {
         await executeApiRequest({
-          [`update${capitalizeString(this.item.__typename)}`]: {
+          [`${this.item.__typename}Update`]: {
             __args: {
               fields: {
                 [this.renderFieldDefinition.fieldKey]: value,

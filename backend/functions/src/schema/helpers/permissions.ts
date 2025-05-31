@@ -7,7 +7,7 @@ import { objectOnlyHasFields } from "../core/helpers/shared";
 import { User } from "../services";
 
 export const userRoleToPermissionsMap = {
-  [userRole.ADMIN.name]: [userPermission["*"]],
+  [userRole.ADMIN.name]: [userPermission["*/*"]],
   [userRole.NORMAL.name]: [],
 };
 
@@ -64,7 +64,7 @@ export function isPermissionAllowed({
   permission: userPermission;
 }) {
   // if the userPermissions has *, allow all requested permissions
-  if (userPermissions.includes(userPermission["*"])) return true;
+  if (userPermissions.includes(userPermission["*/*"])) return true;
 
   // if it has the specific permission, allow
   if (userPermissions.includes(permission)) return true;

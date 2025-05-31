@@ -49,7 +49,7 @@ export default {
           // fetch data if the type is a string
           if (typeof this.currentValue[0] === 'string') {
             const fileData = await collectPaginatorData(
-              'getFilePaginator',
+              'fileGetPaginator',
               {
                 id: true,
                 name: true,

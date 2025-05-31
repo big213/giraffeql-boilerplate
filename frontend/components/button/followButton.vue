@@ -40,12 +40,9 @@ export default {
         // login is required
         if (!this.$store.getters['auth/user']) throw new Error('Login required')
 
-        const capitalizedLinkModel = capitalizeString(
-          this.followOptions.entity.typename
-        )
         if (!this.item.currentUserFollowLink) {
           const data = await executeApiRequest({
-            [`create${capitalizedLinkModel}`]: {
+            [`${this.followOptions.entity.typename}Create`]: {
               id: true,
               __args: {
                 user: {
@@ -60,7 +57,7 @@ export default {
           this.item.currentUserFollowLink = data
         } else {
           await executeApiRequest({
-            [`delete${capitalizedLinkModel}`]: {
+            [`${this.followOptions.entity.typename}Delete`]: {
               __args: {
                 id: this.item.currentUserFollowLink.id,
               },

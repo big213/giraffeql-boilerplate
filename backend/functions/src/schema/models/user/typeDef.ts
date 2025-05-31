@@ -14,8 +14,11 @@ import {
   generateTimestampFields,
   generateTextField,
 } from "../../core/helpers/typeDef";
-import { userRole } from "../../enums";
-import { getUserPermissions } from "../../helpers/permissions";
+import { userPermission, userRole } from "../../enums";
+import {
+  getUserPermissions,
+  isPermissionAllowed,
+} from "../../helpers/permissions";
 import { Scalars } from "../../scalars";
 
 export default new GiraffeqlObjectType(
@@ -78,11 +81,21 @@ export default new GiraffeqlObjectType(
         nestHidden: true,
         requiredSqlFields: ["role", "permissions"],
         allowNull: false,
-        resolver: ({ parentValue }) =>
-          getUserPermissions({
+        resolver: ({ parentValue }) => {
+          const userPermissions = getUserPermissions({
             role: parentValue.role,
             permissions: parentValue.permissions,
-          }).map((permission) => permission.name),
+          });
+
+          return userPermission.values
+            .filter((permission) =>
+              isPermissionAllowed({
+                userPermissions,
+                permission,
+              })
+            )
+            .map((value) => value.name);
+        },
       },
       isPublic: generateBooleanField({
         allowNull: false,

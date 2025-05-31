@@ -62,7 +62,7 @@ export default {
       try {
         const data = await executeApiRequest({
           [this.viewDefinition.deleteOptions.operationName ??
-          `delete${capitalizeString(this.viewDefinition.entity.typename)}`]: {
+          `${this.viewDefinition.entity.typename}Delete`]: {
             id: true,
             ...(this.viewDefinition.deleteOptions.returnFields
               ? buildQueryFromFieldPathArray(

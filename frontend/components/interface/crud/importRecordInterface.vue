@@ -369,7 +369,7 @@ export default {
 
           recordData.record = await executeApiRequest({
             [this.viewDefinition.createOptions?.operationName ??
-            `create${capitalizeString(this.viewDefinition.entity.typename)}`]: {
+            `${this.viewDefinition.entity.typename}Create`]: {
               ...query,
               __args: collapseObject(recordData.data),
             },
