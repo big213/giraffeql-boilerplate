@@ -68,7 +68,7 @@ export type CreateOptions = {
   returnFields?: string[]
 
   // function that runs when record is successfully added
-  onSuccess?: (that, item) => void
+  onSuccess?: (that, item, returnData) => void
 
   // post-processing of inputs, if any
   afterLoaded?: (that, inputsArray) => Promise<void>
@@ -112,7 +112,7 @@ export type UpdateOptions = {
   returnFields?: string[]
 
   // function that runs when recorded is successfully edited
-  onSuccess?: (that, item) => void
+  onSuccess?: (that, item, returnData) => void
 
   // post-processing of inputs, if any
   afterLoaded?: (that, inputsArray) => Promise<void>
@@ -138,7 +138,7 @@ export type DeleteOptions = {
   returnFields?: string[]
 
   // function that runs when recorded is successfully deleted
-  onSuccess?: (that, item) => void
+  onSuccess?: (that, item, returnData) => void
 
   // under what conditions will the button be hidden?
   hideIf?: (that, item) => boolean
@@ -161,7 +161,7 @@ export type ViewOptions = {
   component?: any
 
   // function that runs when recorded is successfully viewed
-  onSuccess?: (that, item) => void
+  onSuccess?: (that, parentItem, returnData) => void
 
   // should the viewOptions interface show a hero image/text at the top
   heroOptions?: {

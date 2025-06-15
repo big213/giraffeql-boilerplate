@@ -18,9 +18,9 @@ export const deferredActionExecute: ActionDefinition = {
       successMessage: true,
     }
   },
-  onSuccess: (that, item) => {
+  onSuccess: (that, item, returnData) => {
     that.$root.$emit('showSnackbar', {
-      message: `${item.successMessage}`,
+      message: `${returnData.successMessage}`,
       color: 'success',
     })
   },

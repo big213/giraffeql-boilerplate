@@ -26,7 +26,7 @@ export type ActionDefinition = {
   getReturnQuery?: (that, item) => any
 
   // function that runs when action is successfully completed
-  onSuccess?: (that, item) => void
+  onSuccess?: (that, item, returnData) => void
 
   fields: ActionInputFieldDefinition[]
 

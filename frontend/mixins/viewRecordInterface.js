@@ -180,7 +180,7 @@ export default {
         const onSuccess = this.viewDefinition.viewOptions.onSuccess
 
         if (onSuccess) {
-          onSuccess(this, data)
+          onSuccess(this, this.parentItem, data)
         }
 
         // build render fields Array

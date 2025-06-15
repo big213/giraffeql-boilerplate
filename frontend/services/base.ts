@@ -789,6 +789,7 @@ export function populateInputObject(
 export function addNestedInputObject(
   that,
   parentInputObject: CrudInputObject,
+  parentItem: any,
   inputValue?: any
 ) {
   if (!parentInputObject.inputDefinition.nestedOptions) {
@@ -805,7 +806,10 @@ export function addNestedInputObject(
           (inputValue
             ? getNestedProperty(inputValue, inputObject.fieldPath)
             : null) ??
-          nestedFieldDefinition.inputDefinition.getInitialValue?.(that) ??
+          nestedFieldDefinition.inputDefinition.getInitialValue?.(
+            that,
+            parentItem
+          ) ??
           null
 
         // if it is an entity, populate the value and options fields

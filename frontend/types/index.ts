@@ -78,7 +78,7 @@ export type InputDefinition = {} & {
   text?: string
 
   getOptions?: (that, forceReload?) => Promise<any[]>
-  getInitialValue?: (that) => unknown
+  getInitialValue?: (that, parentItem) => unknown
 
   // submitting to API, in filterBy and create/update functions
   parseValue?: (val: any) => any

@@ -1209,7 +1209,7 @@ export default {
     },
 
     addRow() {
-      addNestedInputObject(this, this.inputObject)
+      addNestedInputObject(this, this.inputObject, this.parentItem)
 
       // need to load the options
       populateInputObject(this, {

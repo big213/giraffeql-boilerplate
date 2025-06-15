@@ -386,7 +386,6 @@ export function generateCurrencyRenderField(
   renderDefinition: RenderDefinition = {}
 ): RenderDefinition {
   return {
-    ...renderDefinition,
     renderOptions: {
       getDisplayStr: (currentValue, item) =>
         currentValue === null
@@ -399,6 +398,7 @@ export function generateCurrencyRenderField(
             ),
     },
     component: Columns.StringColumn,
+    ...renderDefinition,
   }
 }
 

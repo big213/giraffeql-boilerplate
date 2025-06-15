@@ -5,14 +5,12 @@ import { permissionsCheck } from "../../core/helpers/permissions";
 import {
   filterPassesTest,
   isCurrentUser,
-  isPermissionAllowed,
   isUserLoggedIn,
 } from "../../helpers/permissions";
 import { objectOnlyHasFields } from "../../core/helpers/shared";
 import { knex } from "../../../utils/knex";
 import { getObjectType } from "../../core/helpers/resolver";
 import { ItemNotFoundError } from "../../core/helpers/error";
-import { userPermission } from "../../enums";
 
 export class UserService extends PaginatedService {
   defaultTypename = "user";

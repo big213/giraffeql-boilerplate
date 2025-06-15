@@ -50,7 +50,6 @@ import {
   collapseObject,
   handleError,
   populateInputObject,
-  processInputObject,
   timeout,
   setInputValue,
   getInputValue,
@@ -231,7 +230,7 @@ export default {
       // run any custom onSuccess functions. if none, simply show a snackbar
       const onSuccess = this.actionDefinition.onSuccess
       if (onSuccess) {
-        onSuccess(this, data)
+        onSuccess(this, this.parentItem, data)
       } else {
         this.$root.$emit('showSnackbar', {
           message: `Action: ${this.actionDefinition.title} completed successfully`,
@@ -272,7 +271,8 @@ export default {
               } else {
                 inputObject.value =
                   (await actionFieldDefinition.inputDefinition.getInitialValue?.(
-                    this
+                    this,
+                    this.parentItem
                   )) ?? null
               }
 
@@ -280,7 +280,12 @@ export default {
               if (inputObject.inputDefinition.inputType === 'value-array') {
                 if (Array.isArray(inputObject.value)) {
                   inputObject.value.forEach((ele) =>
-                    addNestedInputObject(this, inputObject, ele)
+                    addNestedInputObject(
+                      this,
+                      inputObject,
+                      this.parentItem,
+                      ele
+                    )
                   )
                 }
               }

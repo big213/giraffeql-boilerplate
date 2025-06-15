@@ -6,7 +6,7 @@ import { githubOrganization, githubRepository } from "../../../config";
 import { executeGithubGraphqlRequest } from "../../helpers/github";
 
 export class AdminService extends BaseService {
-  accessControl: AccessControlMap = {
+  accessControlMap: AccessControlMap = {
     // google: () => true,
     validateAddress: () => true,
     releases: () => true,

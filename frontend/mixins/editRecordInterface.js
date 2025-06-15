@@ -304,7 +304,7 @@ export default {
         const onSuccess = this.viewDefinition[`${this.mode}Options`].onSuccess
 
         if (onSuccess) {
-          onSuccess(this, data)
+          onSuccess(this, this.parentItem, data)
         } else {
           // else emit the generic refresh-interface event
           this.$root.$emit(
@@ -363,8 +363,10 @@ export default {
               )
             ) {
               inputObject.value =
-                (await inputObject.inputDefinition.getInitialValue?.(this)) ??
-                null
+                (await inputObject.inputDefinition.getInitialValue?.(
+                  this,
+                  this.parentItem
+                )) ?? null
             } else {
               inputObject.value = getNestedProperty(data, inputObject.fieldKey)
             }
@@ -373,7 +375,7 @@ export default {
             if (inputObject.inputDefinition.inputType === 'value-array') {
               if (Array.isArray(inputObject.value)) {
                 inputObject.value.forEach((ele) =>
-                  addNestedInputObject(this, inputObject, ele)
+                  addNestedInputObject(this, inputObject, this.parentItem, ele)
                 )
               }
             }
@@ -460,7 +462,10 @@ export default {
           inputObject.value = this.lockedFields[inputObject.fieldKey]
         } else {
           inputObject.value =
-            (await inputObject.inputDefinition.getInitialValue?.(this)) ?? null
+            (await inputObject.inputDefinition.getInitialValue?.(
+              this,
+              this.parentItem
+            )) ?? null
         }
 
         // increment inputObject.generation to reset inputs, if necessary
@@ -505,15 +510,17 @@ export default {
               }
             } else {
               inputObject.value =
-                (await inputObject.inputDefinition.getInitialValue?.(this)) ??
-                null
+                (await inputObject.inputDefinition.getInitialValue?.(
+                  this,
+                  this.parentItem
+                )) ?? null
             }
 
             // if it is an array, populate the nestedInputsArray
             if (inputObject.inputDefinition.inputType === 'value-array') {
               if (Array.isArray(inputObject.value)) {
                 inputObject.value.forEach((ele) =>
-                  addNestedInputObject(this, inputObject, ele)
+                  addNestedInputObject(this, inputObject, this.parentItem, ele)
                 )
               }
             }

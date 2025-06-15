@@ -91,6 +91,7 @@ import CrudRecordDialog from '~/components/dialog/crudRecordDialog.vue'
 import ExecuteActionDialog from '~/components/dialog/executeActionDialog.vue'
 import LoginDialog from '~/components/dialog/loginDialog.vue'
 import * as views from '~/models/views'
+import * as actions from '~/models/actions'
 import { logoHasLightVariant } from '~/config'
 
 export default {
@@ -209,10 +210,15 @@ export default {
     })
 
     /*
-     ** Expecting action: action, parentItem?, lockedFields?
+     ** Expecting action: action (string or actionDefinition), parentItem?, lockedFields?
      ** if action.getLockedFields is set, use that to generate the lockedFields
      */
     this.$root.$on('openExecuteActionDialog', (params, loginDialog = false) => {
+      // if the action is provided as string, attempt to look up the actionDefinition
+      if (typeof params.action === 'string') {
+        params.action = actions[params.action]
+      }
+
       // if loginDialog (OR action.isLoginRequired) and not logged in, trigger the login dialog instead and queue the action
       if (
         (loginDialog || params.action.isLoginRequired) &&
