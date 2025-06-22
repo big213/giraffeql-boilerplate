@@ -4,7 +4,7 @@ import {
   generateBaseInputFields,
   generateBaseRenderFields,
   generateJoinableInputField,
-  generatePreviewableRecordRenderField,
+  generateJoinableRenderField,
   generateClickRowToOpenDialogOptions,
   generateSortOptions,
 } from '~/services/view'
@@ -24,11 +24,11 @@ export const Base{{ capitalizedTypename }}View: ViewDefinition = {
   },
   renderFields: {
     ...generateBaseRenderFields({{ capitalizedTypename }}Entity),
-    user: generatePreviewableRecordRenderField({
+    user: generateJoinableRenderField({
       fieldname: 'user',
       entity: UserEntity,
     }),
-    target: generatePreviewableRecordRenderField({
+    target: generateJoinableRenderField({
       fieldname: 'target',
       entity: UserEntity,
     }),

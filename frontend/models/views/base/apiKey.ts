@@ -5,7 +5,7 @@ import {
   generateBaseRenderFields,
   generateClickRowToOpenDialogOptions,
   generateJoinableInputField,
-  generatePreviewableRecordRenderField,
+  generateJoinableRenderField,
   generateSortOptions,
 } from '~/services/view'
 import { Columns } from '~/services/components'
@@ -35,7 +35,7 @@ export const BaseApiKeyView: ViewDefinition = {
     },
     permissions: {},
     allowedPermissions: {},
-    user: generatePreviewableRecordRenderField({
+    user: generateJoinableRenderField({
       entity: UserEntity,
     }),
   },

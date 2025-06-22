@@ -8,9 +8,11 @@ import {
 } from '../types/misc'
 import { Root } from '../../schema'
 import {
+  ArrayOptions,
   FilterInputFieldDefinition,
   InputDefinition,
   InputFieldDefinition,
+  NestedInputFieldDefinition,
   NestedOptions,
   PriceObject,
   RenderDefinition,
@@ -609,8 +611,12 @@ export function populateInputObject(
   const promisesArray: Promise<any>[] = []
   if (inputObject.inputDefinition.inputType === 'value-array') {
     // if it is a value-array, recursively process the nestedValueArray
-    inputObject.nestedInputsArray.forEach((nestedInputArray) => {
-      nestedInputArray.forEach((nestedInputObject) => {
+    inputObject.nestedInputsArray.forEach((nestedInputElement) => {
+      const nestedInputObjects = Array.isArray(nestedInputElement)
+        ? nestedInputElement
+        : [nestedInputElement]
+
+      nestedInputObjects.forEach((nestedInputObject) => {
         promisesArray.push(
           ...populateInputObject(that, {
             inputObject: nestedInputObject.inputObject,
@@ -645,8 +651,7 @@ export function populateInputObject(
           )
         )
 
-      const finalPrice =
-        initialPriceObject.price - (initialPriceObject.discount ?? 0)
+      const finalPrice = calculateFinalPrice(initialPriceObject)
 
       promisesArray.push(
         inputObject.inputDefinition.paymentOptions
@@ -792,45 +797,61 @@ export function addNestedInputObject(
   parentItem: any,
   inputValue?: any
 ) {
-  if (!parentInputObject.inputDefinition.nestedOptions) {
-    throw new Error(`inputDefinition.nestedOptions not defined`)
+  if (!parentInputObject.inputDefinition.arrayOptions) {
+    throw new Error(`inputDefinition.arrayOptions not defined`)
   }
 
-  parentInputObject.nestedInputsArray.push(
-    parentInputObject.inputDefinition.nestedOptions.fields.map(
-      (nestedFieldDefinition) => {
-        const inputObject = generateInputObject(that, nestedFieldDefinition)
-
-        // populate the value if there is an inputValue
-        inputObject.value =
-          (inputValue
-            ? getNestedProperty(inputValue, inputObject.fieldPath)
-            : null) ??
-          nestedFieldDefinition.inputDefinition.getInitialValue?.(
-            that,
-            parentItem
-          ) ??
-          null
-
-        // if it is an entity, populate the value and options fields
-        if (inputObject.inputDefinition.entity) {
-          inputObject.value = getNestedProperty(
-            inputValue,
-            inputObject.fieldKey
-          )
-
-          // if the value is defined and there is no getOptions fn, populate it as the only option
-          if (inputObject.value && !inputObject.inputDefinition.getOptions) {
-            inputObject.options = [inputObject.value]
+  const nestedInputObjects = (
+    Array.isArray(parentInputObject.inputDefinition.arrayOptions.type)
+      ? parentInputObject.inputDefinition.arrayOptions.type
+      : [parentInputObject.inputDefinition.arrayOptions.type]
+  ).map((nestedFieldDefinition) => {
+    // if the nested type is not an array (i.e. single element), make the label empty
+    const inputObject = generateInputObject(
+      that,
+      nestedFieldDefinition,
+      Array.isArray(parentInputObject.inputDefinition.arrayOptions!.type)
+        ? undefined
+        : {
+            label:
+              parentInputObject.inputDefinition.arrayOptions?.entryName ?? '',
           }
-        }
-
-        return {
-          nestedInputFieldDefinition: nestedFieldDefinition,
-          inputObject,
-        }
-      }
     )
+
+    // populate the value if there is an inputValue
+    inputObject.value =
+      (Array.isArray(parentInputObject.inputDefinition.arrayOptions!.type)
+        ? inputValue
+          ? getNestedProperty(inputValue, inputObject.fieldPath)
+          : null
+        : inputValue) ??
+      nestedFieldDefinition.inputDefinition.getInitialValue?.(
+        that,
+        parentItem
+      ) ??
+      null
+
+    // if it is an entity, populate the value and options fields
+    if (inputObject.inputDefinition.entity) {
+      inputObject.value = getNestedProperty(inputValue, inputObject.fieldKey)
+
+      // if the value is defined and there is no getOptions fn, populate it as the only option
+      if (inputObject.value && !inputObject.inputDefinition.getOptions) {
+        inputObject.options = [inputObject.value]
+      }
+    }
+
+    return {
+      nestedInputFieldDefinition: nestedFieldDefinition,
+      inputObject,
+    }
+  })
+
+  // if it's an array, it corresponds to an object of keys
+  parentInputObject.nestedInputsArray.push(
+    Array.isArray(parentInputObject.inputDefinition.arrayOptions.type)
+      ? nestedInputObjects
+      : nestedInputObjects[0]
   )
 }
 
@@ -890,40 +911,59 @@ export async function processRenderQuery(
 }
 
 function getAllNestedFields(
-  nestedOptions: NestedOptions,
+  arrayOptions: ArrayOptions,
   parentPath: string[] = []
 ) {
   const nestedFields: string[] = []
-  nestedOptions.fields.forEach((nestedFieldDefinition) => {
-    // if it has more nested options, go deeper. else add it to nestedFields
-    if (nestedFieldDefinition.inputDefinition?.nestedOptions) {
-      nestedFields.push(
-        ...getAllNestedFields(
-          nestedFieldDefinition.inputDefinition.nestedOptions,
-          parentPath.concat(nestedFieldDefinition.fieldKey)
+  if (Array.isArray(arrayOptions.type)) {
+    arrayOptions.type.forEach((nestedFieldDefinition) => {
+      // if it has more nested options, go deeper. else add it to nestedFields
+      if (nestedFieldDefinition.inputDefinition?.arrayOptions) {
+        nestedFields.push(
+          ...getAllNestedFields(
+            nestedFieldDefinition.inputDefinition.arrayOptions,
+            parentPath.concat(nestedFieldDefinition.fieldKey)
+          )
         )
-      )
-    } else {
-      const currentPath = parentPath
-        .concat(nestedFieldDefinition.fieldKey)
-        .join('.')
-      // if it is an entity, append 'id', __typename, and other relevant fields
-      if (nestedFieldDefinition.inputDefinition?.entity) {
+      } else {
+        const currentPath = parentPath
+          .concat(nestedFieldDefinition.fieldKey)
+          .join('.')
+        // if it is an entity, append 'id', __typename, and other relevant fields
+        if (nestedFieldDefinition.inputDefinition?.entity) {
+          nestedFields.push(
+            ...[
+              'id',
+              '__typename',
+              nestedFieldDefinition!.inputDefinition.entity.nameField,
+              nestedFieldDefinition.inputDefinition.entity.avatarField,
+            ]
+              .filter((e) => e)
+              .map((nestedField) => `${currentPath}.${nestedField}`)
+          )
+        } else {
+          nestedFields.push(currentPath)
+        }
+      }
+    })
+  } else {
+    // if it is an entity, append 'id', __typename, and other relevant fields
+    if (arrayOptions.type.inputDefinition.entity) {
+      if (arrayOptions.type.inputDefinition.entity) {
         nestedFields.push(
           ...[
             'id',
             '__typename',
-            nestedFieldDefinition!.inputDefinition.entity.nameField,
-            nestedFieldDefinition.inputDefinition.entity.avatarField,
+            arrayOptions.type.inputDefinition.entity.nameField,
+            arrayOptions.type.inputDefinition.entity.avatarField,
           ]
             .filter((e) => e)
-            .map((nestedField) => `${currentPath}.${nestedField}`)
+            .map((nestedField) => `${parentPath.join('.')}.${nestedField}`)
         )
-      } else {
-        nestedFields.push(currentPath)
       }
     }
-  })
+  }
+
   return nestedFields
 }
 
@@ -992,11 +1032,10 @@ export async function processInputQuery(
     if (!inputDefinition) throw new Error(`inputDefinition not defined`)
 
     // recursively check for nested fields, and add those to query too
-    if (inputDefinition.nestedOptions) {
-      const allNestedFields = getAllNestedFields(
-        inputDefinition.nestedOptions,
-        [fieldKey]
-      )
+    if (inputDefinition.arrayOptions) {
+      const allNestedFields = getAllNestedFields(inputDefinition.arrayOptions, [
+        fieldKey,
+      ])
 
       allNestedFields.forEach((nestedField) => {
         query[nestedField] = true
@@ -1197,13 +1236,18 @@ export async function processInputObject(
   if (inputObject.inputDefinition.inputType === 'value-array') {
     // if it is a value array, need to assemble the value as an array
     value = []
-    for (const nestedInputArray of inputObject.nestedInputsArray) {
-      const nestedInputs = await processInputObjectArray(
-        that,
-        nestedInputArray.map((ele) => ele.inputObject)
-      )
+    for (const nestedInputElement of inputObject.nestedInputsArray) {
+      // if the nestedInputElement is an object, extract the field from the element
+      if (Array.isArray(nestedInputElement)) {
+        const nestedInputs = await processInputObjectArray(
+          that,
+          nestedInputElement.map((ele) => ele.inputObject)
+        )
 
-      value.push(collapseObject(nestedInputs))
+        value.push(collapseObject(nestedInputs))
+      } else {
+        value.push(nestedInputElement.inputObject.value)
+      }
     }
   } else {
     // if the fieldInfo.inputType === 'type-combobox', it came from a combo box. need to handle accordingly
@@ -1546,7 +1590,8 @@ export function getFieldPath({
 // initializes an inputObject
 export function generateInputObject(
   that,
-  inputFieldDefinition: InputFieldDefinition | FilterInputFieldDefinition
+  inputFieldDefinition: InputFieldDefinition | FilterInputFieldDefinition,
+  overrideProperties?: Partial<CrudInputObject>
 ) {
   // inputFieldDefinition.inputDefinition should be defined by this point
   if (!inputFieldDefinition.inputDefinition) {
@@ -1586,7 +1631,14 @@ export function generateInputObject(
     inputData: null,
     hideIf: inputFieldDefinition.hideIf,
     watch: inputFieldDefinition.watch,
+    ...overrideProperties,
   }
 
   return inputObject
+}
+
+export function calculateFinalPrice(priceObject: PriceObject) {
+  return (
+    priceObject.price - (priceObject.discount ?? 0) + (priceObject.fees ?? 0)
+  )
 }

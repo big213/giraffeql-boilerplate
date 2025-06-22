@@ -267,7 +267,8 @@ export default {
               after: this.endCursor,
             }),
             filterBy: generateFilterByObjectArray(
-              this.lockedFilters.concat(this.additionalFilters)
+              this.lockedFilters.concat(this.additionalFilters),
+              []
             ),
             sortBy: this.currentSortObject
               ? [

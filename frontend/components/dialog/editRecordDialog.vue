@@ -76,7 +76,7 @@
         <v-divider class="mx-3"></v-divider>
         <div class="mx-2">
           <component
-            v-if="viewDefinition.postOptions && lockedFields"
+            v-if="viewDefinition.postOptions && postLockedFilters"
             class="mt-2 mx-auto elevation-6"
             style="max-width: 800px"
             :is="postInterface"

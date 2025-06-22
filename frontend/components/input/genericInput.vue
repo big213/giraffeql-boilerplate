@@ -594,7 +594,9 @@
                 :disabled="inputObject.readonly"
               >
                 <v-row
-                  v-for="(nestedInputArray, i) in inputObject.nestedInputsArray"
+                  v-for="(
+                    nestedInputElement, i
+                  ) in inputObject.nestedInputsArray"
                   :key="i"
                   class="highlighted-bg"
                 >
@@ -602,7 +604,7 @@
                     <v-system-bar lights-out>
                       <v-icon @click="void 0">mdi-arrow-all</v-icon>
                       {{
-                        inputObject.inputDefinition.nestedOptions.entryName ??
+                        inputObject.inputDefinition.arrayOptions.entryName ??
                         'Entry'
                       }}
                       #{{ i + 1 }}
@@ -613,7 +615,11 @@
                     </v-system-bar>
                   </v-col>
                   <v-col
-                    v-for="(nestedInputObject, j) in nestedInputArray"
+                    v-for="(nestedInputObject, j) in Array.isArray(
+                      nestedInputElement
+                    )
+                      ? nestedInputElement
+                      : [nestedInputElement]"
                     cols="12"
                     :sm="nestedInputObject.inputObject.cols || 12"
                     class="py-0"
@@ -629,7 +635,7 @@
             <div v-else class="pb-3">
               No
               {{
-                inputObject.inputDefinition.nestedOptions.pluralEntryName ??
+                inputObject.inputDefinition.arrayOptions.pluralEntryName ??
                 'Entries'
               }}
             </div>
@@ -641,7 +647,7 @@
               <v-icon left>mdi-plus</v-icon>
               Add
               {{
-                inputObject.inputDefinition.nestedOptions.entryName ?? 'Entry'
+                inputObject.inputDefinition.arrayOptions.entryName ?? 'Entry'
               }}
             </v-btn>
           </v-col>
@@ -649,10 +655,7 @@
       </v-container>
     </div>
     <div
-      v-else-if="
-        inputObject.inputDefinition.inputType === 'stripe-cc' ||
-        inputObject.inputDefinition.inputType === 'stripe-pi'
-      "
+      v-else-if="inputObject.inputDefinition.inputType === 'stripe-pi'"
       class="pb-5 rounded-sm"
     >
       <v-container class="highlighted-bg">
@@ -678,7 +681,7 @@
               @keyup.enter="handleStripePiQuantityUpdate()"
             ></v-text-field>
             <div class="subtitle-1 mb-2 text-left">
-              {{ renderPrice() }}
+              {{ renderPriceSummary() }}
               <span v-if="renderDiscount()" class="red--text"
                 >-- {{ renderDiscount() }}</span
               >
@@ -686,28 +689,11 @@
             <div v-if="inputObject.inputDefinition.hint">
               {{ inputObject.inputDefinition.hint }}
             </div>
-            <StripeElements
-              v-if="inputObject.inputDefinition.inputType === 'stripe-cc'"
-              :stripe-key="stripeKey"
-              :instance-options="instanceOptions"
-              :elements-options="elementsOptions"
-              #default="{ elements }"
-              ref="elms"
-            >
-              <StripeElement
-                type="card"
-                :elements="elements"
-                :options="cardOptions"
-                ref="card"
-              />
-            </StripeElements>
             <v-progress-linear
               v-if="inputObject.loading"
               indeterminate
             ></v-progress-linear>
-            <div
-              v-else-if="inputObject.inputDefinition.inputType === 'stripe-pi'"
-            >
+            <div v-else>
               <StripeElements
                 :stripe-key="stripeKey"
                 :instance-options="instanceOptionsComputed"
@@ -848,6 +834,7 @@ import {
   formatAsCurrency,
   loadTypeSearchResults,
   parseDiscountScheme,
+  calculateFinalPrice,
 } from '~/services/base'
 import FileChip from '~/components/chip/fileChip.vue'
 import MediaChip from '~/components/chip/mediaChip.vue'
@@ -1088,10 +1075,19 @@ export default {
         .join(' | ')
     },
 
-    renderPrice() {
+    renderPriceSummary() {
       const priceObject = this.getPriceObject()
 
       if (!priceObject) return null
+
+      // if there is a custom renderPriceSummary fn, use that
+      if (this.inputObject.inputDefinition.paymentOptions.renderPriceSummary) {
+        return this.inputObject.inputDefinition.paymentOptions.renderPriceSummary(
+          this,
+          this.parentItem,
+          priceObject
+        )
+      }
 
       return `Grand Total ${formatAsCurrency(
         priceObject.price - (priceObject.discount ?? 0)
@@ -1246,7 +1242,7 @@ export default {
 
         // if the input type does not have a name, do a slightly different check
         if (
-          !inputObject.inputDefinition.entity.nameField &&
+          !inputObject.inputDefinition.entity?.nameField &&
           (inputObject.value?.id ?? null) === inputObject.inputValue
         ) {
           return
@@ -1257,9 +1253,9 @@ export default {
 
         // if it is a text-autocomplete/combobox type and no getSuggestions function, throw err
         if (
-          inputObject.inputDefinition.inputType === 'text-autocomplete' ||
-          (inputObject.inputDefinition.inputType === 'text-combobox' &&
-            !inputObject.inputDefinition.getSuggestions)
+          (inputObject.inputDefinition.inputType === 'text-autocomplete' ||
+            inputObject.inputDefinition.inputType === 'text-combobox') &&
+          !inputObject.inputDefinition.getSuggestions
         ) {
           throw new Error(`getSuggestions function required`)
         }
@@ -1573,6 +1569,8 @@ export default {
         // storing the params in temp data to check against
         this._tempData = JSON.stringify(priceObject)
 
+        const finalPrice = calculateFinalPrice(priceObject)
+
         // load the updated inputData (paymentIntent)
         this.inputObject.inputData =
           await this.inputObject.inputDefinition.paymentOptions.getPaymentIntent(
@@ -1580,7 +1578,7 @@ export default {
             this.inputObject,
             this.parentItem,
             priceObject.quantity,
-            priceObject.price
+            finalPrice
           )
       } catch (err) {
         handleError(this, err)
@@ -1676,21 +1674,6 @@ export default {
         }
 
         this.inputObject.value = res.paymentIntent.id
-      } else if (this.inputObject.inputDefinition.inputType === 'stripe-cc') {
-        const groupComponent = this.$refs.elms
-        const cardComponent = this.$refs.card
-        // Get stripe element
-        const cardElement = cardComponent.stripeElement
-
-        // Access instance methods, e.g. createToken()
-
-        const result = await groupComponent.instance.createToken(cardElement)
-
-        if (result.token) {
-          this.inputObject.value = result.token.id
-        } else if (result.error) {
-          throw new Error(result.error.message)
-        }
       }
     },
 

@@ -230,12 +230,12 @@ export function generateBaseRenderFields(entity: EntityDefinition): {
             avatarUrlField: entity.avatarField,
           },
         },
-        record: generatePreviewableRecordRenderField({
+        record: generateJoinableRenderField({
           text: 'Record',
           entity: entity,
         }),
       }),
-    createdBy: generatePreviewableRecordRenderField({
+    createdBy: generateJoinableRenderField({
       fieldname: 'createdBy',
       entity: UserEntity,
     }),
@@ -302,7 +302,7 @@ export function generateConcatRecordRenderField({
   }
 }
 
-export function generatePreviewableRecordRenderField({
+export function generateJoinableRenderField({
   fieldname,
   text,
   entity,
@@ -463,6 +463,29 @@ export function generateDateTimeRangeRenderField(
         return `${
           generateDateLocaleString(item[fromField], true) ?? 'None'
         } - ${generateDateLocaleString(item[untilField], true) ?? 'None'}`
+      },
+      showTitle: true,
+    },
+    component: Columns.StringColumn,
+  }
+}
+
+export function generateDateRangeRenderField(
+  {
+    fromField,
+    untilField,
+  }: {
+    fromField: string
+    untilField: string
+  },
+  renderDefinition: RenderDefinition = {}
+): RenderDefinition {
+  return {
+    fields: [fromField, untilField],
+    ...renderDefinition,
+    renderOptions: {
+      getDisplayStr: (currentValue, item) => {
+        return `${item[fromField] ?? 'None'} - ${item[untilField] ?? 'None'}`
       },
       showTitle: true,
     },

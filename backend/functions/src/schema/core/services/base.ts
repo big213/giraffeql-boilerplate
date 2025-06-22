@@ -2,6 +2,7 @@ import { ServiceFunctionInputs, AccessControlMap } from "../../../types";
 import { userPermission } from "../../enums";
 import { GiraffeqlRootResolverType } from "giraffeql";
 import { PermissionsError } from "../helpers/error";
+import { debugMode } from "../../../config";
 
 export abstract class BaseService {
   typename: string;
@@ -91,7 +92,9 @@ export abstract class BaseService {
       if (err instanceof Error && !(err instanceof PermissionsError)) {
         throw new PermissionsError({
           fieldPath,
-          message: err.message,
+          message: debugMode
+            ? err.message
+            : `A permissions error has occurred, enable debugMode for more details`,
         });
       }
 

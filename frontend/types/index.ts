@@ -23,6 +23,12 @@ export type NestedInputFieldDefinition = {
   inputDefinition: InputDefinition
 } & InputFieldDefinition
 
+export type ArrayOptions = {
+  entryName?: string
+  pluralEntryName?: string
+  type: NestedInputFieldDefinition | NestedInputFieldDefinition[] // inputType or an object
+}
+
 export type SortFieldDefinition = {
   text?: string
   fieldPath: string
@@ -56,7 +62,6 @@ export type InputType =
   | 'switch'
   | 'checkbox'
   | 'boolean-select'
-  | 'stripe-cc'
   | 'stripe-pi'
   | 'stripe-pi-editable'
   | 'textarea'
@@ -120,6 +125,9 @@ export type InputDefinition = {} & {
       quantity: number,
       discountScheme?
     ) => PriceObject
+
+    renderPriceSummary?: (that, item, priceObject: PriceObject) => string
+
     // for stripe-pi and stripe-pi-editable input types, function that returns the instanceOptions (in the genericInput)
     getPaymentIntent: (that, inputObject, parentItem, quantity, amount) => any
 
@@ -170,7 +178,10 @@ export type InputDefinition = {} & {
   }
 
   // only applies to value-array
-  nestedOptions?: NestedOptions
+  // nestedOptions?: NestedOptions
+
+  // only applies to value-array
+  arrayOptions?: ArrayOptions
 }
 
 export type RenderDefinition = {
@@ -270,4 +281,6 @@ export type PriceObject = {
   quantity?: number // 2
   discount?: number // 5
   discountPercent?: number // 5
+  fees?: number
+  feesPercent?: number
 }

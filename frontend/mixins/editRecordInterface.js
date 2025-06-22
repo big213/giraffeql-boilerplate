@@ -459,7 +459,7 @@ export default {
 
         // check lockedFields, and reset the value of such fields
         if (this.lockedFields && inputObject.fieldPath in this.lockedFields) {
-          inputObject.value = this.lockedFields[inputObject.fieldKey]
+          inputObject.value = this.lockedFields[inputObject.fieldPath]
         } else {
           inputObject.value =
             (await inputObject.inputDefinition.getInitialValue?.(

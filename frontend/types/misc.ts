@@ -43,7 +43,7 @@ export type CrudInputObject = {
   cols?: number // how many cols does the input take up? defaults to 12
   generation: number // generation of the input. used for forcing refreshes
   parentInput: CrudInputObject | null // the parent of the input. can be used to determine if it is nested as well
-  nestedInputsArray: NestedInputObject[][] // any nested input objects
+  nestedInputsArray: (NestedInputObject | NestedInputObject[])[] // any nested input objects
   hideIf?: (that, parentItem, inputsArray) => boolean // hide this input if...
   inputData?: any // additional data that is relevant for the input option (mainly for stripe-pi)
   watch?: (that, val, prev) => void

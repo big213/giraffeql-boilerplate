@@ -53,8 +53,9 @@
             >
               <v-list-item>
                 <v-list-item-avatar>
+                  <v-icon v-if="props.item.isSystem"> mdi-information </v-icon>
                   <v-img
-                    v-if="props.item.createdBy.avatarUrl"
+                    v-else-if="props.item.createdBy.avatarUrl"
                     class="elevation-6"
                     :alt="props.item.createdBy.name"
                     :src="props.item.createdBy.avatarUrl"
@@ -63,6 +64,7 @@
                 </v-list-item-avatar>
                 <v-list-item-content>
                   <PreviewRecordMenu
+                    v-if="!props.item.isSystem"
                     :item="props.item.createdBy"
                     :typename="props.item.createdBy.__typename"
                     :close-on-content-click="false"
@@ -78,12 +80,20 @@
                     </template>
                   </PreviewRecordMenu>
                   <v-list-item-subtitle>{{
-                    generateTimeAgoString(props.item.createdAt)
+                    `${generateTimeAgoString(props.item.createdAt)}${
+                      props.item.createdAt !== props.item.updatedAt
+                        ? ` (edited ${generateTimeAgoString(
+                            props.item.updatedAt
+                          )})`
+                        : ''
+                    }`
                   }}</v-list-item-subtitle>
                 </v-list-item-content>
                 <v-row
                   v-if="
-                    viewDefinition.updateOptions || viewDefinition.deleteOptions
+                    userHasEditPermissions(props.item) &&
+                    (viewDefinition.updateOptions ||
+                      viewDefinition.deleteOptions)
                   "
                   align="center"
                   justify="end"
@@ -126,6 +136,7 @@
                     v-if="props.item.files.length"
                     :item="props.item"
                     field-path="files"
+                    :options="{ useFirebaseUrl: true }"
                   ></PreviewableFilesColumn>
                 </template>
                 <EditRecordInterface
@@ -180,5 +191,47 @@ import crudPostInterfaceMixin from '~/mixins/crudPostInterface'
 
 export default {
   mixins: [crudPostInterfaceMixin],
+
+  data() {
+    return {
+      returnFields: {
+        id: true,
+        __typename: true,
+        content: true,
+        files: {
+          id: true,
+          name: true,
+          size: true,
+          contentType: true,
+          location: true,
+          downloadUrl: true,
+        },
+        data: true,
+        createdAt: true,
+        updatedAt: true,
+        isSystem: true,
+        createdBy: {
+          id: true,
+          name: true,
+          avatarUrl: true,
+          __typename: true,
+        },
+      },
+    }
+  },
+
+  methods: {
+    // overriding this function to do nothing because the onSuccess function should cause it to be refreshed
+    handlePostSubmit() {},
+
+    // does the user have permission to edit the item?
+    userHasEditPermissions(item) {
+      // if system, no
+      if (item.isSystem) return false
+
+      // if not, are they the user?
+      return item.createdBy.id === this.$store.getters['auth/user']?.id
+    },
+  },
 }
 </script>

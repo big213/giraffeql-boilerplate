@@ -4,7 +4,7 @@ import {
   generateBaseInputFields,
   generateBaseRenderFields,
   generateJoinableInputField,
-  generatePreviewableRecordRenderField,
+  generateJoinableRenderField,
   generateSortOptions,
 } from '~/services/view'
 
@@ -23,11 +23,11 @@ export const BaseUserUserFollowLinkView: ViewDefinition = {
   },
   renderFields: {
     ...generateBaseRenderFields(UserUserFollowLinkEntity),
-    user: generatePreviewableRecordRenderField({
+    user: generateJoinableRenderField({
       fieldname: 'user',
       entity: UserEntity,
     }),
-    target: generatePreviewableRecordRenderField({
+    target: generateJoinableRenderField({
       fieldname: 'target',
       entity: UserEntity,
     }),
