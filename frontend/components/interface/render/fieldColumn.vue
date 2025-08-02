@@ -56,8 +56,9 @@ export default {
       this.$emit(
         'edit-item',
         this.item,
-        this.renderObject.renderDefinition.editOptions.fieldKey ??
-          this.renderObject.fieldKey
+        this.renderObject.renderDefinition.editOptions.fieldKeys ?? [
+          this.renderObject.fieldKey,
+        ]
       )
     },
 

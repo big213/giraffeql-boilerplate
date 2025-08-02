@@ -17,7 +17,7 @@ import { PreviewDefinition } from './preview'
 
 export type PageOptions = {
   // required fields for the page, if any
-  fields?: string[]
+  requiredFields?: string[]
 
   // custom function that will return the lookup params, if any. like { id: 123 }
   getLookupParams?: (that) => any

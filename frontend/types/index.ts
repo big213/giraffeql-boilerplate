@@ -12,12 +12,6 @@ export type InputFieldDefinition = {
   watch?: (that, val, prev) => void
 }
 
-export type NestedOptions = {
-  entryName?: string
-  pluralEntryName?: string
-  fields: NestedInputFieldDefinition[]
-}
-
 export type NestedInputFieldDefinition = {
   // fieldKey is always required, as string lookups not allowed
   inputDefinition: InputDefinition
@@ -82,11 +76,14 @@ export type InputDefinition = {} & {
   // the label for the field
   text?: string
 
-  getOptions?: (that, forceReload?) => Promise<any[]>
+  getOptions?: (that, parentItem, forceReload?) => Promise<any[]>
   getInitialValue?: (that, parentItem) => unknown
 
   // submitting to API, in filterBy and create/update functions
   parseValue?: (val: any) => any
+
+  // retrieving from API and populating the input field
+  serialize?: (val: any) => any
 
   hint?: string
   inputRules?: any[]
@@ -178,9 +175,6 @@ export type InputDefinition = {} & {
   }
 
   // only applies to value-array
-  // nestedOptions?: NestedOptions
-
-  // only applies to value-array
   arrayOptions?: ArrayOptions
 }
 
@@ -210,7 +204,7 @@ export type RenderDefinition = {
   editOptions?: {
     mode?: 'right' | 'left' // how will the edit dialog be activated? if undefined, will default to right
 
-    fieldKey?: string // the field to be edited, if different from the default fieldKey
+    fieldKeys?: string[] // the fields to be edited, if different from the default fieldKey
   }
 }
 

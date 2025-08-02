@@ -54,7 +54,7 @@ export class UserService extends PaginatedService {
       const record = await this.getFirstSqlRecord(
         {
           select: ["id", "isPublic"],
-          where: { id: req.user!.id },
+          where: args,
         },
         true
       );
@@ -69,7 +69,6 @@ export class UserService extends PaginatedService {
           "name",
           "avatarUrl",
           "description",
-          "email",
           "isPublic",
           "currentUserFollowLink",
         ]) &&

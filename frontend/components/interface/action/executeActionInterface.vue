@@ -183,7 +183,11 @@ export default {
           await timeout(500)
         }
 
-        const args = await processInputObjectArray(this, this.inputsArray)
+        const args = await processInputObjectArray(
+          this,
+          this.parentItem,
+          this.inputsArray
+        )
 
         // do additional modification of the inputs object, if required
         if (this.actionDefinition.argsModifier) {

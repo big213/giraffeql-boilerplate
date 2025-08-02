@@ -12,8 +12,6 @@ import {
   FilterInputFieldDefinition,
   InputDefinition,
   InputFieldDefinition,
-  NestedInputFieldDefinition,
-  NestedOptions,
   PriceObject,
   RenderDefinition,
   RenderFieldDefinition,
@@ -626,6 +624,9 @@ export function populateInputObject(
         )
       })
     })
+  } else if (inputObject.inputDefinition.serialize) {
+    // if there is a custom serializer, use this to populate the field only
+    inputObject.value = inputObject.inputDefinition.serialize(inputObject.value)
   } else {
     // for stripe-pi, need to fetch the stripeAccount and clientSecret
     if (
@@ -679,7 +680,7 @@ export function populateInputObject(
     ) {
       inputObject.loading = true
       promisesArray.push(
-        inputObject.inputDefinition.getOptions(that).then((res) => {
+        inputObject.inputDefinition.getOptions(that, parentItem).then((res) => {
           // set the options
           inputObject.options = res
 
@@ -730,7 +731,9 @@ export function populateInputObject(
       // if no name or avatar, just use the id
       if (!entity.nameField && !entity.avatarField) {
         inputObject.value = {
-          id: originalFieldValue,
+          id: isObject(originalFieldValue)
+            ? originalFieldValue.id
+            : originalFieldValue,
         }
       } else if (fetchEntities) {
         if (Array.isArray(originalFieldValue)) {
@@ -1202,6 +1205,7 @@ export function generateFilterByObjectArray(
 
 export async function processInputObjectArray(
   that,
+  parentItem,
   inputObjectArray: CrudInputObject[]
 ) {
   const inputs = {}
@@ -1214,10 +1218,11 @@ export async function processInputObjectArray(
         inputObject.inputDefinition.inputType
       )
         ? inputObject.fieldKey
-        : inputObject.fieldPath
+        : inputObject.fieldKey
 
     inputs[fieldPath] = await processInputObject(
       that,
+      parentItem,
       inputObject,
       inputObjectArray
     )
@@ -1228,6 +1233,7 @@ export async function processInputObjectArray(
 
 export async function processInputObject(
   that,
+  parentItem: any,
   inputObject: CrudInputObject,
   inputObjectArray: CrudInputObject[]
 ) {
@@ -1241,12 +1247,20 @@ export async function processInputObject(
       if (Array.isArray(nestedInputElement)) {
         const nestedInputs = await processInputObjectArray(
           that,
+          parentItem,
           nestedInputElement.map((ele) => ele.inputObject)
         )
 
         value.push(collapseObject(nestedInputs))
       } else {
-        value.push(nestedInputElement.inputObject.value)
+        value.push(
+          await processInputObject(
+            that,
+            parentItem,
+            nestedInputElement.inputObject,
+            inputObjectArray
+          )
+        )
       }
     }
   } else {
@@ -1286,7 +1300,7 @@ export async function processInputObject(
         // force reload of memoized options, if any
         if (inputObject.inputDefinition.getOptions) {
           inputObject.inputDefinition
-            .getOptions(that, true)
+            .getOptions(that, parentItem, true)
             .then((res) => (inputObject.options = res))
         }
 
@@ -1303,7 +1317,7 @@ export async function processInputObject(
     ) {
       // as we are using return-object option, the entire object will be returned for autocompletes/selects, unless it is null or a number
       value = isObject(inputObject.value)
-        ? inputObject.value.id
+        ? { id: inputObject.value.id }
         : Number.isNaN(inputObject.value)
         ? null
         : inputObject.value

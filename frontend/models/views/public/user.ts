@@ -40,7 +40,6 @@ export const PublicUserView: ViewDefinition = {
     heroOptions: {},
   },
   deleteOptions: undefined,
-
   enterOptions: {},
   childTypes: [],
 }

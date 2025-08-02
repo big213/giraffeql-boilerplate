@@ -1054,11 +1054,11 @@ export default {
       this.openEditDialog({ mode: 'import', lockedFields })
     },
 
-    openEditItemDialog(parentItem, fieldKey) {
+    openEditItemDialog(parentItem, fieldKeys) {
       this.openEditDialog({
         mode: 'update',
         parentItem,
-        customFields: [fieldKey],
+        customFields: fieldKeys,
       })
     },
 

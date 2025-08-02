@@ -9,7 +9,7 @@ export abstract class BaseService {
 
   readonly defaultTypename!: string;
 
-  rootResolvers?: { [x: string]: GiraffeqlRootResolverType };
+  rootResolvers!: { [x: string]: GiraffeqlRootResolverType };
 
   setRootResolvers(rootResolvers: {
     [x: string]: GiraffeqlRootResolverType;

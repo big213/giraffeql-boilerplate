@@ -187,7 +187,7 @@ export default {
     /*
      ** Expecting viewDefinition, lockedFilters?, title?, icon?, hiddenHeaders?, hiddenFilters?, pageOptions?, maxWidth?, parentItem?, hidePresets?
      */
-    this.$root.$on('openCrudRecordDialog', (params) => {
+    this.$root.$on('openCrudRecordDialog', async (params) => {
       const model =
         typeof params.viewDefinition === 'string'
           ? views[params.viewDefinition]
@@ -196,7 +196,9 @@ export default {
       if (model) {
         // set default pageOption and lockedFilters if defined on the model
         if (model.paginationOptions.defaultPageOptions) {
-          params.pageOptions = model.paginationOptions.defaultPageOptions(this)
+          params.pageOptions = await model.paginationOptions.defaultPageOptions(
+            this
+          )
         }
 
         if (model.paginationOptions.defaultLockedFilters) {

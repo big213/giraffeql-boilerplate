@@ -28,7 +28,10 @@
                 "
               >
                 <v-layout column justify-center align-center fill-height>
-                  <v-card-title>{{ expandTypeObject.name }}</v-card-title>
+                  <v-card-title>{{
+                    expandTypeObject.name ??
+                    expandTypeObject.view.entity.pluralName
+                  }}</v-card-title>
                 </v-layout>
               </v-img>
             </v-card>
@@ -817,6 +820,7 @@
         :breadcrumb-items="subBreadcrumbItems"
         :results-per-page="expandTypeObject.resultsPerPage"
         :hide-presets="!expandTypeObject.showPresets"
+        style="border: 5px solid var(--v-secondary-base)"
         @pageOptions-updated="handleSubPageOptionsUpdated"
         @reload-parent-item="handleReloadParentItem"
         @expand-type-updated="handleExpandTypeUpdated"

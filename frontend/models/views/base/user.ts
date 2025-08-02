@@ -139,6 +139,6 @@ export const BaseUserView: ViewDefinition = {
   },
   enterOptions: {},
   deleteOptions: {},
-  shareOptions: undefined,
+  shareOptions: {},
   childTypes: [],
 }

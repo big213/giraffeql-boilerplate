@@ -140,12 +140,12 @@ export default {
       }
     },
 
-    openEditItemDialog(item, fieldKey) {
+    openEditItemDialog(item, fieldKeys) {
       this.$root.$emit('openEditRecordDialog', {
         viewDefinition: this.viewDefinition,
         parentItem: item,
         mode: 'update',
-        customFields: [fieldKey],
+        customFields: fieldKeys,
       })
     },
 

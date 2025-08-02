@@ -115,13 +115,13 @@
             ></v-progress-circular>
             <v-icon v-else>{{
               actionInputObject.actionObject.icon ??
-              actionInputObject.actionObject.action.icon
+              actionInputObject.actionObject.action?.icon
             }}</v-icon>
           </v-list-item-icon>
           <v-list-item-title
             >{{
               actionInputObject.actionObject.text ??
-              actionInputObject.actionObject.action.title
+              actionInputObject.actionObject.action?.title
             }}
           </v-list-item-title>
         </v-list-item>

@@ -97,7 +97,10 @@ export function generateBaseRootResolvers({
     type: BaseRootResolverTypes;
     restOptions?: Partial<RestOptions> & { query: ExternalQuery };
     additionalArgs?: {
-      [x in string]: GiraffeqlInputFieldType | GiraffeqlInputTypeLookup;
+      [x in string]:
+        | GiraffeqlInputFieldType
+        | GiraffeqlInputTypeLookup
+        | undefined;
     };
   }[];
 }): { [x: string]: GiraffeqlRootResolverType } {

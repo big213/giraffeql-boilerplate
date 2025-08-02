@@ -4,18 +4,13 @@ import RecordActionMenu from '~/components/menu/recordActionMenu.vue'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 import CrudPostInterface from '~/components/interface/crud/crudPostInterface.vue'
 import { executeApiRequest } from '~/services/api'
-import {
-  capitalizeString,
-  handleError,
-  processRenderQuery,
-} from '~/services/base'
+import { handleError, processRenderQuery } from '~/services/base'
 import { generatePreviewViewDefinition } from '~/services/view'
 import CrudRecordInterface from '~/components/interface/crud/crudRecordInterface.vue'
 import { mapGetters } from 'vuex'
 
 export default {
   components: {
-    ViewRecordInterface,
     EditRecordDialog,
     RecordActionMenu,
     PreviewRecordChip,
@@ -25,10 +20,6 @@ export default {
     viewDefinition: {
       type: Object,
       required: true,
-    },
-    lookupParams: {
-      type: Object,
-      default: () => null,
     },
     head: {
       type: Object,

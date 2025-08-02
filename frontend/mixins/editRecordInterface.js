@@ -216,7 +216,11 @@ export default {
           await timeout(500)
         }
 
-        const inputs = await processInputObjectArray(this, this.inputsArray)
+        const inputs = await processInputObjectArray(
+          this,
+          this.parentItem,
+          this.inputsArray
+        )
 
         // add/copy mode
         let data
@@ -487,55 +491,72 @@ export default {
         )
 
         this.inputsArray = await Promise.all(
-          inputFieldDefinitions.map(async (inputFieldDefinition) => {
-            const inputObject = generateInputObject(this, inputFieldDefinition)
+          inputFieldDefinitions
+            .filter(
+              (inputFieldDefinition) =>
+                !inputFieldDefinition.excludeIf?.(
+                  this,
+                  this.parentItem,
+                  this.lockedFields
+                )
+            )
+            .map(async (inputFieldDefinition) => {
+              const inputObject = generateInputObject(
+                this,
+                inputFieldDefinition
+              )
 
-            // if there are hiddenFields, check if this is one of them
-            if (this.hiddenFields.includes(inputObject.fieldKey)) {
-              inputObject.hidden = true
-            }
-
-            // is the field in lockedFields? if so, use that and set field to readonly
-            if (
-              this.lockedFields &&
-              inputObject.fieldPath in this.lockedFields &&
-              this.lockedFields[inputObject.fieldPath] !== undefined
-            ) {
-              inputObject.value = this.lockedFields[inputObject.fieldPath]
-              inputObject.readonly = true
-
-              // if createFieldDefinition.hideIfLocked, also set those fields to hidden
-              if (inputFieldDefinition.hideIfLocked) {
+              // if there are hiddenFields, check if this is one of them
+              if (this.hiddenFields.includes(inputObject.fieldKey)) {
                 inputObject.hidden = true
               }
-            } else {
-              inputObject.value =
-                (await inputObject.inputDefinition.getInitialValue?.(
-                  this,
-                  this.parentItem
-                )) ?? null
-            }
 
-            // if it is an array, populate the nestedInputsArray
-            if (inputObject.inputDefinition.inputType === 'value-array') {
-              if (Array.isArray(inputObject.value)) {
-                inputObject.value.forEach((ele) =>
-                  addNestedInputObject(this, inputObject, this.parentItem, ele)
-                )
+              // is the field in lockedFields? if so, use that and set field to readonly
+              if (
+                this.lockedFields &&
+                inputObject.fieldPath in this.lockedFields &&
+                this.lockedFields[inputObject.fieldPath] !== undefined
+              ) {
+                inputObject.value = this.lockedFields[inputObject.fieldPath]
+                inputObject.readonly = true
+
+                // if createFieldDefinition.hideIfLocked, also set those fields to hidden
+                if (inputFieldDefinition.hideIfLocked) {
+                  inputObject.hidden = true
+                }
+              } else {
+                inputObject.value =
+                  (await inputObject.inputDefinition.getInitialValue?.(
+                    this,
+                    this.parentItem
+                  )) ?? null
               }
-            }
 
-            // populate inputObjects if we need to translate any IDs to objects, and also populate any options
-            await Promise.all(
-              populateInputObject(this, {
-                inputObject,
-                parentItem: this.parentItem,
-                fetchEntities: true,
-              })
-            )
+              // if it is an array, populate the nestedInputsArray
+              if (inputObject.inputDefinition.inputType === 'value-array') {
+                if (Array.isArray(inputObject.value)) {
+                  inputObject.value.forEach((ele) =>
+                    addNestedInputObject(
+                      this,
+                      inputObject,
+                      this.parentItem,
+                      ele
+                    )
+                  )
+                }
+              }
 
-            return inputObject
-          })
+              // populate inputObjects if we need to translate any IDs to objects, and also populate any options
+              await Promise.all(
+                populateInputObject(this, {
+                  inputObject,
+                  parentItem: this.parentItem,
+                  fetchEntities: true,
+                })
+              )
+
+              return inputObject
+            })
         )
 
         // add the watchers *after* initial inputs finished loading

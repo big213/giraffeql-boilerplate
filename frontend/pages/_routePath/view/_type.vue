@@ -1,8 +1,9 @@
 <template>
-  <ViewRecordPage
+  <component
     v-if="currentView"
+    :is="viewRecordComponent"
     :view-definition="currentView"
-  ></ViewRecordPage>
+  ></component>
   <v-container v-else fill-height>
     <v-layout align-center justify-center>
       <div>
@@ -31,10 +32,6 @@ export default {
 
   middleware: ['router-auth-redirect'],
 
-  components: {
-    ViewRecordPage,
-  },
-
   computed: {
     currentView() {
       const { routeType } = routePathMap[this.routePath]
@@ -43,6 +40,10 @@ export default {
       return views[
         `${capitalizeString(routeType)}${capitalizeString(this.type)}View`
       ]
+    },
+
+    viewRecordComponent() {
+      return this.currentView?.pageOptions?.component ?? ViewRecordPage
     },
   },
 }

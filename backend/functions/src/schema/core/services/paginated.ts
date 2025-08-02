@@ -124,8 +124,6 @@ export class PaginatedService extends BaseService {
 
   primaryInputTypeDefLookup: GiraffeqlInputTypeLookupService;
 
-  rootResolvers!: { [x: string]: GiraffeqlRootResolverType };
-
   filterFieldsMap: FieldMap<FieldObject> = {};
 
   // some combination of these fields need to be able to identify a unique record
