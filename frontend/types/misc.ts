@@ -35,7 +35,7 @@ export type CrudInputObject = {
   secondaryInputValue: any // a secondary proxy value, for compound fields (like stripe-pi)
   // function that will get run whenever a file gets added to the input (if it is a file input)
   handleFileAdded?: (that, inputsArray, inputObject, fileRecord) => void
-  options: any[] // the options of the input, if it applies
+  options: any[] | null // the options of the input, if it applies
   readonly?: boolean // is the input readonly?
   hidden: boolean // is the input hidden (not visible?)
   loading: boolean // is the input loading?

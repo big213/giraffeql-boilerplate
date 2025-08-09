@@ -131,7 +131,10 @@ export default {
         (importFieldObject) => {
           if (!importFieldObject.fieldPath) return true
 
-          return !excludeFields.includes(importFieldObject.fieldPath)
+          return !(
+            excludeFields.includes(importFieldObject.fieldPath) ||
+            excludeFields.includes(importFieldObject.lockedFieldPath)
+          )
         }
       )
     },
@@ -230,12 +233,16 @@ export default {
           for (const field in this.lockedFields) {
             const fieldObject =
               this.viewDefinition.paginationOptions.importOptions.fields.find(
-                (innerFieldObject) => innerFieldObject.fieldPath === field
+                (innerFieldObject) =>
+                  (innerFieldObject.lockedFieldPath ??
+                    innerFieldObject.fieldPath) === field
               )
             if (fieldObject) {
               lockedFieldsMap.set(
                 fieldObject.fieldPath,
-                this.lockedFields[fieldObject.fieldPath]
+                this.lockedFields[
+                  fieldObject.lockedFieldPath ?? fieldObject.fieldPath
+                ]
               )
             }
           }
@@ -368,7 +375,9 @@ export default {
           if (recordData.isSkipped) continue
 
           recordData.record = await executeApiRequest({
-            [this.viewDefinition.createOptions?.operationName ??
+            [this.viewDefinition.paginationOptions.importOptions
+              .operationName ??
+            this.viewDefinition.createOptions?.operationName ??
             `${this.viewDefinition.entity.typename}Create`]: {
               ...query,
               __args: collapseObject(recordData.data),

@@ -66,7 +66,7 @@ export default {
       try {
         const userCredential = await createUserWithEmailAndPassword(
           auth,
-          this.inputs.email,
+          this.inputs.email.trim(),
           this.inputs.password
         )
 

@@ -37,11 +37,13 @@ export default {
 
   computed: {
     currentView() {
-      const { routeType } = routePathMap[this.routePath]
-      if (!routeType) return null
+      const routePathObject = routePathMap[this.routePath]
+      if (!routePathObject) return null
 
       return views[
-        `${capitalizeString(routeType)}${capitalizeString(this.type)}View`
+        `${capitalizeString(routePathObject.routeType)}${capitalizeString(
+          this.type
+        )}View`
       ]
     },
   },

@@ -81,8 +81,18 @@ export class ApiKeyService extends PaginatedService {
           code: nanoid(),
           createdBy: req.user!.id,
         },
+        extendFn: (knexObject) => {
+          knexObject.onConflict().ignore();
+        },
         transaction,
       });
+
+      // if addResults falsey, there was a conflict
+      if (!addResults) {
+        throw new Error(
+          `An entry with this combination of unique keys already exists`
+        );
+      }
 
       // do post-create fn, if any
       await this.afterCreateProcess(

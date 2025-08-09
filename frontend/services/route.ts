@@ -10,16 +10,18 @@ export function generateNavRouteObject(
     viewDefinition,
     pageOptions,
     title,
+    icon,
     exactUrl,
   }: {
     viewDefinition: ViewDefinition
     pageOptions?: any
     title?: string
+    icon?: string
     exactUrl?: boolean
   }
 ) {
   return {
-    icon: viewDefinition.entity.icon,
+    icon: icon ?? viewDefinition.entity.icon,
     title: title ?? viewDefinition.title ?? viewDefinition.entity.pluralName,
     to: generateCrudRecordRoute(that, {
       viewDefinition,

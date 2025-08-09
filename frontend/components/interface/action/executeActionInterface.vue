@@ -6,7 +6,10 @@
         v-if="isLoading"
         style="min-height: 250px"
       ></CircularLoader>
-      <v-container v-show="!isLoading" class="px-0">
+      <v-container
+        v-show="!isLoading && visibleInputsArray.length"
+        class="px-0"
+      >
         <v-row>
           <v-col
             v-for="(inputObject, i) in visibleInputsArray"

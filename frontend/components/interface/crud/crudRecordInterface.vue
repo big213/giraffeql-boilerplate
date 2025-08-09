@@ -181,7 +181,10 @@
           vertical
         ></v-divider>
         <v-icon v-if="!viewDefinition.paginationOptions.hideTitle" left>{{
-          icon || viewDefinition.entity.icon || 'mdi-domain'
+          icon ||
+          viewDefinition.icon ||
+          viewDefinition.entity.icon ||
+          'mdi-domain'
         }}</v-icon>
         <v-toolbar-title v-if="!viewDefinition.paginationOptions.hideTitle">{{
           elementTitle ||
@@ -285,9 +288,8 @@
           class="mt-5"
           label="Auto-Refresh"
         ></v-switch>
-
         <v-btn
-          v-if="hasFilters"
+          v-if="hasFilters && !viewDefinition.paginationOptions.hideFilters"
           icon
           title="Filter"
           @click="showFilterInterface = !showFilterInterface"

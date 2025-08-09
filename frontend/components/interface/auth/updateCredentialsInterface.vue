@@ -152,8 +152,8 @@ export default {
         await reauthenticateWithCredential(this.currentUser, credential)
 
         // update email if different
-        if (this.currentUser.email !== this.inputs.newEmail) {
-          await updateEmail(this.currentUser, this.inputs.newEmail)
+        if (this.currentUser.email !== this.inputs.newEmail.trim()) {
+          await updateEmail(this.currentUser, this.inputs.newEmail.trim())
 
           // also update email on the api
           await executeApiRequest({

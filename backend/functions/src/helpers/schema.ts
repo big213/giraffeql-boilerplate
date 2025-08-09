@@ -11,7 +11,7 @@ export function generateQueryPage(lookupValue: any) {
     schemaString: `// Start typing here to get hints. Ctrl + space for suggestions.
 /* QUERY START */
 const query: GetQuery<keyof Root> = {
-  getUserPaginator: {
+  userGetPaginator: {
     edges: {
       node: {
         id: true,

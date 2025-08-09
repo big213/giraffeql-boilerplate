@@ -545,14 +545,16 @@ export function convertCSVToJSON(text: string) {
     let hasUndefined = false
     let hasAllEmptyRows = true
     for (let j = 0; j < headers.length; j++) {
-      o[headers[j]] = ret[k][j]
-      if (ret[k][j] === undefined) hasUndefined = true
-      else if (ret[k][j] !== '') hasAllEmptyRows = false
+      const value = typeof ret[k][j] === 'string' ? ret[k][j].trim() : ret[k][j]
+      o[headers[j]] = value
+      if (value === undefined) hasUndefined = true
+      else if (value !== '') hasAllEmptyRows = false
     }
     // not pushing rows where at least one column is undefined
     // also not pushing rows where all rows are empty
     if (!hasUndefined && !hasAllEmptyRows) objArray.push(o)
   }
+
   return objArray
 }
 
@@ -676,6 +678,7 @@ export function populateInputObject(
     // also only process this if not hidden and readonly
     if (
       inputObject.inputDefinition.getOptions &&
+      !inputObject.options &&
       !(inputObject.hidden && inputObject.readonly)
     ) {
       inputObject.loading = true
@@ -692,11 +695,11 @@ export function populateInputObject(
                 // if it's an entity, do the lookup of the id, translating id to obj. but if it's not an ID, assume it's already an obj
                 if (inputObject.inputDefinition.entity) {
                   return isId(value)
-                    ? inputObject.options.find((ele) => ele.id === value)
+                    ? inputObject.options!.find((ele) => ele.id === value)
                     : value
                 } else {
                   // if it's not an entity, it should be a string
-                  return inputObject.options.find((ele) => ele === value)
+                  return inputObject.options!.find((ele) => ele === value)
                 }
               })
             } else if (isId(inputObject.value)) {
@@ -757,7 +760,7 @@ export function populateInputObject(
                   .then((res) => {
                     // change value to object (at index)
                     inputObject.value[index] = res
-                    inputObject.options.push(res)
+                    inputObject.options!.push(res)
                   })
                   .catch((e) => e)
               )
@@ -1359,11 +1362,11 @@ export function memoize(memoizedFn) {
   return function () {
     // first arg is always gonna be that, so we will exclude it
     // 2nd arg is forceReload
-    const [that, forceReload, ...otherArgs] = arguments
+    const [that, parentItem, forceReload, ...otherArgs] = arguments
     const args = JSON.stringify(otherArgs)
     cache[args] = forceReload
-      ? memoizedFn(that, false, ...otherArgs)
-      : cache[args] || memoizedFn(that, false, ...otherArgs)
+      ? memoizedFn(that, parentItem, false, ...otherArgs)
+      : cache[args] || memoizedFn(that, parentItem, false, ...otherArgs)
     return cache[args]
   }
 }
@@ -1407,7 +1410,7 @@ export function generateMemoizedEntityGetter(
 }
 
 export function generateMemoizedEnumGetter(operation: keyof Root) {
-  return <any>memoize(async function (that, _forceReload) {
+  return <any>memoize(async function (that, _parentItem, _forceReload) {
     return executeApiRequest<any>({
       [operation]: {
         values: true,
@@ -1460,6 +1463,13 @@ export function loadTypeSearchResults(that, inputObject: CrudInputObject) {
           ...(entity.avatarField && {
             [entity.avatarField]: true,
           }),
+          ...(entity.additionalFields &&
+            collapseObject(
+              entity.additionalFields.reduce((total, val) => {
+                total[val] = true
+                return total
+              }, {})
+            )),
         },
       },
       __args: {
@@ -1633,7 +1643,7 @@ export function generateInputObject(
     inputValue: null,
     secondaryInputValue: null,
     handleFileAdded: inputFieldDefinition.handleFileAdded,
-    options: [],
+    options: null,
     readonly: false,
     hidden: false,
     loading: false,

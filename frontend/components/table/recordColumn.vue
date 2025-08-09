@@ -5,8 +5,14 @@
       :class="records.length > 1 ? 'mr-2' : null"
       :key="index"
     >
+      <component
+        v-if="component"
+        :is="component"
+        :value="record"
+        small
+      ></component>
       <PreviewRecordMenu
-        v-if="record"
+        v-else-if="record"
         :item="record"
         :typename="record.__typename"
         :close-on-content-click="false"
@@ -51,6 +57,10 @@ export default {
 
     disablePreview() {
       return !!this.options?.disablePreview
+    },
+
+    component() {
+      return this.options?.component
     },
   },
 }

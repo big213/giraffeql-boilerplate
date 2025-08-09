@@ -63,7 +63,7 @@ export default {
       try {
         await signInWithEmailAndPassword(
           auth,
-          this.inputs.email,
+          this.inputs.email.trim(),
           this.inputs.password
         )
 

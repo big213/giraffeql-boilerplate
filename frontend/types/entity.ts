@@ -8,4 +8,6 @@ export type EntityDefinition = {
   nameInputField?: string
   avatarField?: string
   descriptionField?: string
+  // additional fields related to rendering
+  additionalFields?: string[]
 }

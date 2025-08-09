@@ -31,7 +31,6 @@ import { permissionsCheck } from "../helpers/permissions";
 
 import {
   GiraffeqlObjectType,
-  GiraffeqlRootResolverType,
   GiraffeqlObjectTypeLookup,
   objectTypeDefs,
   GiraffeqlInputType,
@@ -1036,8 +1035,18 @@ export class PaginatedService extends BaseService {
           ...args,
           createdBy: req.user!.id,
         },
+        extendFn: (knexObject) => {
+          knexObject.onConflict().ignore();
+        },
         transaction,
       });
+
+      // if addResults falsey, there was a conflict
+      if (!addResults) {
+        throw new Error(
+          `An entry with this combination of unique keys already exists`
+        );
+      }
 
       // do post-create fn, if any
       await this.afterCreateProcess(

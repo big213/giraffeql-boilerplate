@@ -170,7 +170,7 @@ export default {
     this.drawer = this.$vuetify.breakpoint.name !== 'xs'
 
     /*
-     ** Expecting viewDefinition, lockedFields, parentItem, mode, customFields?, specialMode?
+     ** Expecting viewDefinition, parentItem, mode, lockedFields?, customFields?, specialMode?
      */
     this.$root.$on('openEditRecordDialog', (params) => {
       // confirm the viewDefinition exists

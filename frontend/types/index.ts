@@ -251,6 +251,9 @@ export type ImportFieldDefinition = {
 
   // for parsing CSV imports
   parseValue?: (val: any) => unknown
+
+  // the corresponding lockedFieldPath (if different from fieldPath)
+  lockedFieldPath?: string
 }
 
 export type ExportFieldDefinition = {

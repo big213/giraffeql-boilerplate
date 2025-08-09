@@ -51,7 +51,7 @@ export default {
     async handleSubmit() {
       this.loading.submitting = true
       try {
-        await sendPasswordResetEmail(auth, this.inputs.email, {
+        await sendPasswordResetEmail(auth, this.inputs.email.trim(), {
           // redirect back to login page
           url: window.location.origin + '/login',
         })

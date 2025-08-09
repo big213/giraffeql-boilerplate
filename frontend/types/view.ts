@@ -12,7 +12,7 @@ import {
 } from '.'
 import { ActionDefinition } from './action'
 import { EntityDefinition } from './entity'
-import { CrudPageOptions, CrudRawFilterObject, CrudRawSortObject } from './misc'
+import { CrudPageOptions, CrudRawFilterObject } from './misc'
 import { PreviewDefinition } from './preview'
 
 export type PageOptions = {
@@ -355,8 +355,10 @@ export type ViewDefinition = {
   routeType: string
   routeKey: string
 
-  // override title for this view (defaults to typename)
+  // override title for this view (defaults to entity.typename)
   title?: string
+  // override the icon for this view (defaults to entity.icon)
+  icon?: string
 
   // fields that must always be requested when fetching the specific item and multiple items, along with the id field. could be for certain rendering purposes
   requiredFields?: string[]
@@ -416,6 +418,9 @@ export type PaginationOptions = {
 
   // should the refresh button be hidden?
   hideRefresh?: boolean
+
+  // should the filter button be hidden?
+  hideFilters?: boolean
 
   // the headers of the table
   headers: HeaderRenderFieldDefinition[]

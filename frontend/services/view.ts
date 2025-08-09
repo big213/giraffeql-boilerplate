@@ -111,12 +111,14 @@ export function generateClickRowToEnterOptions({
 export function generateHomePageViewDefinition({
   viewDefinition,
   title,
+  icon,
   columnMode = false,
   limit = 4,
   paginationOptions,
 }: {
   viewDefinition: ViewDefinition
   title?: string
+  icon?: string
   columnMode?: boolean
   limit?: number
   paginationOptions?: any
@@ -124,6 +126,7 @@ export function generateHomePageViewDefinition({
   return {
     ...viewDefinition,
     ...(title && { title }),
+    ...(icon && { icon }),
     createOptions: undefined,
     paginationOptions: {
       // dont override existing configuration for these
@@ -133,6 +136,7 @@ export function generateHomePageViewDefinition({
         filters: [],
         sort: 'createdAt-desc',
       }),
+      hideFilters: true,
       ...viewDefinition.paginationOptions,
       // override existing configuration for these
       searchOptions: undefined,
@@ -305,11 +309,13 @@ export function generateConcatRecordRenderField({
 export function generateJoinableRenderField({
   fieldname,
   text,
+  additionalFields,
   entity,
   renderDefinition,
 }: {
   fieldname?: string
   text?: string
+  additionalFields?: string[]
   entity: EntityDefinition
   renderDefinition?: RenderDefinition
 }): RenderDefinition {
@@ -324,7 +330,9 @@ export function generateJoinableRenderField({
         `${fieldnamePrefix}__typename`,
         entity.nameField ? `${fieldnamePrefix}${entity.nameField}` : null,
         entity.avatarField ? `${fieldnamePrefix}${entity.avatarField}` : null,
-      ].filter((e) => e)
+      ]
+        .filter((e) => e)
+        .concat(additionalFields ?? [])
     ),
     pathPrefix: validatedFieldname,
     component: Columns.RecordColumn,
