@@ -4,10 +4,8 @@ import {
   getNestedProperty,
   handleError,
   collectPaginatorData,
-  capitalizeString,
   generateTimeAgoString,
   generateFilterByObjectArray,
-  lookupInputDefinition,
 } from '~/services/base'
 import EditRecordInterface from '~/components/interface/crud/editRecordInterface.vue'
 import PreviewableFilesColumn from '~/components/table/previewableFilesColumn.vue'
@@ -60,6 +58,12 @@ export default {
     parentItem: {
       type: Object,
     },
+
+    readonly: {
+      type: Boolean,
+    },
+
+    maxContentHeight: {},
   },
 
   data() {

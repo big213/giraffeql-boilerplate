@@ -38,10 +38,30 @@ export const Base{{ capitalizedTypename }}View: ViewDefinition = {
     ],
   },
   createOptions: {
-    fields: ['avatarUrl', 'name', 'description'],
+    fields: [
+      {
+        fieldKey: 'avatarUrl',
+        cols: 5,
+      },
+      {
+        fieldKey: 'name',
+        cols: 7,
+      },
+      'description'
+    ],
   },
   updateOptions: {
-    fields: ['avatarUrl', 'name', 'description'],
+    fields: [
+      {
+        fieldKey: 'avatarUrl',
+        cols: 5,
+      },
+      {
+        fieldKey: 'name',
+        cols: 7,
+      },
+      'description'
+    ],
   },
   viewOptions: {
     fields: ['avatarUrl', 'name', 'description'],

@@ -54,7 +54,10 @@ export type DialogOptions = {
 
 export type CreateOptions = {
   // required: fields that can be added
-  fields: (string | CreateInputFieldDefinition)[]
+  // a function can be provided instead, which will determine the fields dynamically based on that and parentItem
+  fields:
+    | (string | CreateInputFieldDefinition)[]
+    | ((that, parentItem) => (string | CreateInputFieldDefinition)[])
 
   // custom component
   component?: any

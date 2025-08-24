@@ -1,7 +1,7 @@
 <template>
   <v-dialog
     scrollable
-    max-width="800px"
+    :max-width="computedMaxWidth"
     v-bind="$attrs"
     v-on="$listeners"
     :persistent="modeObject.persistent"
@@ -84,6 +84,7 @@
             :hidden-fields="viewDefinition.postOptions.hiddenFields"
             :view-definition="viewDefinition.postOptions.viewDefinition"
             :page-options="initialPostPageOptions"
+            :readonly="viewDefinition.postOptions.readonly"
           ></component></div
       ></template>
     </component>
@@ -185,6 +186,8 @@ export default {
     },
 
     parentItem: {},
+
+    maxWidth: {},
   },
   data() {
     return {
@@ -264,6 +267,10 @@ export default {
             sort: this.viewDefinition.postOptions.initialSortKey,
           }
         : null
+    },
+
+    computedMaxWidth() {
+      return this.maxWidth ?? '800px'
     },
   },
 

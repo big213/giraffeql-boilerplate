@@ -341,23 +341,20 @@ export function generateJoinableRenderField({
 }
 
 export function generatePreviewableFilesRenderColumn({
-  fieldname,
+  fieldname = 'files',
   text,
   hideDownload = false,
   mediaMode = false,
   useFirebaseUrl = false,
   renderDefinition,
 }: {
-  fieldname: string
+  fieldname?: string
   text?: string
-  inputType?: InputType
-  limit?: number
-  soloMode?: boolean
   hideDownload?: boolean
   mediaMode?: boolean
   useFirebaseUrl?: boolean
   renderDefinition?: RenderDefinition
-}): RenderDefinition {
+} = {}): RenderDefinition {
   return {
     text,
     fields: <string[]>(

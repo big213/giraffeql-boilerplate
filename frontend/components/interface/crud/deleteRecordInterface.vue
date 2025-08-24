@@ -84,7 +84,7 @@ export default {
         const onSuccess = this.viewDefinition.deleteOptions.onSuccess
 
         if (onSuccess) {
-          onSuccess(this, data)
+          onSuccess(this, this.parentItem, data)
         } else {
           // else emit the generic refresh-interface event
           this.$root.$emit(

@@ -1,6 +1,9 @@
 <template>
   <span :title="titleStr">
-    {{ displayStr }}
+    <span v-for="(part, i) in displayStrParts" :key="i">
+      {{ part }}
+      <br v-if="i !== displayStrParts.length - 1" />
+    </span>
   </span>
 </template>
 
@@ -13,6 +16,10 @@ export default {
       return this.options?.getDisplayStr
         ? this.options.getDisplayStr(this.currentValue, this.item)
         : this.currentValue
+    },
+
+    displayStrParts() {
+      return this.displayStr.split('\n')
     },
 
     titleStr() {

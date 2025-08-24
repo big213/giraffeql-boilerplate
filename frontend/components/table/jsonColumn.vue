@@ -17,3 +17,8 @@ export default {
   },
 }
 </script>
+<style scoped>
+pre {
+  white-space: pre-wrap;
+}
+</style>

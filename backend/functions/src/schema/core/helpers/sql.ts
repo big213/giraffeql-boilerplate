@@ -4,6 +4,7 @@
 
 import {
   GiraffeqlBaseError,
+  GiraffeqlObjectType,
   ObjectTypeDefinitionField,
   objectTypeDefs,
 } from "giraffeql";
@@ -431,20 +432,31 @@ function processJoinFields(
 
         const [linkTable, linkTableField] = fieldParts;
 
-        // ensure the link table exists
+        // check if linkTable exists
         const linkService = linkDefs.get(linkTable);
 
-        if (!linkService) {
-          throw new Error(`Link type '${linkTable}' does not exist`);
+        let actualJoinField: string | undefined,
+          linkJoinTypeDef: GiraffeqlObjectType | undefined;
+
+        if (linkService) {
+          // the actual join field is the *other* field
+          // currently works properly if there are exactly 2 fields in the link
+          actualJoinField = Object.keys(linkService.servicesObjectMap).filter(
+            (ele) => ele !== linkTableField
+          )[0];
+
+          linkJoinTypeDef = linkService.typeDef;
+        } else {
+          linkJoinTypeDef = objectTypeDefs.get(linkTable);
+
+          if (!linkJoinTypeDef) {
+            throw new Error(
+              `'${linkTable}' does not exist as a link type or an object type`
+            );
+          }
+
+          actualJoinField = typeDef.definition.name;
         }
-
-        // the actual join field is the *other* field
-        // currently works properly if there are exactly 2 fields in the link
-        const actualJoinField = Object.keys(
-          linkService.servicesObjectMap
-        ).filter((ele) => ele !== linkTableField)[0];
-
-        const linkJoinTypeDef = linkService.typeDef;
 
         const actualJoinSqlField =
           linkJoinTypeDef.definition.fields[actualJoinField].sqlOptions!.field!;
@@ -464,7 +476,12 @@ function processJoinFields(
           );
         }
 
-        // if there's no nested fields, do not apply join logic, cut short.
+        const { tableAlias: joinTableAlias } = acquireTableAlias(
+          linkTable,
+          tableIndexMap
+        );
+
+        // if there's no nested fields, do not apply full join logic, cut short.
         if (!Object.keys(nestedValue.fields).length) {
           // populate the fieldDef and tableAlias
           fieldsObjectMap.fields[keyName].fieldInfo = {
@@ -472,6 +489,29 @@ function processJoinFields(
             // tableAlias should always be index 0 because only one join is allowed per link type per level
             tableAlias: `${linkTable}0`,
           };
+
+          // if it hasn't been joined already, add the join object
+          if (!joinObjectMap[`${linkTable}/*`]) {
+            joinObjectMap[`${linkTable}/*`] = {
+              normalJoin: {
+                table: linkTable,
+                alias: joinTableAlias,
+                parentTableField: "id",
+                field: actualJoinSqlField,
+              },
+              // automatically apply the nested field
+              nested: {
+                [linkTableField]: {
+                  nested: {},
+                },
+              },
+            };
+          } else {
+            // if it has already been joined, append the linkTableField
+            joinObjectMap[`${linkTable}/*`].nested[linkTableField] = {
+              nested: {},
+            };
+          }
 
           // add the linkTable to check later
           requiredJoinKeys.add(`${linkTable}/*`);
@@ -481,10 +521,7 @@ function processJoinFields(
 
         const nestedJoinType = typeDefField.sqlOptions.joinType!;
 
-        const { tableAlias: joinTableAlias } = acquireTableAlias(
-          linkTable,
-          tableIndexMap
-        );
+        const nestedJoinActualSqlfield = typeDefField.sqlOptions.field!;
 
         const { tableAlias: nestedJoinTableAlias } = acquireTableAlias(
           nestedJoinType,
@@ -510,7 +547,7 @@ function processJoinFields(
               normalJoin: {
                 table: nestedJoinType,
                 alias: nestedJoinTableAlias,
-                parentTableField: linkTableField,
+                parentTableField: nestedJoinActualSqlfield,
                 field: "id",
               },
               nested: {},

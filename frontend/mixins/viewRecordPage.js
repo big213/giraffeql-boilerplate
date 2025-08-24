@@ -78,6 +78,14 @@ export default {
       ]
     },
 
+    initialPostPageOptions() {
+      return this.viewDefinition.postOptions?.initialSortKey
+        ? {
+            sort: this.viewDefinition.postOptions.initialSortKey,
+          }
+        : null
+    },
+
     recordMode() {
       return this.$route.query.m === '2'
         ? 'hidden'
@@ -103,7 +111,7 @@ export default {
     },
 
     isExpandOrCommentsOpened() {
-      return !!this.expandTypeObject || (this.showComments && this.hasComments)
+      return !!this.isExpanded || (this.showComments && this.hasComments)
     },
 
     showComments() {
@@ -362,6 +370,8 @@ export default {
         delete query.c
       } else {
         delete query.m
+        // if maximizing, open any comments
+        query.c = null
       }
 
       // push to route

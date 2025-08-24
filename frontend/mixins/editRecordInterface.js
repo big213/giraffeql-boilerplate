@@ -111,6 +111,14 @@ export default {
         return this.viewDefinition.updateOptions.fields(this, this.parentItem)
       }
 
+      // for create, fields could also be a dynamic function
+      if (
+        this.mode === 'create' &&
+        typeof this.viewDefinition.createOptions.fields === 'function'
+      ) {
+        return this.viewDefinition.createOptions.fields(this, this.parentItem)
+      }
+
       return this.viewDefinition[`${this.mode}Options`].fields
     },
 

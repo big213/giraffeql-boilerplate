@@ -450,7 +450,13 @@ export function generateArrayField(
                 ],
                 externalQuery: query,
                 sqlParams: {
-                  where: [{ field: "id", operator: "in", value: elements }],
+                  where: [
+                    {
+                      field: "id",
+                      operator: "in",
+                      value: [...new Set(elements)], // remove duplicates
+                    },
+                  ],
                 },
               });
 
@@ -2077,6 +2083,8 @@ export async function processLookupArgs(
           );
         }
 
+        const idsArray = args.map((ele) => ele.id);
+
         const results = await fetchTableRows({
           select: ["id"],
           table: inputTypeDef.definition.name,
@@ -2084,7 +2092,7 @@ export async function processLookupArgs(
             {
               field: "id",
               operator: "in",
-              value: args.map((ele) => ele.id),
+              value: idsArray,
             },
           ],
         });
@@ -2097,7 +2105,8 @@ export async function processLookupArgs(
           );
         }
 
-        return results.map((result) => result.id);
+        // can return the original idsArray at this point, since it has been validated, and this will preserve the original order
+        return idsArray;
       }
     }
   } else if (

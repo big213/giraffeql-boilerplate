@@ -1,5 +1,5 @@
 <template>
-  <div style="white-space: initial">
+  <span style="white-space: initial">
     <span
       v-for="(element, index) in elements"
       :class="elements.length > 1 ? 'mr-2' : null"
@@ -17,7 +17,7 @@
       >
     </span>
     <i v-if="!elements.length && emptyText">{{ emptyText }}</i>
-  </div>
+  </span>
 </template>
 
 <script>

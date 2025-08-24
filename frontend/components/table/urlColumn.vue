@@ -24,7 +24,7 @@ export default {
       if (!this.currentValue) return null
 
       return Array.isArray(this.currentValue)
-        ? this.currentValue.map((ele) => ele.main) // it was serialized
+        ? this.currentValue
         : [this.currentValue]
     },
   },

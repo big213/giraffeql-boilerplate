@@ -80,10 +80,10 @@ export type InputDefinition = {} & {
   getInitialValue?: (that, parentItem) => unknown
 
   // submitting to API, in filterBy and create/update functions
-  parseValue?: (val: any) => any
+  parseValue?: (val: any, inputObjectArray) => any
 
   // retrieving from API and populating the input field
-  serialize?: (val: any) => any
+  serialize?: (val: any, parentItem) => any
 
   hint?: string
   inputRules?: any[]

@@ -628,7 +628,10 @@ export function populateInputObject(
     })
   } else if (inputObject.inputDefinition.serialize) {
     // if there is a custom serializer, use this to populate the field only
-    inputObject.value = inputObject.inputDefinition.serialize(inputObject.value)
+    inputObject.value = inputObject.inputDefinition.serialize(
+      inputObject.value,
+      parentItem
+    )
   } else {
     // for stripe-pi, need to fetch the stripeAccount and clientSecret
     if (
@@ -722,6 +725,15 @@ export function populateInputObject(
       )
     }
 
+    // if it's a text-autocomplete and there's no getOptions, add the original value as an option, if any
+    if (
+      inputObject.inputDefinition.inputType === 'text-autocomplete' &&
+      !inputObject.options &&
+      inputObject.value
+    ) {
+      inputObject.options = [inputObject.value]
+    }
+
     // if it's an entity but no getOptions, need to manually fetch the options one at a time
     if (
       inputObject.inputDefinition.entity &&
@@ -807,6 +819,16 @@ export function addNestedInputObject(
     throw new Error(`inputDefinition.arrayOptions not defined`)
   }
 
+  // if it's a value-array with a single type and the fieldKey is not '', throw err
+  if (
+    !Array.isArray(parentInputObject.inputDefinition.arrayOptions.type) &&
+    parentInputObject.inputDefinition.arrayOptions.type.fieldKey !== ''
+  ) {
+    throw new Error(
+      `Value-array with single type must have empty string as the fieldKey`
+    )
+  }
+
   const nestedInputObjects = (
     Array.isArray(parentInputObject.inputDefinition.arrayOptions.type)
       ? parentInputObject.inputDefinition.arrayOptions.type
@@ -824,27 +846,30 @@ export function addNestedInputObject(
           }
     )
 
-    // populate the value if there is an inputValue
-    inputObject.value =
-      (Array.isArray(parentInputObject.inputDefinition.arrayOptions!.type)
-        ? inputValue
-          ? getNestedProperty(inputValue, inputObject.fieldPath)
-          : null
-        : inputValue) ??
-      nestedFieldDefinition.inputDefinition.getInitialValue?.(
-        that,
-        parentItem
-      ) ??
-      null
-
     // if it is an entity, populate the value and options fields
-    if (inputObject.inputDefinition.entity) {
+    if (
+      inputObject.inputDefinition.entity &&
+      Array.isArray(parentInputObject.inputDefinition.arrayOptions!.type)
+    ) {
       inputObject.value = getNestedProperty(inputValue, inputObject.fieldKey)
 
       // if the value is defined and there is no getOptions fn, populate it as the only option
       if (inputObject.value && !inputObject.inputDefinition.getOptions) {
         inputObject.options = [inputObject.value]
       }
+    } else {
+      // populate the value if there is an inputValue
+      inputObject.value =
+        (Array.isArray(parentInputObject.inputDefinition.arrayOptions!.type)
+          ? inputValue
+            ? getNestedProperty(inputValue, inputObject.fieldPath)
+            : null
+          : inputValue) ??
+        nestedFieldDefinition.inputDefinition.getInitialValue?.(
+          that,
+          parentItem
+        ) ??
+        null
     }
 
     return {
@@ -1147,7 +1172,10 @@ export function generateFilterByObjectArray(
     // do final parseValue before passing to function
     total[fieldPath][crudFilterObject.filterInputFieldDefinition.operator] =
       crudFilterObject.inputObject.inputDefinition.parseValue
-        ? crudFilterObject.inputObject.inputDefinition.parseValue(value)
+        ? crudFilterObject.inputObject.inputDefinition.parseValue(
+            value,
+            crudFilterObjects.map((ele) => ele.inputObject)
+          )
         : value
 
     // always delete if n(in) an empty array, which would throw an API error
@@ -1337,7 +1365,7 @@ export async function processInputObject(
   }
 
   return inputObject.inputDefinition.parseValue
-    ? inputObject.inputDefinition.parseValue(value)
+    ? inputObject.inputDefinition.parseValue(value, inputObjectArray)
     : value
 }
 
@@ -1608,7 +1636,10 @@ export function getFieldPath({
   inputDefinition: InputDefinition
 }) {
   // if it's an entity type, append the "id" part (unless it's a 'multiple' type)
-  return inputDefinition.entity ? `${fieldKey}.id` : fieldKey
+  // filter out empty fieldKey (this should only happen if it's a non-array value-array field)
+  return inputDefinition.entity
+    ? [fieldKey, 'id'].filter((e) => e).join('.')
+    : fieldKey
 }
 
 // initializes an inputObject
