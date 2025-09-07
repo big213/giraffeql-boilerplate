@@ -465,9 +465,18 @@ export function generateDateTimeRangeRenderField(
     ...renderDefinition,
     renderOptions: {
       getDisplayStr: (currentValue, item) => {
-        return `${
-          generateDateLocaleString(item[fromField], true) ?? 'None'
-        } - ${generateDateLocaleString(item[untilField], true) ?? 'None'}`
+        // if the untilDate is the same as the fromDate, it will omit the untilDate
+        const fromDateString = generateDateLocaleString(item[fromField], true)
+
+        const fromDate = fromDateString?.split(' ')[0]
+
+        const untilDateString = generateDateLocaleString(item[untilField], true)
+
+        const untilTimeString = fromDate
+          ? untilDateString?.replace(`${fromDate} `, '')
+          : untilDateString
+
+        return `${fromDateString ?? 'None'} - ${untilTimeString ?? 'None'}`
       },
       showTitle: true,
     },

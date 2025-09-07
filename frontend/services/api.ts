@@ -79,7 +79,7 @@ export async function executeApiRequest<Key extends keyof Root>(
     // if error is not a giraffeql error, must be network error (CORS or simply the network is not available). try again up to maxAttempts times before stopping
     if (!(err instanceof GiraffeqlError)) {
       console.log(
-        `Failed due to network error. Attempt: ${attempt}${
+        `Failed due to network error. Attempt: ${attempt}/${maxAttempts}${
           attempt === maxAttempts ? ` (Final Attempt)` : ''
         }`
       )

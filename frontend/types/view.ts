@@ -9,6 +9,7 @@ import {
   HeaderRenderFieldDefinition,
   SortFieldDefinition,
   InputDefinition,
+  BatchUpdateFieldDefinition,
 } from '.'
 import { ActionDefinition } from './action'
 import { EntityDefinition } from './entity'
@@ -466,6 +467,39 @@ export type PaginationOptions = {
     // custom component
     component?: any
     // if not createX, the custom create operation name
+    operationName?: string
+
+    // custom function to modify the inputs in-place before they get sent as args
+    inputsModifier?: (that, inputs) => void
+
+    // skip the import row if this is true
+    skipIf?: (that, inputs) => boolean
+
+    // function that runs when import is successfully run on at least one record
+    onSuccess?: (that) => void
+
+    // function that runs when an import operation throws an error. it is a way to ignore (catch) the error if it should be caught
+    onError?: (that, err) => void
+
+    // if a custom title, what should it be?
+    title?: string
+
+    // if a custom icon, what should it be?
+    icon?: string
+
+    // should the imported records be downloaded after? requires downloadOptions to be set
+    allowDownloadAfterCompletion?: boolean
+  }
+
+  // can results be batch updated?
+  batchUpdateOptions?: {
+    // the keyField to use to lookup the item
+    keyFieldPath: string
+    // required: fields that can be updated
+    fields: BatchUpdateFieldDefinition[]
+    // custom component
+    component?: any
+    // if not updateX, the custom update operation name
     operationName?: string
 
     // custom function to modify the inputs in-place before they get sent as args

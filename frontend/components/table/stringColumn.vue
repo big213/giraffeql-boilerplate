@@ -19,7 +19,7 @@ export default {
     },
 
     displayStrParts() {
-      return this.displayStr.split('\n')
+      return this.displayStr?.split('\n') ?? []
     },
 
     titleStr() {

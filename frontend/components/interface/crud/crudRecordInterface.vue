@@ -319,6 +319,14 @@
           <v-icon>mdi-upload</v-icon>
         </v-btn>
         <v-btn
+          v-if="viewDefinition.paginationOptions.batchUpdateOptions"
+          icon
+          title="Batch Update Records"
+          @click="openBatchUpdateRecordDialog()"
+        >
+          <v-icon>mdi-table-arrow-up</v-icon>
+        </v-btn>
+        <v-btn
           v-if="viewDefinition.paginationOptions.downloadOptions"
           icon
           title="Download Records"

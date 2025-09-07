@@ -24,6 +24,7 @@ import {
   generateInputObject,
   processRenderDefinitions,
   processInputDefinitions,
+  isObject,
 } from '~/services/base'
 import { generateCrudRecordRoute } from '~/services/route'
 import { defaultGridView } from '~/config'
@@ -994,14 +995,17 @@ export default {
             field: crudFilterObject.inputObject.fieldPath,
             operator: crudFilterObject.filterInputFieldDefinition.operator,
             // if it's an entity, get the id (if array, map to array of ids)
-            value: crudFilterObject.filterInputFieldDefinition.inputDefinition
-              .entity
-              ? crudFilterObject.filterInputFieldDefinition.operator.match(
-                  /^(n?)in$/
-                )
-                ? crudFilterObject.inputObject.value.map((ele) => ele.id)
-                : crudFilterObject.inputObject.value.id
-              : crudFilterObject.inputObject.value,
+            value:
+              Array.isArray(crudFilterObject.inputObject.value) &&
+              crudFilterObject.filterInputFieldDefinition.operator.match(
+                /^(n?)in$/
+              )
+                ? crudFilterObject.inputObject.value.map((ele) =>
+                    typeof ele === 'string' ? ele : ele.id
+                  )
+                : isObject(crudFilterObject.inputObject.value)
+                ? crudFilterObject.inputObject.value.id
+                : crudFilterObject.inputObject.value,
           })),
         distance: this.distanceFilterOptions
           .filter(
@@ -1052,6 +1056,10 @@ export default {
       )
 
       this.openEditDialog({ mode: 'import', lockedFields })
+    },
+
+    openBatchUpdateRecordDialog() {
+      this.openEditDialog({ mode: 'batchUpdate' })
     },
 
     openEditItemDialog(parentItem, fieldKeys) {

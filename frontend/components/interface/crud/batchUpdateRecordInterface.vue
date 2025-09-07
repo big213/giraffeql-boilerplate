@@ -23,7 +23,7 @@
               ></v-file-input>
             </div>
             <div>
-              {{ recordsDone }} / {{ validRecords }} Records Added ({{
+              {{ recordsDone }} / {{ validRecords }} Records Updated ({{
                 recordsSkipped
               }}
               Skipped)
@@ -35,7 +35,7 @@
     <v-card-actions>
       <v-switch
         v-if="
-          viewDefinition.paginationOptions.importOptions
+          viewDefinition.paginationOptions.batchUpdateOptions
             .allowDownloadAfterCompletion
         "
         v-model="miscInputs.downloadAfterCompleted"
@@ -69,9 +69,6 @@ import {
 
 export default {
   props: {
-    lockedFields: {
-      type: Object,
-    },
     viewDefinition: {
       type: Object,
       required: true,
@@ -118,25 +115,13 @@ export default {
     },
 
     acceptedFieldObjects() {
-      // need to exclude any fields in lockedFields that are not undefined
-      const excludeFields = Object.entries(this.lockedFields).reduce(
-        (total, [key, val]) => {
-          if (val !== undefined) total.push(key)
-          return total
+      return [
+        {
+          fieldPath:
+            this.viewDefinition.paginationOptions.batchUpdateOptions
+              .keyFieldPath,
         },
-        []
-      )
-
-      return this.viewDefinition.paginationOptions.importOptions.fields.filter(
-        (importFieldObject) => {
-          if (!importFieldObject.fieldPath) return true
-
-          return !(
-            excludeFields.includes(importFieldObject.fieldPath) ||
-            excludeFields.includes(importFieldObject.lockedFieldPath)
-          )
-        }
-      )
+      ].concat(this.viewDefinition.paginationOptions.batchUpdateOptions.fields)
     },
 
     acceptedFieldsString() {
@@ -229,31 +214,19 @@ export default {
             }
           }
 
-          const lockedFieldsMap = new Map()
-          for (const field in this.lockedFields) {
-            const fieldObject =
-              this.viewDefinition.paginationOptions.importOptions.fields.find(
-                (innerFieldObject) =>
-                  (innerFieldObject.lockedFieldPath ??
-                    innerFieldObject.fieldPath) === field
-              )
-            if (fieldObject) {
-              lockedFieldsMap.set(
-                fieldObject.fieldPath,
-                this.lockedFields[
-                  fieldObject.lockedFieldPath ?? fieldObject.fieldPath
-                ]
-              )
-            }
-          }
-
           this.miscInputs.records = data.map((ele) => {
-            // inject any locked fields (via lockedFields) into data
-            lockedFieldsMap.forEach((val, key) => {
-              ele[key] = val
-            })
+            const key =
+              ele[
+                this.viewDefinition.paginationOptions.batchUpdateOptions
+                  .keyFieldPath
+              ]
 
+            delete ele[
+              this.viewDefinition.paginationOptions.batchUpdateOptions
+                .keyFieldPath
+            ]
             return {
+              key,
               data: ele,
               isFinished: false,
               isSkipped: false,
@@ -288,9 +261,10 @@ export default {
 
             // run the inputsModifier, if any
             if (
-              this.viewDefinition.paginationOptions.importOptions.inputsModifier
+              this.viewDefinition.paginationOptions.batchUpdateOptions
+                .inputsModifier
             ) {
-              this.viewDefinition.paginationOptions.importOptions.inputsModifier(
+              this.viewDefinition.paginationOptions.batchUpdateOptions.inputsModifier(
                 this,
                 recordData.data
               )
@@ -298,8 +272,8 @@ export default {
 
             // if there is a skipIf function, check it to see if this entry should be skippeed
             if (
-              this.viewDefinition.paginationOptions.importOptions.skipIf &&
-              this.viewDefinition.paginationOptions.importOptions.skipIf(
+              this.viewDefinition.paginationOptions.batchUpdateOptions.skipIf &&
+              this.viewDefinition.paginationOptions.batchUpdateOptions.skipIf(
                 this,
                 recordData.data
               )
@@ -331,7 +305,7 @@ export default {
         // if allowDownloadAfterCompletion set, but no downloadOptions, throw err
         // fields required
         if (
-          this.viewDefinition.paginationOptions.importOptions
+          this.viewDefinition.paginationOptions.batchUpdateOptions
             .allowDownloadAfterCompletion &&
           this.miscInputs.downloadAfterCompleted &&
           !this.viewDefinition.paginationOptions.downloadOptions
@@ -340,7 +314,7 @@ export default {
         }
 
         const query =
-          this.viewDefinition.paginationOptions.importOptions
+          this.viewDefinition.paginationOptions.batchUpdateOptions
             .allowDownloadAfterCompletion &&
           this.miscInputs.downloadAfterCompleted
             ? collapseObject(
@@ -375,16 +349,24 @@ export default {
           if (recordData.isSkipped) continue
 
           recordData.record = await executeApiRequest({
-            [this.viewDefinition.paginationOptions.importOptions
-              .operationName ?? `${this.viewDefinition.entity.typename}Create`]:
+            [this.viewDefinition.paginationOptions.batchUpdateOptions
+              .operationName ?? `${this.viewDefinition.entity.typename}Update`]:
               {
                 ...query,
-                __args: collapseObject(recordData.data),
+                __args: {
+                  item: {
+                    [this.viewDefinition.paginationOptions.batchUpdateOptions
+                      .keyFieldPath]: recordData.key,
+                  },
+                  fields: collapseObject(recordData.data),
+                },
               },
           }).catch((err) => {
             // if there is an error and there is a custom onError function, run that. else throw
-            if (this.viewDefinition.paginationOptions.importOptions.onError) {
-              this.viewDefinition.paginationOptions.importOptions.onError(
+            if (
+              this.viewDefinition.paginationOptions.batchUpdateOptions.onError
+            ) {
+              this.viewDefinition.paginationOptions.batchUpdateOptions.onError(
                 this,
                 err
               )
@@ -402,7 +384,7 @@ export default {
 
         // download the records as CSV
         if (
-          this.viewDefinition.paginationOptions.importOptions
+          this.viewDefinition.paginationOptions.batchUpdateOptions
             .allowDownloadAfterCompletion &&
           this.miscInputs.downloadAfterCompleted
         ) {
@@ -460,7 +442,7 @@ export default {
     handleSuccess() {
       // run any custom onSuccess functions
       const onSuccess =
-        this.viewDefinition.paginationOptions.importOptions.onSuccess
+        this.viewDefinition.paginationOptions.batchUpdateOptions.onSuccess
 
       if (onSuccess) {
         onSuccess(this)

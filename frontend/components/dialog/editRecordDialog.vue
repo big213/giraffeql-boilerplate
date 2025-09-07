@@ -94,6 +94,7 @@
 <script>
 import EditRecordInterface from '~/components/interface/crud/editRecordInterface.vue'
 import ImportRecordInterface from '~/components/interface/crud/importRecordInterface.vue'
+import BatchUpdateRecordInterface from '~/components/interface/crud/batchUpdateRecordInterface.vue'
 import DeleteRecordInterface from '~/components/interface/crud/deleteRecordInterface.vue'
 import ShareRecordInterface from '~/components/interface/crud/shareRecordInterface.vue'
 import ViewRecordInterface from '~/components/interface/crud/viewRecordInterface.vue'
@@ -113,6 +114,12 @@ const modesMap = {
     prefix: 'Import',
     persistent: true,
     defaultInterface: ImportRecordInterface,
+  },
+  batchUpdate: {
+    icon: 'mdi-table-arrow-up',
+    prefix: 'Batch Update',
+    persistent: true,
+    defaultInterface: BatchUpdateRecordInterface,
   },
   copy: {
     icon: 'mdi-content-copy',
@@ -172,6 +179,7 @@ export default {
         return [
           'create',
           'import',
+          'batchUpdate',
           'update',
           'view',
           'delete',
@@ -224,8 +232,9 @@ export default {
     },
 
     options() {
-      return this.computedMode === 'import'
-        ? this.viewDefinition.paginationOptions.importOptions
+      return this.computedMode === 'import' ||
+        this.computedMode === 'batchUpdate'
+        ? this.viewDefinition.paginationOptions[`${this.computedMode}Options`]
         : this.viewDefinition[`${this.computedMode}Options`]
     },
 
