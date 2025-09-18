@@ -69,6 +69,9 @@ import {
 
 export default {
   props: {
+    lockedFields: {
+      type: Object,
+    },
     viewDefinition: {
       type: Object,
       required: true,
@@ -115,13 +118,22 @@ export default {
     },
 
     acceptedFieldObjects() {
-      return [
-        {
-          fieldPath:
-            this.viewDefinition.paginationOptions.batchUpdateOptions
-              .keyFieldPath,
+      // need to exclude any fields in lockedFields that are not undefined
+      const excludeFields = Object.entries(this.lockedFields).reduce(
+        (total, [key, val]) => {
+          if (val !== undefined) total.push(key)
+          return total
         },
-      ].concat(this.viewDefinition.paginationOptions.batchUpdateOptions.fields)
+        []
+      )
+
+      return this.viewDefinition.paginationOptions.batchUpdateOptions.fields.filter(
+        (fieldObject) =>
+          !(
+            excludeFields.includes(fieldObject.fieldPath) ||
+            excludeFields.includes(fieldObject.lockedFieldPath)
+          )
+      )
     },
 
     acceptedFieldsString() {
@@ -214,19 +226,31 @@ export default {
             }
           }
 
-          this.miscInputs.records = data.map((ele) => {
-            const key =
-              ele[
-                this.viewDefinition.paginationOptions.batchUpdateOptions
-                  .keyFieldPath
-              ]
+          const keyFields =
+            this.viewDefinition.paginationOptions.batchUpdateOptions.fields
+              .filter((field) => field.isKeyField)
+              .map((field) => field.fieldPath)
 
-            delete ele[
-              this.viewDefinition.paginationOptions.batchUpdateOptions
-                .keyFieldPath
-            ]
+          if (keyFields.length < 1) {
+            throw new Error(
+              `Must have at least one key field defined in order to batch update`
+            )
+          }
+
+          this.miscInputs.records = data.map((ele) => {
+            const keyInputObject = keyFields.reduce((total, fieldKey) => {
+              if (this.lockedFields[fieldKey] !== undefined) {
+                total[fieldKey] = this.lockedFields[fieldKey]
+              } else {
+                total[fieldKey] = ele[fieldKey]
+                delete ele[fieldKey]
+              }
+
+              return total
+            }, {})
+
             return {
-              key,
+              keyInputObject,
               data: ele,
               isFinished: false,
               isSkipped: false,
@@ -354,10 +378,7 @@ export default {
               {
                 ...query,
                 __args: {
-                  item: {
-                    [this.viewDefinition.paginationOptions.batchUpdateOptions
-                      .keyFieldPath]: recordData.key,
-                  },
+                  item: collapseObject(recordData.keyInputObject),
                   fields: collapseObject(recordData.data),
                 },
               },

@@ -7,9 +7,9 @@ export default {
     methods: [
       { type: "get" },
       { type: "getPaginator" },
-      { type: "delete" },
       { type: "create" },
       { type: "update" },
+      { type: "delete" },
     ],
   }),
 };

@@ -108,7 +108,6 @@ app.get("/prompt-empty", function (req, res, next) {
   res.send(generatePromptEmptyPage());
 });
 
-// runWith does not work properly with timeoutSeconds > 60 as of Firebase Cloud Functions V1
 export const api = onRequest(
   {
     timeoutSeconds: baseTimeoutSeconds,

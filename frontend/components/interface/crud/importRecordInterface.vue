@@ -129,8 +129,6 @@ export default {
 
       return this.viewDefinition.paginationOptions.importOptions.fields.filter(
         (importFieldObject) => {
-          if (!importFieldObject.fieldPath) return true
-
           return !(
             excludeFields.includes(importFieldObject.fieldPath) ||
             excludeFields.includes(importFieldObject.lockedFieldPath)

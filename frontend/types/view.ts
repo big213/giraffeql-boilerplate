@@ -493,8 +493,6 @@ export type PaginationOptions = {
 
   // can results be batch updated?
   batchUpdateOptions?: {
-    // the keyField to use to lookup the item
-    keyFieldPath: string
     // required: fields that can be updated
     fields: BatchUpdateFieldDefinition[]
     // custom component

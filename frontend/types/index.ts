@@ -260,8 +260,13 @@ export type BatchUpdateFieldDefinition = {
   // the fieldpath that should be updated, in dot notation
   fieldPath: string
 
+  isKeyField?: boolean
+
   // for parsing CSV imports
   parseValue?: (val: any) => unknown
+
+  // the corresponding lockedFieldPath (if different from fieldPath)
+  lockedFieldPath?: string
 }
 
 export type ExportFieldDefinition = {

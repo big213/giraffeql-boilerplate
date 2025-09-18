@@ -1059,7 +1059,15 @@ export default {
     },
 
     openBatchUpdateRecordDialog() {
-      this.openEditDialog({ mode: 'batchUpdate' })
+      const lockedFields = this.lockedFiltersComputed.reduce(
+        (total, crudFilterObject) => {
+          total[crudFilterObject.field] = crudFilterObject.value
+          return total
+        },
+        {}
+      )
+
+      this.openEditDialog({ mode: 'batchUpdate', lockedFields })
     },
 
     openEditItemDialog(parentItem, fieldKeys) {
