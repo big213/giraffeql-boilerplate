@@ -19,7 +19,12 @@ import {
   GiraffeqlBaseError,
 } from "giraffeql";
 import { knex } from "../../../utils/knex";
-import { camelToSnake, getNestedProperty, isObject } from "./shared";
+import {
+  camelToSnake,
+  flattenObject,
+  getNestedProperty,
+  isObject,
+} from "./shared";
 import {
   BaseService,
   EnumService,
@@ -28,6 +33,7 @@ import {
 } from "../services";
 import type {
   ObjectTypeDefSqlOptions,
+  ServiceFunctionInputs,
   SqlType,
   StringKeyObject,
 } from "../../../types";
@@ -36,6 +42,12 @@ import { fetchTableRows, SqlSelectQuery } from "./sql";
 import { Enum, Kenum } from "./enum";
 import { User } from "../../services";
 import { Scalars } from "../../scalars";
+import { ValidatorFunction } from "giraffeql/lib/types";
+import {
+  generateGetAggregatorRootResolver,
+  generateGetPaginatorRootResolver,
+  generateGetStatsRootResolver,
+} from "./rootResolver";
 
 type GenerateFieldParams = {
   name?: string;
@@ -49,6 +61,7 @@ type GenerateFieldParams = {
   typeDefOptions?: Partial<ObjectTypeDefinitionField>;
   addable?: boolean;
   updateable?: boolean;
+  validator?: ValidatorFunction;
 };
 
 // special type to indicate that it is a lookup attached to a specific service
@@ -98,6 +111,7 @@ export function generateStandardField(
     updateable = true,
     sqlOptions,
     typeDefOptions,
+    validator,
   } = params;
 
   const typeDef = <ObjectTypeDefinitionField>{
@@ -119,6 +133,7 @@ export function generateStandardField(
     nestHidden,
     addable,
     updateable,
+    validator,
     ...typeDefOptions,
   };
   return typeDef;
@@ -1015,9 +1030,11 @@ export function generatePivotResolverObject({
 export function generatePaginatorPivotResolverObject({
   pivotService,
   filterByField,
+  rootResolver,
 }: {
   pivotService: PaginatedService;
   filterByField?: string;
+  rootResolver?: RootResolverFunction;
 }) {
   // if filterByField, ensure that filterByField is a valid filterField on pivotService
   if (filterByField && !pivotService.filterFieldsMap[filterByField]) {
@@ -1192,7 +1209,7 @@ export function generatePaginatorPivotResolverObject({
         filterObject[filterByField] = { eq: parentItemId };
       });
 
-      return pivotService.getRecordPaginator({
+      return generateGetPaginatorRootResolver(pivotService)({
         req,
         rootResolver,
         args: {
@@ -1204,7 +1221,8 @@ export function generatePaginatorPivotResolverObject({
       });
     };
   } else {
-    rootResolverFunction = (inputs) => pivotService.getRecordPaginator(inputs);
+    rootResolverFunction =
+      rootResolver ?? generateGetPaginatorRootResolver(pivotService);
   }
 
   const hasSearchFields =
@@ -1550,9 +1568,11 @@ export function generatePaginatorPivotResolverObject({
 export function generateStatsResolverObject({
   pivotService,
   filterByField,
+  rootResolver,
 }: {
   pivotService: PaginatedService;
   filterByField?: string;
+  rootResolver?: RootResolverFunction;
 }) {
   // if filterByField, ensure that filterByField is a valid filterField on pivotService
   if (filterByField && !pivotService.filterFieldsMap[filterByField]) {
@@ -1585,7 +1605,7 @@ export function generateStatsResolverObject({
         filterObject[filterByField] = { eq: parentItemId };
       });
 
-      return pivotService.getRecordStats({
+      return generateGetStatsRootResolver(pivotService)({
         req,
         rootResolver,
         fieldPath,
@@ -1597,7 +1617,8 @@ export function generateStatsResolverObject({
       });
     };
   } else {
-    rootResolverFunction = (inputs) => pivotService.getRecordStats(inputs);
+    rootResolverFunction =
+      rootResolver ?? generateGetStatsRootResolver(pivotService);
   }
 
   const hasSearchFields =
@@ -1694,9 +1715,11 @@ export function generateStatsResolverObject({
 export function generateAggregatorResolverObject({
   pivotService,
   filterByField,
+  rootResolver,
 }: {
   pivotService: PaginatedService;
   filterByField?: string;
+  rootResolver?: RootResolverFunction;
 }) {
   // check for aggregator options
   if (!pivotService.aggregatorOptions) {
@@ -1736,7 +1759,7 @@ export function generateAggregatorResolverObject({
         filterObject[filterByField] = { eq: parentItemId };
       });
 
-      return pivotService.getRecordAggregator({
+      return generateGetAggregatorRootResolver(pivotService)({
         req,
         rootResolver,
         fieldPath,
@@ -1748,7 +1771,8 @@ export function generateAggregatorResolverObject({
       });
     };
   } else {
-    rootResolverFunction = (inputs) => pivotService.getRecordAggregator(inputs);
+    rootResolverFunction =
+      rootResolver ?? generateGetAggregatorRootResolver(pivotService);
   }
 
   const hasSearchFields =
@@ -1760,7 +1784,7 @@ export function generateAggregatorResolverObject({
     Object.keys(pivotService.distanceFieldsMap).length > 0;
 
   const aggregatorKeyFieldScalarDefinition: ScalarDefinition = {
-    name: pivotService.typename + "AggregatorKeyField",
+    name: `${pivotService.typename}AggregatorKeyField`,
     types: Object.entries(pivotService.aggregatorOptions.keys).map(
       ([key, value]) => {
         return `"${key}"`;
@@ -2061,7 +2085,7 @@ export async function processLookupArgs(
       const results = await fetchTableRows({
         select: ["id"],
         table: inputTypeDef.definition.name,
-        where: args,
+        where: flattenObject(args), // flattening object in case of nested lookups
       });
 
       if (results.length < 1) {

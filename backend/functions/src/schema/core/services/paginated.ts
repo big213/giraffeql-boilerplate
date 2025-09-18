@@ -7,7 +7,6 @@ import {
   getRawKnexObject,
   incrementTableRow,
   insertTableRow,
-  isKnexRawStatement,
   SqlAggregateQuery,
   SqlCountQuery,
   SqlDeleteQuery,
@@ -17,7 +16,6 @@ import {
   SqlRawQuery,
   SqlSelectQuery,
   SqlSimpleRawSelectObject,
-  SqlSimpleSelectObject,
   SqlSumQuery,
   SqlUpdateQuery,
   SqlWhereFieldOperator,
@@ -25,10 +23,7 @@ import {
   SqlWhereObject,
   sumTableRows,
   updateTableRow,
-  SqlSimpleOrderByObject,
 } from "../helpers/sql";
-import { permissionsCheck } from "../helpers/permissions";
-
 import {
   GiraffeqlObjectType,
   GiraffeqlObjectTypeLookup,
@@ -40,16 +35,13 @@ import {
   GiraffeqlBaseError,
 } from "giraffeql";
 
-import { ServiceFunctionInputs } from "../../../types";
+import { ServiceFunctionInputs, StringKeyObject } from "../../../types";
 
 import {
   escapeRegExp,
   generateId,
   isObject,
-  generateCursorFromNode,
-  btoa,
   capitalizeString,
-  getUpdatedFieldValues,
 } from "../helpers/shared";
 import { getObjectType } from "../helpers/resolver";
 import { knex } from "../../../utils/knex";
@@ -266,70 +258,27 @@ export class PaginatedService extends BaseService {
     return getInputTypeDef(`update${capitalizeString(this.typename)}Args`);
   }
 
-  @permissionsCheck("get")
-  async getRecord({
-    req,
-    rootResolver,
-    fieldPath,
-    args,
-    query,
-  }: ServiceFunctionInputs) {
-    const results = await getObjectType({
-      typename: this.typename,
-      req,
-      rootResolver,
-      fieldPath,
-      externalQuery: query,
-      sqlParams: {
-        where: {
-          id: args,
-        },
-        limit: 1,
-        specialParams: await this.getSpecialParams({
-          req,
-          rootResolver,
-          fieldPath,
-          args,
-          query,
-        }),
-      },
-    });
-
-    if (results.length < 1) {
-      throw new ItemNotFoundError({ fieldPath });
-    }
-
-    return results[0];
-  }
-
   async getReturnQuery({
     id,
     inputs,
+    transaction,
   }: {
     id: string | number;
     inputs: ServiceFunctionInputs;
+    transaction?: Knex.Transaction;
   }) {
     const { req, rootResolver, args, query, fieldPath } = inputs;
 
-    // check the "get" permissions manually
-    await this.testPermissions("get", {
-      req,
-      rootResolver,
-      args: { id },
-      query,
-      fieldPath,
-    });
-
-    // if no fields requested, return an empty object (after checking permissions)
+    // if no fields requested, return an empty object
     if (Object.keys(query).length === 0) {
       return {};
     }
 
     const results = await getObjectType({
       typename: this.typename,
-      req: req,
-      rootResolver: rootResolver,
-      fieldPath: fieldPath,
+      req,
+      rootResolver,
+      fieldPath,
       externalQuery: query,
       sqlParams: {
         where: {
@@ -337,6 +286,7 @@ export class PaginatedService extends BaseService {
         },
         limit: 1,
         specialParams: await this.getSpecialParams(inputs),
+        transaction,
       },
     });
 
@@ -345,452 +295,6 @@ export class PaginatedService extends BaseService {
     }
 
     return results[0];
-  }
-
-  @permissionsCheck("getStats")
-  async getRecordStats({
-    req,
-    rootResolver,
-    fieldPath,
-    args,
-    query,
-  }: ServiceFunctionInputs) {
-    const whereObject: SqlWhereObject = {
-      connective: "AND",
-      fields: [],
-    };
-
-    if (Array.isArray(args.filterBy)) {
-      const filterByOrObject: SqlWhereObject = {
-        connective: "OR",
-        fields: [],
-      };
-      whereObject.fields.push(filterByOrObject);
-
-      args.filterBy.forEach((filterByObject) => {
-        const filterByAndObject: SqlWhereObject = {
-          connective: "AND",
-          fields: [],
-        };
-        filterByOrObject.fields.push(filterByAndObject);
-        Object.entries(filterByObject).forEach(
-          ([filterKey, filterKeyObject]) => {
-            Object.entries(<any>filterKeyObject).forEach(
-              ([operationKey, operationValue]: [string, any]) => {
-                filterByAndObject.fields.push({
-                  field: generateSqlSingleFieldObject(
-                    this.filterFieldsMap[filterKey].field ?? filterKey
-                  ),
-                  operator: <SqlWhereFieldOperator>operationKey,
-                  value: operationValue,
-                });
-              }
-            );
-          }
-        );
-      });
-    }
-
-    // handle search fields
-    if (args.search) {
-      const whereSubObject: SqlWhereObject = {
-        connective: "OR",
-        fields: [],
-      };
-
-      for (const field in this.searchFieldsMap) {
-        const fieldPath = this.searchFieldsMap[field].field ?? field;
-
-        // if there is a custom handler on the options, use that
-        const customProcessor = this.searchFieldsMap[field].customProcessor;
-        if (customProcessor) {
-          customProcessor(
-            whereSubObject,
-            args.search,
-            this.searchFieldsMap[field],
-            fieldPath
-          );
-        } else {
-          // if field options has exact, ony allow eq
-          if (this.searchFieldsMap[field].exact) {
-            whereSubObject.fields.push({
-              field: fieldPath,
-              value: args.search.query,
-              operator: "eq",
-            });
-          } else {
-            whereSubObject.fields.push({
-              field: fieldPath,
-              value: new RegExp(escapeRegExp(args.search.query), "i"),
-              operator: "regex",
-            });
-          }
-        }
-      }
-
-      whereObject.fields.push(whereSubObject);
-    }
-
-    return {
-      ...(query?.count !== undefined && {
-        count: await this.countSqlRecord({
-          field: "id",
-          where: [whereObject],
-          distinct: true,
-        }),
-      }),
-    };
-  }
-
-  @permissionsCheck("getPaginator")
-  async getRecordPaginator({
-    req,
-    rootResolver,
-    fieldPath,
-    args,
-    query,
-  }: ServiceFunctionInputs) {
-    const whereObject: SqlWhereObject = {
-      connective: "AND",
-      fields: [],
-    };
-
-    // raw select statements (i.e. Knex.Raw)
-    const rawSelect: SqlSimpleRawSelectObject[] = [];
-
-    // additional select statements that should be added for scaffolding
-    const additionalSelect: SqlSimpleSelectObject[] = [
-      { field: "id", as: "$last_id" },
-    ];
-
-    // this helper function processes the args.filterBy, args.search, and args.distance
-    this.processArgs(args, whereObject, rawSelect);
-
-    // create a snapshot of the whereObject (before applying after/before), for calculating the total
-    const countWhereObject = {
-      ...whereObject,
-      fields: whereObject.fields.slice(),
-    };
-
-    // process sort fields
-    const orderBy: SqlSimpleOrderByObject[] = [];
-
-    // add secondary, etc. sort parameters
-    if (Array.isArray(args.sortBy)) {
-      orderBy.push(
-        ...args.sortBy.map((sortByObject) => {
-          if (this.distanceFieldsMap[sortByObject.field]) {
-            // if it is a distanceField, confirm that the distance field was specified
-            if (!args.distance?.[sortByObject.field]) {
-              throw new Error(
-                `If sorting by '${sortByObject.field}', distance parameters must be provided for this field`
-              );
-            }
-            return {
-              ...sortByObject,
-              field: knex.raw(sortByObject.field),
-            };
-          } else {
-            const sortFieldOptions = this.sortFieldsMap[sortByObject.field];
-
-            return {
-              ...sortByObject,
-              options: {
-                nullsFirst: sortByObject.desc
-                  ? sortFieldOptions.descNullsFirst
-                  : sortFieldOptions.ascNullsLast === undefined
-                  ? undefined
-                  : sortFieldOptions.ascNullsLast === false,
-              },
-            };
-          }
-        })
-      );
-    }
-
-    // for each sort param, add it to the rawSelect (if it is not a knex.raw type
-    orderBy.forEach((orderByObject, index) => {
-      if (!isKnexRawStatement(orderByObject.field)) {
-        additionalSelect.push({
-          field: orderByObject.field,
-          as: `$last_value_${index}`,
-        });
-      }
-    });
-
-    // always add id asc sort as final sort param
-    orderBy.push({
-      field: "id",
-      desc: false,
-    });
-
-    // process the "after" or "before" constraint, if provided
-    // only one should have been provided
-    if (args.after || args.before) {
-      // parse cursor
-      const parsedCursor = JSON.parse(btoa(args.after || args.before));
-
-      const whereOrObject: SqlWhereObject = {
-        connective: "OR",
-        fields: [],
-      };
-
-      // for each orderBy statement, need to generate the required where constraints
-      orderBy.forEach((orderByObject, index) => {
-        // if it is a raw filter field, skip
-        if (isKnexRawStatement(orderByObject.field)) return;
-
-        const operator = (
-          args.before ? !orderByObject.desc : orderByObject.desc
-        )
-          ? "lt"
-          : "gt";
-
-        const lastValue = parsedCursor.lastValues[index];
-
-        // are the nulls going to be shown last?
-        const nullsLast =
-          (orderByObject.desc && !orderByObject.options?.nullsFirst) ||
-          (!orderByObject.desc && orderByObject.options?.nullsFirst === false);
-
-        // if null last value *and* nulls are last, skip
-        if (lastValue === null && nullsLast) return;
-
-        const whereAndObject: SqlWhereObject = {
-          connective: "AND",
-          fields: [
-            {
-              field: orderByObject.field,
-              // if last value is null and nulls are first, always use gt NULL
-              operator: lastValue === null && !nullsLast ? "gt" : operator,
-              value:
-                orderByObject.field === "id" ? parsedCursor.lastId : lastValue,
-            },
-          ],
-        };
-
-        // build additional cascading whereAndObjects
-        orderBy.slice(0, index).forEach((orderByObject, index) => {
-          // if it is a raw filter field, skip
-          if (isKnexRawStatement(orderByObject.field)) return;
-
-          const lastValue = parsedCursor.lastValues[index];
-          whereAndObject.fields.push({
-            field: orderByObject.field,
-            operator: "eq",
-            value:
-              orderByObject.field === "id" ? parsedCursor.lastId : lastValue,
-          });
-        });
-
-        whereOrObject.fields.push(whereAndObject);
-      });
-
-      whereObject.fields.push(whereOrObject);
-    }
-
-    // set limit to args.first or args.last, one of which must be provided
-    const limit = Number(args.first ?? args.last);
-
-    const sqlParams: Omit<SqlSelectQuery, "table" | "select"> = {
-      where: [whereObject],
-      rawSelect,
-      orderBy,
-      limit,
-      specialParams: await this.getSpecialParams({
-        req,
-        rootResolver,
-        fieldPath,
-        args,
-        query,
-      }),
-      distinctOn: undefined,
-      groupBy: Array.isArray(args.groupBy)
-        ? args.groupBy.reduce((total, item, index) => {
-            if (item in this.groupByFieldsMap) {
-              total.push({
-                field: this.groupByFieldsMap[item].field ?? item,
-              });
-            }
-            return total;
-          }, [])
-        : null,
-    };
-
-    this.sqlParamsModifier?.(sqlParams);
-
-    // populate the distinctOn, in case the sqlParamsModifier modified the orderBy
-    sqlParams.distinctOn = orderBy.reduce((total, ele) => {
-      total.push(ele.field);
-      return total;
-    }, <(string | Knex.Raw)[]>[]);
-
-    const results = await getObjectType({
-      typename: this.typename,
-      additionalSelect,
-      req,
-      rootResolver,
-      fieldPath,
-      externalQuery: query.edges?.node ?? {},
-      sqlParams,
-    });
-
-    const validatedResults = args.reverse
-      ? args.before
-        ? results
-        : results.reverse()
-      : args.before
-      ? results.reverse()
-      : results;
-
-    return {
-      ...(query.paginatorInfo && {
-        paginatorInfo: {
-          ...(query.paginatorInfo.total && {
-            total: await this.countSqlRecord({
-              where: [countWhereObject],
-            }),
-          }),
-          ...(query.paginatorInfo.count && {
-            count: validatedResults.length,
-          }),
-          ...(query.paginatorInfo.startCursor && {
-            startCursor: generateCursorFromNode(validatedResults[0]),
-          }),
-          ...(query.paginatorInfo.endCursor && {
-            endCursor: generateCursorFromNode(
-              validatedResults[validatedResults.length - 1]
-            ),
-          }),
-        },
-      }),
-      ...(query.edges && {
-        edges: validatedResults.map((node) => ({
-          node,
-          ...(query.edges.cursor && {
-            cursor: generateCursorFromNode(node),
-          }),
-        })),
-      }),
-    };
-  }
-
-  @permissionsCheck("getAggregator")
-  async getRecordAggregator({
-    req,
-    rootResolver,
-    fieldPath,
-    args,
-    query,
-  }: ServiceFunctionInputs) {
-    const whereObject: SqlWhereObject = {
-      connective: "AND",
-      fields: [],
-    };
-
-    if (Array.isArray(args.filterBy)) {
-      const filterByOrObject: SqlWhereObject = {
-        connective: "OR",
-        fields: [],
-      };
-      whereObject.fields.push(filterByOrObject);
-
-      args.filterBy.forEach((filterByObject) => {
-        const filterByAndObject: SqlWhereObject = {
-          connective: "AND",
-          fields: [],
-        };
-        filterByOrObject.fields.push(filterByAndObject);
-        Object.entries(filterByObject).forEach(
-          ([filterKey, filterKeyObject]) => {
-            Object.entries(<any>filterKeyObject).forEach(
-              ([operationKey, operationValue]: [string, any]) => {
-                filterByAndObject.fields.push({
-                  field: generateSqlSingleFieldObject(
-                    this.filterFieldsMap[filterKey].field ?? filterKey
-                  ),
-                  operator: <SqlWhereFieldOperator>operationKey,
-                  value: operationValue,
-                });
-              }
-            );
-          }
-        );
-      });
-    }
-
-    // handle search fields
-    if (args.search) {
-      const whereSubObject: SqlWhereObject = {
-        connective: "OR",
-        fields: [],
-      };
-
-      for (const field in this.searchFieldsMap) {
-        const fieldPath = this.searchFieldsMap[field].field ?? field;
-
-        // if there is a custom handler on the options, use that
-        const customProcessor = this.searchFieldsMap[field].customProcessor;
-        if (customProcessor) {
-          customProcessor(
-            whereSubObject,
-            args.search,
-            this.searchFieldsMap[field],
-            fieldPath
-          );
-        } else {
-          // if field options has exact, ony allow eq
-          if (this.searchFieldsMap[field].exact) {
-            whereSubObject.fields.push({
-              field: fieldPath,
-              value: args.search.query,
-              operator: "eq",
-            });
-          } else {
-            whereSubObject.fields.push({
-              field: fieldPath,
-              value: new RegExp(escapeRegExp(args.search.query), "i"),
-              operator: "regex",
-            });
-          }
-        }
-      }
-
-      whereObject.fields.push(whereSubObject);
-    }
-
-    const selectObjects: SqlSimpleSelectObject[] = [
-      {
-        field: this.aggregatorOptions!.keys[args.keyField].field,
-        getter: this.aggregatorOptions!.keys[args.keyField].getter,
-        as: "key",
-      },
-    ];
-
-    Object.entries(this.aggregatorOptions!.values).forEach(([key, value]) => {
-      if (key in query) {
-        selectObjects.push({
-          field: this.aggregatorOptions!.values[key].field,
-          getter: this.aggregatorOptions!.values[key].getter,
-          as: key,
-        });
-      }
-    });
-
-    const results = await fetchTableRows({
-      select: selectObjects,
-      table: this.typename,
-      where: [whereObject],
-      groupBy: [knex.raw(`"key"`)],
-      orderBy: [
-        {
-          field: knex.raw(`"${args.sortBy?.field ?? "key"}"`),
-          desc: args.sortBy?.desc === true,
-        },
-      ],
-    });
-
-    return results;
   }
 
   // by default, load "currentUserId" with the current user, if any
@@ -1020,243 +524,7 @@ export class PaginatedService extends BaseService {
     return this.generateRecordId(transaction, ++attempt);
   }
 
-  @permissionsCheck("create")
-  async createRecord({
-    req,
-    rootResolver,
-    fieldPath,
-    args,
-    query,
-  }: ServiceFunctionInputs) {
-    let addResults;
-    await knex.transaction(async (transaction) => {
-      addResults = await this.createSqlRecord({
-        fields: {
-          ...args,
-          createdBy: req.user!.id,
-        },
-        extendFn: (knexObject) => {
-          knexObject.onConflict().ignore();
-        },
-        transaction,
-      });
-
-      // if addResults falsey, there was a conflict
-      if (!addResults) {
-        throw new Error(
-          `An entry with this combination of unique keys already exists`
-        );
-      }
-
-      // do post-create fn, if any
-      await this.afterCreateProcess(
-        {
-          req,
-          rootResolver,
-          fieldPath,
-          args,
-          query,
-        },
-        addResults.id,
-        transaction
-      );
-    });
-
-    return this.getReturnQuery({
-      id: addResults.id,
-      inputs: {
-        req,
-        rootResolver,
-        args,
-        query,
-        fieldPath,
-      },
-    });
-  }
-
-  async afterCreateProcess(
-    inputs: ServiceFunctionInputs,
-    itemId: string,
-    transaction?: Knex.Transaction
-  ) {}
-
-  @permissionsCheck("update")
-  async updateRecord({
-    req,
-    rootResolver,
-    fieldPath,
-    args,
-    query,
-  }: ServiceFunctionInputs) {
-    const item = await this.getFirstSqlRecord(
-      {
-        select: ["id"],
-        where: { id: args.item },
-      },
-      true
-    );
-
-    // const updatedFieldsObject = getUpdatedFieldValues(args.fields, item)
-
-    await knex.transaction(async (transaction) => {
-      await this.updateSqlRecord(
-        {
-          fields: {
-            ...args.fields,
-          },
-          where: {
-            id: item.id,
-          },
-          transaction,
-        },
-        true
-      );
-
-      // do post-update fn, if any
-      await this.afterUpdateProcess(
-        {
-          req,
-          rootResolver,
-          fieldPath,
-          args,
-          query,
-        },
-        item.id,
-        transaction
-      );
-    });
-
-    return this.getReturnQuery({
-      id: item.id,
-      inputs: {
-        req,
-        rootResolver,
-        args,
-        query,
-        fieldPath,
-      },
-    });
-  }
-
-  async afterUpdateProcess(
-    inputs: ServiceFunctionInputs,
-    itemId: string,
-    transaction?: Knex.Transaction
-  ) {}
-
-  // retrieves the related services that should also be deleted when this record is also delated. recursive option only applies if it is the same as the current service
-  getOnDeleteEntries(): {
-    service: PaginatedService;
-    field?: string;
-    recursive?: boolean;
-  }[] {
-    return [];
-  }
-
-  @permissionsCheck("delete")
-  async deleteRecord({
-    req,
-    rootResolver,
-    fieldPath,
-    args,
-    query,
-  }: ServiceFunctionInputs) {
-    // confirm existence of item and get ID
-    const item = await this.getFirstSqlRecord(
-      {
-        select: ["id"],
-        where: { id: args },
-      },
-      true
-    );
-
-    const requestedQuery = await this.getReturnQuery({
-      id: item.id,
-      inputs: {
-        req,
-        rootResolver,
-        args,
-        query,
-        fieldPath,
-      },
-    });
-
-    // delete the type and also any associated services
-    await knex.transaction(async (transaction) => {
-      await this.deleteSqlRecord({
-        where: {
-          id: item.id,
-        },
-        transaction,
-      });
-
-      for (const deleteEntry of this.getOnDeleteEntries()) {
-        if (deleteEntry.service === this && deleteEntry.recursive) {
-          // if it's the same service and deleting recursively, fetch the IDs of all child elements that need to be deleted, and then delete them all at once
-          const idsToDelete: any[] = [];
-
-          let newlyDiscoveredIdsToDelete: any[] = [item.id];
-
-          while (newlyDiscoveredIdsToDelete.length) {
-            const recordsToDelete = await deleteEntry.service.getAllSqlRecord({
-              select: ["id"],
-              where: [
-                {
-                  field: deleteEntry.field ?? this.typename,
-                  operator: "in",
-                  value: newlyDiscoveredIdsToDelete,
-                },
-              ],
-              transaction,
-            });
-
-            newlyDiscoveredIdsToDelete = recordsToDelete.map(
-              (record) => record.id
-            );
-
-            idsToDelete.push(...newlyDiscoveredIdsToDelete);
-          }
-
-          if (idsToDelete.length) {
-            await deleteEntry.service.deleteSqlRecord({
-              where: [{ field: "id", operator: "in", value: idsToDelete }],
-              transaction,
-            });
-          }
-        } else {
-          await deleteEntry.service.deleteSqlRecord({
-            where: {
-              [deleteEntry.field ?? this.typename]: item.id,
-            },
-            transaction,
-          });
-        }
-      }
-
-      // do post-delete fn, if any
-      await this.afterDeleteProcess(
-        {
-          req,
-          rootResolver,
-          fieldPath,
-          args,
-          query,
-        },
-        item.id,
-        transaction
-      );
-    });
-
-    return requestedQuery;
-  }
-
-  async afterDeleteProcess(
-    inputs: ServiceFunctionInputs,
-    itemId: string,
-    transaction?: Knex.Transaction
-  ) {}
-
-  processArgs(
+  processFilterArgs(
     args: any,
     whereObject: SqlWhereObject,
     rawSelect?: SqlSimpleRawSelectObject[]

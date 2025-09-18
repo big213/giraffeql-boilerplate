@@ -310,12 +310,15 @@ export async function getObjectType({
     externalTypeDef ?? new GiraffeqlObjectTypeLookup(typename)
   );
 
-  // build an anonymous root resolver
-  const giraffeqlResolverTree = generateGiraffeqlResolverTree({
+  // build an anonymous root resolver (and will also run validators)
+  const giraffeqlResolverTree = await generateGiraffeqlResolverTree({
     fieldValue: externalQuery,
     resolverObject: anonymousRootResolver,
     fieldPath,
     validateArgs: false, // should already be validated
+    runValidators: false, // should have already been run
+    req,
+    rootResolver,
   });
 
   // merge additionalSelect into a selectObject first

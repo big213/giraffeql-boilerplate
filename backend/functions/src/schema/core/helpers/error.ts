@@ -2,15 +2,15 @@ import { GiraffeqlBaseError } from "giraffeql";
 
 export class PermissionsError extends GiraffeqlBaseError {
   constructor({
-    message,
+    message = "Insufficient permissions",
     fieldPath,
   }: {
     message?: string;
     fieldPath?: string[];
-  }) {
+  } = {}) {
     super({
       errorName: "PermissionsError",
-      message: message ?? "Insufficient permissions",
+      message,
       fieldPath,
       statusCode: 403,
     });

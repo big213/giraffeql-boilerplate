@@ -1,25 +1,25 @@
 import { GiraffeqlObjectType } from "giraffeql";
-import { User, UserRole, UserUserFollowLink } from "../../services";
-import {
-  generateIdField,
-  generateCreatedByField,
-  generateStringField,
-  generateEnumField,
-  generateArrayField,
-  generateGenericScalarField,
-  generateTypenameField,
-  generateBooleanField,
-  generateCurrentUserFollowLinkField,
-  processTypeDef,
-  generateTimestampFields,
-  generateTextField,
-} from "../../core/helpers/typeDef";
-import { userPermission, userRole } from "../../enums";
 import {
   getUserPermissions,
   isPermissionAllowed,
-} from "../../helpers/permissions";
+} from "../../core/helpers/permissions";
+import {
+  generateArrayField,
+  generateBooleanField,
+  generateCreatedByField,
+  generateCurrentUserFollowLinkField,
+  generateEnumField,
+  generateGenericScalarField,
+  generateIdField,
+  generateStringField,
+  generateTextField,
+  generateTimestampFields,
+  generateTypenameField,
+  processTypeDef,
+} from "../../core/helpers/typeDef";
+import { userPermission, userRole } from "../../enums";
 import { Scalars } from "../../scalars";
+import { User, UserRole, UserUserFollowLink } from "../../services";
 
 export default new GiraffeqlObjectType(
   processTypeDef({

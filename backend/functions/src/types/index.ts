@@ -85,6 +85,7 @@ export type ServiceFunctionInputs = {
   args: any;
   query?: any;
   rootResolver: GiraffeqlRootResolverType;
+  processedArgs?: any;
 };
 
 export type ContextUser = {

@@ -1,72 +1,151 @@
-import { BaseService } from "../services";
-import { ServiceFunctionInputs } from "../../../types";
-import { PermissionsError } from "./error";
-import { processLookupArgs } from "./typeDef";
+import { Request } from "express";
+import { StringKeyObject } from "giraffeql";
+import { userPermission, userRole } from "../../enums";
+import { userRoleToPermissionsMap } from "../../helpers/permissions";
+import { isObject, objectOnlyHasFields } from "./shared";
 
-export function permissionsCheck(methodKey: string, processArgsBefore = false) {
-  return function (
-    target: BaseService,
-    propertyName: string,
-    propertyDescriptor: PropertyDescriptor
-  ): PropertyDescriptor {
-    const method = propertyDescriptor.value;
+export function parsePermissions(
+  permissions: null | string[]
+): userPermission[] | null {
+  if (!permissions) return null;
 
-    propertyDescriptor.value = async function ({
-      req,
-      rootResolver,
-      fieldPath,
-      args,
+  return permissions.map((permission) =>
+    userPermission.parseNoNulls(permission)
+  );
+}
+
+// gets all of the user's permissions, with inputs as raw fields from the database
+export function getUserPermissions({
+  role,
+  permissions,
+}: {
+  role: unknown;
+  permissions: string[] | null;
+}) {
+  const currentUserRole = userRole.parseNoNulls(role);
+
+  return (userRoleToPermissionsMap[currentUserRole.name] ?? []).concat(
+    parsePermissions(permissions) ?? []
+  );
+}
+
+// filter the apiKey.permissions based on the userPermissions
+
+export function getAllowedApiKeyPermissions({
+  userPermissions,
+  apiKeyPermissions,
+}: {
+  userPermissions: userPermission[];
+  apiKeyPermissions: userPermission[] | null;
+}) {
+  return apiKeyPermissions
+    ? apiKeyPermissions.filter((permission) =>
+        isPermissionAllowed({
+          userPermissions: userPermissions,
+          permission,
+        })
+      )
+    : userPermissions;
+}
+
+// is the permission allowed given the array of userPermissions?
+export function isPermissionAllowed({
+  userPermissions,
+  permission,
+}: {
+  userPermissions: userPermission[];
+  permission: userPermission;
+}) {
+  // if the userPermissions has *, allow all requested permissions
+  if (userPermissions.includes(userPermission["*/*"])) return true;
+
+  // if it has the specific permission, allow
+  if (userPermissions.includes(permission)) return true;
+
+  // if the permission contains "/", check to see if the wildcard permission is present
+  const serviceNameMatches = permission.name.match(/^(\w+)\/(\w+)$/);
+  if (serviceNameMatches) {
+    const serviceName = serviceNameMatches[1];
+
+    const wildcardPermission = userPermission[`${serviceName}/*`];
+
+    if (wildcardPermission && userPermissions.includes(wildcardPermission))
+      return true;
+  }
+
+  return false;
+}
+
+// is the user logged in?
+export function userLoggedIn(req: Request) {
+  if (!req.user) throw new Error("User login required");
+
+  return true;
+}
+
+export function isUserLoggedIn(req: Request) {
+  if (!req.user) return false;
+
+  return true;
+}
+
+// is the provided userId equal to the current user's ID?
+export function isCurrentUser(req: Request, userId: string) {
+  return req.user ? req.user.id === userId : false;
+}
+
+// does every filterObject in the args array pass the filterFn?
+export async function filterPassesTest(filterByArray, filterFn) {
+  // if empty array, return false
+  if (!Array.isArray(filterByArray) || !filterByArray.length) return false;
+
+  for (const filterObject of filterByArray) {
+    if (!(await filterFn(filterObject))) return false;
+  }
+
+  // if it passed all of the conditions, return true
+  return true;
+}
+
+// does the first filterObject have the fieldPath attribute, and if so, do other filterObjects also have the same exact value?
+// only "eq" currently supported
+export function allFiltersSynced(filterByArray: any, fieldPath: string) {
+  const firstValue = filterByArray[0]?.[fieldPath]?.eq;
+
+  return filterPassesTest(filterByArray, (filterObject) => {
+    return filterObject[fieldPath]?.eq === firstValue;
+  });
+}
+
+export function validateQueryFields(
+  query: any,
+  allowedFields: string[],
+  allowBaseFields = true
+) {
+  if (
+    isObject(query) &&
+    objectOnlyHasFields(
       query,
-    }: ServiceFunctionInputs) {
-      let processedArgs;
-      // if processArgsBefore is true, it will process all of the args prior to running the permissions check. otherwise, it will be run after the permissions are checked (this is done because checking the args could be a costly operation and may not be necessary for permissions checking)
-      if (processArgsBefore) {
-        processedArgs = await processLookupArgs(
-          args,
-          rootResolver.definition.args
-        );
-      }
+      allowedFields.concat(
+        allowBaseFields ? ["id", "__typename", "createdAt", "updatedAt"] : []
+      )
+    )
+  ) {
+    return true;
+  }
 
-      // if it does not pass the access control, throw an error
-      if (
-        !(await target.testPermissions.apply(this, [
-          methodKey,
-          {
-            req,
-            rootResolver,
-            fieldPath,
-            args,
-            query,
-          },
-        ]))
-      ) {
-        // if returns false, fallback to a generic bad permissions error
-        throw new PermissionsError({
-          fieldPath,
-        });
-      }
+  return false;
+}
 
-      if (!processArgsBefore) {
-        processedArgs = await processLookupArgs(
-          args,
-          rootResolver.definition.args
-        );
-      }
+// note: risky to use since it would need to be maintained when new fields are added
+export function queryExcludesFields(
+  query: StringKeyObject | null | undefined,
+  fields: string[]
+) {
+  // if query is falsey, return false
+  if (!query) {
+    return false;
+  }
 
-      // invoke greet() and get its return value
-      const result = await method.apply(this, [
-        {
-          req,
-          rootResolver,
-          fieldPath,
-          args: processedArgs,
-          query,
-        },
-      ]);
-
-      // return the result of invoking the method
-      return result;
-    };
-    return propertyDescriptor;
-  };
+  return !fields.some((field) => field in query);
 }

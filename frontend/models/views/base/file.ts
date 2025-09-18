@@ -21,6 +21,7 @@ export const BaseFileView: ViewDefinition = {
     nameWithId: {
       text: 'File',
       fields: ['name', 'id', 'location'],
+      pathPrefix: null,
       component: Columns.FileColumn,
     },
     size: {

@@ -1,24 +1,21 @@
-import { User, ApiKey } from "../../services";
 import { GiraffeqlObjectType } from "giraffeql";
-import {
-  generateIdField,
-  generateCreatedByField,
-  generateStringField,
-  generateTypenameField,
-  generateJoinableField,
-  generateArrayField,
-  processTypeDef,
-  generateTimestampFields,
-} from "../../core/helpers/typeDef";
 import {
   getAllowedApiKeyPermissions,
   getUserPermissions,
-  isPermissionAllowed,
   parsePermissions,
-  userRoleToPermissionsMap,
-} from "../../helpers/permissions";
-import { userRole } from "../../enums";
+} from "../../core/helpers/permissions";
+import {
+  generateArrayField,
+  generateCreatedByField,
+  generateIdField,
+  generateJoinableField,
+  generateStringField,
+  generateTimestampFields,
+  generateTypenameField,
+  processTypeDef,
+} from "../../core/helpers/typeDef";
 import { Scalars } from "../../scalars";
+import { ApiKey, User } from "../../services";
 
 export default new GiraffeqlObjectType(
   processTypeDef({

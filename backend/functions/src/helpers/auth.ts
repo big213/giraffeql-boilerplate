@@ -1,16 +1,15 @@
 import { ApiKey, User } from "../schema/services";
 import { auth } from "firebase-admin";
 import { userRole } from "../schema/enums";
-import {
-  getAllowedApiKeyPermissions,
-  getUserPermissions,
-  isPermissionAllowed,
-  parsePermissions,
-  userRoleToPermissionsMap,
-} from "../schema/helpers/permissions";
+import { userRoleToPermissionsMap } from "../schema/helpers/permissions";
 import type { ContextUser } from "../types";
 import { AuthenticationError } from "../schema/core/helpers/error";
 import { timeout } from "../schema/core/helpers/shared";
+import {
+  getUserPermissions,
+  parsePermissions,
+  getAllowedApiKeyPermissions,
+} from "../schema/core/helpers/permissions";
 
 export async function validateToken(bearerToken: string): Promise<ContextUser> {
   try {
