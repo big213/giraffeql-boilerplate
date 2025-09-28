@@ -1,6 +1,6 @@
 import { ApiKey, User } from "../schema/services";
 import { auth } from "firebase-admin";
-import { userRole } from "../schema/enums";
+import { userRoleKenum } from "../schema/enums";
 import { userRoleToPermissionsMap } from "../schema/helpers/permissions";
 import type { ContextUser } from "../types";
 import { AuthenticationError } from "../schema/core/helpers/error";
@@ -78,7 +78,7 @@ export async function validateToken(bearerToken: string): Promise<ContextUser> {
 
     const contextUser: ContextUser = {
       id,
-      role: userRole.parseNoNulls(user.role),
+      role: userRoleKenum.parseNoNulls(user.role),
       permissions: getUserPermissions({
         role: user.role,
         permissions: user.permissions,
@@ -106,20 +106,20 @@ export async function validateApiKey(code: string): Promise<ContextUser> {
       true
     );
 
-    const role = userRole.parseNoNulls(apiKey["user.role"]);
+    const role = userRoleKenum.parseNoNulls(apiKey["user.role"]);
 
     // calculate the user's permissions
-    const userPermissions = (userRoleToPermissionsMap[role.name] ?? []).concat(
-      parsePermissions(apiKey["user.permissions"]) ?? []
-    );
+    const userPermissionEnums = (
+      userRoleToPermissionsMap[role.name] ?? []
+    ).concat(parsePermissions(apiKey["user.permissions"]) ?? []);
 
     // calculate the permissions associated with the apiKey
     const apiKeyPermissions = parsePermissions(apiKey.permissions);
 
     // if apiKeyPermissions is null, just return all of the permissions
-    // else return all apiKeyPermissions that can be validated based on userPermissions
+    // else return all apiKeyPermissions that can be validated based on userPermissionEnums
     const allowedPermissions = getAllowedApiKeyPermissions({
-      userPermissions,
+      userPermissionEnums,
       apiKeyPermissions,
     });
 

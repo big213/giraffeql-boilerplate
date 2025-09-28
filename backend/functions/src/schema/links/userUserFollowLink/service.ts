@@ -11,6 +11,7 @@ export class UserUserFollowLinkService extends LinkService {
 
   sortFieldsMap = {
     createdAt: {},
+    updatedAt: {},
   };
 
   searchFieldsMap = {};

@@ -2,7 +2,7 @@ import * as knexBuilder from "knex";
 import { configDotenv } from "dotenv";
 configDotenv();
 import yargs from "yargs";
-import { userRole } from "../src/schema/enums";
+import { userRoleKenum } from "../src/schema/enums";
 
 const argv = yargs(process.argv.slice(2))
   .options({
@@ -34,7 +34,7 @@ export const knex = knexBuilder({
 
   await knex("user")
     .update({
-      role: userRole.ADMIN.parsed, // ADMIN enum index
+      role: userRoleKenum.ADMIN.parsed, // ADMIN enum index
     })
     .where({
       id: user.id,

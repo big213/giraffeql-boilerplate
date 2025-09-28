@@ -1,16 +1,15 @@
-import { executeApiRequest } from '~/services/api'
-import {
-  getNestedProperty,
-  handleError,
-  capitalizeString,
-  processRenderQuery,
-  camelCaseToCapitalizedString,
-  processRenderDefinitions,
-} from '~/services/base'
 import CircularLoader from '~/components/common/circularLoader.vue'
 import Hero from '~/components/interface/crud/hero/hero.vue'
-import { logAnalyticsEvent } from '~/services/analytics'
 import FieldColumn from '~/components/interface/render/fieldColumn.vue'
+import { logAnalyticsEvent } from '~/services/analytics'
+import { executeApiRequest } from '~/services/api'
+import {
+  camelCaseToCapitalizedString,
+  getNestedProperty,
+  handleError,
+  processRenderDefinitions,
+  processRenderQuery,
+} from '~/services/base'
 
 export default {
   components: {
@@ -48,6 +47,9 @@ export default {
       type: Array,
     },
 
+    // override options, otherwise will use viewDefinition.viewOptions
+    overrideOptions: {},
+
     // must be view only
     mode: {
       type: String,
@@ -79,10 +81,14 @@ export default {
       return this.loading.loadRecord
     },
 
+    options() {
+      return this.overrideOptions ?? this.viewDefinition.viewOptions
+    },
+
     fields() {
       if (this.customFields) return this.customFields
 
-      return this.viewDefinition.viewOptions.fields
+      return this.options.fields
     },
 
     visibleRenderFieldsArray() {
@@ -99,7 +105,7 @@ export default {
     },
 
     heroComponent() {
-      return this.viewDefinition.viewOptions.heroOptions?.component ?? Hero
+      return this.options.heroOptions?.component ?? Hero
     },
   },
 
@@ -161,7 +167,7 @@ export default {
           renderFieldDefinitions,
           rawFields: [
             ...(this.viewDefinition.requiredFields ?? []),
-            ...(this.viewDefinition.viewOptions.requiredFields ?? []),
+            ...(this.options.requiredFields ?? []),
           ],
         })
         const data = await executeApiRequest({
@@ -177,7 +183,7 @@ export default {
         this.currentItem = data
 
         // run any custom onSuccess functions
-        const onSuccess = this.viewDefinition.viewOptions.onSuccess
+        const onSuccess = this.options.onSuccess
 
         if (onSuccess) {
           onSuccess(this, this.parentItem, data)

@@ -4,7 +4,6 @@ export class ApiKeyService extends PaginatedService {
   defaultTypename = "apiKey";
 
   filterFieldsMap = {
-    id: {},
     "user.id": {},
   };
 
@@ -13,7 +12,6 @@ export class ApiKeyService extends PaginatedService {
   };
 
   sortFieldsMap = {
-    id: {},
     createdAt: {},
     updatedAt: {},
   };

@@ -677,13 +677,13 @@ export function populateInputObject(
       inputObject.secondaryInputValue = initialQuantity
     }
 
-    // if there are options to be loaded, fetch the options and convert any strings to objects *if it's not a text-combobox, which could load values that aren't in the options*
-    // also only process this if not hidden and readonly
-    if (
-      inputObject.inputDefinition.getOptions &&
-      !inputObject.options &&
-      !(inputObject.hidden && inputObject.readonly)
-    ) {
+    // if it's hidden and readonly, it's a lockedField with hideIfLocked = true that should not be displayed. if it's an entity, transform string -> { id }
+    if (inputObject.hidden && inputObject.readonly) {
+      if (inputObject.inputDefinition.entity && inputObject.value) {
+        inputObject.value = { id: inputObject.value }
+      }
+    } else if (inputObject.inputDefinition.getOptions && !inputObject.options) {
+      // if there are options to be loaded, fetch the options and convert any strings to objects *if it's not a text-combobox, which could load values that aren't in the options*
       inputObject.loading = true
       promisesArray.push(
         inputObject.inputDefinition.getOptions(that, parentItem).then((res) => {
@@ -1239,7 +1239,18 @@ export async function processInputObjectArray(
   parentItem,
   inputObjectArray: CrudInputObject[]
 ) {
-  const inputs = {}
+  let inputs
+
+  // if there is a mix of empty fieldKeys and non-empty fieldKeys, throw err
+  if (
+    inputObjectArray.some((inputObject) => inputObject.fieldKey) &&
+    inputObjectArray.some((inputObject) => !inputObject.fieldKey)
+  ) {
+    throw new Error(
+      `Mix of empty and non-empty fieldKeys in the inputs not allowed`
+    )
+  }
+
   for (const inputObject of inputObjectArray) {
     // special case: if it's an entity + ['type-autocomplete-multiple', 'multiple-select'] inputType, use the fieldKey instead (no trailing '.id')
     const fieldPath =
@@ -1251,12 +1262,20 @@ export async function processInputObjectArray(
         ? inputObject.fieldKey
         : inputObject.fieldKey
 
-    inputs[fieldPath] = await processInputObject(
+    const input = await processInputObject(
       that,
       parentItem,
       inputObject,
       inputObjectArray
     )
+
+    if (!fieldPath) {
+      inputs = input
+    } else {
+      if (!inputs) inputs = {}
+
+      inputs[fieldPath] = input
+    }
   }
 
   return inputs

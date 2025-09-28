@@ -35,4 +35,5 @@ export const getUserRoleEnumValues = generateMemoizedEnumGetter(
 export const getUserPermissionEnumValues = generateMemoizedEnumGetter(
   'getUserPermissionEnumPaginator'
 )
+export const getActionTypeEnumValues = generateMemoizedEnumGetter('getActionTypeEnumPaginator')
 /** END Enum Getters */

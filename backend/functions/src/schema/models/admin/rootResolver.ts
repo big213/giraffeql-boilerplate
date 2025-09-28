@@ -8,6 +8,8 @@ import { executeGithubGraphqlRequest } from "../../helpers/github";
 import { executeGoogleApiRequest } from "../../helpers/google";
 import { Scalars } from "../../scalars";
 import { ValidatorGenerators } from "../../core/helpers/validator";
+import { processRootResolverArgs } from "../../core/helpers/rootResolver";
+import { actionTypeKenum } from "../../enums";
 
 export default {
   executeGoogleApiRequest: new GiraffeqlRootResolverType({
@@ -71,11 +73,8 @@ export default {
         },
       }),
     }),
-    validator: () => {
-      console.log(1);
-    },
+    validator: ValidatorGenerators.allowAlways(),
     resolver: async ({ args }) => {
-      console.log(2);
       try {
         if (githubOrganization.value()) {
           const response = await executeGithubGraphqlRequest({
@@ -199,6 +198,49 @@ export default {
           `Unable to fetch the requested data from the repository provider`
         );
       }
+    },
+  }),
+
+  actionExecute: new GiraffeqlRootResolverType({
+    name: "actionExecute",
+    restOptions: {
+      method: "post",
+      route: "/actionExecute",
+    },
+    type: Scalars.json,
+    allowNull: false,
+    validator: ValidatorGenerators.allowIfAdmin(),
+    args: new GiraffeqlInputFieldType({
+      required: true,
+      type: new GiraffeqlInputType({
+        name: "actionExecuteInput",
+        fields: {
+          type: new GiraffeqlInputFieldType({
+            required: true,
+            type: Scalars.actionType,
+          }),
+          params: new GiraffeqlInputFieldType({
+            required: true,
+            allowNull: true,
+            type: Scalars.json,
+          }),
+        },
+      }),
+    }),
+    resolver: async (inputs) => {
+      const { req, rootResolver, fieldPath, query, processedArgs } =
+        await processRootResolverArgs(inputs);
+
+      const actionType = actionTypeKenum.parseNoNulls(processedArgs.type);
+
+      switch (actionType) {
+        case actionTypeKenum.ECHO:
+          return processedArgs.params;
+        default:
+          throw new Error(`Unsupported actionType: ${actionType.name}`);
+      }
+
+      return { success: true };
     },
   }),
 };

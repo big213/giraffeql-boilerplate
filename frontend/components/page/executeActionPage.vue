@@ -89,7 +89,7 @@ export default {
 
   methods: {
     handleSubmit() {
-      this.generation++
+      // this.generation++
     },
 
     handleItemUpdate(item, lockedFields) {

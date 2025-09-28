@@ -1,16 +1,16 @@
 import { Request } from "express";
 import { StringKeyObject } from "giraffeql";
-import { userPermission, userRole } from "../../enums";
+import { userPermissionEnum, userRoleKenum } from "../../enums";
 import { userRoleToPermissionsMap } from "../../helpers/permissions";
 import { isObject, objectOnlyHasFields } from "./shared";
 
 export function parsePermissions(
   permissions: null | string[]
-): userPermission[] | null {
+): userPermissionEnum[] | null {
   if (!permissions) return null;
 
   return permissions.map((permission) =>
-    userPermission.parseNoNulls(permission)
+    userPermissionEnum.parseNoNulls(permission)
   );
 }
 
@@ -22,54 +22,54 @@ export function getUserPermissions({
   role: unknown;
   permissions: string[] | null;
 }) {
-  const currentUserRole = userRole.parseNoNulls(role);
+  const currentUserRole = userRoleKenum.parseNoNulls(role);
 
   return (userRoleToPermissionsMap[currentUserRole.name] ?? []).concat(
     parsePermissions(permissions) ?? []
   );
 }
 
-// filter the apiKey.permissions based on the userPermissions
+// filter the apiKey.permissions based on the userPermissionEnums
 
 export function getAllowedApiKeyPermissions({
-  userPermissions,
+  userPermissionEnums,
   apiKeyPermissions,
 }: {
-  userPermissions: userPermission[];
-  apiKeyPermissions: userPermission[] | null;
+  userPermissionEnums: userPermissionEnum[];
+  apiKeyPermissions: userPermissionEnum[] | null;
 }) {
   return apiKeyPermissions
     ? apiKeyPermissions.filter((permission) =>
         isPermissionAllowed({
-          userPermissions: userPermissions,
+          userPermissionEnums: userPermissionEnums,
           permission,
         })
       )
-    : userPermissions;
+    : userPermissionEnums;
 }
 
-// is the permission allowed given the array of userPermissions?
+// is the permission allowed given the array of userPermissionEnums?
 export function isPermissionAllowed({
-  userPermissions,
+  userPermissionEnums,
   permission,
 }: {
-  userPermissions: userPermission[];
-  permission: userPermission;
+  userPermissionEnums: userPermissionEnum[];
+  permission: userPermissionEnum;
 }) {
-  // if the userPermissions has *, allow all requested permissions
-  if (userPermissions.includes(userPermission["*/*"])) return true;
+  // if the userPermissionEnums has *, allow all requested permissions
+  if (userPermissionEnums.includes(userPermissionEnum["*/*"])) return true;
 
   // if it has the specific permission, allow
-  if (userPermissions.includes(permission)) return true;
+  if (userPermissionEnums.includes(permission)) return true;
 
   // if the permission contains "/", check to see if the wildcard permission is present
   const serviceNameMatches = permission.name.match(/^(\w+)\/(\w+)$/);
   if (serviceNameMatches) {
     const serviceName = serviceNameMatches[1];
 
-    const wildcardPermission = userPermission[`${serviceName}/*`];
+    const wildcardPermission = userPermissionEnum[`${serviceName}/*`];
 
-    if (wildcardPermission && userPermissions.includes(wildcardPermission))
+    if (wildcardPermission && userPermissionEnums.includes(wildcardPermission))
       return true;
   }
 

@@ -48,7 +48,7 @@ export default new GiraffeqlObjectType(
         allowNull: false,
         resolver: ({ parentValue }) => {
           // get the permissions of the user
-          const userPermissions = getUserPermissions({
+          const userPermissionEnums = getUserPermissions({
             role: parentValue.user.role,
             permissions: parentValue.user.permissions,
           });
@@ -56,7 +56,7 @@ export default new GiraffeqlObjectType(
           const apiKeyPermissions = parsePermissions(parentValue.permissions);
 
           const allowedPermissions = getAllowedApiKeyPermissions({
-            userPermissions,
+            userPermissionEnums,
             apiKeyPermissions,
           });
 

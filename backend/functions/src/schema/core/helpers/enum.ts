@@ -71,7 +71,7 @@ export abstract class Kenum {
 
   // returns the name of the kenum (minus the kenum part)
   static getName(): string {
-    return (this as any).prototype.constructor.name;
+    return (this as any).prototype.constructor.name.replace(/Kenum$/, "");
   }
 
   constructor(
@@ -143,7 +143,7 @@ export abstract class Enum {
 
   // returns the name of the enum (minus the enum part)
   static getName(): string {
-    return (this as any).prototype.constructor.name;
+    return (this as any).prototype.constructor.name.replace(/Enum$/, "");
   }
 
   constructor(

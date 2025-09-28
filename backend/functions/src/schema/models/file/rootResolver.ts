@@ -42,19 +42,20 @@ export default {
         resolver: generateCreateRootResolver({
           service: File,
           options: {
-            async getCreateFields({ inputs: { args }, transaction }) {
+            async getCreateFields({ inputs: { processedArgs }, transaction }) {
               // verify location exists and move it into /source folder
               const bucket = storage().bucket();
               const file = bucket.file(
-                `${serveImageTempPath.value()}/${args.location}`
+                `${serveImageTempPath.value()}/${processedArgs.location}`
               );
               const [metadata] = await file.getMetadata();
 
               await file.move(
-                `${serveImageSourcePath.value()}/${args.location}`
+                `${serveImageSourcePath.value()}/${processedArgs.location}`
               );
 
               return {
+                ...processedArgs,
                 size: metadata.size,
                 contentType: metadata.contentType,
               };

@@ -1,6 +1,6 @@
-import { userPermission, userRole } from "../enums";
+import { userPermissionEnum, userRoleKenum } from "../enums";
 
 export const userRoleToPermissionsMap = {
-  [userRole.ADMIN.name]: [userPermission["*/*"]],
-  [userRole.NORMAL.name]: [],
+  [userRoleKenum.ADMIN.name]: [userPermissionEnum["*/*"]],
+  [userRoleKenum.NORMAL.name]: [],
 };

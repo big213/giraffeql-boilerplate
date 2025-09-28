@@ -127,17 +127,18 @@ export default {
         resolver: generateCreateRootResolver({
           service: User,
           options: {
-            async getCreateFields({ inputs: { args }, transaction }) {
+            async getCreateFields({ inputs: { processedArgs }, transaction }) {
               // create firebase user
               const firebaseUser = await auth().createUser({
-                email: args.email,
+                email: processedArgs.email,
                 emailVerified: false,
-                password: args.password,
-                displayName: args.name,
+                password: processedArgs.password,
+                displayName: processedArgs.name,
                 disabled: false,
-                photoURL: args.avatarUrl,
+                photoURL: processedArgs.avatarUrl,
               });
               return {
+                ...processedArgs,
                 firebaseUid: firebaseUser.uid,
               };
             },
@@ -151,24 +152,24 @@ export default {
           options: {
             fields: ["role", "firebaseUid"],
             async afterUpdate({
-              inputs: { args },
+              inputs: { processedArgs },
               item,
               updatedFieldsObject,
               transaction,
             }) {
               // update firebase user fields
               const firebaseUserFields = {
-                ...("name" in args.fields && {
-                  displayName: args.fields.name,
+                ...("name" in processedArgs.fields && {
+                  displayName: processedArgs.fields.name,
                 }),
-                ...("avatarUrl" in args.fields && {
-                  photoURL: args.fields.avatarUrl,
+                ...("avatarUrl" in processedArgs.fields && {
+                  photoURL: processedArgs.fields.avatarUrl,
                 }),
-                ...("email" in args.fields && {
-                  email: args.fields.email,
+                ...("email" in processedArgs.fields && {
+                  email: processedArgs.fields.email,
                 }),
-                ...("password" in args.fields && {
-                  password: args.fields.password,
+                ...("password" in processedArgs.fields && {
+                  password: processedArgs.fields.password,
                 }),
               };
 
@@ -220,13 +221,7 @@ export default {
             id: req.user!.id,
           },
           limit: 1,
-          specialParams: await User.getSpecialParams({
-            req,
-            rootResolver,
-            fieldPath,
-            args,
-            query,
-          }),
+          specialParams: await User.getSpecialParams(inputs),
         },
       });
 

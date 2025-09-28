@@ -574,7 +574,7 @@
       <v-container class="highlighted-bg">
         <v-row>
           <v-col cols="12">
-            <div class="subtitle-1">
+            <div class="subtitle-1 text-left">
               {{
                 `${inputObject.label}${
                   inputObject.inputDefinition.optional ? ` (optional)` : ''

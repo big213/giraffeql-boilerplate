@@ -39,7 +39,8 @@ export const Scalars = {
   email,
 
   // generate the enum scalar types
-  userRole: enums.userRole.getScalarType(),
-  userPermission: enums.userPermission.getScalarType(),
-  /** END ENUM Scalar Types */
+  userRole: enums.userRoleKenum.getScalarType(),
+  userPermission: enums.userPermissionEnum.getScalarType(),
+  actionType: enums.actionTypeKenum.getScalarType(),
+/** END ENUM Scalar Types */
 };

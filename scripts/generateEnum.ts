@@ -19,6 +19,8 @@ const isKenum = argv.kenum;
 
 const capitalizedEnumName = capitalizeString(enumName);
 
+const enumNameWithSuffix = `${enumName}${isKenum ? "Kenum" : "Enum"}`;
+
 // typename must start with lowercase and only include letters and numbers
 if (!enumName.match(/^[a-z][a-zA-Z0-9]+/)) {
   throw new Error(`Invalid name`);
@@ -33,7 +35,7 @@ const template = fs.readFileSync(
 fs.writeFileSync(
   `backend/functions/src/schema/enums/${enumName}.ts`,
   processTemplate(template, {
-    enumName,
+    enumNameWithSuffix,
   })
 );
 
@@ -44,7 +46,7 @@ const modifiersArray = [
     modifiers: [
       {
         section: "ENUM Import",
-        statement: `export { ${enumName} } from "./${enumName}"`,
+        statement: `export { ${enumNameWithSuffix} } from "./${enumName}"`,
       },
     ],
   },
@@ -53,7 +55,7 @@ const modifiersArray = [
     modifiers: [
       {
         section: "ENUM Scalar Types",
-        statement: `${enumName}: enums.${enumName}.getScalarType(),`,
+        statement: `${enumName}: enums.${enumNameWithSuffix}.getScalarType(),`,
       },
     ],
   },
@@ -62,7 +64,7 @@ const modifiersArray = [
     modifiers: [
       {
         section: "ENUM Service Set",
-        statement: `export const ${capitalizedEnumName} = new EnumService(enums.${enumName});`,
+        statement: `export const ${capitalizedEnumName} = new EnumService(enums.${enumNameWithSuffix});`,
       },
     ],
   },

@@ -6,29 +6,42 @@
         v-if="isLoading"
         style="min-height: 250px"
       ></CircularLoader>
-      <v-container
-        v-show="!isLoading && visibleInputsArray.length"
-        class="px-0"
-      >
-        <v-row>
-          <v-col
-            v-for="(inputObject, i) in visibleInputsArray"
-            :key="i"
-            :cols="inputObject.cols || 12"
-            class="py-0"
+      <div v-show="!isLoading">
+        <div
+          v-if="actionDefinition.previewOptions"
+          class="selected-element mb-5"
+        >
+          <ViewRecordInterface
+            :parent-item="parentItem"
+            :view-definition="actionDefinition.previewOptions.viewDefinition"
+            :override-options="actionDefinition.previewOptions.viewOptions"
+            mode="view"
+            :generation="previewGeneration"
           >
-            <GenericInput
-              v-show="!inputObject.hidden"
-              :input-object="inputObject"
-              :parent-item="parentItem"
-              :all-items="inputsArray"
+          </ViewRecordInterface>
+          <v-divider></v-divider>
+        </div>
+        <v-container v-show="visibleInputsArray.length" class="px-0">
+          <v-row>
+            <v-col
+              v-for="(inputObject, i) in visibleInputsArray"
               :key="i"
-              ref="inputs"
-              @handle-submit="handleSubmit()"
-            ></GenericInput>
-          </v-col>
-        </v-row>
-      </v-container>
+              :cols="inputObject.cols || 12"
+              class="py-0"
+            >
+              <GenericInput
+                v-show="!inputObject.hidden"
+                :input-object="inputObject"
+                :parent-item="parentItem"
+                :all-items="inputsArray"
+                :key="i"
+                ref="inputs"
+                @handle-submit="handleSubmit()"
+              ></GenericInput>
+            </v-col>
+          </v-row>
+        </v-container>
+      </div>
     </v-card-text>
 
     <v-card-actions v-if="!isLoading && !hideActions">
@@ -48,6 +61,7 @@
 <script>
 import CircularLoader from '~/components/common/circularLoader.vue'
 import GenericInput from '~/components/input/genericInput.vue'
+import ViewRecordInterface from '~/components/interface/crud/viewRecordInterface.vue'
 import { executeApiRequest } from '~/services/api'
 import {
   collapseObject,
@@ -66,6 +80,7 @@ export default {
   components: {
     CircularLoader,
     GenericInput,
+    ViewRecordInterface,
   },
   props: {
     parentItem: {
@@ -97,6 +112,9 @@ export default {
   data() {
     return {
       inputsArray: [],
+
+      previewGeneration: 0,
+
       loading: {
         executeAction: false,
         initInputs: false,
@@ -231,7 +249,22 @@ export default {
     },
 
     handleSubmitSuccess(data) {
-      this.$emit('close')
+      // if persistent and there are previewOptions, then refresh the contents of the preview
+      if (
+        this.actionDefinition.persistent &&
+        this.actionDefinition.previewOptions
+      ) {
+        this.previewGeneration++
+      }
+
+      // if it's not persistent, close (if there is a dialog)
+      if (this.actionDefinition.persistent && this.dialogMode) {
+        this.$emit('close')
+      } else {
+        // else reset
+        this.reset()
+      }
+
       this.$emit('handle-submit', data)
 
       // run any custom onSuccess functions. if none, simply show a snackbar

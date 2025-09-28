@@ -1,5 +1,7 @@
 import { paypalApiUrl, paypalClientId, paypalClientSecret } from "../../config";
 
+let accessToken;
+
 async function generateAccessToken() {
   try {
     if (!paypalClientId.value() || !paypalClientSecret.value()) {
@@ -33,10 +35,14 @@ export async function executePaypalRequest({
   method: "POST" | "GET";
   payload?;
 }) {
+  if (!accessToken) {
+    accessToken = await generateAccessToken();
+  }
+
   const response = await fetch(`${paypalApiUrl.value()}${path}`, {
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${await generateAccessToken()}`,
+      Authorization: `Bearer ${accessToken}`,
       // Uncomment one of these to force an error for negative testing (in sandbox mode only). Documentation:
       // https://developer.paypal.com/tools/sandbox/negative-testing/request-headers/
       // "PayPal-Mock-Response": '{"mock_application_codes": "MISSING_REQUIRED_PARAMETER"}'

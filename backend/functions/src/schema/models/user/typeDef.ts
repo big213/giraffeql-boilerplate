@@ -17,7 +17,7 @@ import {
   generateTypenameField,
   processTypeDef,
 } from "../../core/helpers/typeDef";
-import { userPermission, userRole } from "../../enums";
+import { userPermissionEnum, userRoleKenum } from "../../enums";
 import { Scalars } from "../../scalars";
 import { User, UserRole, UserUserFollowLink } from "../../services";
 
@@ -65,7 +65,7 @@ export default new GiraffeqlObjectType(
       role: generateEnumField({
         service: UserRole,
         allowNull: false,
-        defaultValue: userRole.NORMAL,
+        defaultValue: userRoleKenum.NORMAL,
         nestHidden: true,
       }),
       permissions: generateArrayField({
@@ -82,15 +82,15 @@ export default new GiraffeqlObjectType(
         requiredSqlFields: ["role", "permissions"],
         allowNull: false,
         resolver: ({ parentValue }) => {
-          const userPermissions = getUserPermissions({
+          const userPermissionEnums = getUserPermissions({
             role: parentValue.role,
             permissions: parentValue.permissions,
           });
 
-          return userPermission.values
+          return userPermissionEnum.values
             .filter((permission) =>
               isPermissionAllowed({
-                userPermissions,
+                userPermissionEnums,
                 permission,
               })
             )

@@ -24,6 +24,7 @@ import ShareLinkColumn from '../components/table/shareLinkColumn.vue'
 import TruthyRecordColumn from '../components/table/truthyRecordColumn.vue'
 import UrlColumn from '../components/table/urlColumn.vue'
 import StringColumn from '../components/table/stringColumn.vue'
+import HtmlColumn from '../components/table/htmlColumn.vue'
 
 // special columns
 
@@ -54,6 +55,7 @@ export const Columns = {
   TruthyRecordColumn,
   UrlColumn,
   StringColumn,
+  HtmlColumn,
 
   // special columns
 }

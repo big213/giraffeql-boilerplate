@@ -18,7 +18,7 @@ import {
   GiraffeqlInputTypeLookup,
   GiraffeqlBaseError,
 } from "giraffeql";
-import { knex } from "../../../utils/knex";
+import { db } from "../../../utils/knex";
 import {
   camelToSnake,
   flattenObject,
@@ -33,7 +33,6 @@ import {
 } from "../services";
 import type {
   ObjectTypeDefSqlOptions,
-  ServiceFunctionInputs,
   SqlType,
   StringKeyObject,
 } from "../../../types";
@@ -187,7 +186,7 @@ export function generateUnixTimestampField(
       getter: (tableAlias, field) =>
         `extract(epoch from "${tableAlias}".${field})`,
       parseValue: nowOnly
-        ? () => knex.fn.now()
+        ? () => db.fn.now()
         : (value: unknown) => {
             // if null, allow null value
             if (value === null || value === undefined) return null;
@@ -826,7 +825,7 @@ export function generateTimestampFields() {
     createdAt: generateUnixTimestampField({
       description: "When the record was created",
       allowNull: false,
-      defaultValue: knex.fn.now(),
+      defaultValue: db.fn.now(),
       sqlOptions: { field: "created_at" },
       addable: false,
       updateable: false, // not addable or updateable
@@ -834,7 +833,7 @@ export function generateTimestampFields() {
     updatedAt: generateUnixTimestampField({
       description: "When the record was last updated",
       allowNull: false,
-      defaultValue: knex.fn.now(),
+      defaultValue: db.fn.now(),
       sqlOptions: { field: "updated_at" },
       addable: false,
       updateable: false, // not addable or updateable
@@ -1969,10 +1968,10 @@ export function generateCurrentUserFollowLinkField(followLink: LinkService) {
                 .on(parentTableAlias + ".id", "=", joinTableAlias + ".target")
                 .andOn(
                   specialParams.currentUserId
-                    ? knex.raw(`"${joinTableAlias}".user = ?`, [
+                    ? db.raw(`"${joinTableAlias}".user = ?`, [
                         specialParams.currentUserId,
                       ])
-                    : knex.raw("false")
+                    : db.raw("false")
                 );
             }
           );

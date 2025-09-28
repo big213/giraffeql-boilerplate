@@ -1,4 +1,6 @@
+import { generateJoinableInputField } from '~/services/view'
 import { ActionDefinition } from '~/types/action'
+import { UserEntity } from '../entities'
 
 export const {{ actionName }}: ActionDefinition = {
   operationName: '{{ actionName }}',
@@ -6,12 +8,25 @@ export const {{ actionName }}: ActionDefinition = {
   icon: 'mdi-code-tags',
   fields: [
     {
+      fieldKey: 'item',
+      inputDefinition: generateJoinableInputField({
+        entity: UserEntity,
+      }),
+      hideIfLocked: true,
+    },
+    {
       fieldKey: 'code',
       inputDefinition: {
         text: 'Code',
       },
     },
   ],
+
+  getLockedFields: (that, item) => {
+    return {
+      'item.id': item.id,
+    }
+  },
 
   onSuccess: (that, item) => {
     // reload interfaces

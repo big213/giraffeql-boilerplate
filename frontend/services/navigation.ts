@@ -1,25 +1,29 @@
-import { camelToKebabCase, userHasPermissions, userHasRole } from './base'
-import * as views from '../models/views'
 import * as actions from '../models/actions'
+import * as views from '../models/views'
 import * as baseViews from '../models/views/base'
-import { generateNavRouteObject } from './route'
+import { userHasPermissions } from './base'
+import {
+  generateActionRouteObject,
+  generateRouteObject,
+  generateViewRouteObject,
+} from './route'
 
 export function generateNavDrawerItems(that) {
   return [
     {
       title: null,
       items: [
-        {
-          icon: 'mdi-home',
+        generateRouteObject({
           title: 'Home',
-          to: '/',
-        },
+          icon: 'mdi-home',
+          route: '/',
+        }),
       ],
     },
     {
       title: 'Explore',
       items: [
-        generateNavRouteObject(that, {
+        generateViewRouteObject(that, {
           viewDefinition: views.PublicUserView,
           pageOptions: {
             sort: 'createdAt-desc',
@@ -31,23 +35,23 @@ export function generateNavDrawerItems(that) {
       ? {
           title: 'My Account',
           items: [
-            generateNavRouteObject(that, {
+            generateViewRouteObject(that, {
               viewDefinition: views.MyApiKeyView,
               pageOptions: {
                 sort: 'createdAt-desc',
               },
             }),
-            generateNavRouteObject(that, {
+            generateViewRouteObject(that, {
               viewDefinition: views.MyFileView,
               pageOptions: {
                 sort: 'createdAt-desc',
               },
             }),
-            {
-              icon: 'mdi-account',
+            generateRouteObject({
               title: 'My Profile',
-              to: '/my/view/profile',
-            },
+              icon: 'mdi-account',
+              route: '/my/view/profile',
+            }),
           ],
         }
       : null,
@@ -63,7 +67,7 @@ export function generateNavDrawerItems(that) {
                   items: Object.values(baseViews)
                     .sort((a, b) => a.entity.name.localeCompare(b.entity.name))
                     .map((viewDefinition) =>
-                      generateNavRouteObject(that, {
+                      generateViewRouteObject(that, {
                         viewDefinition,
                         pageOptions: {
                           sort: 'createdAt-desc',
@@ -77,12 +81,11 @@ export function generateNavDrawerItems(that) {
                   title: 'Actions',
                   icon: 'mdi-code-tags',
                   collapsible: true,
-                  items: Object.entries(actions)
-                    .sort(([key, val], [key2, val2]) => key.localeCompare(key2))
-                    .map(([key, actionOptions]) => ({
-                      title: key,
-                      to: `/action/${camelToKebabCase(key)}`,
-                    })),
+                  items: Object.values(actions)
+                    .sort((a, b) => a.title.localeCompare(b.title))
+                    .map((actionDefinition) =>
+                      generateActionRouteObject({ actionDefinition })
+                    ),
                 }
               : null,
           ].filter((e) => e),
@@ -93,7 +96,15 @@ export function generateNavDrawerItems(that) {
 
 export function generateUserMenuItems(that) {
   return [
-    { icon: 'mdi-account', title: 'My Profile', to: '/my/view/profile' },
-    { icon: 'mdi-cog', title: 'Settings', to: '/settings' },
+    generateRouteObject({
+      title: 'My Profile',
+      icon: 'mdi-account',
+      route: '/my/view/profile',
+    }),
+    generateRouteObject({
+      title: 'Settings',
+      icon: 'mdi-cog',
+      route: '/settings',
+    }),
   ]
 }

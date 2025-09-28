@@ -1,4 +1,4 @@
-import { userRole } from "../../../src/schema/enums";
+import { userRoleKenum } from "../../../src/schema/enums";
 import { User } from "../../../src/schema/services";
 
 // gets the first admin user ID
@@ -6,7 +6,7 @@ export async function getAdminUserId() {
   const adminUsers = await User.getAllSqlRecord({
     select: ["id"],
     where: {
-      role: userRole.ADMIN.parsed,
+      role: userRoleKenum.ADMIN.parsed,
     },
     orderBy: [
       {

@@ -1,8 +1,15 @@
-import { InputDefinition, InputFieldDefinition } from '.'
+import {
+  InputDefinition,
+  InputFieldDefinition,
+  ViewRenderFieldDefinition,
+} from '.'
+import { ViewDefinition, ViewOptions } from './view'
 
 export type ActionDefinition = {
   title: string
   icon: string
+
+  routeKey: string
 
   // if there is a singular giraffeql operation to execute
   operationName?: string
@@ -29,6 +36,14 @@ export type ActionDefinition = {
   onSuccess?: (that, item, returnData) => void
 
   fields: ActionInputFieldDefinition[]
+
+  previewOptions?: {
+    viewDefinition: ViewDefinition
+    viewOptions: ViewOptions
+  }
+
+  // should the form stay open after submitting?
+  persistent?: boolean
 
   // function that will use the parenItem to modify the args fed into the operation
   argsModifier?: (that, item, args) => void

@@ -17,8 +17,10 @@ import {
   processLookupArgs,
 } from "../helpers/typeDef";
 import {
+  capitalizeString,
   escapeRegExp,
   generateCursorFromNode,
+  getNestedProperty,
   getUpdatedFieldValues,
   isObject,
 } from "../helpers/shared";
@@ -43,7 +45,7 @@ import {
   SqlWhereObject,
 } from "./sql";
 import { generateSqlSingleFieldObject } from "./sqlHelper";
-import { knex } from "../../../utils/knex";
+import { db } from "../../../utils/knex";
 import { Knex } from "knex";
 type BaseRootResolverTypes =
   | "get"
@@ -52,7 +54,6 @@ type BaseRootResolverTypes =
   | "stats"
   | "delete"
   | "create"
-  | "generate"
   | "update";
 
 export function transformGetMultipleRestArgs(req: Request) {
@@ -120,9 +121,10 @@ export function generateBaseRootResolvers({
   service: PaginatedService;
   methods: {
     type: BaseRootResolverTypes;
-    validator?: ValidatorFunction;
+    validator?: ValidatorFunction | ValidatorFunction[];
     restOptions?: Partial<RestOptions> & { query: ExternalQuery };
     resolver?: RootResolverFunction;
+    name?: string;
     additionalArgs?: {
       [x in string]:
         | GiraffeqlInputFieldType
@@ -136,7 +138,7 @@ export function generateBaseRootResolvers({
   methods.forEach((method) => {
     switch (method.type) {
       case "get": {
-        const methodName = `${service.typename}Get`;
+        const methodName = method.name ?? `${service.typename}Get`;
         rootResolvers[methodName] = new GiraffeqlRootResolverType({
           name: methodName,
           ...(method.restOptions && {
@@ -159,7 +161,7 @@ export function generateBaseRootResolvers({
       }
       case "stats": {
         if (service instanceof PaginatedService) {
-          const methodName = `${service.typename}GetStats`;
+          const methodName = method.name ?? `${service.typename}GetStats`;
           rootResolvers[methodName] = new GiraffeqlRootResolverType(<
             RootResolverDefinition
           >{
@@ -172,6 +174,7 @@ export function generateBaseRootResolvers({
                 ...method.restOptions,
               },
             }),
+            validator: method.validator,
             ...generateStatsResolverObject({
               pivotService: service,
               rootResolver: method.resolver,
@@ -182,7 +185,7 @@ export function generateBaseRootResolvers({
       }
       case "getPaginator": {
         if (service instanceof PaginatedService) {
-          const methodName = `${service.typename}GetPaginator`;
+          const methodName = method.name ?? `${service.typename}GetPaginator`;
           rootResolvers[methodName] = new GiraffeqlRootResolverType(<
             RootResolverDefinition
           >{
@@ -195,6 +198,7 @@ export function generateBaseRootResolvers({
                 ...method.restOptions,
               },
             }),
+            validator: method.validator,
             ...generatePaginatorPivotResolverObject({
               pivotService: service,
               rootResolver: method.resolver,
@@ -205,7 +209,7 @@ export function generateBaseRootResolvers({
       }
       case "getAggregator": {
         if (service instanceof PaginatedService) {
-          const methodName = `${service.typename}GetAggregator`;
+          const methodName = method.name ?? `${service.typename}GetAggregator`;
           rootResolvers[methodName] = new GiraffeqlRootResolverType(<
             RootResolverDefinition
           >{
@@ -218,6 +222,7 @@ export function generateBaseRootResolvers({
                 ...method.restOptions,
               },
             }),
+            validator: method.validator,
             ...generateAggregatorResolverObject({
               pivotService: service,
               rootResolver: method.resolver,
@@ -227,7 +232,7 @@ export function generateBaseRootResolvers({
         break;
       }
       case "delete": {
-        const methodName = `${service.typename}Delete`;
+        const methodName = method.name ?? `${service.typename}Delete`;
         rootResolvers[methodName] = new GiraffeqlRootResolverType({
           name: methodName,
           ...(method.restOptions && {
@@ -239,6 +244,7 @@ export function generateBaseRootResolvers({
           }),
           type: service.typeDefLookup,
           allowNull: false,
+          validator: method.validator,
           args: new GiraffeqlInputFieldType({
             required: true,
             type: service.inputTypeDefLookup,
@@ -249,7 +255,7 @@ export function generateBaseRootResolvers({
       }
       case "update": {
         const updateArgs = {};
-        const methodName = `${service.typename}Update`;
+        const methodName = method.name ?? `${service.typename}Update`;
         Object.entries(service.getTypeDef().definition.fields).forEach(
           ([key, typeDefField]) => {
             let typeField = typeDefField.type;
@@ -304,6 +310,7 @@ export function generateBaseRootResolvers({
           }),
           type: service.typeDefLookup,
           allowNull: false,
+          validator: method.validator,
           args: new GiraffeqlInputFieldType({
             required: true,
             type: new GiraffeqlInputType({
@@ -345,7 +352,7 @@ export function generateBaseRootResolvers({
       }
       case "create": {
         const createArgs = {};
-        const methodName = `${service.typename}Create`;
+        const methodName = method.name ?? `${service.typename}Create`;
         Object.entries(service.getTypeDef().definition.fields).forEach(
           ([key, typeDefField]) => {
             let typeField = typeDefField.type;
@@ -398,48 +405,12 @@ export function generateBaseRootResolvers({
           }),
           type: service.typeDefLookup,
           allowNull: false,
+          validator: method.validator,
           args: new GiraffeqlInputFieldType({
             required: true,
             type: new GiraffeqlInputType({
               name: `${methodName}Args`,
               fields: createArgs,
-            }),
-          }),
-          resolver: method.resolver ?? generateCreateRootResolver({ service }),
-        });
-        break;
-      }
-      case "generate": {
-        const generateArgs = {};
-        const methodName = `${service.typename}Generate`;
-
-        // add any additional or override args
-        if (method.additionalArgs) {
-          Object.assign(generateArgs, method.additionalArgs);
-        }
-
-        rootResolvers[methodName] = new GiraffeqlRootResolverType({
-          name: methodName,
-          ...(method.restOptions && {
-            restOptions: {
-              method: "post",
-              route: `/${service.typename}`,
-              argsTransformer: (req) => {
-                return {
-                  ...req.body,
-                  ...req.params,
-                };
-              },
-              ...method.restOptions,
-            },
-          }),
-          type: service.typeDefLookup,
-          allowNull: false,
-          args: new GiraffeqlInputFieldType({
-            required: true,
-            type: new GiraffeqlInputType({
-              name: `${methodName}Args`,
-              fields: generateArgs,
             }),
           }),
           resolver: method.resolver ?? generateCreateRootResolver({ service }),
@@ -455,6 +426,115 @@ export function generateBaseRootResolvers({
   });
 
   return rootResolvers;
+}
+
+export function generateRootResolverTypeCreateOperation({
+  service,
+  operation,
+  validator,
+  argFields,
+  resolver,
+}: {
+  service: PaginatedService;
+  operation: string;
+  validator?: ValidatorFunction | ValidatorFunction[];
+  argFields:
+    | null
+    | {
+        [x in string]:
+          | GiraffeqlInputFieldType
+          | GiraffeqlInputTypeLookup
+          | undefined;
+      };
+  resolver: RootResolverFunction;
+}) {
+  const methodName = `${service.typename}${capitalizeString(operation)}`;
+  return new GiraffeqlRootResolverType({
+    name: methodName,
+    restOptions: {
+      method: "post",
+      route: `/${service.typename}/${operation}`,
+      argsTransformer: (req) => {
+        return {
+          ...req.body,
+          ...req.params,
+        };
+      },
+    },
+    type: service.typeDefLookup,
+    allowNull: false,
+    validator,
+    args: argFields
+      ? new GiraffeqlInputFieldType({
+          required: true,
+          type: new GiraffeqlInputType({
+            name: `${methodName}Args`,
+            fields: <any>argFields,
+          }),
+        })
+      : undefined,
+    resolver,
+  });
+}
+
+export function generateRootResolverTypeUpdateOperation({
+  service,
+  operation,
+  validator,
+  argFields,
+  resolver,
+}: {
+  service: PaginatedService;
+  operation: string;
+  validator?: ValidatorFunction | ValidatorFunction[];
+  argFields:
+    | null
+    | {
+        [x in string]:
+          | GiraffeqlInputFieldType
+          | GiraffeqlInputTypeLookup
+          | undefined;
+      };
+  resolver: RootResolverFunction;
+}) {
+  const methodName = `${service.typename}${capitalizeString(operation)}`;
+  return new GiraffeqlRootResolverType({
+    name: methodName,
+    restOptions: {
+      method: "put",
+      route: `/${service.typename}/:id/${operation}`,
+      argsTransformer: (req) => {
+        return {
+          item: req.params,
+          ...req.body,
+        };
+      },
+    },
+    type: service.typeDefLookup,
+    allowNull: false,
+    validator,
+    // if no args, do a direct lookup of the item
+    args: argFields
+      ? new GiraffeqlInputFieldType({
+          required: true,
+          type: new GiraffeqlInputType({
+            name: `${methodName}Args`,
+            fields: {
+              item: new GiraffeqlInputFieldType({
+                type: service.inputTypeDefLookup,
+                required: true,
+              }),
+              ...(<any>argFields),
+            },
+          }),
+        })
+      : new GiraffeqlInputFieldType({
+          required: true,
+          allowNull: false,
+          type: service.inputTypeDefLookup,
+        }),
+    resolver,
+  });
 }
 
 export async function processRootResolverArgs(inputs: ServiceFunctionInputs) {
@@ -631,7 +711,7 @@ export function generateGetPaginatorRootResolver(service: PaginatedService) {
             }
             return {
               ...sortByObject,
-              field: knex.raw(sortByObject.field),
+              field: db.raw(sortByObject.field),
             };
           } else {
             const sortFieldOptions = service.sortFieldsMap[sortByObject.field];
@@ -672,7 +752,7 @@ export function generateGetPaginatorRootResolver(service: PaginatedService) {
     if (processedArgs.after || processedArgs.before) {
       // parse cursor
       const parsedCursor = JSON.parse(
-        btoa(processedArgs.after || processedArgs.before)
+        atob(processedArgs.after || processedArgs.before)
       );
 
       const whereOrObject: SqlWhereObject = {
@@ -788,6 +868,7 @@ export function generateGetPaginatorRootResolver(service: PaginatedService) {
           ...(query.paginatorInfo.total && {
             total: await service.countSqlRecord({
               where: [countWhereObject],
+              distinct: true,
             }),
           }),
           ...(query.paginatorInfo.count && {
@@ -920,10 +1001,10 @@ export function generateGetAggregatorRootResolver(service: PaginatedService) {
       select: selectObjects,
       table: service.typename,
       where: [whereObject],
-      groupBy: [knex.raw(`"key"`)],
+      groupBy: [db.raw(`"key"`)],
       orderBy: [
         {
-          field: knex.raw(`"${processedArgs.sortBy?.field ?? "key"}"`),
+          field: db.raw(`"${processedArgs.sortBy?.field ?? "key"}"`),
           desc: processedArgs.sortBy?.desc === true,
         },
       ],
@@ -936,57 +1017,70 @@ export function generateGetAggregatorRootResolver(service: PaginatedService) {
 export type CreateRecordOptions = {
   beforeTransaction?: ({
     inputs,
+    data,
   }: {
     inputs: ServiceFunctionInputs;
+    data: any;
   }) => Promise<void> | void;
   getCreateFields?: ({
     inputs,
+    data,
     transaction,
   }: {
     inputs: ServiceFunctionInputs;
+    data: any;
     transaction: Knex.Transaction;
   }) => Promise<StringKeyObject> | StringKeyObject;
   afterCreate?: ({
     inputs,
     itemId,
+    data,
     transaction,
   }: {
     inputs: ServiceFunctionInputs;
     itemId: string;
+    data: any;
     transaction: Knex.Transaction;
   }) => Promise<void> | void;
 };
 
 export type UpdateRecordOptions = {
   fields?: string[];
+  pathToItem?: string | null;
   beforeTransaction?: ({
     inputs,
     item,
+    data,
     updatedFieldsObject,
   }: {
     inputs: ServiceFunctionInputs;
     item: any;
+    data: any;
     updatedFieldsObject?: any;
   }) => Promise<void> | void;
   getUpdateFields?: ({
     inputs,
     item,
+    data,
     updatedFieldsObject,
     transaction,
   }: {
     inputs: ServiceFunctionInputs;
     item: any;
+    data: any;
     updatedFieldsObject?: any;
     transaction: Knex.Transaction;
-  }) => Promise<void> | void;
+  }) => Promise<void | StringKeyObject> | (void | StringKeyObject);
   afterUpdate?: ({
     inputs,
     item,
+    data,
     updatedFieldsObject,
     transaction,
   }: {
     inputs: ServiceFunctionInputs;
     item: any;
+    data: any;
     updatedFieldsObject?: any;
     transaction: Knex.Transaction;
   }) => Promise<void> | void;
@@ -997,31 +1091,38 @@ export type DeleteRecordOptions = {
   beforeTransaction?: ({
     inputs,
     item,
+    data,
   }: {
     inputs: ServiceFunctionInputs;
     item: any;
+    data: any;
   }) => Promise<void> | void;
   beforeDelete?: ({
     inputs,
     item,
+    data,
     transaction,
   }: {
     inputs: ServiceFunctionInputs;
     item: any;
+    data: any;
     transaction: Knex.Transaction;
   }) => Promise<void> | void;
   afterDelete?: ({
     inputs,
     item,
+    data,
     transaction,
   }: {
     inputs: ServiceFunctionInputs;
     item: any;
+    data: any;
     transaction: Knex.Transaction;
   }) => Promise<void> | void;
   onDeleteEntries?: {
     service: PaginatedService;
     field?: string;
+    getFieldValue?: (item) => any;
     recursive?: boolean;
   }[];
 };
@@ -1037,19 +1138,21 @@ export function generateCreateRootResolver({
     const { req, rootResolver, fieldPath, query, processedArgs } =
       await processRootResolverArgs(inputs);
 
-    await options?.beforeTransaction?.({ inputs });
+    const data = {};
+
+    await options?.beforeTransaction?.({ inputs, data });
 
     let addResults;
-    await knex.transaction(async (transaction) => {
+    await db.transaction(async (transaction) => {
       const createFields = await options?.getCreateFields?.({
         inputs,
+        data,
         transaction,
       });
 
       addResults = await service.createSqlRecord({
         fields: {
-          ...processedArgs,
-          ...createFields,
+          ...(createFields || processedArgs),
           createdBy: req.user!.id,
         },
         extendFn: (knexObject) => {
@@ -1069,6 +1172,7 @@ export function generateCreateRootResolver({
       await options?.afterCreate?.({
         inputs,
         itemId: addResults.id,
+        data,
         transaction,
       });
     });
@@ -1091,34 +1195,45 @@ export function generateUpdateRootResolver({
     const { req, rootResolver, fieldPath, processedArgs, query } =
       await processRootResolverArgs(inputs);
 
+    const data = {};
+
     const item = await service.getFirstSqlRecord(
       {
         select: ["id"].concat(options?.fields ?? []),
-        where: { id: processedArgs.item },
+        where: {
+          id:
+            options?.pathToItem === null
+              ? processedArgs
+              : getNestedProperty(processedArgs, options?.pathToItem ?? "item"),
+        },
       },
       true
     );
 
-    const updatedFieldsObject = options?.fields
-      ? getUpdatedFieldValues(processedArgs.fields, item, options.fields)
-      : undefined;
+    const updatedFieldsObject =
+      options?.fields && processedArgs.fields
+        ? getUpdatedFieldValues(processedArgs.fields, item, options.fields)
+        : undefined;
 
-    await options?.beforeTransaction?.({ inputs, item, updatedFieldsObject });
+    await options?.beforeTransaction?.({
+      inputs,
+      item,
+      data,
+      updatedFieldsObject,
+    });
 
-    await knex.transaction(async (transaction) => {
-      const updateFields = options?.getUpdateFields?.({
+    await db.transaction(async (transaction) => {
+      const updateFields = await options?.getUpdateFields?.({
         inputs,
         item,
+        data,
         updatedFieldsObject,
         transaction,
       });
 
       await service.updateSqlRecord(
         {
-          fields: {
-            ...processedArgs.fields,
-            ...updateFields,
-          },
+          fields: updateFields ?? processedArgs.fields,
           where: {
             id: item.id,
           },
@@ -1131,6 +1246,8 @@ export function generateUpdateRootResolver({
       await options?.afterUpdate?.({
         inputs,
         item,
+        data,
+        updatedFieldsObject,
         transaction,
       });
     });
@@ -1153,6 +1270,8 @@ export function generateDeleteRootResolver({
     const { req, rootResolver, fieldPath, processedArgs, query } =
       await processRootResolverArgs(inputs);
 
+    const data = {};
+
     // confirm existence of item and get ID
     const item = await service.getFirstSqlRecord(
       {
@@ -1162,15 +1281,16 @@ export function generateDeleteRootResolver({
       true
     );
 
-    await options?.beforeTransaction?.({ inputs, item });
+    await options?.beforeTransaction?.({ inputs, item, data });
 
     let requestedQuery;
 
     // delete the type and also any associated services
-    await knex.transaction(async (transaction) => {
+    await db.transaction(async (transaction) => {
       await options?.beforeDelete?.({
         inputs,
         item,
+        data,
         transaction,
       });
 
@@ -1193,7 +1313,9 @@ export function generateDeleteRootResolver({
             // if it's the same service and deleting recursively, fetch the IDs of all child elements that need to be deleted, and then delete them all at once
             const idsToDelete: any[] = [];
 
-            let newlyDiscoveredIdsToDelete: any[] = [item.id];
+            let newlyDiscoveredIdsToDelete: any[] = [
+              deleteEntry.getFieldValue?.(item) ?? item.id,
+            ];
 
             while (newlyDiscoveredIdsToDelete.length) {
               const recordsToDelete = await deleteEntry.service.getAllSqlRecord(
@@ -1226,7 +1348,8 @@ export function generateDeleteRootResolver({
           } else {
             await deleteEntry.service.deleteSqlRecord({
               where: {
-                [deleteEntry.field ?? service.typename]: item.id,
+                [deleteEntry.field ?? service.typename]:
+                  deleteEntry.getFieldValue?.(item) ?? item.id,
               },
               transaction,
             });
@@ -1238,6 +1361,7 @@ export function generateDeleteRootResolver({
       await options?.afterDelete?.({
         inputs,
         item,
+        data,
         transaction,
       });
     });

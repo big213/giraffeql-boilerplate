@@ -1145,9 +1145,13 @@ export default {
     async handleReloadParentItem() {
       if (!this.expandedItem) return
 
+      await this.reloadRecord(this.expandedItem.id)
+
+      /*
       const record = await this.fetchData(this.expandedItem.id)
 
       Object.assign(this.expandedItem, record)
+      */
     },
 
     // reloads a specific record in the pageData, if it is present

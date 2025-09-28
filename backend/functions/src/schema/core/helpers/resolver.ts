@@ -35,7 +35,7 @@ import {
   generateSqlSingleFieldObjectFromArray,
 } from "./sqlHelper";
 import { Knex } from "knex";
-import { knex } from "../../../utils/knex";
+import { db } from "../../../utils/knex";
 
 type CustomResolver = {
   resolver: CustomResolverFunction;
@@ -189,7 +189,7 @@ export async function updateObjectType({
       table: typename,
       fields: {
         ...sqlFields,
-        updatedAt: knex.fn.now(),
+        updatedAt: db.fn.now(),
       },
       where: {
         id,

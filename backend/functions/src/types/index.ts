@@ -4,7 +4,7 @@ import {
   SpecialJoinDefinition,
   SqlFieldGetter,
 } from "../schema/core/helpers/sql";
-import { userPermission, userRole } from "../schema/enums";
+import { userPermissionEnum, userRoleKenum } from "../schema/enums";
 import { GiraffeqlRootResolverType } from "giraffeql";
 
 export type StringKeyObject = Record<string, any>;
@@ -90,8 +90,8 @@ export type ServiceFunctionInputs = {
 
 export type ContextUser = {
   id: string;
-  role: userRole | null;
-  permissions: userPermission[];
+  role: userRoleKenum | null;
+  permissions: userPermissionEnum[];
   isApiKey: boolean; // was the context created using an API Key?
 };
 

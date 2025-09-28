@@ -44,7 +44,7 @@ import {
   capitalizeString,
 } from "../helpers/shared";
 import { getObjectType } from "../helpers/resolver";
-import { knex } from "../../../utils/knex";
+import { db } from "../../../utils/knex";
 import { generateSqlSingleFieldObject } from "../helpers/sqlHelper";
 import { Knex } from "knex";
 import {
@@ -251,11 +251,11 @@ export class PaginatedService extends BaseService {
   }
 
   getCreateInputTypeDefLookup() {
-    return getInputTypeDef(`create${capitalizeString(this.typename)}Args`);
+    return getInputTypeDef(`${this.typename}CreateArgs`);
   }
 
   getUpdateInputTypeDefLookup() {
-    return getInputTypeDef(`update${capitalizeString(this.typename)}Args`);
+    return getInputTypeDef(`${this.typename}UpdateArgs`);
   }
 
   async getReturnQuery({
@@ -448,7 +448,7 @@ export class PaginatedService extends BaseService {
       fields: {
         ...sqlQuery.fields,
         ...(updateUpdatedAt && {
-          updatedAt: knex.fn.now(),
+          updatedAt: db.fn.now(),
         }),
       },
       table: this.typename,
@@ -477,7 +477,7 @@ export class PaginatedService extends BaseService {
           await updateTableRow({
             ...sqlQuery,
             fields: {
-              updatedAt: knex.fn.now(),
+              updatedAt: db.fn.now(),
             },
             table: this.typename,
           });
@@ -650,7 +650,7 @@ export class PaginatedService extends BaseService {
             args.sortBy.some((sortByObject) => sortByObject.field === key)
           ) {
             rawSelect.push({
-              statement: knex.raw(
+              statement: db.raw(
                 `earth_distance(ll_to_earth(${latitude}, ${longitude}), ll_to_earth(${latitudeField}, ${longitudeField}))`
               ),
               as: key,

@@ -1,17 +1,17 @@
 <template>
   <v-card flat>
     <slot name="toolbar"></slot>
-    <v-card-text :class="{ 'dialog-max-height': dialogMode }" class="px-0 pt-0">
+    <v-card-text :class="{ 'dialog-max-height': dialogMode }" class="px-0 py-0">
       <CircularLoader
         v-if="isLoading"
         style="min-height: 250px"
       ></CircularLoader>
       <div v-else>
-        <div v-if="currentItem && viewDefinition.viewOptions.heroOptions">
+        <div v-if="currentItem && options.heroOptions">
           <component
             :is="heroComponent"
             :item="currentItem"
-            :hero-options="viewDefinition.viewOptions.heroOptions"
+            :hero-options="options.heroOptions"
             :entity="viewDefinition.entity"
           ></component>
         </div>
@@ -53,7 +53,7 @@
         <slot name="posts"></slot>
       </div>
     </v-card-text>
-    <v-card-actions v-if="!isLoading">
+    <v-card-actions v-if="!isLoading && $slots['footer-action']">
       <v-spacer></v-spacer>
       <slot name="footer-action"></slot>
     </v-card-actions>

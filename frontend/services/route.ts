@@ -1,10 +1,11 @@
 import type { ViewDefinition } from '~/types/view'
 import { routeTypesMap } from '../config'
 import { camelToKebabCase } from './base'
+import { ActionDefinition } from '~/types/action'
 
 export type RouteObject = { routeKey: string; routeType: string }
 
-export function generateNavRouteObject(
+export function generateViewRouteObject(
   that,
   {
     viewDefinition,
@@ -20,10 +21,10 @@ export function generateNavRouteObject(
     exactUrl?: boolean
   }
 ) {
-  return {
+  return generateRouteObject({
     icon: icon ?? viewDefinition.entity.icon,
     title: title ?? viewDefinition.title ?? viewDefinition.entity.pluralName,
-    to: generateCrudRecordRoute(that, {
+    route: generateCrudRecordRoute(that, {
       viewDefinition,
       pageOptions:
         pageOptions === null
@@ -35,6 +36,44 @@ export function generateNavRouteObject(
               ...pageOptions,
             },
     }),
+    exactUrl,
+  })
+}
+
+export function generateActionRouteObject({
+  actionDefinition,
+  title,
+  icon,
+  exactUrl,
+}: {
+  actionDefinition: ActionDefinition
+  title?: string
+  icon?: string
+  exactUrl?: boolean
+}) {
+  return generateRouteObject({
+    icon: icon ?? actionDefinition.icon,
+    title: title ?? actionDefinition.title,
+    route: `/action/${camelToKebabCase(actionDefinition.routeKey)}`,
+    exactUrl,
+  })
+}
+
+export function generateRouteObject({
+  title,
+  icon,
+  route,
+  exactUrl,
+}: {
+  title: string
+  icon?: string
+  route: string
+  exactUrl?: boolean
+}) {
+  return {
+    icon,
+    title,
+    to: route,
     exactUrl,
   }
 }

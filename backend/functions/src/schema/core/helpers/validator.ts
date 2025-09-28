@@ -1,8 +1,14 @@
-import { userPermission } from "../../enums";
+import { userPermissionEnum } from "../../enums";
 import { User } from "../../services";
 import { PaginatedService } from "../services";
 import { PermissionsError } from "./error";
-import { filterPassesTest, isCurrentUser, isUserLoggedIn } from "./permissions";
+import {
+  filterPassesTest,
+  isCurrentUser,
+  isUserLoggedIn,
+  validateQueryFields,
+} from "./permissions";
+import { getNestedProperty } from "./shared";
 
 export function generateAllowIfAdminValidator(
   permissionsCheck?: (inputs) => void | Promise<void>
@@ -10,7 +16,7 @@ export function generateAllowIfAdminValidator(
   return async function (inputs) {
     const { req } = inputs;
     // always allow if user has */* permission
-    if (req.user?.permissions.includes(userPermission["*/*"])) {
+    if (req.user?.permissions.includes(userPermissionEnum["*/*"])) {
       return;
     }
 
@@ -25,9 +31,27 @@ export const ValidatorGenerators = {
     return () => undefined;
   },
 
+  allowIfOnlyFieldsRequested: (fields: string[], pathToNode?: string) => {
+    return generateAllowIfAdminValidator(function ({ query, fieldPath }) {
+      if (
+        validateQueryFields(
+          pathToNode ? getNestedProperty(query, pathToNode) : query,
+          fields
+        )
+      ) {
+        return;
+      }
+
+      throw new PermissionsError({
+        message: `Prohibited fields were requested`,
+        fieldPath,
+      });
+    });
+  },
+
   // if requiredPermissions is array, *any* one of them will do
   allowIfUserHasPermissions: (
-    requiredPermissions: userPermission | userPermission[]
+    requiredPermissions: userPermissionEnum | userPermissionEnum[]
   ) => {
     return generateAllowIfAdminValidator(async function ({ req }) {
       if (!req.user) throw new Error("Login Required");

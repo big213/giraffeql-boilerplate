@@ -1,9 +1,10 @@
 import { ActionDefinition } from '~/types/action'
 
 export const deferredActionExecute: ActionDefinition = {
+  routeKey: 'deferredActionExecute',
+  operationName: 'deferredActionExecute',
   title: 'Execute Deferred Action',
   icon: 'mdi-code-tags',
-  operationName: 'deferredActionExecute',
   fields: [
     {
       fieldKey: 'code',

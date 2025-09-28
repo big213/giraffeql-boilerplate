@@ -27,8 +27,9 @@ export default {
         resolver: generateCreateRootResolver({
           service: ApiKey,
           options: {
-            getCreateFields({ inputs, transaction }) {
+            getCreateFields({ inputs: { processedArgs }, transaction }) {
               return {
+                ...processedArgs,
                 code: nanoid(),
               };
             },

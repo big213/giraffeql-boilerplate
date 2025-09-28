@@ -19,6 +19,7 @@ export const Admin = new AdminService();
 export const UserUserFollowLink = new UserUserFollowLinkService();
 /** END LINK Service Set */
 
-export const UserRole = new EnumService(enums.userRole);
-export const UserPermission = new EnumService(enums.userPermission);
+export const UserRole = new EnumService(enums.userRoleKenum);
+export const UserPermission = new EnumService(enums.userPermissionEnum);
+export const ActionType = new EnumService(enums.actionTypeKenum);
 /** END ENUM Service Set */
