@@ -1322,7 +1322,10 @@ export async function insertTableRow(sqlQuery: SqlInsertQuery) {
     for (const fieldname in sqlQuery.fields) {
       const sqlOptions =
         currentTypeDef.definition.fields[fieldname]?.sqlOptions;
-      if (!sqlOptions) throw new Error(`'${fieldname}' is not a sql field`);
+      if (!sqlOptions)
+        throw new Error(
+          `'${fieldname}' is not a sql field on ${currentTypeDef.definition.name}`
+        );
 
       sqlFields[sqlOptions.field ?? fieldname] = sqlOptions.parseValue
         ? sqlOptions.parseValue(sqlQuery.fields[fieldname])

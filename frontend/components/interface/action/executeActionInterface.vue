@@ -258,7 +258,7 @@ export default {
       }
 
       // if it's not persistent, close (if there is a dialog)
-      if (this.actionDefinition.persistent && this.dialogMode) {
+      if (!this.actionDefinition.persistent && this.dialogMode) {
         this.$emit('close')
       } else {
         // else reset

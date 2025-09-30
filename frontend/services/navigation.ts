@@ -1,5 +1,6 @@
-import * as actions from '../models/actions'
+// important: views must be imported *before* actions
 import * as views from '../models/views'
+import * as actions from '../models/actions'
 import * as baseViews from '../models/views/base'
 import { userHasPermissions } from './base'
 import {

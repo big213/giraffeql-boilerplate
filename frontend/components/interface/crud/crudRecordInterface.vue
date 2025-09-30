@@ -514,7 +514,7 @@
                       :entity="viewDefinition.entity"
                     ></component>
                   </div>
-                  <v-list dense>
+                  <v-list v-if="headers.length" dense>
                     <v-list-item v-for="(headerObject, j) in headers" :key="j">
                       <v-list-item-content v-if="!headerObject.hideTitleIfGrid"
                         >{{ headerObject.text }}:</v-list-item-content
