@@ -3,6 +3,7 @@ import { ActionDefinition } from '~/types/action'
 import { UserEntity } from '../entities'
 
 export const {{ actionName }}: ActionDefinition = {
+  routeKey: '{{ actionName }}',
   operationName: '{{ actionName }}',
   title: '{{ capitalizedActionName }}',
   icon: 'mdi-code-tags',

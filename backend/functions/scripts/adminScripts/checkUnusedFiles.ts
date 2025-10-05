@@ -132,6 +132,9 @@ initializeApp({
 
   for (const file of files) {
     const filename = file.metadata.name;
+
+    if (!filename) continue;
+
     // check if it is not a directory, and doesn't exist in the knownFiles directory.
     // also make sure it is not in the permanent or source/dev folder
     if (

@@ -22,6 +22,7 @@ export async function up(knex: Knex): Promise<void> {
     table.string("code", 255).notNullable().unique();
     table.string("user").notNullable();
     table.jsonb("permissions").nullable();
+    table.boolean("mask_user_role").notNullable();
     table.dateTime("created_at").notNullable().defaultTo(knex.fn.now());
     table.dateTime("updated_at").notNullable().defaultTo(knex.fn.now());
     table.string("created_by").notNullable();

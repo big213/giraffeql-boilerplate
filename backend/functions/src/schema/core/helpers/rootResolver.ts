@@ -477,7 +477,7 @@ export function generateRootResolverTypeCreateOperation({
   });
 }
 
-export function generateRootResolverTypeUpdateOperation({
+export function generateRootResolverTypeAction({
   service,
   operation,
   validator,
@@ -501,7 +501,7 @@ export function generateRootResolverTypeUpdateOperation({
   return new GiraffeqlRootResolverType({
     name: methodName,
     restOptions: {
-      method: "put",
+      method: "post",
       route: `/${service.typename}/:id/${operation}`,
       argsTransformer: (req) => {
         return {

@@ -5,7 +5,6 @@ export class UserService extends PaginatedService {
   defaultTypename = "user";
 
   filterFieldsMap = {
-    id: {},
     "createdBy.name": {},
     isPublic: {},
     role: {},
@@ -17,7 +16,6 @@ export class UserService extends PaginatedService {
   };
 
   sortFieldsMap = {
-    id: {},
     createdAt: {},
     updatedAt: {},
   };

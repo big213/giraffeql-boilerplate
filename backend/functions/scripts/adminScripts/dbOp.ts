@@ -1,4 +1,4 @@
-import { knex } from "../../src/utils/knex";
+import { db } from "../../src/utils/knex";
 (async function () {
   // await knex.raw(`ALTER TABLE "salesChannel" ALTER COLUMN type DROP NOT NULL;`);
   // await knex.raw(`ALTER TABLE "salesChannel" ALTER COLUMN type DROP DEFAULT;`);
@@ -26,8 +26,9 @@ import { knex } from "../../src/utils/knex";
     `UPDATE "sale" set timeout_days = 13 WHERE timeout_days IS NULL`
   ); */
 
-  await knex.schema.alterTable("itinerary", function (t) {
-    t.renameColumn("departing_city", "departing_airport");
+  await db.schema.alterTable("apiKey", function (t) {
+    t.boolean("mask_user_role").notNullable().defaultTo(true);
+    t.boolean("mask_user_role").notNullable().alter();
   });
 
   console.log(`DB Operation completed`);

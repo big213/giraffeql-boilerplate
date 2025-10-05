@@ -24,6 +24,10 @@ export const BaseApiKeyView: ViewDefinition = {
       getOptions: getCurrentUserAllPermissions,
       getInitialValue: () => null,
     },
+    maskUserRole: {
+      inputType: 'checkbox',
+      getInitialValue: () => false,
+    },
     user: generateJoinableInputField({
       entity: UserEntity,
     }),
@@ -38,6 +42,9 @@ export const BaseApiKeyView: ViewDefinition = {
     user: generateJoinableRenderField({
       entity: UserEntity,
     }),
+    maskUserRole: {
+      component: Columns.BooleanColumn,
+    },
   },
   paginationOptions: {
     searchOptions: undefined,
@@ -61,6 +68,10 @@ export const BaseApiKeyView: ViewDefinition = {
         width: '250px',
       },
       {
+        fieldKey: 'maskUserRole',
+        width: '100px',
+      },
+      {
         fieldKey: 'updatedAt',
         width: '150px',
       },
@@ -68,13 +79,20 @@ export const BaseApiKeyView: ViewDefinition = {
   },
 
   createOptions: {
-    fields: ['name', 'permissions', 'user'],
+    fields: ['name', 'permissions', 'maskUserRole', 'user'],
   },
   updateOptions: {
-    fields: ['name', 'permissions'],
+    fields: ['name', 'permissions', 'maskUserRole'],
   },
   viewOptions: {
-    fields: ['name', 'permissions', 'allowedPermissions', 'code', 'user'],
+    fields: [
+      'name',
+      'permissions',
+      'allowedPermissions',
+      'maskUserRole',
+      'code',
+      'user',
+    ],
   },
   enterOptions: {},
   deleteOptions: {},

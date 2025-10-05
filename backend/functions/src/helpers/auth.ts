@@ -16,8 +16,14 @@ export async function validateToken(bearerToken: string): Promise<ContextUser> {
     if (!bearerToken.match(/^Bearer\s/)) {
       throw new Error("Invalid bearer token");
     }
-
     const token = bearerToken.split(" ")[1];
+
+    // if bearerToken starts with sk_, treat it as an apiKey
+    if (token.match(/^sk_/)) {
+      const apiKey = token.split("_")[1];
+
+      return validateApiKey(apiKey);
+    }
 
     // const decoded: string = await jwt.verify(token, env.general.jwt_secret);
     const decodedToken = await auth().verifyIdToken(token);
@@ -98,7 +104,13 @@ export async function validateApiKey(code: string): Promise<ContextUser> {
   try {
     const apiKey = await ApiKey.getFirstSqlRecord(
       {
-        select: ["user.id", "user.role", "user.permissions", "permissions"],
+        select: [
+          "user.id",
+          "user.role",
+          "user.permissions",
+          "permissions",
+          "maskUserRole",
+        ],
         where: {
           code,
         },
@@ -125,7 +137,8 @@ export async function validateApiKey(code: string): Promise<ContextUser> {
 
     return {
       id: apiKey["user.id"],
-      role,
+      // if maskUserRole is set, set the role to null
+      role: apiKey.maskUserRole ? null : role,
       permissions: allowedPermissions,
       isApiKey: true,
     };

@@ -1,10 +1,10 @@
-import { nanoid } from "nanoid";
 import {
   generateBaseRootResolvers,
   generateCreateRootResolver,
 } from "../../core/helpers/rootResolver";
 import { ValidatorGenerators } from "../../core/helpers/validator";
 import { ApiKey } from "../../services";
+import { generateId } from "../../core/helpers/shared";
 
 export default {
   ...generateBaseRootResolvers({
@@ -27,10 +27,10 @@ export default {
         resolver: generateCreateRootResolver({
           service: ApiKey,
           options: {
-            getCreateFields({ inputs: { processedArgs }, transaction }) {
+            async getCreateFields({ inputs: { processedArgs }, transaction }) {
               return {
                 ...processedArgs,
-                code: nanoid(),
+                code: await generateId(21),
               };
             },
           },

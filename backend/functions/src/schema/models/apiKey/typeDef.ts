@@ -6,6 +6,7 @@ import {
 } from "../../core/helpers/permissions";
 import {
   generateArrayField,
+  generateBooleanField,
   generateCreatedByField,
   generateIdField,
   generateJoinableField,
@@ -38,6 +39,9 @@ export default new GiraffeqlObjectType(
       permissions: generateArrayField({
         allowNull: true,
         type: Scalars.userPermission,
+      }),
+      maskUserRole: generateBooleanField({
+        allowNull: false,
       }),
       allowedPermissions: {
         type: Scalars.userPermission,
