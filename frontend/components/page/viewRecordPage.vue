@@ -131,8 +131,8 @@
         >
           <component
             class="mx-auto elevation-6"
-            style="max-width: 800px"
             :is="postInterface"
+            :style="fullPageMode ? `max-width: 800px` : null"
             :locked-filters="postLockedFilters"
             :hidden-fields="viewDefinition.postOptions.hiddenFields"
             :view-definition="viewDefinition.postOptions.viewDefinition"

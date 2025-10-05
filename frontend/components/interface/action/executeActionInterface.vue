@@ -258,11 +258,13 @@ export default {
       }
 
       // if it's not persistent, close (if there is a dialog)
-      if (!this.actionDefinition.persistent && this.dialogMode) {
-        this.$emit('close')
-      } else {
-        // else reset
-        this.reset()
+      if (!this.actionDefinition.persistent) {
+        if (this.dialogMode) {
+          this.$emit('close')
+        } else {
+          // else reset
+          this.reset()
+        }
       }
 
       this.$emit('handle-submit', data)

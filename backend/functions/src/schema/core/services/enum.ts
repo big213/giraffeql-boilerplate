@@ -1,5 +1,5 @@
 import { SimpleService } from ".";
-import { AccessControlMap, ServiceFunctionInputs } from "../../../types";
+import { ServiceFunctionInputs } from "../../../types";
 import {
   GiraffeqlObjectType,
   GiraffeqlRootResolverType,
@@ -13,15 +13,11 @@ export class EnumService extends SimpleService {
   enum: any;
   scalarDefinition: ScalarDefinition;
 
-  accessControlMap?: AccessControlMap | undefined;
-
   // currentEnum must be any because of this weird Enum implementation
-  constructor(currentEnum: any, accessControlMap?: AccessControlMap) {
+  constructor(currentEnum: any) {
     super(currentEnum.getName());
 
     this.enum = currentEnum;
-
-    this.accessControlMap = accessControlMap;
 
     this.scalarDefinition = currentEnum.getScalarType();
 
@@ -31,7 +27,7 @@ export class EnumService extends SimpleService {
         description: "EnumPaginator",
         fields: {
           values: {
-            type: Scalars[this.typename],
+            type: this.scalarDefinition,
             arrayOptions: {
               allowNullElement: false,
             },

@@ -35,7 +35,7 @@
     >
       <v-container class="text-left">
         <v-row>
-          <v-col v-if="viewDefinition.createOptions" cols="12">
+          <v-col v-if="!readonly && viewDefinition.createOptions" cols="12">
             <div class="highlighted-bg">
               <EditRecordInterface
                 :view-definition="viewDefinition"
@@ -46,129 +46,125 @@
               ></EditRecordInterface>
             </div>
           </v-col>
-          <div
-            :style="
-              maxContentHeight
-                ? `max-height: ${maxContentHeight}; overflow-y: auto;`
-                : null
-            "
-          >
-            <v-col v-for="props in records" :key="props.item.id" cols="12">
-              <v-card
-                class="elevation-5"
-                :color="
-                  $vuetify.theme.dark ? 'grey darken-3' : 'grey lighten-3'
-                "
-              >
-                <v-list-item>
-                  <v-list-item-avatar>
-                    <v-icon v-if="props.item.isSystem">
-                      mdi-information
-                    </v-icon>
-                    <v-img
-                      v-else-if="props.item.createdBy.avatarUrl"
-                      class="elevation-6"
-                      :alt="props.item.createdBy.name"
-                      :src="props.item.createdBy.avatarUrl"
-                    ></v-img>
-                    <v-icon v-else>mdi-account</v-icon>
-                  </v-list-item-avatar>
-                  <v-list-item-content>
-                    <PreviewRecordMenu
-                      v-if="!props.item.isSystem"
-                      :item="props.item.createdBy"
-                      :typename="props.item.createdBy.__typename"
-                      :close-on-content-click="false"
-                      :min-width="300"
-                      :max-width="300"
-                      offset-y
-                      top
-                    >
-                      <template v-slot:activator="{ on, attrs }">
-                        <v-list-item-title v-bind="attrs" v-on="on">{{
-                          props.item.createdBy.name
-                        }}</v-list-item-title>
-                      </template>
-                    </PreviewRecordMenu>
-                    <v-list-item-subtitle>{{
-                      `${generateTimeAgoString(props.item.createdAt)}${
-                        props.item.createdAt !== props.item.updatedAt
-                          ? ` (edited ${generateTimeAgoString(
-                              props.item.updatedAt
-                            )})`
-                          : ''
-                      }`
-                    }}</v-list-item-subtitle>
-                  </v-list-item-content>
-                  <v-row
-                    v-if="
-                      userHasEditPermissions(props.item) &&
-                      (viewDefinition.updateOptions ||
-                        viewDefinition.deleteOptions)
-                    "
-                    align="center"
-                    justify="end"
+        </v-row>
+        <v-row
+          :style="
+            maxContentHeight
+              ? `max-height: ${maxContentHeight}; overflow-y: auto;`
+              : null
+          "
+        >
+          <v-col v-for="props in records" :key="props.item.id" cols="12">
+            <v-card
+              class="elevation-5"
+              :color="$vuetify.theme.dark ? 'grey darken-3' : 'grey lighten-3'"
+            >
+              <v-list-item>
+                <v-list-item-avatar>
+                  <v-icon v-if="props.item.isSystem"> mdi-information </v-icon>
+                  <v-img
+                    v-else-if="props.item.createdBy.avatarUrl"
+                    class="elevation-6"
+                    :alt="props.item.createdBy.name"
+                    :src="props.item.createdBy.avatarUrl"
+                  ></v-img>
+                  <v-icon v-else>mdi-account</v-icon>
+                </v-list-item-avatar>
+                <v-list-item-content>
+                  <PreviewRecordMenu
+                    v-if="!props.item.isSystem"
+                    :item="props.item.createdBy"
+                    :typename="props.item.createdBy.__typename"
+                    :close-on-content-click="false"
+                    :min-width="300"
+                    :max-width="300"
+                    offset-y
+                    top
                   >
-                    <v-menu bottom left>
-                      <template v-slot:activator="{ on }">
-                        <v-btn icon v-on="on">
-                          <v-icon>mdi-dots-vertical</v-icon>
-                        </v-btn>
-                      </template>
-                      <v-list dense>
-                        <v-list-item
-                          v-if="viewDefinition.updateOptions"
-                          key="edit"
-                          @click="props.isEditing = true"
-                        >
-                          <v-list-item-icon>
-                            <v-icon>mdi-pencil</v-icon>
-                          </v-list-item-icon>
-                          <v-list-item-title>Edit</v-list-item-title>
-                        </v-list-item>
-                        <v-list-item
-                          v-if="viewDefinition.deleteOptions"
-                          key="delete"
-                          @click="deletePost(props)"
-                        >
-                          <v-list-item-icon>
-                            <v-icon>mdi-delete</v-icon>
-                          </v-list-item-icon>
-                          <v-list-item-title>Delete</v-list-item-title>
-                        </v-list-item>
-                      </v-list>
-                    </v-menu>
-                  </v-row>
-                </v-list-item>
-                <v-card-text class="body-1 pt-0">
-                  <template v-if="!props.isEditing">
-                    <span class="break-space">{{ props.item.content }}</span>
-                    <PreviewableFilesColumn
-                      v-if="props.item.files.length"
-                      :item="props.item"
-                      field-path="files"
-                      :options="{ useFirebaseUrl: true }"
-                    ></PreviewableFilesColumn>
-                  </template>
-                  <EditRecordInterface
-                    v-else
-                    :view-definition="viewDefinition"
-                    mode="update"
-                    :parent-item="props.item"
-                    :return-fields="returnFields"
-                    @handle-submit="handlePostUpdate(props, $event)"
+                    <template v-slot:activator="{ on, attrs }">
+                      <v-list-item-title v-bind="attrs" v-on="on">{{
+                        props.item.createdBy.name
+                      }}</v-list-item-title>
+                    </template>
+                  </PreviewRecordMenu>
+                  <v-list-item-subtitle>{{
+                    `${generateTimeAgoString(props.item.createdAt)}${
+                      props.item.createdAt !== props.item.updatedAt
+                        ? ` (edited ${generateTimeAgoString(
+                            props.item.updatedAt
+                          )})`
+                        : ''
+                    }`
+                  }}</v-list-item-subtitle>
+                </v-list-item-content>
+                <v-row
+                  v-if="
+                    userHasEditPermissions(props.item) &&
+                    (viewDefinition.updateOptions ||
+                      viewDefinition.deleteOptions)
+                  "
+                  align="center"
+                  justify="end"
+                >
+                  <v-menu bottom left>
+                    <template v-slot:activator="{ on }">
+                      <v-btn icon v-on="on">
+                        <v-icon>mdi-dots-vertical</v-icon>
+                      </v-btn>
+                    </template>
+                    <v-list dense>
+                      <v-list-item
+                        v-if="viewDefinition.updateOptions"
+                        key="edit"
+                        @click="props.isEditing = true"
+                      >
+                        <v-list-item-icon>
+                          <v-icon>mdi-pencil</v-icon>
+                        </v-list-item-icon>
+                        <v-list-item-title>Edit</v-list-item-title>
+                      </v-list-item>
+                      <v-list-item
+                        v-if="viewDefinition.deleteOptions"
+                        key="delete"
+                        @click="deletePost(props)"
+                      >
+                        <v-list-item-icon>
+                          <v-icon>mdi-delete</v-icon>
+                        </v-list-item-icon>
+                        <v-list-item-title>Delete</v-list-item-title>
+                      </v-list-item>
+                    </v-list>
+                  </v-menu>
+                </v-row>
+              </v-list-item>
+              <v-card-text class="body-1 pt-0">
+                <template v-if="!props.isEditing">
+                  <span class="break-space">{{ props.item.content }}</span>
+                  <PreviewableFilesColumn
+                    v-if="props.item.files.length"
+                    :item="props.item"
+                    field-path="files"
+                    :options="{ useFirebaseUrl: true }"
+                  ></PreviewableFilesColumn>
+                </template>
+                <EditRecordInterface
+                  v-else
+                  :view-definition="viewDefinition"
+                  mode="update"
+                  :parent-item="props.item"
+                  :return-fields="returnFields"
+                  @handle-submit="handlePostUpdate(props, $event)"
+                >
+                  <v-btn
+                    text
+                    slot="footer-action"
+                    @click="props.isEditing = false"
+                    >Cancel</v-btn
                   >
-                    <v-btn
-                      text
-                      slot="footer-action"
-                      @click="props.isEditing = false"
-                      >Cancel</v-btn
-                    >
-                  </EditRecordInterface>
-                </v-card-text>
-              </v-card>
-            </v-col>
-          </div>
+                </EditRecordInterface>
+              </v-card-text>
+            </v-card>
+          </v-col>
         </v-row>
         <v-row v-if="loading.loadMore">
           <CircularLoader style="min-height: 250px"></CircularLoader>
