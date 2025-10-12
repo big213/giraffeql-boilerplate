@@ -19,6 +19,4 @@ export class ApiKeyService extends PaginatedService {
   searchFieldsMap = {
     name: {},
   };
-
-  groupByFieldsMap = {};
 }

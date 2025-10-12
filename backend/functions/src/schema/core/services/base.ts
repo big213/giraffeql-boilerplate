@@ -1,6 +1,7 @@
 import { GiraffeqlRootResolverType } from "giraffeql";
-import { ValidatorGenerators } from "../helpers/validator";
-import { defaultAdminOnly } from "../../../config";
+import { Validators } from "../../helpers/validator";
+import { alwaysAllowIfAdmin, defaultAdminOnly } from "../../../config";
+import { generateAllowIfAdminValidator } from "../helpers/validator";
 
 export abstract class BaseService {
   typename: string;
@@ -17,7 +18,15 @@ export abstract class BaseService {
     // loops through all the root resolvers and sets any without an explicit validator to require admin user
     Object.values(this.rootResolvers).forEach((rootResolver) => {
       if (!rootResolver.definition.validator && defaultAdminOnly.value()) {
-        rootResolver.definition.validator = ValidatorGenerators.allowIfAdmin();
+        rootResolver.definition.validator = Validators.allowIfAdmin();
+      } else if (
+        rootResolver.definition.validator &&
+        alwaysAllowIfAdmin.value()
+      ) {
+        // if there is a validator, always allow if admin (if alwaysAllowIfAdmin is true)
+        rootResolver.definition.validator = generateAllowIfAdminValidator(
+          rootResolver.definition.validator
+        );
       }
     });
   }

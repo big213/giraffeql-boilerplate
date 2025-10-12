@@ -21,7 +21,9 @@ export const Base{{ capitalizedTypename }}View: ViewDefinition = {
     searchOptions: undefined,
     filters: [],
     ...generateClickRowToOpenDialogOptions(),
-    heroOptions: {},
+    gridOptions: {
+      heroOptions: {},
+    },
     sortFields: [
       ...generateSortOptions({ fieldPath: 'createdAt' }),
       ...generateSortOptions({ fieldPath: 'updatedAt' }),

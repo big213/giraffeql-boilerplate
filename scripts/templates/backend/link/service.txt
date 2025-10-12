@@ -1,5 +1,4 @@
 import { LinkService } from "../../core/services";
-import { AccessControlMap } from "../../../types";
 
 export class {{ capitalizedTypename }}Service extends LinkService {
   defaultTypename = "{{ typename }}";
@@ -16,8 +15,4 @@ export class {{ capitalizedTypename }}Service extends LinkService {
   };
 
   searchFieldsMap = {};
-
-  groupByFieldsMap = {};
-
-  accessControlMap: AccessControlMap = {};
 }

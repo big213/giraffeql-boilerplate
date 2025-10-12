@@ -3,6 +3,7 @@ import { StringKeyObject } from "giraffeql";
 import { userPermissionEnum, userRoleKenum } from "../../enums";
 import { userRoleToPermissionsMap } from "../../helpers/permissions";
 import { isObject, objectOnlyHasFields } from "./shared";
+import { ServiceFunctionInputs } from "../../../types";
 
 export function parsePermissions(
   permissions: null | string[]
@@ -76,13 +77,6 @@ export function isPermissionAllowed({
   return false;
 }
 
-// is the user logged in?
-export function userLoggedIn(req: Request) {
-  if (!req.user) throw new Error("User login required");
-
-  return true;
-}
-
 export function isUserLoggedIn(req: Request) {
   if (!req.user) return false;
 
@@ -94,13 +88,22 @@ export function isCurrentUser(req: Request, userId: string) {
   return req.user ? req.user.id === userId : false;
 }
 
+export type FilterObjectFunction = (
+  filterObject,
+  inputs?: ServiceFunctionInputs
+) => Boolean | Promise<Boolean>;
+
 // does every filterObject in the args array pass the filterFn?
-export async function filterPassesTest(filterByArray, filterFn) {
+export async function filterPassesTest(
+  inputs: ServiceFunctionInputs,
+  filterFn: FilterObjectFunction
+) {
+  const filterByArray = inputs.args.filterBy;
   // if empty array, return false
   if (!Array.isArray(filterByArray) || !filterByArray.length) return false;
 
   for (const filterObject of filterByArray) {
-    if (!(await filterFn(filterObject))) return false;
+    if (!(await filterFn(filterObject, inputs))) return false;
   }
 
   // if it passed all of the conditions, return true
@@ -109,10 +112,14 @@ export async function filterPassesTest(filterByArray, filterFn) {
 
 // does the first filterObject have the fieldPath attribute, and if so, do other filterObjects also have the same exact value?
 // only "eq" currently supported
-export function allFiltersSynced(filterByArray: any, fieldPath: string) {
+export function allFiltersSynced(
+  filterByArray: any,
+  fieldPath: string,
+  inputs: ServiceFunctionInputs
+) {
   const firstValue = filterByArray[0]?.[fieldPath]?.eq;
 
-  return filterPassesTest(filterByArray, (filterObject) => {
+  return filterPassesTest(inputs, (filterObject) => {
     return filterObject[fieldPath]?.eq === firstValue;
   });
 }

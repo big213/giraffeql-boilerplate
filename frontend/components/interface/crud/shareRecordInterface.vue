@@ -51,7 +51,9 @@ export default {
             this.parentItem.id
           )
         : generateShareUrl(this, {
-            routeKey: this.viewDefinition.routeKey,
+            routeKey:
+              this.viewDefinition.shareOptions.routeKey ??
+              this.viewDefinition.routeKey,
             id: this.parentItem.id,
             showComments: true,
           })

@@ -28,4 +28,7 @@ export const MyProfileView: ViewDefinition = {
   },
   deleteOptions: undefined,
   childTypes: [],
+  shareOptions: {
+    routeKey: 'user',
+  },
 }

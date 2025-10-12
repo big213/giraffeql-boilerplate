@@ -489,10 +489,7 @@
         <template v-slot:default="props">
           <v-container fluid>
             <v-row
-              :justify="
-                viewDefinition.paginationOptions.gridOptions &&
-                viewDefinition.paginationOptions.gridOptions.justify
-              "
+              :justify="viewDefinition.paginationOptions.gridOptions?.justify"
             >
               <v-col
                 v-for="item in props.items"
@@ -504,12 +501,17 @@
                   class="noselect elevation-6"
                   @click="handleGridElementClick(item)"
                 >
-                  <div v-if="viewDefinition.paginationOptions.heroOptions">
+                  <div
+                    v-if="
+                      viewDefinition.paginationOptions.gridOptions?.heroOptions
+                    "
+                  >
                     <component
                       :is="heroComponent"
                       :item="item"
                       :hero-options="
-                        viewDefinition.paginationOptions.heroOptions
+                        viewDefinition.paginationOptions.gridOptions
+                          ?.heroOptions
                       "
                       :entity="viewDefinition.entity"
                     ></component>
@@ -549,7 +551,9 @@
                   </div>
 
                   <div
-                    v-if="!viewDefinition.paginationOptions.hideActions"
+                    v-if="
+                      !(viewDefinition.paginationOptions.hideActions || viewDefinition.paginationOptions.gridOptions?.hideActions)
+                    "
                     class="text-center"
                     style="width: 100%"
                   >

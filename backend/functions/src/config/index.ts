@@ -10,6 +10,7 @@ export const debugMode = !!(
   process.env.DEBUG_MODE ?? defineBoolean("DEBUG_MODE").value()
 );
 export const defaultAdminOnly = defineBoolean("DEFAULT_ADMIN_ONLY");
+export const alwaysAllowIfAdmin = defineBoolean("ALWAYS_ALLOW_IF_ADMIN");
 
 export const projectPath = process.env.PROJECT_PATH;
 

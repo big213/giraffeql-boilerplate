@@ -7,9 +7,9 @@ import { githubOrganization, githubRepository } from "../../../config";
 import { executeGithubGraphqlRequest } from "../../helpers/github";
 import { executeGoogleApiRequest } from "../../helpers/google";
 import { Scalars } from "../../scalars";
-import { ValidatorGenerators } from "../../core/helpers/validator";
 import { processRootResolverArgs } from "../../core/helpers/rootResolver";
 import { actionTypeKenum } from "../../enums";
+import { Validators } from "../../helpers/validator";
 
 export default {
   executeGoogleApiRequest: new GiraffeqlRootResolverType({
@@ -41,7 +41,7 @@ export default {
         },
       }),
     }),
-    validator: ValidatorGenerators.allowIfAdmin(),
+    validator: Validators.allowIfAdmin(),
     resolver: async ({ args }) => {
       const data = await executeGoogleApiRequest({
         method: args.method,
@@ -73,7 +73,7 @@ export default {
         },
       }),
     }),
-    validator: ValidatorGenerators.allowAlways(),
+    validator: Validators.allowAlways(),
     resolver: async ({ args }) => {
       try {
         if (githubOrganization.value()) {
@@ -152,7 +152,7 @@ export default {
     name: "getRepositoryLatestVersion",
     type: Scalars.unknown,
     allowNull: true,
-    validator: ValidatorGenerators.allowAlways(),
+    validator: Validators.allowAlways(),
     resolver: async ({ args }) => {
       try {
         if (githubOrganization.value()) {
@@ -209,7 +209,7 @@ export default {
     },
     type: Scalars.json,
     allowNull: false,
-    validator: ValidatorGenerators.allowIfAdmin(),
+    validator: Validators.allowIfAdmin(),
     args: new GiraffeqlInputFieldType({
       required: true,
       type: new GiraffeqlInputType({

@@ -1,22 +1,31 @@
-import { User } from "../../services";
+import { auth } from "firebase-admin";
+import { GiraffeqlRootResolverType, lookupSymbol } from "giraffeql";
+import { ItemNotFoundError, PermissionsError } from "../../core/helpers/error";
+import {
+  isCurrentUser,
+  validateQueryFields,
+} from "../../core/helpers/permissions";
+import { getObjectType } from "../../core/helpers/resolver";
 import {
   generateBaseRootResolvers,
   generateCreateRootResolver,
   generateDeleteRootResolver,
   generateGetPaginatorRootResolver,
   generateUpdateRootResolver,
+  processRootResolverArgs,
 } from "../../core/helpers/rootResolver";
-import { GiraffeqlRootResolverType, lookupSymbol } from "giraffeql";
-import { Scalars } from "../../scalars";
-import { ValidatorGenerators } from "../../core/helpers/validator";
-import { getObjectType } from "../../core/helpers/resolver";
-import { ItemNotFoundError, PermissionsError } from "../../core/helpers/error";
-import { auth } from "firebase-admin";
-import {
-  filterPassesTest,
-  isCurrentUser,
-} from "../../core/helpers/permissions";
 import { objectOnlyHasFields } from "../../core/helpers/shared";
+import { Validators } from "../../helpers/validator";
+import { User } from "../../services";
+
+const allowedQueryFields = [
+  "id",
+  "__typename",
+  "name",
+  "avatarUrl",
+  "description",
+  "currentUserFollowLink",
+];
 
 export default {
   ...generateBaseRootResolvers({
@@ -27,52 +36,20 @@ export default {
         /*
         Allow if:
         - item.id is currentUser
-        - item isPublic === true AND requested fields has fields id, name, avatarUrl, email, isPublic, currentUserFollowLink ONLY
-        - OR, if requested fields are id, name, avatarUrl, isPublic, currentUserFollowLink  ONLY
+        - item isPublic === true AND only certain fields requested
         */
-        validator: async ({ req, args, query }) => {
-          const record = await User.getFirstSqlRecord(
-            {
-              select: ["id", "isPublic"],
-              where: args,
-            },
-            true
-          );
-
-          if (isCurrentUser(req, record.id)) return;
-
-          if (
-            query &&
-            objectOnlyHasFields(query, [
-              "id",
-              "__typename",
-              "name",
-              "avatarUrl",
-              "description",
-              "isPublic",
-              "currentUserFollowLink",
-            ]) &&
-            record.isPublic
-          ) {
-            return;
+        validator: Validators.allowIfRecordFieldsPassTest(
+          User,
+          ["id", "isPublic"],
+          (record, { req, query }) => {
+            return (
+              isCurrentUser(req, record.id) ||
+              (query &&
+                validateQueryFields(query, allowedQueryFields, false) &&
+                record.isPublic)
+            );
           }
-
-          if (
-            objectOnlyHasFields(query, [
-              "id",
-              "__typename",
-              "name",
-              "avatarUrl",
-              "description",
-              "isPublic",
-              "currentUserFollowLink",
-            ])
-          ) {
-            return;
-          }
-
-          throw new PermissionsError();
-        },
+        ),
       },
       {
         type: "getPaginator",
@@ -80,29 +57,14 @@ export default {
         /*
         Allow if:
         - filtering by isPublic === true
-        - if requested fields are id, name, avatarUrl, isPublic, currentUserFollowLink ONLY, or NO query
+        - if requested fields are id, name, avatarUrl, currentUserFollowLink ONLY, or NO query
         */
-        validator: async ({ args, query }) => {
-          if (
-            (await filterPassesTest(args.filterBy, (filterObject) => {
-              return filterObject["isPublic"]?.eq === true;
-            })) &&
-            query.edges?.node &&
-            objectOnlyHasFields(query.edges.node, [
-              "id",
-              "__typename",
-              "name",
-              "avatarUrl",
-              "description",
-              "isPublic",
-              "currentUserFollowLink",
-            ])
-          ) {
-            return;
-          }
-
-          throw new PermissionsError();
-        },
+        validator: [
+          Validators.allowIfFiltersPassTest(
+            (filterObject, inputs) => filterObject.isPublic?.eq === true
+          ),
+          Validators.allowIfOnlyTheseFieldsInQuery(allowedQueryFields, true),
+        ],
         resolver: generateGetPaginatorRootResolver(User),
         restOptions: {
           query: {
@@ -123,7 +85,7 @@ export default {
       },
       {
         type: "create",
-        validator: ValidatorGenerators.allowIfAdmin(),
+        validator: Validators.allowIfAdmin(),
         resolver: generateCreateRootResolver({
           service: User,
           options: {
@@ -147,6 +109,27 @@ export default {
       },
       {
         type: "update",
+        // user is only allowed to update certain of their own fields
+        validator: async (inputs) => {
+          const { req, rootResolver, fieldPath, query, processedArgs } =
+            await processRootResolverArgs(inputs);
+
+          if (
+            isCurrentUser(req, processedArgs.item) &&
+            objectOnlyHasFields(processedArgs.fields, [
+              "avatarUrl",
+              "name",
+              "description",
+              "isPublic",
+              "allowEmailNotifications",
+              "notificationMethods",
+            ])
+          ) {
+            return;
+          }
+
+          throw new PermissionsError();
+        },
         resolver: generateUpdateRootResolver({
           service: User,
           options: {
@@ -182,7 +165,7 @@ export default {
       },
       {
         type: "delete",
-        validator: ValidatorGenerators.allowIfAdmin(),
+        validator: Validators.allowIfAdmin(),
         resolver: generateDeleteRootResolver({
           service: User,
           options: {
@@ -202,7 +185,7 @@ export default {
     name: "userGetCurrent",
     allowNull: false,
     type: User.typeDefLookup,
-    validator: ValidatorGenerators.allowAlways(),
+    validator: Validators.allowAlways(),
     resolver: async (inputs) => {
       const { req, rootResolver, fieldPath, args, query } = inputs;
 
@@ -238,7 +221,7 @@ export default {
     name: "userSyncCurrent",
     allowNull: false,
     type: User.typeDefLookup,
-    validator: ValidatorGenerators.allowAlways(),
+    validator: Validators.allowAlways(),
     resolver: async (inputs) => {
       const { req, rootResolver, fieldPath, args, query } = inputs;
 

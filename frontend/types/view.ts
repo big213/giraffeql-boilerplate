@@ -233,6 +233,9 @@ export type ShareOptions = {
   // custom component
   component?: any
 
+  // override routeKey
+  routeKey?: string
+
   // get a custom share URL
   getUrl?: (that, viewDefinition, id) => string
 
@@ -399,21 +402,6 @@ export type PaginationOptions = {
   // fields required but not shown, such as fields needed for heroOptions
   requiredFields?: string[]
 
-  // should a hero image be displayed? only applies to grid view
-  heroOptions?: {
-    // function that will get the preview image from the item
-    getPreviewImage?: (item: any) => any
-
-    // function that will get the preview name from the item
-    getPreviewName?: (item: any) => any
-
-    // should the v-img component be contained?
-    containMode?: boolean
-
-    // custom component that should be rendered, which will override the above 2 options
-    component?: any
-  }
-
   // should the entire toolbar be hidden? this will override some of the toolbar-related options below
   hideToolbar?: boolean
 
@@ -449,6 +437,26 @@ export type PaginationOptions = {
       sm?: number
       md?: number
       lg?: number
+    }
+
+    hideActions?: boolean
+
+    // the override headers for grid view
+    headers?: HeaderRenderFieldDefinition[]
+
+    // should a hero image be displayed? only applies to grid view
+    heroOptions?: {
+      // function that will get the preview image from the item
+      getPreviewImage?: (item: any) => any
+
+      // function that will get the preview name from the item
+      getPreviewName?: (item: any) => any
+
+      // should the v-img component be contained?
+      containMode?: boolean
+
+      // custom component that should be rendered, which will override the above 2 options
+      component?: any
     }
   }
 

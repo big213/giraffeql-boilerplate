@@ -22,7 +22,7 @@ export function generateViewRouteObject(
   }
 ) {
   return generateRouteObject({
-    icon: icon ?? viewDefinition.entity.icon,
+    icon: icon ?? viewDefinition.icon ?? viewDefinition.entity.icon,
     title: title ?? viewDefinition.title ?? viewDefinition.entity.pluralName,
     route: generateCrudRecordRoute(that, {
       viewDefinition,

@@ -4,7 +4,7 @@ import {
   generateCreateRootResolver,
   generateDeleteRootResolver,
 } from "../../core/helpers/rootResolver";
-import { ValidatorGenerators } from "../../core/helpers/validator";
+import { Validators } from "../../helpers/validator";
 import { storage } from "firebase-admin";
 import { serveImageTempPath, serveImageSourcePath } from "../../../config";
 
@@ -18,7 +18,7 @@ export default {
         Allow if:
         - createdBy.id is currentUser
         */
-        validator: ValidatorGenerators.allowIfRecordFieldIsCurrentUser(
+        validator: Validators.allowIfRecordFieldIsCurrentUser(
           File,
           "createdBy.id"
         ),
@@ -29,8 +29,7 @@ export default {
         Allow if:
         - filtering by createdBy.id is currentUser,
         */
-        validator:
-          ValidatorGenerators.allowIfFilteringByCurrentUser("createdBy.id"),
+        validator: Validators.allowIfFilteringByCurrentUser("createdBy.id"),
       },
       {
         type: "create",
@@ -38,7 +37,7 @@ export default {
         Allow if:
         - is logged in
         */
-        validator: ValidatorGenerators.allowIfLoggedIn(),
+        validator: Validators.allowIfLoggedIn(),
         resolver: generateCreateRootResolver({
           service: File,
           options: {
@@ -69,7 +68,7 @@ export default {
         Allow if:
         - user created the item
         */
-        validator: ValidatorGenerators.allowIfRecordFieldIsCurrentUser(
+        validator: Validators.allowIfRecordFieldIsCurrentUser(
           File,
           "createdBy.id",
           "item"
@@ -81,7 +80,7 @@ export default {
         Allow if:
         - user created the item
         */
-        validator: ValidatorGenerators.allowIfRecordFieldIsCurrentUser(
+        validator: Validators.allowIfRecordFieldIsCurrentUser(
           File,
           "createdBy.id"
         ),
@@ -101,7 +100,7 @@ export default {
           },
         }),
       },
-      { type: "stats", validator: ValidatorGenerators.allowIfAdmin() },
+      { type: "stats", validator: Validators.allowIfAdmin() },
     ],
   }),
 };

@@ -30,13 +30,7 @@ export const PublicUserView: ViewDefinition = {
   createOptions: undefined,
   updateOptions: undefined,
   viewOptions: {
-    fields: [
-      'avatarUrl',
-      'name',
-      'description',
-      'isPublic',
-      'currentUserFollowing',
-    ],
+    fields: ['avatarUrl', 'name', 'description', 'currentUserFollowing'],
     heroOptions: {},
   },
   deleteOptions: undefined,

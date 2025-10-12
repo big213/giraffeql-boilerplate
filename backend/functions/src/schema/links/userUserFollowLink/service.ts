@@ -15,6 +15,4 @@ export class UserUserFollowLinkService extends LinkService {
   };
 
   searchFieldsMap = {};
-
-  groupByFieldsMap = {};
 }

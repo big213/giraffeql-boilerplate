@@ -1,5 +1,3 @@
-import { storage } from "firebase-admin";
-import { serveImageSourcePath, serveImageTempPath } from "../../../config";
 import { PaginatedService } from "../../core/services";
 
 export class FileService extends PaginatedService {
@@ -16,7 +14,6 @@ export class FileService extends PaginatedService {
   };
 
   sortFieldsMap = {
-    id: {},
     createdAt: {},
     updatedAt: {},
   };
@@ -24,8 +21,6 @@ export class FileService extends PaginatedService {
   searchFieldsMap = {
     name: {},
   };
-
-  groupByFieldsMap = {};
 
   async validateFileField(args: any, fieldname: string, regex: RegExp) {
     const field = args[fieldname];

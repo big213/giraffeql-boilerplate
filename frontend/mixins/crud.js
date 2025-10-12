@@ -240,12 +240,17 @@ export default {
 
     // type: viewDefinition.paginationOptions.headers to CrudHeaderFieldDefinition[]
     headers() {
+      const headers = this.isGrid
+        ? this.viewDefinition.paginationOptions.gridOptions?.headers ??
+          this.viewDefinition.paginationOptions.headers
+        : this.viewDefinition.paginationOptions.headers
+
       const renderFieldDefinitions = processRenderDefinitions(
         this.viewDefinition,
-        this.viewDefinition.paginationOptions.headers
+        headers
       )
 
-      const headers = renderFieldDefinitions
+      const headerObjects = renderFieldDefinitions
         .filter((headerFieldDefinition) => {
           // if it's been specifically hidden, exclude
           if (
@@ -299,11 +304,14 @@ export default {
         )
 
       // if no headerOption has null width, set the first one to null width
-      if (headers.length && !headers.some((headerInfo) => !headerInfo.width)) {
-        headers[0].width = null
+      if (
+        headerObjects.length &&
+        !headerObjects.some((headerInfo) => !headerInfo.width)
+      ) {
+        headerObjects[0].width = null
       }
 
-      return headers
+      return headerObjects
     },
 
     lockedFiltersComputed() {
@@ -330,7 +338,8 @@ export default {
 
     heroComponent() {
       return (
-        this.viewDefinition.paginationOptions.heroOptions?.component ?? Hero
+        this.viewDefinition.paginationOptions.gridOptions?.heroOptions
+          ?.component ?? Hero
       )
     },
 
@@ -632,6 +641,8 @@ export default {
 
     toggleGridMode() {
       this.isGrid = !this.isGrid
+      // also reset
+      this.reset()
     },
 
     handleClearSearch() {

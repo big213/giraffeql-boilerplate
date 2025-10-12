@@ -69,7 +69,9 @@ export const BaseUserView: ViewDefinition = {
   },
   paginationOptions: {
     searchOptions: {},
-    heroOptions: {},
+    gridOptions: {
+      heroOptions: {},
+    },
     filters: [
       {
         fieldKey: 'role',

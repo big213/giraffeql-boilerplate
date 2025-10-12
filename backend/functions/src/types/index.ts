@@ -95,14 +95,6 @@ export type ContextUser = {
   isApiKey: boolean; // was the context created using an API Key?
 };
 
-export type AccessControlMap = {
-  [x: string]: AccessControlFunction;
-};
-
-export type AccessControlFunction = (
-  inputs: ServiceFunctionInputs
-) => boolean | Promise<boolean>;
-
 export type DataloaderFunctionInput = {
   req: Request;
   rootResolver: GiraffeqlRootResolverType;

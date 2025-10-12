@@ -1,6 +1,6 @@
 import { UserUserFollowLink } from "../../services";
 import { generateBaseRootResolvers } from "../../core/helpers/rootResolver";
-import { ValidatorGenerators } from "../../core/helpers/validator";
+import { Validators } from "../../helpers/validator";
 
 export default {
   ...generateBaseRootResolvers({
@@ -8,7 +8,7 @@ export default {
     methods: [
       {
         type: "get",
-        validator: ValidatorGenerators.allowIfRecordFieldIsCurrentUser(
+        validator: Validators.allowIfRecordFieldIsCurrentUser(
           UserUserFollowLink,
           "user.id"
         ),
@@ -16,12 +16,12 @@ export default {
       { type: "getPaginator" },
       {
         type: "create",
-        validator: ValidatorGenerators.allowIfArgsFieldIsCurrentUser("user"),
+        validator: Validators.allowIfArgsFieldIsCurrentUser("user"),
       },
       { type: "update" },
       {
         type: "delete",
-        validator: ValidatorGenerators.allowIfRecordFieldIsCurrentUser(
+        validator: Validators.allowIfRecordFieldIsCurrentUser(
           UserUserFollowLink,
           "user.id"
         ),
