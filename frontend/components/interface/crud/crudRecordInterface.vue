@@ -552,7 +552,11 @@
 
                   <div
                     v-if="
-                      !(viewDefinition.paginationOptions.hideActions || viewDefinition.paginationOptions.gridOptions?.hideActions)
+                      !(
+                        viewDefinition.paginationOptions.hideActions ||
+                        viewDefinition.paginationOptions.gridOptions
+                          ?.hideActions
+                      )
                     "
                     class="text-center"
                     style="width: 100%"
@@ -678,8 +682,8 @@
           <tr
             v-else
             :key="props.item.id"
+            :style="getRowStyle(props)"
             :class="{
-              'expanded-row-bg': props.isExpanded,
               'pointer-cursor':
                 !!viewDefinition.paginationOptions.handleRowClick,
             }"
@@ -750,7 +754,10 @@
           v-slot:expanded-item="{ headers, item, isMobile }"
         >
           <td :colspan="headers.length" class="pr-0">
-            <div class="mb-2 expanded-table-bg">
+            <div
+              class="mb-2"
+              :style="`border-left: 5px solid var(--v-${expandedItemColorThemeName}-base); border-bottom: 5px solid var(--v-${expandedItemColorThemeName}-base);`"
+            >
               <component
                 :is="childInterfaceComponent"
                 :view-definition="expandTypeObject.view"
@@ -768,6 +775,7 @@
                 :hide-presets="!expandTypeObject.showPresets"
                 :parent-expand-types="viewDefinition.childTypes"
                 :current-expand-type-key="expandTypeObject.key"
+                :parent-color-theme-name="expandedItemColorThemeName"
                 @parent-expand-type-updated="
                   toggleItemExpanded(
                     { item, isMobile, isExpanded: true },
@@ -834,7 +842,7 @@
         :breadcrumb-items="subBreadcrumbItems"
         :results-per-page="expandTypeObject.resultsPerPage"
         :hide-presets="!expandTypeObject.showPresets"
-        style="border: 5px solid var(--v-secondary-base)"
+        :style="`border: 5px solid var(--v-${expandedItemColorThemeName}-base);`"
         @pageOptions-updated="handleSubPageOptionsUpdated"
         @reload-parent-item="handleReloadParentItem"
         @expand-type-updated="handleExpandTypeUpdated"
@@ -869,14 +877,6 @@ export default {
 </script>
 
 <style scoped>
-.v-data-table
-  > .v-data-table__wrapper
-  > table
-  > tbody
-  > tr.expanded-row-bg:hover:not(.v-data-table__expanded__content):not(.v-data-table__empty-wrapper) {
-  background: var(--v-secondary-base);
-}
-
 .selected-bg {
   background-color: var(--v-primary-base);
 }

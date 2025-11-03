@@ -31,4 +31,5 @@ export const MyProfileView: ViewDefinition = {
   shareOptions: {
     routeKey: 'user',
   },
+  actions: [],
 }

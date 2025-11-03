@@ -2,7 +2,7 @@ import { User, {{ capitalizedTypename }} } from "../../services";
 import { GiraffeqlObjectType } from "giraffeql";
 import {
   generateIdField,
-  generateTimestampFields,
+  generateBaseTimestampFields,
   generateCreatedByField,
   generateStringField,
   generateTextField,
@@ -22,7 +22,7 @@ export default new GiraffeqlObjectType(processTypeDef({
     description: generateTextField({
       allowNull: true,
     }),
-    ...generateTimestampFields(),
+    ...generateBaseTimestampFields(),
     ...generateCreatedByField(User),
   },
 }));

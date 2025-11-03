@@ -53,13 +53,20 @@ export default {
 
   methods: {
     openEditItemDialog() {
-      this.$emit(
-        'edit-item',
-        this.item,
-        this.renderObject.renderDefinition.editOptions.fieldKeys ?? [
-          this.renderObject.fieldKey,
-        ]
-      )
+      if (this.renderObject.renderDefinition.editOptions.action) {
+        this.$root.$emit('openExecuteActionDialog', {
+          action: this.renderObject.renderDefinition.editOptions.action,
+          parentItem: this.item,
+        })
+      } else {
+        this.$emit(
+          'edit-item',
+          this.item,
+          this.renderObject.renderDefinition.editOptions.fieldKeys ?? [
+            this.renderObject.fieldKey,
+          ]
+        )
+      }
     },
 
     getTableRowData() {

@@ -324,16 +324,18 @@ export function generateJoinableRenderField({
   const fieldnamePrefix = validatedFieldname ? `${validatedFieldname}.` : ''
   return {
     text,
-    fields: <string[]>(
-      [
-        `${fieldnamePrefix}id`,
-        `${fieldnamePrefix}__typename`,
-        entity.nameField ? `${fieldnamePrefix}${entity.nameField}` : null,
-        entity.avatarField ? `${fieldnamePrefix}${entity.avatarField}` : null,
-      ]
-        .filter((e) => e)
-        .concat(additionalFields ?? [])
-    ),
+    fields: <string[]>[
+      `${fieldnamePrefix}id`,
+      `${fieldnamePrefix}__typename`,
+      entity.nameField ? `${fieldnamePrefix}${entity.nameField}` : null,
+      entity.avatarField ? `${fieldnamePrefix}${entity.avatarField}` : null,
+    ]
+      .filter((e) => e)
+      .concat(additionalFields ?? [])
+      .concat(
+        entity.additionalFields?.map((field) => `${fieldnamePrefix}${field}`) ??
+          []
+      ),
     pathPrefix: validatedFieldname,
     component: Columns.RecordColumn,
     ...renderDefinition,

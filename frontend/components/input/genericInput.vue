@@ -1146,7 +1146,7 @@ export default {
       this.$emit('change', this.inputObject.value)
     },
 
-    // parse from date and time inputs to unixTimestamp
+    // parse from date and time inputs to isoTimestamp
     handleDateTimeInputChange(_val) {
       if (!this.tempInput) {
         this.inputObject.value = null
@@ -1172,11 +1172,17 @@ export default {
       const hours = Number(dateTimeMatch[4])
       const minutes = Number(dateTimeMatch[5])
 
-      this.inputObject.value =
-        new Date(years, month - 1, day, hours, minutes, 0).getTime() / 1000
+      this.inputObject.value = new Date(
+        years,
+        month - 1,
+        day,
+        hours,
+        minutes,
+        0
+      ).toISOString()
     },
 
-    // val is expected to be unixTimestamp (s) or null
+    // val is expected to be isoTimestamp or null
     syncDateTimePickerInput(val) {
       if (!val) {
         this.tempInput = null
@@ -1712,7 +1718,7 @@ export default {
           this.syncDatePickerInput(this.inputObject.inputValue)
           break
         case 'datetimepicker':
-          // this.inputObject.value is expected to be a unixTimestamp or null
+          // this.inputObject.value is expected to be a isoTimestamp or null
           this.syncDateTimePickerInput(this.inputObject.value)
           break
         case 'stripe-pi-editable':

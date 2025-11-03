@@ -172,8 +172,8 @@ export function generateStringField(
   });
 }
 
-// DateTime as UNIX timestamp
-export function generateUnixTimestampField(
+// datetime as ISO timestamp
+export function generateTimestampField(
   params: {
     nowOnly?: boolean; // if the unix timestamp can only be set to now()
   } & GenerateFieldParams
@@ -181,10 +181,8 @@ export function generateUnixTimestampField(
   const { sqlOptions, nowOnly, ...remainingOptions } = params;
   return generateStandardField({
     sqlType: "dateTime",
-    type: Scalars.unixTimestamp,
+    type: Scalars.isoTimestamp,
     sqlOptions: {
-      getter: (tableAlias, field) =>
-        `extract(epoch from "${tableAlias}".${field})`,
       parseValue: nowOnly
         ? () => db.fn.now()
         : (value: unknown) => {
@@ -193,13 +191,12 @@ export function generateUnixTimestampField(
             // if Date type, return that
             if (value instanceof Date) return value;
 
-            if (typeof value !== "number")
-              throw new Error(
-                "Unix timestamp must be sent in seconds, null, undefined, or Date"
-              ); // should never happen
+            if (typeof value !== "string") {
+              throw new Error("Must be sent as ISO timestamp");
+            }
 
-            // assuming the timestamp is being sent in seconds
-            return new Date(value * 1000);
+            // assuming the timestamp is being sent as an ISO timestamp
+            return new Date(value);
           },
       ...sqlOptions,
     },
@@ -820,9 +817,9 @@ export function generateKeyValueArray(
  ** Field Helpers (Commonly used fields)
  */
 
-export function generateTimestampFields() {
+export function generateBaseTimestampFields() {
   return {
-    createdAt: generateUnixTimestampField({
+    createdAt: generateTimestampField({
       description: "When the record was created",
       allowNull: false,
       defaultValue: db.fn.now(),
@@ -830,7 +827,7 @@ export function generateTimestampFields() {
       addable: false,
       updateable: false, // not addable or updateable
     }),
-    updatedAt: generateUnixTimestampField({
+    updatedAt: generateTimestampField({
       description: "When the record was last updated",
       allowNull: false,
       defaultValue: db.fn.now(),
@@ -2045,7 +2042,7 @@ export function generateLinkTypeDef(
       ...generateIdField(currentService),
       ...generateTypenameField(currentService),
       ...typeDefFields,
-      ...generateTimestampFields(),
+      ...generateBaseTimestampFields(),
       ...generateCreatedByField(User),
       ...additionalFields,
     },

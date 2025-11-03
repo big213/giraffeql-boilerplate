@@ -37,20 +37,20 @@ export function timeout(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-export function generateTimeAgoString(unixTimestamp: number | null) {
-  if (!unixTimestamp) return null
+export function generateTimeAgoString(isoTimestamp: string | null) {
+  if (!isoTimestamp) return null
 
-  return format(unixTimestamp * 1000)
+  return format(isoTimestamp)
 }
 
-// unix timestamp (seconds) to YYYY-MM-DD HH:MM:SS
+// isoTimestamp to YYYY-MM-DD HH:MM:SS
 export function generateDateLocaleString(
-  unixTimestamp: number | null,
+  timestamp: string | Date | null,
   truncateSeconds = false
 ) {
-  if (!unixTimestamp) return null
+  if (!timestamp) return null
 
-  const dateObject = new Date(unixTimestamp * 1000)
+  const dateObject = timestamp instanceof Date ? timestamp : new Date(timestamp)
 
   const hours = dateObject.getHours()
 
@@ -70,17 +70,11 @@ export function generateDateLocaleString(
 export function generateParseDateTimeStringFn(
   defaultTo: 'currentTime' | 'startOfDay' | 'endOfDay' = 'startOfDay'
 ) {
-  return function parseDateTimeString(
-    val: string | number | null
-  ): number | null {
+  return function (val: string | Date | null): Date | null {
     // if falsey, default to null
     if (!val) return null
 
-    // if val is a number, it should be a unix timestamp seconds
-    // number input should only be possible from a special parsed value, like __now()
-    if (typeof val === 'number') {
-      return val
-    }
+    if (val instanceof Date) return val
 
     // if the string resembles timeLanguage, parse it as such
     if (val.match(/^(now|time)/)) return parseTimeLanguage(val)
@@ -133,21 +127,7 @@ export function generateParseDateTimeStringFn(
       }
     }
 
-    const msTimestamp = new Date(
-      year,
-      month,
-      day,
-      hours,
-      minutes,
-      seconds
-    ).getTime()
-
-    // date cannot be too far in the future
-    /*   if (msTimestamp > new Date().getTime() + 1000 * 60 * 60 * 24) {
-      throw new Error(`Date Happened cannot be in the future`)
-    } */
-
-    return msTimestamp / 1000
+    return new Date(year, month, day, hours, minutes, seconds)
   }
 }
 
@@ -207,7 +187,7 @@ export function parseTimeLanguage(input: string) {
 
   if (!unixTimestamp) throw new Error('Invalid unixTimestamp generated')
 
-  return unixTimestamp / 1000
+  return new Date(unixTimestamp)
 }
 
 export function timeLanguageToLocaleString(input: string) {
@@ -1420,19 +1400,16 @@ export function memoize(memoizedFn) {
 
 export function generateMemoizedEntityGetter(
   entity: EntityDefinition,
-  additionalFields?: string[]
+  additionalFields?: string[],
+  {
+    filterBy = [],
+    sortBy = [],
+  }: {
+    filterBy?: any[]
+    sortBy?: any[]
+  } = {}
 ) {
-  return <any>memoize(function (
-    that,
-    _forceReload,
-    {
-      filterBy = [],
-      sortBy = [],
-    }: {
-      filterBy?: any[]
-      sortBy?: any[]
-    } = {}
-  ) {
+  return <any>memoize(function (that, _forceReload) {
     const validatedFields = <string[]>(
       [
         'id',
@@ -1442,6 +1419,7 @@ export function generateMemoizedEntityGetter(
         entity.avatarField,
       ].filter((e) => e)
     )
+
     return collectPaginatorData(
       `${entity.typename}GetPaginator`,
       validatedFields.reduce((total, field) => {
@@ -1456,13 +1434,20 @@ export function generateMemoizedEntityGetter(
   })
 }
 
-export function generateMemoizedEnumGetter(operation: keyof Root) {
+export function generateMemoizedEnumGetter(
+  operation: keyof Root,
+  sortAlphabetically = false
+) {
   return <any>memoize(async function (that, _parentItem, _forceReload) {
     return executeApiRequest<any>({
       [operation]: {
         values: true,
       },
-    }).then((data: any) => data.values)
+    }).then((data: any) =>
+      sortAlphabetically
+        ? data.values.sort((a, b) => a.localeCompare(b))
+        : data.values
+    )
   })
 }
 

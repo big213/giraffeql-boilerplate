@@ -1,5 +1,9 @@
 import { auth } from "firebase-admin";
-import { GiraffeqlRootResolverType, lookupSymbol } from "giraffeql";
+import {
+  GiraffeqlInputFieldType,
+  GiraffeqlRootResolverType,
+  lookupSymbol,
+} from "giraffeql";
 import { ItemNotFoundError, PermissionsError } from "../../core/helpers/error";
 import {
   isCurrentUser,
@@ -11,12 +15,14 @@ import {
   generateCreateRootResolver,
   generateDeleteRootResolver,
   generateGetPaginatorRootResolver,
+  generateRootResolverTypeAction,
   generateUpdateRootResolver,
   processRootResolverArgs,
 } from "../../core/helpers/rootResolver";
 import { objectOnlyHasFields } from "../../core/helpers/shared";
 import { Validators } from "../../helpers/validator";
 import { User } from "../../services";
+import { Scalars } from "../../scalars";
 
 const allowedQueryFields = [
   "id",
@@ -86,6 +92,13 @@ export default {
       {
         type: "create",
         validator: Validators.allowIfAdmin(),
+        additionalArgs: {
+          password: new GiraffeqlInputFieldType({
+            required: true,
+            allowNull: false,
+            type: Scalars.string,
+          }),
+        },
         resolver: generateCreateRootResolver({
           service: User,
           options: {
@@ -99,6 +112,9 @@ export default {
                 disabled: false,
                 photoURL: processedArgs.avatarUrl,
               });
+
+              delete processedArgs.password;
+
               return {
                 ...processedArgs,
                 firebaseUid: firebaseUser.uid,
@@ -109,7 +125,6 @@ export default {
       },
       {
         type: "update",
-        // user is only allowed to update certain of their own fields
         validator: async (inputs) => {
           const { req, rootResolver, fieldPath, query, processedArgs } =
             await processRootResolverArgs(inputs);
@@ -133,39 +148,42 @@ export default {
         resolver: generateUpdateRootResolver({
           service: User,
           options: {
-            fields: ["role", "firebaseUid"],
-            async afterUpdate({
+            fields: ["name", "avatarUrl", "email", "role", "firebaseUid"],
+
+            async getUpdateFields({
               inputs: { processedArgs },
               item,
+              data,
               updatedFieldsObject,
               transaction,
             }) {
               // update firebase user fields
               const firebaseUserFields = {
-                ...("name" in processedArgs.fields && {
+                ...(updatedFieldsObject.name !== undefined && {
                   displayName: processedArgs.fields.name,
                 }),
-                ...("avatarUrl" in processedArgs.fields && {
+                ...(updatedFieldsObject.avatarUrl !== undefined && {
                   photoURL: processedArgs.fields.avatarUrl,
                 }),
-                ...("email" in processedArgs.fields && {
+                ...(updatedFieldsObject.email !== undefined && {
                   email: processedArgs.fields.email,
-                }),
-                ...("password" in processedArgs.fields && {
-                  password: processedArgs.fields.password,
                 }),
               };
 
               if (Object.keys(firebaseUserFields).length > 0) {
                 await auth().updateUser(item.firebaseUid, firebaseUserFields);
               }
+
+              return {
+                ...processedArgs,
+              };
             },
           },
         }),
       },
       {
         type: "delete",
-        validator: Validators.allowIfAdmin(),
+        validator: Validators.allowIfLoggedIn(),
         resolver: generateDeleteRootResolver({
           service: User,
           options: {
@@ -181,38 +199,54 @@ export default {
     ],
   }),
 
+  userSetPassword: generateRootResolverTypeAction({
+    service: User,
+    operation: "setPassword",
+    argFields: {
+      password: new GiraffeqlInputFieldType({
+        required: true,
+        allowNull: false,
+        type: Scalars.string,
+      }),
+    },
+    validator: Validators.allowIfAdmin(),
+    resolver: async (inputs) => {
+      const { req, rootResolver, fieldPath, processedArgs, query } =
+        await processRootResolverArgs(inputs);
+      const item = await User.getFirstSqlRecord(
+        {
+          select: ["firebaseUid"],
+          where: {
+            id: processedArgs.item,
+          },
+        },
+        true
+      );
+
+      await auth().updateUser(item.firebaseUid, {
+        password: processedArgs.password,
+      });
+
+      return User.getReturnQuery({
+        id: processedArgs.item,
+        inputs,
+      });
+    },
+  }),
+
   userGetCurrent: new GiraffeqlRootResolverType({
     name: "userGetCurrent",
     allowNull: false,
     type: User.typeDefLookup,
-    validator: Validators.allowAlways(),
+    validator: Validators.allowIfLoggedIn(),
     resolver: async (inputs) => {
-      const { req, rootResolver, fieldPath, args, query } = inputs;
+      const { req, rootResolver, fieldPath, query, processedArgs } =
+        await processRootResolverArgs(inputs);
 
-      if (!req.user) {
-        throw new Error(`Login is required`);
-      }
-
-      const results = await getObjectType({
-        typename: User.typename,
-        req,
-        rootResolver,
-        fieldPath,
-        externalQuery: query,
-        sqlParams: {
-          where: {
-            id: req.user!.id,
-          },
-          limit: 1,
-          specialParams: await User.getSpecialParams(inputs),
-        },
+      return User.getReturnQuery({
+        id: req.user!.id,
+        inputs,
       });
-
-      if (results.length < 1) {
-        throw new ItemNotFoundError({ fieldPath });
-      }
-
-      return results[0];
     },
   }),
 
@@ -223,17 +257,15 @@ export default {
     type: User.typeDefLookup,
     validator: Validators.allowAlways(),
     resolver: async (inputs) => {
-      const { req, rootResolver, fieldPath, args, query } = inputs;
-
-      // login required
-      if (!req.user) throw new Error(`Login required`);
+      const { req, rootResolver, fieldPath, query, processedArgs } =
+        await processRootResolverArgs(inputs);
 
       // check if record exists
       const item = await User.getFirstSqlRecord(
         {
-          select: ["id", "email", "role", "firebaseUid"],
+          select: ["id", "email", "firebaseUid"],
           where: {
-            id: req.user.id,
+            id: req.user!.id,
           },
         },
         true
@@ -249,7 +281,7 @@ export default {
               email: userRecord.email,
             },
             where: {
-              id: req.user.id,
+              id: req.user!.id,
             },
           },
           true
@@ -257,7 +289,7 @@ export default {
       }
 
       return User.getReturnQuery({
-        id: req.user.id,
+        id: req.user!.id,
         inputs,
       });
     },

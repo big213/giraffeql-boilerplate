@@ -61,13 +61,21 @@ export function generateAllowIfAdminValidator(
 export function generateOrValidator(validatorFunctions: ValidatorFunction[]) {
   return async function (inputs) {
     for (const validatorFunction of validatorFunctions) {
-      const returnValue = await validatorFunction?.(inputs);
+      try {
+        const returnValue = await validatorFunction?.(inputs);
 
-      // if it doesn't throw an err, return immediately. else keep checking
-      if (returnValue === undefined) {
-        return;
+        // if it doesn't throw an err, return immediately. else keep checking
+        if (returnValue === undefined) {
+          return;
+        }
+      } catch (err) {
+        // if an error is thrown, keep going
+        continue;
       }
     }
+
+    // none passed, throw err
+    throw new PermissionsError();
   };
 }
 

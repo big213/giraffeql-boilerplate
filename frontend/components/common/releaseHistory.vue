@@ -44,6 +44,7 @@ export default {
   },
 
   methods: {
+    generateTimeAgoString,
     async loadData() {
       this.loading.loadData = true
       try {
@@ -63,10 +64,6 @@ export default {
         // do nothing
       }
       this.loading.loadData = false
-    },
-
-    generateTimeAgoString(dateString) {
-      return generateTimeAgoString(new Date(dateString).getTime() / 1000)
     },
   },
 }

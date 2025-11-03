@@ -443,16 +443,28 @@ export class PaginatedService extends BaseService {
     sqlQuery: Omit<SqlUpdateQuery, "table">,
     updateUpdatedAt = false
   ) {
-    return updateTableRow({
-      ...sqlQuery,
-      fields: {
-        ...sqlQuery.fields,
-        ...(updateUpdatedAt && {
-          updatedAt: db.fn.now(),
-        }),
-      },
-      table: this.typename,
+    const fieldsToUpdate = {
+      ...sqlQuery.fields,
+      updatedAt: updateUpdatedAt ? db.fn.now() : undefined,
+    };
+
+    // remove any undefined values
+    Object.entries(fieldsToUpdate).forEach(([key, val]) => {
+      if (val === undefined) {
+        delete fieldsToUpdate[key];
+      }
     });
+
+    // if no fields to update, return 0
+    if (Object.keys(fieldsToUpdate).length) {
+      return updateTableRow({
+        ...sqlQuery,
+        fields: fieldsToUpdate,
+        table: this.typename,
+      });
+    }
+
+    return 0;
   }
 
   // can only process one field at a time

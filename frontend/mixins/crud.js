@@ -29,6 +29,7 @@ import {
 import { generateCrudRecordRoute } from '~/services/route'
 import { defaultGridView } from '~/config'
 import { executeApiRequest } from '~/services/api'
+import { expandTypeThemeColorNamesArray } from '~/services/constants'
 
 export default {
   name: 'CrudRecordInterface',
@@ -139,6 +140,10 @@ export default {
 
     hideParentExpandTypes: {
       type: Boolean,
+    },
+
+    parentColorThemeName: {
+      type: String,
     },
   },
 
@@ -452,6 +457,19 @@ export default {
     hideGenerateButton() {
       return this.viewDefinition.generateOptions?.hideIf?.(this)
     },
+
+    expandedItemColorThemeName() {
+      const index = expandTypeThemeColorNamesArray.indexOf(
+        this.parentColorThemeName
+      )
+
+      // if not exists, use the 2nd one = secondary
+      if (index === -1) return expandTypeThemeColorNamesArray[0]
+
+      return expandTypeThemeColorNamesArray[
+        (index + 1) % expandTypeThemeColorNamesArray.length
+      ]
+    },
   },
 
   watch: {
@@ -588,6 +606,12 @@ export default {
     generateTimeAgoString,
     getNestedProperty,
 
+    getRowStyle(props) {
+      return props.isExpanded
+        ? `background-color: var(--v-${this.expandedItemColorThemeName}-base)`
+        : null
+    },
+
     isShowExpandButton(item, expandObject) {
       return !expandObject.hideIf?.(this, item)
     },
@@ -618,18 +642,20 @@ export default {
 
     refreshCb(typename, { refreshParent = false, id, refreshType } = {}) {
       // if type of refresh is not defined or 'crud', refresh
-      if (
-        this.viewDefinition.entity.typename === typename &&
-        (!refreshType || refreshType === 'crud')
-      ) {
-        // if ID is provided, only reload that specific record
-        if (id) {
-          this.reloadRecord(id)
-        } else {
-          // otherwise, reset all records
-          this.reset({
-            resetExpanded: true,
-          })
+      if (this.viewDefinition.entity.typename === typename) {
+        if (!refreshType || refreshType === 'crud') {
+          // if ID is provided, only reload that specific record
+          if (id) {
+            this.reloadRecord(id)
+          } else {
+            // otherwise, reset all records
+            this.reset({
+              resetExpanded: true,
+            })
+          }
+        } else if (refreshType === 'delete' && id) {
+          // if refreshType is 'delete' and id is provided, remove that record only
+          this.removeRecord(id)
         }
 
         // if refreshParent is provided and there is a parentItem, reload and merge that record as well
@@ -1175,6 +1201,16 @@ export default {
 
       Object.assign(matchingResult, record)
     },
+
+    removeRecord(id) {
+      const index = this.records.findIndex((result) => result.id === id)
+
+      if (index !== -1) {
+        this.records.splice(index, 1)
+        this.totalRecords--
+      }
+    },
+
     // if itemId is specific, it will fetch only that specific ID
     async fetchData(itemId = null) {
       const renderFieldDefinitions = processRenderDefinitions(

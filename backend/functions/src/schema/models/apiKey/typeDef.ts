@@ -11,7 +11,7 @@ import {
   generateIdField,
   generateJoinableField,
   generateStringField,
-  generateTimestampFields,
+  generateBaseTimestampFields,
   generateTypenameField,
   processTypeDef,
 } from "../../core/helpers/typeDef";
@@ -67,7 +67,7 @@ export default new GiraffeqlObjectType(
           return allowedPermissions.map((permission) => permission.name);
         },
       },
-      ...generateTimestampFields(),
+      ...generateBaseTimestampFields(),
       ...generateCreatedByField(User),
     },
   })

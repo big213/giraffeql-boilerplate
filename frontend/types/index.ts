@@ -205,6 +205,8 @@ export type RenderDefinition = {
     mode?: 'right' | 'left' // how will the edit dialog be activated? if undefined, will default to right
 
     fieldKeys?: string[] // the fields to be edited, if different from the default fieldKey
+
+    action?: string // the name of an action to take instead of editing the fieldKeys directly, will override the fieldKeys
   }
 }
 

@@ -7,7 +7,7 @@ import {
   generateTypenameField,
   generateIntegerField,
   processTypeDef,
-  generateTimestampFields,
+  generateBaseTimestampFields,
 } from "../../core/helpers/typeDef";
 import { storage } from "firebase-admin";
 import { getDownloadURL } from "firebase-admin/storage";
@@ -83,7 +83,7 @@ export default new GiraffeqlObjectType(
         allowNull: true,
         updateable: false,
       }),
-      ...generateTimestampFields(),
+      ...generateBaseTimestampFields(),
       ...generateCreatedByField(User),
     },
   })

@@ -9,11 +9,10 @@ import {
   generateCreatedByField,
   generateCurrentUserFollowLinkField,
   generateEnumField,
-  generateGenericScalarField,
   generateIdField,
   generateStringField,
   generateTextField,
-  generateTimestampFields,
+  generateBaseTimestampFields,
   generateTypenameField,
   processTypeDef,
 } from "../../core/helpers/typeDef";
@@ -44,16 +43,6 @@ export default new GiraffeqlObjectType(
           unique: true,
         },
         nestHidden: true,
-      }),
-      // not a sql field
-      password: generateGenericScalarField({
-        allowNull: false,
-        hidden: true,
-        type: Scalars.string,
-        typeDefOptions: {
-          addable: true,
-          updateable: true,
-        },
       }),
       avatarUrl: generateStringField({
         allowNull: true,
@@ -107,7 +96,7 @@ export default new GiraffeqlObjectType(
       }),
       currentUserFollowLink:
         generateCurrentUserFollowLinkField(UserUserFollowLink),
-      ...generateTimestampFields(),
+      ...generateBaseTimestampFields(),
       ...generateCreatedByField(User),
     },
   })

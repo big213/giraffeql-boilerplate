@@ -11,7 +11,7 @@ import { positiveNumberAndZero } from "./positiveNumberAndZero";
 import { negativeNumberAndZero } from "./negativeNumberAndZero";
 import { imageUrl } from "./imageUrl";
 import { url } from "./url";
-import { unixTimestamp } from "./unixTimestamp";
+import { isoTimestamp } from "./isoTimestamp";
 import { date } from "./date";
 import { id } from "./id";
 import { regex } from "./regex";
@@ -30,7 +30,7 @@ export const Scalars = {
   negativeNumberAndZero,
   imageUrl,
   url,
-  unixTimestamp,
+  isoTimestamp,
   date,
   id,
   regex,
@@ -42,5 +42,5 @@ export const Scalars = {
   userRole: enums.userRoleKenum.getScalarType(),
   userPermission: enums.userPermissionEnum.getScalarType(),
   actionType: enums.actionTypeKenum.getScalarType(),
-/** END ENUM Scalar Types */
+  /** END ENUM Scalar Types */
 };

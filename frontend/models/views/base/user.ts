@@ -12,6 +12,7 @@ import {
 } from '~/services/dropdown'
 import { userRoleMap } from '~/services/constants'
 import { Columns } from '~/services/components'
+import { userSetPassword } from '~/models/actions/userSetPassword'
 
 export const BaseUserView: ViewDefinition = {
   routeType: 'base',
@@ -121,6 +122,7 @@ export const BaseUserView: ViewDefinition = {
       'name',
       'description',
       'email',
+      'password',
       'role',
       'permissions',
       'isPublic',
@@ -143,4 +145,9 @@ export const BaseUserView: ViewDefinition = {
   deleteOptions: {},
   shareOptions: {},
   childTypes: [],
+  actions: [
+    {
+      action: userSetPassword,
+    },
+  ],
 }

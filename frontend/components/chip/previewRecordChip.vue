@@ -34,7 +34,11 @@ export default {
     },
 
     name() {
-      return this.entity ? this.value[this.entity.nameField] : null
+      return this.entity
+        ? this.entity.getName
+          ? this.entity.getName(this.value)
+          : this.value[this.entity.nameField]
+        : null
     },
 
     avatarUrl() {
