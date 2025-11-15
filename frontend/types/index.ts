@@ -176,6 +176,9 @@ export type InputDefinition = {} & {
 
   // only applies to value-array
   arrayOptions?: ArrayOptions
+
+  // should the clear (set to null) button be hidden?
+  hideClear?: boolean
 }
 
 export type RenderDefinition = {

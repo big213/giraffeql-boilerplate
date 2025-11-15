@@ -2,7 +2,6 @@ import * as fs from "fs";
 import yargs from "yargs";
 import {
   capitalizeString,
-  insertStatementBefore,
   insertStatementBeforeInFile,
   processTemplate,
 } from "./helpers";

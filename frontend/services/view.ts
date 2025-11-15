@@ -262,23 +262,47 @@ export function generateTruthyRecordRenderField({
   fields,
 }: {
   text?: string
-  fields: string[] // fieldPaths are OK
+  fields: { fieldname?: string; entity: EntityDefinition; component?: any }[] // fieldPaths are OK
 }): RenderDefinition {
   return {
     text,
-    fields: fields.reduce((total, fieldPath) => {
-      return total.concat([
-        `${fieldPath}.id`,
-        `${fieldPath}.name`,
-        `${fieldPath}.__typename`,
-        `${fieldPath}.avatarUrl`,
-      ])
+    fields: fields.reduce((total, { fieldname, entity }) => {
+      return total.concat(generateRecordRenderFields({ fieldname, entity }))
     }, <string[]>[]),
     renderOptions: {
-      fields,
+      fields: fields.map((fieldObject) => ({
+        fieldPath: fieldObject.fieldname ?? fieldObject.entity.typename,
+        component: fieldObject.component,
+      })),
     },
     component: Columns.TruthyRecordColumn,
   }
+}
+
+function generateRecordRenderFields({
+  fieldname,
+  entity,
+}: {
+  fieldname?: string
+  entity: EntityDefinition
+}): string[] {
+  // if no fieldname, assume entity.typename is fieldname
+  const validatedFieldname = fieldname ?? entity.typename
+  const fieldnamePrefix = validatedFieldname ? `${validatedFieldname}.` : ''
+
+  return <string[]>(
+    [
+      `${fieldnamePrefix}id`,
+      `${fieldnamePrefix}__typename`,
+      entity.nameField ? `${fieldnamePrefix}${entity.nameField}` : null,
+      entity.avatarField ? `${fieldnamePrefix}${entity.avatarField}` : null,
+    ]
+      .filter((e) => e)
+      .concat(
+        entity.additionalFields?.map((field) => `${fieldnamePrefix}${field}`) ??
+          []
+      )
+  )
 }
 
 // series of records that are supposed to appear sequentially
@@ -287,17 +311,12 @@ export function generateConcatRecordRenderField({
   fields,
 }: {
   text?: string
-  fields: string[] // fieldPaths are OK
+  fields: { fieldname?: string; entity: EntityDefinition }[] // fieldPaths are OK
 }): RenderDefinition {
   return {
     text,
-    fields: fields.reduce((total, fieldPath) => {
-      return total.concat([
-        `${fieldPath}.id`,
-        `${fieldPath}.name`,
-        `${fieldPath}.__typename`,
-        `${fieldPath}.avatarUrl`,
-      ])
+    fields: fields.reduce((total, { fieldname, entity }) => {
+      return total.concat(generateRecordRenderFields({ fieldname, entity }))
     }, <string[]>[]),
     renderOptions: {
       fields,
@@ -321,21 +340,11 @@ export function generateJoinableRenderField({
 }): RenderDefinition {
   // if no fieldname, assume entity.typename is fieldname
   const validatedFieldname = fieldname ?? entity.typename
-  const fieldnamePrefix = validatedFieldname ? `${validatedFieldname}.` : ''
   return {
     text,
-    fields: <string[]>[
-      `${fieldnamePrefix}id`,
-      `${fieldnamePrefix}__typename`,
-      entity.nameField ? `${fieldnamePrefix}${entity.nameField}` : null,
-      entity.avatarField ? `${fieldnamePrefix}${entity.avatarField}` : null,
-    ]
-      .filter((e) => e)
-      .concat(additionalFields ?? [])
-      .concat(
-        entity.additionalFields?.map((field) => `${fieldnamePrefix}${field}`) ??
-          []
-      ),
+    fields: generateRecordRenderFields({ fieldname, entity }).concat(
+      additionalFields ?? []
+    ),
     pathPrefix: validatedFieldname,
     component: Columns.RecordColumn,
     ...renderDefinition,

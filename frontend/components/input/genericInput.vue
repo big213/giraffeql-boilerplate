@@ -952,7 +952,7 @@ export default {
         ? hideNullInputIcon
           ? null
           : 'mdi-null'
-        : this.isReadonly
+        : this.isReadonly || this.inputObject.inputDefinition.hideClear
         ? null
         : 'mdi-close'
     },
@@ -1189,7 +1189,7 @@ export default {
         return
       }
 
-      const dateObject = new Date(val * 1000)
+      const dateObject = new Date(val)
 
       this.tempInput = `${dateObject.getFullYear()}-${String(
         dateObject.getMonth() + 1

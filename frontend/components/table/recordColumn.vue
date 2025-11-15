@@ -6,7 +6,7 @@
       :key="index"
     >
       <component
-        v-if="component"
+        v-if="component && record"
         :is="component"
         :value="record"
         small

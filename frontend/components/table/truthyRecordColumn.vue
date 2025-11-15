@@ -1,8 +1,15 @@
 <template>
-  <div v-if="currentRecord">
+  <div v-if="currentFieldObject">
+    <component
+      v-if="currentFieldObject.component && currentFieldObject.value"
+      :is="currentFieldObject.component"
+      :value="currentFieldObject.value"
+      small
+    ></component>
     <PreviewRecordMenu
-      :item="currentRecord"
-      :typename="currentRecord.__typename"
+      v-else
+      :item="currentFieldObject.value"
+      :typename="currentFieldObject.value.__typename"
       :close-on-content-click="false"
       :min-width="300"
       :max-width="300"
@@ -25,16 +32,20 @@ export default {
 
   mixins: [columnMixin],
 
-  // options.fields should be a list of the possible truthy values
+  // options.fields: {fieldPath: string; component: any; }[]
 
   computed: {
-    currentRecord() {
+    currentFieldObject() {
       if (!Array.isArray(this.options?.fields)) return null
 
-      for (const fieldPath of this.options.fields) {
-        const value = getNestedProperty(this.currentValue, fieldPath)
+      for (const fieldObject of this.options.fields) {
+        const value = getNestedProperty(this.item, fieldObject.fieldPath)
 
-        if (value) return value
+        if (value)
+          return {
+            value,
+            component: fieldObject.component,
+          }
       }
 
       return null

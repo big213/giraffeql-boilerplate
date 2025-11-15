@@ -65,7 +65,7 @@
       <v-divider></v-divider>
       <v-card-actions
         v-if="
-          previewDefinition.followOptions && !previewDefinition.hideViewButton
+          previewDefinition.followOptions || !previewDefinition.hideViewButton
         "
       >
         <FollowButton

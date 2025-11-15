@@ -13,12 +13,14 @@ export function generateViewRouteObject(
     title,
     icon,
     exactUrl,
+    populateDefaultPageOptions,
   }: {
     viewDefinition: ViewDefinition
     pageOptions?: any
     title?: string
     icon?: string
     exactUrl?: boolean
+    populateDefaultPageOptions?: boolean
   }
 ) {
   return generateRouteObject({
@@ -35,6 +37,12 @@ export function generateViewRouteObject(
               sort: 'updatedAt-desc',
               ...pageOptions,
             },
+      ...(!pageOptions &&
+        populateDefaultPageOptions &&
+        viewDefinition.paginationOptions?.defaultPageOptions && {
+          pageOptions:
+            viewDefinition.paginationOptions.defaultPageOptions(that),
+        }),
     }),
     exactUrl,
   })

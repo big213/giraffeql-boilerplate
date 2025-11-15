@@ -145,6 +145,8 @@ export type SqlSelectQuery = {
   offset?: number;
   limit?: number;
   distinctOn?: (SqlSingleFieldObject | string | Knex.Raw)[];
+  // a function that will take the query and then apply an outer select to it
+  outerSelect?: (query: string) => string;
   specialParams?: any;
   transaction?: Knex.Transaction;
 };
@@ -1090,11 +1092,17 @@ export async function fetchTableRows(sqlQuery: SqlSelectQuery) {
       );
     }
 
+    const finalQuery = sqlQuery.outerSelect
+      ? db.raw(sqlQuery.outerSelect(knexObject.toQuery()))
+      : knexObject;
+
     if (sqlQuery.transaction) {
-      knexObject.transacting(sqlQuery.transaction);
+      finalQuery.transacting(sqlQuery.transaction);
     }
 
-    return await knexObject;
+    return await finalQuery.then((res) =>
+      Array.isArray(res) ? res : res.rows
+    );
   } catch (err) {
     throw handleSqlError(err);
   }

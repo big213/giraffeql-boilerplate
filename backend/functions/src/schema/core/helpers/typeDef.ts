@@ -1027,10 +1027,17 @@ export function generatePaginatorPivotResolverObject({
   pivotService,
   filterByField,
   rootResolver,
+  additionalArgs,
 }: {
   pivotService: PaginatedService;
   filterByField?: string;
   rootResolver?: RootResolverFunction;
+  additionalArgs?: {
+    [x in string]:
+      | GiraffeqlInputFieldType
+      | GiraffeqlInputTypeLookup
+      | undefined;
+  };
 }) {
   // if filterByField, ensure that filterByField is a valid filterField on pivotService
   if (filterByField && !pivotService.filterFieldsMap[filterByField]) {
@@ -1041,7 +1048,7 @@ export function generatePaginatorPivotResolverObject({
 
   // generate sortByKey ScalarDefinition
   const sortByScalarDefinition: ScalarDefinition = {
-    name: pivotService.typename + "SortByKey",
+    name: `${pivotService.typename}SortByKey`,
     types: [],
     parseValue: (value) => {
       if (typeof value !== "string" || !(value in pivotService.sortFieldsMap))
@@ -1082,7 +1089,7 @@ export function generatePaginatorPivotResolverObject({
   };
 
   const filterByTypeDefinition: InputTypeDefinition = {
-    name: pivotService.typename + "FilterByObject",
+    name: `${pivotService.typename}FilterByObject`,
     fields: {},
   };
 
@@ -1453,6 +1460,7 @@ export function generatePaginatorPivotResolverObject({
                 ),
               }),
             }),
+            ...additionalArgs,
           },
           inputsValidator: (args, fieldPath) => {
             // check for invalid first/last, before/after combos
@@ -1808,7 +1816,7 @@ export function generateAggregatorResolverObject({
   ).concat("key");
 
   const aggregatorSortByKeyScalarDefinition: ScalarDefinition = {
-    name: pivotService.typename + "AggregatorSortByKeyField",
+    name: `${pivotService.typename}AggregatorSortByKeyField`,
     types: aggregatorSortKeys.map((value) => {
       return `"${value}"`;
     }),
@@ -1962,7 +1970,7 @@ export function generateCurrentUserFollowLinkField(followLink: LinkService) {
             },
             (builder) => {
               builder
-                .on(parentTableAlias + ".id", "=", joinTableAlias + ".target")
+                .on(`${parentTableAlias}.id`, "=", `${joinTableAlias}.target`)
                 .andOn(
                   specialParams.currentUserId
                     ? db.raw(`"${joinTableAlias}".user = ?`, [

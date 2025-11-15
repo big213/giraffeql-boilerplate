@@ -202,6 +202,7 @@ export function generateBaseRootResolvers({
             ...generatePaginatorPivotResolverObject({
               pivotService: service,
               rootResolver: method.resolver,
+              additionalArgs: method.additionalArgs,
             }),
           });
         }

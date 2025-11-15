@@ -122,7 +122,6 @@ export const BaseUserView: ViewDefinition = {
       'name',
       'description',
       'email',
-      'password',
       'role',
       'permissions',
       'isPublic',
