@@ -50,17 +50,17 @@ export default {
     // override options, otherwise will use viewDefinition.viewOptions
     overrideOptions: {},
 
-    // must be view only
     mode: {
       type: String,
-      required: true,
-      validator: (value) => {
-        return ['view'].includes(value)
-      },
     },
 
     // in dialog mode, some changes are made in the component, like max-height
     dialogMode: {
+      type: Boolean,
+      default: false,
+    },
+
+    fullscreenMode: {
       type: Boolean,
       default: false,
     },

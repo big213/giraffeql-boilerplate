@@ -19,7 +19,7 @@
       <v-row>
         <v-col v-if="recordMode === 'minimized'" cols="12">
           <PreviewRecordChip :value="currentItem">
-            <template v-slot:rightIcon>
+            <template v-slot:right-icon>
               <RecordActionMenu
                 v-if="!viewDefinition.pageOptions?.hideActions"
                 :view-definition="viewDefinition"

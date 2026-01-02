@@ -175,6 +175,8 @@ export default {
         search: false,
       },
 
+      lastSelectedItem: null,
+
       loading: {
         loadData: false,
         loadMore: false,
@@ -1115,22 +1117,42 @@ export default {
       })
     },
 
-    openEditDialog({ mode, lockedFields, parentItem, customFields }) {
+    openEditDialog({
+      mode,
+      lockedFields,
+      parentItem,
+      customFields,
+      fullscreenMode,
+      maxWidth,
+    }) {
       this.dialogs.editMode = mode
       this.openDialog({
         dialogName: 'editRecord',
         lockedFields,
         parentItem,
         customFields,
+        fullscreenMode,
+        maxWidth,
       })
     },
 
-    openDialog({ dialogName, lockedFields, parentItem = null, customFields }) {
+    openDialog({
+      dialogName,
+      lockedFields,
+      parentItem = null,
+      customFields,
+      fullscreenMode,
+      maxWidth,
+    }) {
       if (dialogName in this.dialogs) {
         this.dialogs[dialogName] = true
         this.dialogs.lockedFields = lockedFields
         this.dialogs.parentItem = parentItem
         this.dialogs.customFields = customFields
+        this.dialogs.fullscreenMode = fullscreenMode
+        this.dialogs.maxWidth = maxWidth
+
+        this.lastSelectedItem = parentItem
       }
     },
 
@@ -1354,29 +1376,40 @@ export default {
         )
 
         this.filterInputsArray = await Promise.all(
-          inputFieldDefinitions.map(async (filterInputFieldDefinition) => {
-            // if operator is in/nin and the inputType does not return an array, throw err
-            if (
-              filterInputFieldDefinition.operator.match(/^(n?)in$/) &&
-              !filterInputFieldDefinition.inputDefinition.inputType?.match(
-                /multiple/
+          inputFieldDefinitions
+            .filter((filterInputFieldDefinition) => {
+              // if there is a locked filter, exclude
+              return !this.lockedFiltersComputed?.find(
+                (rawFilterObject) =>
+                  rawFilterObject.field ===
+                    filterInputFieldDefinition.fieldKey &&
+                  rawFilterObject.operator ===
+                    filterInputFieldDefinition.operator
               )
-            ) {
-              throw new Error(
-                `Must use a 'multiple' inputType for n(in) operator`
+            })
+            .map(async (filterInputFieldDefinition) => {
+              // if operator is in/nin and the inputType does not return an array, throw err
+              if (
+                filterInputFieldDefinition.operator.match(/^(n?)in$/) &&
+                !filterInputFieldDefinition.inputDefinition.inputType?.match(
+                  /multiple/
+                )
+              ) {
+                throw new Error(
+                  `Must use a 'multiple' inputType for n(in) operator`
+                )
+              }
+
+              const inputObject = generateInputObject(
+                this,
+                filterInputFieldDefinition
               )
-            }
 
-            const inputObject = generateInputObject(
-              this,
-              filterInputFieldDefinition
-            )
-
-            return {
-              filterInputFieldDefinition,
-              inputObject,
-            }
-          })
+              return {
+                filterInputFieldDefinition,
+                inputObject,
+              }
+            })
         )
 
         // initialize distanceFilterOptions, if any

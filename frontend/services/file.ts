@@ -2,7 +2,7 @@ import { nanoid } from 'nanoid'
 import prettyBytes from 'pretty-bytes'
 import { handleError } from '~/services/base'
 import { executeApiRequest } from '~/services/api'
-import { isDev, tempStoragePath } from '../config'
+import { storagePathPrefix, tempStoragePath } from '../config'
 import { UploadTask, ref, uploadBytesResumable } from 'firebase/storage'
 import { storage } from './fireinit'
 
@@ -48,10 +48,12 @@ export function uploadFile(
   fetchFirebaseUrl: boolean,
   onFinishedUploading?: (fileUploadObject) => any
 ) {
-  // if dev mode, add a prefix
-  const subPath = `${isDev ? 'dev/' : ''}${
-    that.$store.getters['auth/firebaseUser'].uid
-  }/${nanoid()}/${fileUploadObject.file.name}`
+  // if storagePathPrefix, add it as a prefix
+  const subPath = `${
+    storagePathPrefix ? `${storagePathPrefix.replace(/\//g, '')}/` : ''
+  }${that.$store.getters['auth/firebaseUser'].uid}/${nanoid()}/${
+    fileUploadObject.file.name
+  }`
 
   const path = `${tempStoragePath}/${subPath}`
 

@@ -1,5 +1,6 @@
 <template>
   <v-chip v-if="entity" pill v-bind="$attrs" v-on="$listeners" :title="name">
+    <slot name="left-icon" />
     <v-avatar left>
       <v-img v-if="avatarUrl" :src="avatarUrl" contain></v-img
       ><v-icon v-else>{{ fallbackIcon }} </v-icon>
@@ -9,7 +10,7 @@
     </span>
     <i v-else-if="value.name === undefined">{{ value.id }}</i>
     <i v-else> (Untitled) </i>
-    <slot name="rightIcon" />
+    <slot name="right-icon" />
   </v-chip>
 </template>
 <script>

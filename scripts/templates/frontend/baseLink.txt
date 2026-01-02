@@ -43,13 +43,13 @@ export const Base{{ capitalizedTypename }}View: ViewDefinition = {
     ...generateClickRowToOpenDialogOptions(),
     headers: [
       {
-        field: 'user',
+        fieldKey: 'user',
       },
       {
-        field: 'target',
+        fieldKey: 'target',
       },
       {
-        field: 'updatedAt',
+        fieldKey: 'updatedAt',
         width: '150px',
       },
     ],

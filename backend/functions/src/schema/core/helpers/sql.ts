@@ -182,6 +182,16 @@ export type SqlSumQuery = {
   transaction?: Knex.Transaction;
 };
 
+export type SqlCountResultsByFieldQuery = {
+  field: SqlSingleFieldObject | string;
+  table: string;
+  where: SqlWhereInput;
+  limit?: number;
+  distinct?: boolean;
+  specialParams?: any;
+  transaction?: Knex.Transaction;
+};
+
 export type SqlRawQuery = {
   table: string;
   where: SqlWhereInput;
@@ -340,6 +350,11 @@ export function standardizeSelectInput(
     return [...new Set(selectInput)]
       .map((ele) => (typeof ele === "string" ? { field: ele } : ele))
       .reduce((selectObject, simpleSelectObject) => {
+        // if any fields have a "/" in it, throw err. usage of link joins in select could have unexpected behavior
+        if (simpleSelectObject.field.includes("/")) {
+          throw new Error(`Not allowed to use link joins in select statements`);
+        }
+
         selectObject[simpleSelectObject.as ?? simpleSelectObject.field] =
           generateSqlSingleFieldObject(
             simpleSelectObject.field,

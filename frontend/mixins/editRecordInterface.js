@@ -38,7 +38,10 @@ export default {
       type: Array,
     },
 
-    // must be add, edit, view, or copy
+    // override options, otherwise will use viewDefinition[`${mode}Options`]
+    overrideOptions: {},
+
+    // must be add, update, view, or copy
     mode: {
       type: String,
       required: true,
@@ -49,6 +52,11 @@ export default {
 
     // in dialog mode, some changes are made in the component, like max-height
     dialogMode: {
+      type: Boolean,
+      default: false,
+    },
+
+    fullscreenMode: {
       type: Boolean,
       default: false,
     },
@@ -98,6 +106,10 @@ export default {
   computed: {
     isLoading() {
       return Object.values(this.loading).some((state) => state)
+    },
+
+    options() {
+      return this.overrideOptions ?? this.viewDefinition[`${this.mode}Options`]
     },
 
     fields() {
@@ -186,7 +198,7 @@ export default {
     },
 
     setInputValue(key, value) {
-      return setInputValue(this.inputsArray, key, value)
+      return setInputValue(this, this.parentItem, this.inputsArray, key, value)
     },
 
     getInputValue(key) {
@@ -383,15 +395,6 @@ export default {
               inputObject.value = getNestedProperty(data, inputObject.fieldKey)
             }
 
-            // if it is an array, populate the nestedInputsArray
-            if (inputObject.inputDefinition.inputType === 'value-array') {
-              if (Array.isArray(inputObject.value)) {
-                inputObject.value.forEach((ele) =>
-                  addNestedInputObject(this, inputObject, this.parentItem, ele)
-                )
-              }
-            }
-
             // if it is an entity, populate the value and options fields
             if (inputObject.inputDefinition.entity) {
               inputObject.value = getNestedProperty(data, inputObject.fieldKey)
@@ -538,20 +541,6 @@ export default {
                     this,
                     this.parentItem
                   )) ?? null
-              }
-
-              // if it is an array, populate the nestedInputsArray
-              if (inputObject.inputDefinition.inputType === 'value-array') {
-                if (Array.isArray(inputObject.value)) {
-                  inputObject.value.forEach((ele) =>
-                    addNestedInputObject(
-                      this,
-                      inputObject,
-                      this.parentItem,
-                      ele
-                    )
-                  )
-                }
               }
 
               // populate inputObjects if we need to translate any IDs to objects, and also populate any options

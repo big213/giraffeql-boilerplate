@@ -21,6 +21,7 @@ export type ArrayOptions = {
   entryName?: string
   pluralEntryName?: string
   type: NestedInputFieldDefinition | NestedInputFieldDefinition[] // inputType or an object
+  isJsonString?: boolean // if the field is being stored as a json string, then don't fetch the nested fields
 }
 
 export type SortFieldDefinition = {
@@ -65,6 +66,7 @@ export type InputType =
   | 'select' // standard select -- works with text or types
   | 'multiple-select' // multiple select -- works with text or types
   | 'text-autocomplete' // validate text input using server-side calls
+  | 'text-autocomplete-multiple' // same as text-autocomplete but allows multiple selections
   | 'text-combobox' // validate text input using server-side calls, but selection not required
   | 'rating' // rating from 1 to 5
   | 'text'
@@ -179,6 +181,9 @@ export type InputDefinition = {} & {
 
   // should the clear (set to null) button be hidden?
   hideClear?: boolean
+
+  // applies to textarea only
+  rows?: number
 }
 
 export type RenderDefinition = {
@@ -205,7 +210,7 @@ export type RenderDefinition = {
   component?: any // component for rendering the field in table
 
   editOptions?: {
-    mode?: 'right' | 'left' // how will the edit dialog be activated? if undefined, will default to right
+    mode?: 'right' | 'left' | 'component' // how will the edit dialog be activated? if undefined, will default to right. component means it will be expected to be shown on the custom component
 
     fieldKeys?: string[] // the fields to be edited, if different from the default fieldKey
 

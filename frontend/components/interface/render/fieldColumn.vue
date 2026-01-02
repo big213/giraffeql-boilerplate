@@ -3,7 +3,6 @@
     <v-icon
       v-if="renderObject.renderDefinition.editOptions?.mode === 'left'"
       small
-      right
       @click.stop="openEditItemDialog()"
       >mdi-pencil</v-icon
     >
@@ -13,10 +12,14 @@
       :item="item"
       :render-field-definition="renderObject"
       :display-mode="displayMode"
+      @open-edit-dialog="openEditItemDialog()"
     ></component>
-    <span v-else :class="displayMode === 'view' ? 'break-space' : null">{{
-      getTableRowData()
-    }}</span>
+    <span
+      v-else
+      :class="displayMode === 'view' ? 'break-space' : null"
+      :title="tableRowData"
+      >{{ tableRowData }}</span
+    >
     <v-icon
       v-if="
         renderObject.renderDefinition.editOptions &&
@@ -51,6 +54,13 @@ export default {
     },
   },
 
+  computed: {
+    tableRowData() {
+      // need to go deeper if nested
+      return getNestedProperty(this.item, this.renderObject.fieldKey)
+    },
+  },
+
   methods: {
     openEditItemDialog() {
       if (this.renderObject.renderDefinition.editOptions.action) {
@@ -67,11 +77,6 @@ export default {
           ]
         )
       }
-    },
-
-    getTableRowData() {
-      // need to go deeper if nested
-      return getNestedProperty(this.item, this.renderObject.fieldKey)
     },
   },
 }

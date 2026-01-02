@@ -1,6 +1,8 @@
 <template>
   <v-chip :color="color" v-bind="$attrs" v-on="$listeners">
-    <span :class="textClass">{{ title }}</span>
+    <slot name="left-icon"></slot>
+    <span v-if="value" :class="textClass">{{ title }}</span>
+    <i v-else>{{ emptyText ?? 'None' }}</i>
     <slot name="right-icon"></slot>
   </v-chip>
 </template>
@@ -10,6 +12,7 @@ export default {
   props: {
     value: {}, // can be the index OR name
     valuesMap: {}, // optional -- the map used to generate the text/color, etc.
+    emptyText: {}, // optional override emptyText
   },
   data() {
     return {}

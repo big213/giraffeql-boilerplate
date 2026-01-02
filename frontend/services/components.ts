@@ -20,6 +20,7 @@ import OwnerColumn from '../components/table/ownerColumn.vue'
 import PreviewableFilesColumn from '../components/table/previewableFilesColumn.vue'
 import RatingColumn from '../components/table/ratingColumn.vue'
 import RecordColumn from '../components/table/recordColumn.vue'
+import PreviewableRecordColumn from '../components/table/previewableRecordColumn.vue'
 import ShareLinkColumn from '../components/table/shareLinkColumn.vue'
 import TruthyRecordColumn from '../components/table/truthyRecordColumn.vue'
 import UrlColumn from '../components/table/urlColumn.vue'
@@ -51,6 +52,7 @@ export const Columns = {
   PreviewableFilesColumn,
   RatingColumn,
   RecordColumn,
+  PreviewableRecordColumn,
   ShareLinkColumn,
   TruthyRecordColumn,
   UrlColumn,

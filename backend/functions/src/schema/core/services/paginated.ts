@@ -9,6 +9,7 @@ import {
   insertTableRow,
   SqlAggregateQuery,
   SqlCountQuery,
+  SqlCountResultsByFieldQuery,
   SqlDeleteQuery,
   SqlFieldGetter,
   SqlIncrementQuery,
@@ -400,6 +401,37 @@ export class PaginatedService extends BaseService {
     });
 
     return result;
+  }
+
+  // counts the records by field and returns a Map<fieldValue, count>
+  async countSqlRecordsByField(
+    sqlQuery: Omit<SqlCountResultsByFieldQuery, "table">
+  ): Promise<Map<any, number>> {
+    const results = await fetchTableRows({
+      ...sqlQuery,
+      select: [sqlQuery.field],
+      rawSelect: [
+        {
+          statement: db.raw(`count(*)`),
+          as: "count",
+        },
+      ],
+      groupBy: [sqlQuery.field],
+      table: this.typename,
+    });
+
+    const field =
+      typeof sqlQuery.field === "string"
+        ? sqlQuery.field
+        : sqlQuery.field.field;
+
+    const resultsMap: Map<any, number> = new Map();
+
+    results.forEach((result) => {
+      resultsMap.set(result[field], Number(result.count));
+    });
+
+    return resultsMap;
   }
 
   // sum a field for the records matching the criteria

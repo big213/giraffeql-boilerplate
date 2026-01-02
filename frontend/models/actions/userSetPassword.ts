@@ -23,7 +23,7 @@ export const userSetPassword: ActionDefinition = {
 
   getLockedFields: (that, item) => {
     return {
-      'item.id': item.id,
+      item: item.id,
     }
   },
 

@@ -183,6 +183,8 @@ export function generateTimestampField(
     sqlType: "dateTime",
     type: Scalars.isoTimestamp,
     sqlOptions: {
+      getter: (tableAlias, field) =>
+        `date_trunc('milliseconds', "${tableAlias}".${field})`,
       parseValue: nowOnly
         ? () => db.fn.now()
         : (value: unknown) => {
@@ -570,7 +572,7 @@ export function generateJSONField(
   } & GenerateFieldParams
 ) {
   const {
-    type = Scalars.jsonString,
+    type = Scalars.json,
     sqlOptions,
     typeDefOptions,
     ...remainingOptions

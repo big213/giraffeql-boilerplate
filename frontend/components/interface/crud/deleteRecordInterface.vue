@@ -22,11 +22,7 @@
 
 <script>
 import { executeApiRequest } from '~/services/api'
-import {
-  capitalizeString,
-  handleError,
-  buildQueryFromFieldPathArray,
-} from '~/services/base'
+import { handleError, buildQueryFromFieldPathArray } from '~/services/base'
 
 export default {
   props: {

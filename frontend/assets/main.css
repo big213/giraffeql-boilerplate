@@ -1,8 +1,8 @@
 .truncate {
   max-width: 1px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap; /* Keeps text on one line */
+  overflow: hidden; /* Hides content that goes past 100px */
+  text-overflow: ellipsis; /* Adds the (...) */
 }
 
 .truncate-mobile-row {

@@ -1,4 +1,15 @@
+import { Knex } from "knex";
 import { PaginatedService } from "../../core/services";
+import { storage } from "firebase-admin";
+import { serveImageSourcePath } from "../../../config";
+import { generateId } from "../../core/helpers/shared";
+import { User } from "../../services";
+import {
+  generateServingUrl,
+  getFirebaseStorageData,
+  getFirebaseStorageMetadata,
+  saveFirebaseFile,
+} from "../../helpers/file";
 
 export class FileService extends PaginatedService {
   defaultTypename = "file";
@@ -51,25 +62,27 @@ export class FileService extends PaginatedService {
     }
   }
 
-  async updateFileParentKeys(
-    userId: string,
-    typename: string,
-    itemId: string,
-    inputsArray: unknown[],
-    fieldPath: string[]
-  ) {
-    const fileIdsArray: Set<number> = new Set();
-
-    inputsArray.forEach((input) => {
-      if (Array.isArray(input)) input.forEach((id) => fileIdsArray.add(id));
-    });
+  async updateFileParentKeys({
+    userId,
+    service,
+    itemId,
+    fileIds,
+    transaction,
+  }: {
+    userId: string;
+    service: PaginatedService;
+    itemId: string;
+    fileIds: string[];
+    transaction?: Knex.Transaction;
+  }) {
+    const uniqueFileIds = [...new Set(fileIds)];
 
     // must associate them with the parent item
-    if (fileIdsArray.size) {
+    if (uniqueFileIds.length) {
       // ensure all the files belong to the currentUser
       await this.updateSqlRecord({
         fields: {
-          parentKey: `${typename}_${itemId}`,
+          parentKey: `${service.typename}_${itemId}`,
         },
         where: [
           {
@@ -79,10 +92,63 @@ export class FileService extends PaginatedService {
           {
             field: "id",
             operator: "in",
-            value: [...fileIdsArray],
+            value: uniqueFileIds,
           },
         ],
+        transaction,
       });
     }
+  }
+
+  async createFromData({
+    filename,
+    data,
+    parentKey,
+    userId,
+    transaction,
+  }: {
+    filename: string;
+    data: string;
+    parentKey?: string | null;
+    userId: string;
+    transaction?: Knex.Transaction;
+  }) {
+    const user = await User.getFirstSqlRecord(
+      {
+        select: ["id", "firebaseUid"],
+        where: {
+          id: userId,
+        },
+        transaction,
+      },
+      true
+    );
+
+    const location = `${user.firebaseUid}/g/${filename}`;
+
+    await saveFirebaseFile({
+      data,
+      location,
+    });
+
+    const fileObject = await getFirebaseStorageMetadata(location);
+
+    // create the file
+    const addResults = await this.createSqlRecord({
+      fields: {
+        name: filename,
+        size: fileObject.size,
+        location,
+        contentType: fileObject.contentType,
+        parentKey,
+        createdBy: user.id,
+      },
+      transaction,
+    });
+
+    return {
+      fileId: addResults.id,
+      url: generateServingUrl(location),
+    };
   }
 }

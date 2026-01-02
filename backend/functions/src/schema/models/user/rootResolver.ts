@@ -4,12 +4,11 @@ import {
   GiraffeqlRootResolverType,
   lookupSymbol,
 } from "giraffeql";
-import { ItemNotFoundError, PermissionsError } from "../../core/helpers/error";
+import { PermissionsError } from "../../core/helpers/error";
 import {
   isCurrentUser,
   validateQueryFields,
 } from "../../core/helpers/permissions";
-import { getObjectType } from "../../core/helpers/resolver";
 import {
   generateBaseRootResolvers,
   generateCreateRootResolver,
@@ -21,8 +20,8 @@ import {
 } from "../../core/helpers/rootResolver";
 import { objectOnlyHasFields } from "../../core/helpers/shared";
 import { Validators } from "../../helpers/validator";
-import { User } from "../../services";
 import { Scalars } from "../../scalars";
+import { User } from "../../services";
 
 const allowedQueryFields = [
   "id",
@@ -59,7 +58,6 @@ export default {
       },
       {
         type: "getPaginator",
-        // not allowed (except by admins)
         /*
         Allow if:
         - filtering by isPublic === true

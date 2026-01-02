@@ -53,6 +53,13 @@ export type DialogOptions = {
   hideTitle?: boolean
 }
 
+export type InstructionOptions = {
+  // string that will appear on top of the form as instructions
+  text?: string
+  // a custom component to render the instructions instead of a string
+  component?: any
+}
+
 export type CreateOptions = {
   // required: fields that can be added
   // a function can be provided instead, which will determine the fields dynamically based on that and parentItem
@@ -64,6 +71,8 @@ export type CreateOptions = {
   component?: any
   // if not createX, the custom create operation name
   operationName?: string
+
+  instructionOptions?: InstructionOptions
 
   // custom function to modify the inputs in-place before they get sent as args
   inputsModifier?: (that, inputs) => void
@@ -108,6 +117,8 @@ export type UpdateOptions = {
   component?: any
   // if not createX, the custom create operation name
   operationName?: string
+
+  instructionOptions?: InstructionOptions
 
   // custom function to modify the inputs in-place before they get sent as args
   inputsModifier?: (that, inputs) => void
@@ -332,6 +343,19 @@ export type FollowOptions = {
   entity: EntityDefinition
 }
 
+export type CustomModeObject = {
+  text: string
+  icon: string
+  key: string
+  modeObject: {
+    icon: string
+    prefix: string
+    persistent?: boolean
+    defaultInterface: any
+    options: any // depends on what the interface does
+  }
+}
+
 export type ViewDefinition = {
   entity: EntityDefinition
   preview?: PreviewDefinition
@@ -358,6 +382,8 @@ export type ViewDefinition = {
   actions?: ({} & ActionObject)[]
   childTypes?: ({} & ExpandTypeObject)[]
 
+  customModes?: CustomModeObject[]
+
   // extra fields
   routeType: string
   routeKey: string
@@ -381,6 +407,9 @@ export type PaginationOptions = {
     preset?: boolean
     // function that will return the params to be passed with the search, if any
     getParams?: (that, searchQuery) => any
+
+    // number of cols the search should take up. defaults to 3
+    cols?: number
   }
 
   defaultPageOptions?: (that: any) => Promise<CrudPageOptions> | CrudPageOptions

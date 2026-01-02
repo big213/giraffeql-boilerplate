@@ -38,6 +38,7 @@ jobs:
           DEFAULT_GRID_VIEW:
           SOCIAL_LOGIN_ENABLED:
           TEMP_STORAGE_PATH: temp
+          STORAGE_PATH_PREFIX:
           STRIPE_PUB_KEY:
           PAYPAL_CLIENT_ID:
       - name: Create SA key

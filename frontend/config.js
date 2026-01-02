@@ -18,6 +18,7 @@ export const defaultGridView = process.env.defaultGridView
 export const defaultLightMode = process.env.defaultLightMode
 export const socialLoginEnabled = process.env.socialLoginEnabled
 export const tempStoragePath = process.env.tempStoragePath
+export const storagePathPrefix = process.env.storagePathPrefix
 export const hideNullInputIcon = process.env.hideNullInputIcon
 export const paypalClientId = process.env.paypalClientId
 export const isDev = process.env.isDev

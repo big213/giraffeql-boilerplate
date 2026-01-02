@@ -1,7 +1,8 @@
 <template>
   <v-dialog
-    scrollable
+    :scrollable="!fullscreenMode"
     :max-width="computedMaxWidth"
+    :fullscreen="fullscreenMode"
     v-bind="$attrs"
     v-on="$listeners"
     :persistent="modeObject.persistent"
@@ -14,8 +15,10 @@
       :view-definition="viewDefinition"
       :custom-fields="customFields"
       :mode="computedMode"
+      :fullscreen-mode="fullscreenMode"
       dialog-mode
       :generation="generation"
+      :override-options="modeObject?.options"
       @handle-submit="handleSubmit"
       @close="close()"
       @item-updated="$emit('item-updated')"
@@ -102,6 +105,15 @@ import RecordActionMenu from '~/components/menu/recordActionMenu.vue'
 import CrudPostInterface from '~/components/interface/crud/crudPostInterface.vue'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 
+/*
+type ModeObject = {
+  icon: string;
+  prefix: string;
+  persistent: boolean;
+  defaultInterface: component;
+}
+*/
+
 const modesMap = {
   create: {
     icon: 'mdi-plus',
@@ -172,30 +184,22 @@ export default {
       type: Array,
     },
 
-    // this OR specialMode must be provided
+    // this OR specialModeObject must be provided
     mode: {
       type: String,
-      validator: (value) => {
-        return [
-          'create',
-          'import',
-          'batchUpdate',
-          'update',
-          'view',
-          'delete',
-          'copy',
-          'share',
-        ].includes(value)
-      },
     },
 
-    specialMode: {
+    specialModeObject: {
       type: Object,
     },
 
     parentItem: {},
 
     maxWidth: {},
+
+    fullscreenMode: {
+      type: Boolean,
+    },
   },
   data() {
     return {
@@ -222,20 +226,26 @@ export default {
     },
 
     modeObject() {
-      return this.specialMode ?? modesMap[this.computedMode]
+      return (
+        modesMap[this.computedMode] ??
+        this.viewDefinition.customModes?.find(
+          (mode) => mode.key === this.computedMode
+        )?.modeObject ??
+        this.specialModeObject
+      )
     },
 
     interfaceComponent() {
-      return this.specialMode
-        ? this.modeObject.defaultInterface
-        : this.options?.component ?? this.modeObject.defaultInterface
+      return this.options?.component ?? this.modeObject.defaultInterface
     },
 
     options() {
-      return this.computedMode === 'import' ||
-        this.computedMode === 'batchUpdate'
-        ? this.viewDefinition.paginationOptions[`${this.computedMode}Options`]
-        : this.viewDefinition[`${this.computedMode}Options`]
+      return (
+        this.modeObject.options ??
+        (this.computedMode === 'import' || this.computedMode === 'batchUpdate'
+          ? this.viewDefinition.paginationOptions[`${this.computedMode}Options`]
+          : this.viewDefinition[`${this.computedMode}Options`])
+      )
     },
 
     title() {

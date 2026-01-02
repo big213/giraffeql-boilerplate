@@ -91,6 +91,8 @@
           :loading="inputObject.loading"
           persistent-hint
           :clearable="false"
+          prepend-inner-icon="mdi-content-paste"
+          @paste="handlePasteEvent"
           @change="handleMultipleFileInputChange"
         >
           <template v-slot:selection="{ file, text }">
@@ -237,7 +239,7 @@
       v-else-if="inputObject.inputDefinition.inputType === 'textarea'"
       v-model="inputObject.value"
       filled
-      rows="3"
+      :rows="inputObject.inputDefinition.rows ?? 3"
       dense
       class="py-0"
       :label="`${inputObject.label}${
@@ -443,7 +445,10 @@
       </template>
     </v-autocomplete>
     <v-autocomplete
-      v-else-if="inputObject.inputDefinition.inputType === 'text-autocomplete'"
+      v-else-if="
+        inputObject.inputDefinition.inputType === 'text-autocomplete' ||
+        inputObject.inputDefinition.inputType === 'text-autocomplete-multiple'
+      "
       v-model="inputObject.value"
       :search-input.sync="inputObject.inputValue"
       :items="inputObject.options"
@@ -457,6 +462,9 @@
       :loading="inputObject.loading"
       persistent-hint
       filled
+      :multiple="
+        inputObject.inputDefinition.inputType === 'text-autocomplete-multiple'
+      "
       hide-no-data
       return-object
       :no-filter="
@@ -471,6 +479,18 @@
       @click:append="handleClear()"
       @click:append-outer="handleClose()"
     >
+      <template v-slot:item="data">
+        <InputSelectionChip
+          :input-object="inputObject"
+          :item="data.item"
+        ></InputSelectionChip>
+      </template>
+      <template v-slot:selection="data">
+        <InputSelectionChip
+          :input-object="inputObject"
+          :item="data.item"
+        ></InputSelectionChip>
+      </template>
     </v-autocomplete>
     <v-combobox
       v-else-if="inputObject.inputDefinition.inputType === 'text-combobox'"
@@ -1218,6 +1238,7 @@ export default {
         inputObject: this.inputObject,
         parentItem: this.parentItem,
         fetchEntities: true,
+        initialize: false,
       })
     },
 
@@ -1690,6 +1711,17 @@ export default {
           fileUploadObject.uploadTask?.cancel()
         })
       }
+    },
+
+    handlePasteEvent(event) {
+      const items = (event.clipboardData || event.originalEvent.clipboardData)
+        .items
+
+      const files = [...items]
+        .filter((item) => item.kind === 'file' && item.type.includes('image/'))
+        .map((item) => item.getAsFile())
+
+      this.processFilesQueue(files)
     },
 
     renderFileUploadProgress(file) {

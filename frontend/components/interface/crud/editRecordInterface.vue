@@ -1,12 +1,26 @@
 <template>
   <v-card flat>
     <slot name="toolbar"></slot>
-    <v-card-text :class="{ 'dialog-max-height': dialogMode }" class="pt-3">
+    <v-card-text
+      :class="{ 'dialog-max-height': dialogMode && !fullscreenMode }"
+      class="pt-3"
+    >
       <CircularLoader
         v-if="isLoading"
         style="min-height: 250px"
       ></CircularLoader>
       <v-container v-show="!isLoading" class="px-0" fluid>
+        <v-row v-if="options.instructionOptions">
+          <v-col>
+            <component
+              v-if="options.instructionOptions.component"
+              :is="options.instructionOptions.component"
+            ></component>
+            <v-alert v-else type="info">
+              {{ options.instructionOptions.text }}
+            </v-alert>
+          </v-col>
+        </v-row>
         <v-row>
           <v-col
             v-for="(inputObject, i) in visibleInputsArray"

@@ -23,6 +23,7 @@ export default {
     stripePubKey: process.env.STRIPE_PUB_KEY,
     socialLoginEnabled: !!process.env.SOCIAL_LOGIN_ENABLED,
     tempStoragePath: process.env.TEMP_STORAGE_PATH,
+    storagePathPrefix: process.env.STORAGE_PATH_PREFIX,
     hideNullInputIcon: process.env.HIDE_NULL_INPUT_ICON,
     paypalClientId: process.env.PAYPAL_CLIENT_ID,
   },

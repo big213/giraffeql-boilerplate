@@ -11,20 +11,28 @@
         :value="record"
         small
       ></component>
-      <PreviewRecordMenu
-        v-else-if="record"
-        :item="record"
-        :typename="record.__typename"
-        :close-on-content-click="false"
-        :min-width="300"
-        :max-width="300"
-        offset-y
-        top
-        open-mode="openInDialog"
-        :chip-max-width="options?.chipMaxWidth"
-        :disabled="disablePreview"
+      <PreviewRecordChip
+        v-else-if="
+          record &&
+          renderFieldDefinition.renderDefinition.editOptions?.mode ===
+            'component'
+        "
+        :value="record"
+        small
+        @click.stop="$emit('open-edit-dialog')"
       >
-      </PreviewRecordMenu>
+        <template
+          v-slot:left-icon
+          v-if="
+            renderFieldDefinition.renderDefinition.editOptions?.mode ===
+            'component'
+          "
+        >
+          <v-icon small left class="pr-2">mdi-pencil</v-icon>
+        </template>
+      </PreviewRecordChip>
+      <PreviewRecordChip v-else-if="record" :value="record" small>
+      </PreviewRecordChip>
       <v-chip v-else-if="emptyText" small
         ><i>{{ emptyText }}</i></v-chip
       >
@@ -35,12 +43,14 @@
 
 <script>
 import columnMixin from '~/mixins/column'
-import PreviewRecordMenu from '~/components/menu/previewRecordMenu.vue'
+import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 
 export default {
   components: {
-    PreviewRecordMenu,
+    PreviewRecordChip,
   },
+
+  // this component implements editOptions?.mode === 'component' properly
 
   mixins: [columnMixin],
 
@@ -53,10 +63,6 @@ export default {
 
     emptyText() {
       return this.options?.emptyText
-    },
-
-    disablePreview() {
-      return !!this.options?.disablePreview
     },
 
     component() {

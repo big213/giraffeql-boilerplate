@@ -22,6 +22,17 @@
           <v-divider></v-divider>
         </div>
         <v-container v-show="visibleInputsArray.length" class="px-0">
+          <v-row v-if="actionDefinition.instructionOptions">
+            <v-col>
+              <component
+                v-if="actionDefinition.instructionOptions.component"
+                :is="actionDefinition.instructionOptions.component"
+              ></component>
+              <v-alert v-else type="info">
+                {{ actionDefinition.instructionOptions.text }}
+              </v-alert>
+            </v-col>
+          </v-row>
           <v-row>
             <v-col
               v-for="(inputObject, i) in visibleInputsArray"
@@ -45,6 +56,18 @@
     </v-card-text>
 
     <v-card-actions v-if="!isLoading && !hideActions">
+      <v-btn
+        v-for="(secondaryActionDefinition, i) in visibleSecondaryActions"
+        :key="i"
+        color="secondary"
+        :loading="loading.executeAction"
+        @click="handleSecondaryActionSubmit(secondaryActionDefinition)"
+      >
+        <v-icon v-if="secondaryActionDefinition.icon" left>{{
+          secondaryActionDefinition.icon
+        }}</v-icon>
+        {{ secondaryActionDefinition.title }}</v-btn
+      >
       <v-spacer></v-spacer>
       <slot name="footer-action"></slot>
       <v-btn
@@ -52,7 +75,11 @@
         color="primary"
         :loading="loading.executeAction"
         @click="handleSubmit()"
-        >{{ submitButtonText }}</v-btn
+      >
+        <v-icon v-if="actionDefinition.submitButtonIcon" left>{{
+          actionDefinition.submitButtonIcon
+        }}</v-icon>
+        {{ actionDefinition.submitButtonText ?? 'Submit' }}</v-btn
       >
     </v-card-actions>
   </v-card>
@@ -126,6 +153,14 @@ export default {
     isLoading() {
       return Object.values(this.loading).some((state) => state)
     },
+
+    visibleSecondaryActions() {
+      return (this.actionDefinition.secondaryActions ?? []).filter(
+        (secondaryActionDefintion) =>
+          !secondaryActionDefintion.showIf ||
+          secondaryActionDefintion.showIf(this, this.parentItem)
+      )
+    },
     visibleInputsArray() {
       return this.inputsArray.filter(
         (inputObject) =>
@@ -169,7 +204,7 @@ export default {
     },
 
     setInputValue(key, value) {
-      return setInputValue(this.inputsArray, key, value)
+      return setInputValue(this, this.parentItem, this.inputsArray, key, value)
     },
 
     getInputValue(key) {
@@ -248,6 +283,25 @@ export default {
       this.loading.executeAction = false
     },
 
+    async handleSecondaryActionSubmit(secondaryActionDefinition) {
+      this.loading.executeAction = true
+      try {
+        const args = await processInputObjectArray(
+          this,
+          this.parentItem,
+          this.inputsArray
+        )
+
+        await secondaryActionDefinition.onSubmit(this, this.parentItem, args)
+
+        // reset inputs
+        // this.resetInputs()
+      } catch (err) {
+        handleError(this, err)
+      }
+      this.loading.executeAction = false
+    },
+
     handleSubmitSuccess(data) {
       // if persistent and there are previewOptions, then refresh the contents of the preview
       if (
@@ -285,6 +339,12 @@ export default {
       // set loading state until all inputs are done loading
       this.loading.initInputs = true
       try {
+        // if actionDefinition.getInitialFields, fetch the initialField
+        const initialFields = await this.actionDefinition.getInitialFields?.(
+          this,
+          this.parentItem
+        )
+
         this.inputsArray = await Promise.all(
           this.actionDefinition.fields
             .filter(
@@ -300,36 +360,28 @@ export default {
               // is the field in lockedFields? if so, use that and set field to readonly
               if (
                 this.lockedFields &&
-                inputObject.fieldPath in this.lockedFields &&
-                this.lockedFields[inputObject.fieldPath] !== undefined
+                inputObject.fieldKey in this.lockedFields &&
+                this.lockedFields[inputObject.fieldKey] !== undefined
               ) {
-                inputObject.value = this.lockedFields[inputObject.fieldPath]
+                inputObject.value = this.lockedFields[inputObject.fieldKey]
                 inputObject.readonly = true
 
                 // if fieldInfo.hideIfLocked, also set those fields to hidden
                 if (actionFieldDefinition.hideIfLocked) {
                   inputObject.hidden = true
                 }
+              } else if (
+                initialFields &&
+                inputObject.fieldKey in initialFields &&
+                initialFields[inputObject.fieldKey] !== undefined
+              ) {
+                inputObject.value = initialFields[inputObject.fieldKey]
               } else {
                 inputObject.value =
                   (await actionFieldDefinition.inputDefinition.getInitialValue?.(
                     this,
                     this.parentItem
                   )) ?? null
-              }
-
-              // if it is an array, populate the nestedInputsArray
-              if (inputObject.inputDefinition.inputType === 'value-array') {
-                if (Array.isArray(inputObject.value)) {
-                  inputObject.value.forEach((ele) =>
-                    addNestedInputObject(
-                      this,
-                      inputObject,
-                      this.parentItem,
-                      ele
-                    )
-                  )
-                }
               }
 
               // populate inputObjects if we need to translate any IDs to objects, and also populate any options

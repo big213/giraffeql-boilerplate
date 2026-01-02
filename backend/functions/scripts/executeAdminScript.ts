@@ -3,6 +3,7 @@ const argv = yargs(process.argv.slice(2))
   .options({
     prod: { type: "boolean", default: false },
     name: { type: "string", demandOption: true },
+    debug: { type: "boolean", default: false },
   })
   .parseSync();
 
@@ -13,14 +14,18 @@ if (argv.prod) {
   process.env.DEV = "true";
 }
 
-// always debug mode on
-process.env.DEBUG_MODE = "true";
+// set debug mode based on args
+if (argv.debug) {
+  process.env.DEBUG_MODE = "true";
+} else {
+  delete process.env.DEBUG_MODE;
+}
 
 import "../src/schema";
-import { initializeKnex } from "../src/utils/knex";
+import { reinitializeKnex } from "../src/utils/knex";
 import { development, production } from "../knexfile";
 
-initializeKnex(argv.prod ? production : development);
+reinitializeKnex(argv.prod ? production : development);
 
 console.log(
   `Executing script '${argv.name}' on: ${

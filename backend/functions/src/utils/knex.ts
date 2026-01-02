@@ -1,4 +1,4 @@
-import * as knexBuilder from "knex";
+import * as knex from "knex";
 import * as pg from "pg";
 import { pgOptions, debugMode } from "../config";
 
@@ -6,13 +6,9 @@ import { pgOptions, debugMode } from "../config";
 pg.types.setTypeParser(pg.types.builtins.NUMERIC, Number);
 
 // set up knex with the default params
-export let db = knexBuilder({
+export let db = knex({
   ...pgOptions,
 });
-
-export function initializeKnex(options: any) {
-  db = knexBuilder(options);
-}
 
 // if dev mode, output raw queries to console
 if (debugMode) {
@@ -20,4 +16,17 @@ if (debugMode) {
     console.log(val.sql);
     console.log(val.bindings);
   });
+}
+
+// for overriding the default config
+export function reinitializeKnex(options: any) {
+  db = knex(options);
+
+  // if dev mode, output raw queries to console
+  if (debugMode) {
+    db.on("query", (val) => {
+      console.log(val.sql);
+      console.log(val.bindings);
+    });
+  }
 }

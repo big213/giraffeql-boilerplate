@@ -4,17 +4,37 @@
       v-for="(element, index) in elements"
       :class="elements.length > 1 ? 'mr-2' : null"
       :key="index"
+      :title="element"
     >
       <MappedChip
-        v-if="element"
-        :small="options?.smallMode"
+        v-if="
+          renderFieldDefinition.renderDefinition.editOptions?.mode ===
+          'component'
+        "
+        small
         :value="element"
         :values-map="options?.valuesMap"
+        :empty-text="emptyText"
+        @click.stop="$emit('open-edit-dialog')"
+      >
+        <template
+          v-slot:left-icon
+          v-if="
+            renderFieldDefinition.renderDefinition.editOptions?.mode ===
+            'component'
+          "
+        >
+          <v-icon small left>mdi-pencil</v-icon>
+        </template>
+      </MappedChip>
+      <MappedChip
+        v-else
+        small
+        :value="element"
+        :values-map="options?.valuesMap"
+        :empty-text="emptyText"
       >
       </MappedChip>
-      <v-chip v-else-if="emptyText" small
-        ><i>{{ emptyText }}</i></v-chip
-      >
     </span>
     <i v-if="!elements.length && emptyText">{{ emptyText }}</i>
   </span>
@@ -30,7 +50,6 @@ export default {
   },
 
   /* expected options:
-  smallMode?: boolean
   emptyText?: string;
   valuesMap?: {
     [x: string]: {
@@ -39,7 +58,8 @@ export default {
       textColor?: string // defaults to black
     }
   }
-  editable?: boolean;
+
+  // this component implements editOptions?.mode === 'component' properly
   */
 
   mixins: [columnMixin],

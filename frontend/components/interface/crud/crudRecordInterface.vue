@@ -45,13 +45,10 @@
       >
         <v-row justify="center" class="mt-3">
           <v-col
-            v-if="
-              viewDefinition.paginationOptions.searchOptions &&
-              viewDefinition.paginationOptions.searchOptions.preset
-            "
+            v-if="viewDefinition.paginationOptions.searchOptions?.preset"
             :key="-1"
             cols="12"
-            lg="3"
+            :lg="viewDefinition.paginationOptions.searchOptions.cols ?? 3"
             class="py-0"
           >
             <v-text-field
@@ -69,7 +66,7 @@
             v-for="(crudFilterObject, i) in visiblePresetFiltersArray"
             :key="i"
             cols="12"
-            lg="3"
+            :lg="crudFilterObject.filterInputFieldDefinition.cols ?? 3"
             class="py-0"
           >
             <GenericInput
@@ -267,7 +264,9 @@
             >
               <v-icon :left="!isXsViewport">mdi-sort</v-icon>
               <span v-if="!isXsViewport">{{
-                currentSortObject ? currentSortObject.text : 'None'
+                currentSortObject
+                  ? currentSortObject.text ?? currentSortObject.key
+                  : 'None'
               }}</span></v-btn
             >
           </template>
@@ -278,7 +277,9 @@
               :class="{ 'selected-bg': currentSortObject === sortObject }"
               @click="setCurrentSortOption(sortObject)"
             >
-              <v-list-item-title>{{ sortObject.text }}</v-list-item-title>
+              <v-list-item-title>{{
+                sortObject.text ?? sortObject.key
+              }}</v-list-item-title>
             </v-list-item>
           </v-list>
         </v-menu>
@@ -568,7 +569,14 @@
                       expand-mode="emit"
                       bottom
                       offset-y
-                      :btn-attrs="{ block: true, text: true }"
+                      :btn-attrs="{
+                        block: true,
+                        text: true,
+                        ...(item === lastSelectedItem && {
+                          color: 'secondary',
+                          outlined: true,
+                        }),
+                      }"
                       @handle-action-click="openEditDialog"
                       @handle-expand-click="toggleGridExpand(item, $event)"
                       @handle-custom-action-click="handleCustomActionClick"
@@ -656,7 +664,14 @@
                   expand-mode="emit"
                   bottom
                   offset-y
-                  :btn-attrs="{ block: true, text: true }"
+                  :btn-attrs="{
+                    block: true,
+                    text: true,
+                    ...(props.item === lastSelectedItem && {
+                      color: 'secondary',
+                      outlined: true,
+                    }),
+                  }"
                   @handle-action-click="openEditDialog"
                   @handle-expand-click="toggleItemExpanded(props, $event)"
                   @handle-custom-action-click="handleCustomActionClick"
@@ -702,7 +717,13 @@
                   expand-mode="emit"
                   left
                   offset-x
-                  :btn-attrs="{ small: true }"
+                  :btn-attrs="{
+                    small: true,
+                    ...(props.item === lastSelectedItem && {
+                      color: 'secondary',
+                      outlined: true,
+                    }),
+                  }"
                   @handle-action-click="openEditDialog"
                   @handle-expand-click="toggleItemExpanded(props, $event)"
                   @handle-custom-action-click="handleCustomActionClick"
@@ -808,6 +829,8 @@
       :locked-fields="dialogs.lockedFields"
       :mode="dialogs.editMode"
       :custom-fields="dialogs.customFields"
+      :fullscreen-mode="dialogs.fullscreenMode"
+      :max-width="dialogs.maxWidth"
       @reload-parent="reset({ resetExpanded: true })"
       @reload-parent-item="$emit('reload-parent-item')"
       @close="dialogs.editRecord = false"

@@ -467,20 +467,37 @@ export async function collectPaginatorData(
   return allResults
 }
 
-export function setInputValue(inputObjectsArray, key, value) {
+export async function setInputValue(
+  that,
+  parentItem,
+  inputObjectsArray: CrudInputObject[],
+  key,
+  value
+) {
   const inputObject = inputObjectsArray.find((ele) => ele.fieldKey === key)
   if (!inputObject) throw new Error(`Input key not found: '${key}'`)
 
   inputObject.value = value
+
+  await populateInputObject(that, {
+    inputObject,
+    parentItem,
+    fetchEntities: true,
+    initialize: true,
+  })
 }
 
-export function getInputValue(inputObjectsArray, key, throwErr = false) {
+export function getInputValue(
+  inputObjectsArray: CrudInputObject[],
+  key,
+  throwErr = false
+) {
   const inputObject = inputObjectsArray.find((ele) => ele.fieldKey === key)
   if (!inputObject && throwErr) throw new Error(`Input key not found: '${key}'`)
   return inputObject?.value ?? null
 }
 
-export function getInputObject(inputObjectsArray, key) {
+export function getInputObject(inputObjectsArray: CrudInputObject[], key) {
   const inputObject = inputObjectsArray.find((ele) => ele.fieldKey === key)
   // if (!inputObject) throw new Error(`Input key not found: '${key}'`)
 
@@ -582,14 +599,34 @@ export function populateInputObject(
     inputObject,
     parentItem,
     fetchEntities = false,
+    initialize = true,
   }: {
     inputObject: CrudInputObject
     parentItem: any | undefined
     fetchEntities?: boolean
+    initialize?: boolean
   }
 ) {
+  // always run serializer first, if any
+  if (inputObject.inputDefinition.serialize) {
+    // if there is a custom serializer, use this to populate the field only
+    inputObject.value = inputObject.inputDefinition.serialize(
+      inputObject.value,
+      parentItem
+    )
+  }
+
   const promisesArray: Promise<any>[] = []
   if (inputObject.inputDefinition.inputType === 'value-array') {
+    // if it is an array, populate the nestedInputsArray (only if initialize)
+    if (initialize && Array.isArray(inputObject.value)) {
+      // if initializing, also need to reset the nested inputs
+      inputObject.nestedInputsArray = []
+      inputObject.value.forEach((ele) =>
+        addNestedInputObject(that, inputObject, parentItem, ele)
+      )
+    }
+
     // if it is a value-array, recursively process the nestedValueArray
     inputObject.nestedInputsArray.forEach((nestedInputElement) => {
       const nestedInputObjects = Array.isArray(nestedInputElement)
@@ -606,12 +643,6 @@ export function populateInputObject(
         )
       })
     })
-  } else if (inputObject.inputDefinition.serialize) {
-    // if there is a custom serializer, use this to populate the field only
-    inputObject.value = inputObject.inputDefinition.serialize(
-      inputObject.value,
-      parentItem
-    )
   } else {
     // for stripe-pi, need to fetch the stripeAccount and clientSecret
     if (
@@ -1042,8 +1073,11 @@ export async function processInputQuery(
     // inputDefinition should always be defined by this point
     if (!inputDefinition) throw new Error(`inputDefinition not defined`)
 
-    // recursively check for nested fields, and add those to query too
-    if (inputDefinition.arrayOptions) {
+    // recursively check for nested fields, and add those to query too (if not json string)
+    if (
+      inputDefinition.arrayOptions &&
+      !inputDefinition.arrayOptions.isJsonString
+    ) {
       const allNestedFields = getAllNestedFields(inputDefinition.arrayOptions, [
         fieldKey,
       ])
@@ -1232,16 +1266,6 @@ export async function processInputObjectArray(
   }
 
   for (const inputObject of inputObjectArray) {
-    // special case: if it's an entity + ['type-autocomplete-multiple', 'multiple-select'] inputType, use the fieldKey instead (no trailing '.id')
-    const fieldPath =
-      inputObject.inputDefinition.entity &&
-      inputObject.inputDefinition.inputType &&
-      ['type-autocomplete-multiple', 'multiple-select'].includes(
-        inputObject.inputDefinition.inputType
-      )
-        ? inputObject.fieldKey
-        : inputObject.fieldKey
-
     const input = await processInputObject(
       that,
       parentItem,
@@ -1249,12 +1273,12 @@ export async function processInputObjectArray(
       inputObjectArray
     )
 
-    if (!fieldPath) {
+    if (!inputObject.fieldKey) {
       inputs = input
     } else {
       if (!inputs) inputs = {}
 
-      inputs[fieldPath] = input
+      inputs[inputObject.fieldKey] = input
     }
   }
 

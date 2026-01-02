@@ -46,7 +46,6 @@ export const BaseUserView: ViewDefinition = {
     role: {
       component: Columns.ChipColumn,
       renderOptions: {
-        smallMode: true,
         valuesMap: userRoleMap,
       },
     },

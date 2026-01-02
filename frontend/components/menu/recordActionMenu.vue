@@ -99,6 +99,18 @@
         </v-list-item-icon>
         <v-list-item-title>Delete</v-list-item-title>
       </v-list-item>
+      <div v-if="viewDefinition.customModes">
+        <v-list-item
+          v-for="customModeObject in viewDefinition.customModes"
+          :key="customModeObject.key"
+          @click="openEditDialog(customModeObject.key)"
+        >
+          <v-list-item-icon>
+            <v-icon>{{ customModeObject.icon }}</v-icon>
+          </v-list-item-icon>
+          <v-list-item-title>{{ customModeObject.text }}</v-list-item-title>
+        </v-list-item>
+      </div>
       <template v-if="visibleActions.length > 0">
         <v-divider></v-divider>
         <v-list-item
@@ -141,7 +153,7 @@
           }}</v-icon>
         </v-list-item-icon>
         <v-list-item-title
-          >{{ expandObject.name ?? expandObject.view.entity.name }}
+          >{{ expandObject.name ?? expandObject.view.entity.pluralName }}
           <v-icon
             v-if="expandMode === 'openInNew'"
             small
