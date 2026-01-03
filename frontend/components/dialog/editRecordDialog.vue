@@ -58,8 +58,7 @@
             left
             offset-x
             :btn-attrs="{ icon: true }"
-            @handle-action-click="openEditDialog"
-            @handle-custom-action-click="handleCustomActionClick"
+            @handle-mode-click="openEditDialog"
             @reload-parent="generation++"
             @close-parent="close()"
           >
@@ -310,8 +309,9 @@ export default {
       this.overrideMode = mode
     },
 
-    handleCustomActionClick(actionObject, item) {
-      actionObject.handleClick(this, item)
+    handleActionClick(actionObject, item) {
+      // action is executed on reecordActionMenu
+      // actionObject.handleClick(this, item)
     },
 
     handleSubmit(data) {

@@ -245,10 +245,12 @@ export default {
     },
 
     openEditDialog(mode) {
-      this.$emit('handle-action-click', {
+      this.$emit('handle-mode-click', {
         mode,
         parentItem: this.item,
       })
+
+      this.$emit('handle-item-click', this.item)
     },
 
     openExpandType(expandTypeObject, openInNew = false) {
@@ -275,6 +277,8 @@ export default {
       else {
         this.goToRecordPage(openInNew, expandTypeObject)
       }
+
+      this.$emit('handle-item-click', this.item)
     },
 
     reloadParent() {
@@ -292,6 +296,8 @@ export default {
       const actionName =
         actionInputObject.actionObject.text ??
         actionInputObject.actionObject.action.title
+
+      this.$emit('handle-item-click', this.item)
 
       try {
         // if neither simpleActionOptions nor actionOptions are defined, throw err

@@ -577,9 +577,9 @@
                           outlined: true,
                         }),
                       }"
-                      @handle-action-click="openEditDialog"
+                      @handle-mode-click="openEditDialog"
                       @handle-expand-click="toggleGridExpand(item, $event)"
-                      @handle-custom-action-click="handleCustomActionClick"
+                      @handle-item-click="lastSelectedItem = item"
                     >
                       <template v-slot:btn-content> Actions </template>
                     </RecordActionMenu>
@@ -672,9 +672,9 @@
                       outlined: true,
                     }),
                   }"
-                  @handle-action-click="openEditDialog"
+                  @handle-mode-click="openEditDialog"
                   @handle-expand-click="toggleItemExpanded(props, $event)"
-                  @handle-custom-action-click="handleCustomActionClick"
+                  @handle-item-click="lastSelectedItem = props.item"
                 >
                   <template v-slot:btn-content> Actions </template>
                 </RecordActionMenu>
@@ -720,13 +720,13 @@
                   :btn-attrs="{
                     small: true,
                     ...(props.item === lastSelectedItem && {
-                      color: 'secondary',
-                      outlined: true,
+                      color: expandedItemColorThemeName,
+                      outlined: !props.isExpanded,
                     }),
                   }"
-                  @handle-action-click="openEditDialog"
+                  @handle-mode-click="openEditDialog"
                   @handle-expand-click="toggleItemExpanded(props, $event)"
-                  @handle-custom-action-click="handleCustomActionClick"
+                  @handle-item-click="lastSelectedItem = props.item"
                 >
                   <template v-slot:btn-content>
                     <v-icon small>mdi-dots-vertical</v-icon>

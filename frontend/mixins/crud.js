@@ -741,10 +741,6 @@ export default {
       this.updatePageOptions()
     },
 
-    handleCustomActionClick(actionObject, item) {
-      actionObject.handleClick(this, item)
-    },
-
     // expanded
     handleSubPageOptionsUpdated(pageOptions) {
       this.subPageOptions = pageOptions
@@ -812,6 +808,8 @@ export default {
     },
 
     openExpandContainer(props, expandTypeObject) {
+      this.lastSelectedItem = props.item
+
       this.expandTypeObject = expandTypeObject
 
       this.expandedItem = props.item

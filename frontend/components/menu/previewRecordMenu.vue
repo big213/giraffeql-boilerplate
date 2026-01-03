@@ -95,7 +95,7 @@
           block
           color="primary"
           :class="index > 0 ? 'mt-1' : null"
-          @click.stop="handleCustomActionClick(action)"
+          @click.stop="handleActionClick(action)"
           ><v-icon v-if="action.icon" left>{{ action.icon }}</v-icon
           >{{ action.text }}</v-btn
         >
@@ -191,7 +191,7 @@ export default {
   },
 
   methods: {
-    handleCustomActionClick(action) {
+    handleActionClick(action) {
       action.handleClick(this, this.item)
     },
 

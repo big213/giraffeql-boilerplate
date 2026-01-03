@@ -354,8 +354,9 @@ export default {
         .catch((e) => e)
     },
 
-    handleCustomActionClick(actionObject, item) {
-      actionObject.handleClick(this, item)
+    handleActionClick(actionObject, item) {
+      // action is executed on reecordActionMenu
+      // actionObject.handleClick(this, item)
     },
 
     toggleRecordMinimized(state) {

@@ -423,17 +423,15 @@ export default {
 
         // do post-processing on inputsArray, if function provided
         if (this.mode === 'update') {
-          this.viewDefinition.updateOptions.afterLoaded &&
-            (await this.viewDefinition.updateOptions.afterLoaded(
-              this,
-              this.inputsArray
-            ))
+          await this.viewDefinition.updateOptions?.afterLoaded?.(
+            this,
+            this.inputsArray
+          )
         } else if (this.mode === 'copy') {
-          this.viewDefinition.createOptions.afterLoaded &&
-            (await this.viewDefinition.createOptions.afterLoaded(
-              this,
-              this.inputsArray
-            ))
+          await this.viewDefinition.createOptions?.afterLoaded?.(
+            this,
+            this.inputsArray
+          )
         }
         // wait for all dropdown-related promises to complete
         await Promise.all(dropdownPromises)
@@ -608,13 +606,13 @@ export default {
 
       // initialize inputs
       if (this.mode === 'create') {
-        await this.initializeInputs()
-        // do post-processing on inputsArray, if function provided
-        this.viewDefinition.createOptions.afterLoaded &&
-          (await this.viewDefinition.createOptions.afterLoaded(
+        await this.initializeInputs()(
+          // do post-processing on inputsArray, if function provided
+          await this.viewDefinition.createOptions?.afterLoaded?.(
             this,
             this.inputsArray
-          ))
+          )
+        )
         this.afterInitializeInputs && this.afterInitializeInputs()
       } else {
         this.loadRecord()

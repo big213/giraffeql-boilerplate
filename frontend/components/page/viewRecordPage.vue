@@ -29,8 +29,7 @@
                 left
                 offset-x
                 :btn-attrs="{ icon: true, small: true }"
-                @handle-action-click="openEditDialog"
-                @handle-custom-action-click="handleCustomActionClick"
+                @handle-mode-click="openEditDialog"
                 @handle-expand-click="handleExpandClick"
               >
                 <template v-slot:btn-content>
@@ -103,8 +102,7 @@
                     left
                     offset-x
                     :btn-attrs="{ icon: true }"
-                    @handle-action-click="openEditDialog"
-                    @handle-custom-action-click="handleCustomActionClick"
+                    @handle-mode-click="openEditDialog"
                     @handle-expand-click="handleExpandClick"
                   >
                     <template v-slot:btn-content>

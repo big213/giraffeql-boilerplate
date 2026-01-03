@@ -10,7 +10,7 @@
         style="min-height: 250px"
       ></CircularLoader>
       <v-container v-show="!isLoading" class="px-0" fluid>
-        <v-row v-if="options.instructionOptions">
+        <v-row v-if="options?.instructionOptions">
           <v-col>
             <component
               v-if="options.instructionOptions.component"
