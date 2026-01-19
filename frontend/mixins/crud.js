@@ -168,7 +168,6 @@ export default {
       dialogs: {
         editRecord: false,
         expandRecord: false,
-        lockedFields: null,
         parentItem: null,
         editMode: 'view',
         customFields: null,
@@ -236,6 +235,15 @@ export default {
         this.viewDefinition.paginationOptions.excludeHeaders ??
         []
       )
+    },
+
+    lockedFields() {
+      return this.lockedFiltersComputed.reduce((total, crudFilterObject) => {
+        // trimming trailing .id so it's effectively the fieldKey instead of fieldPath
+        total[crudFilterObject.field.replace(/\.id$/, '')] =
+          crudFilterObject.value
+        return total
+      }, {})
     },
 
     // on grid modes, the list of actions/expandTypes to be rendered as their own block buttons
@@ -1071,42 +1079,6 @@ export default {
       })
     },
 
-    openCreateRecordDialog() {
-      const lockedFields = this.lockedFiltersComputed.reduce(
-        (total, crudFilterObject) => {
-          total[crudFilterObject.field] = crudFilterObject.value
-          return total
-        },
-        {}
-      )
-
-      this.openEditDialog({ mode: 'create', lockedFields })
-    },
-
-    openImportRecordDialog() {
-      const lockedFields = this.lockedFiltersComputed.reduce(
-        (total, crudFilterObject) => {
-          total[crudFilterObject.field] = crudFilterObject.value
-          return total
-        },
-        {}
-      )
-
-      this.openEditDialog({ mode: 'import', lockedFields })
-    },
-
-    openBatchUpdateRecordDialog() {
-      const lockedFields = this.lockedFiltersComputed.reduce(
-        (total, crudFilterObject) => {
-          total[crudFilterObject.field] = crudFilterObject.value
-          return total
-        },
-        {}
-      )
-
-      this.openEditDialog({ mode: 'batchUpdate', lockedFields })
-    },
-
     openEditItemDialog(parentItem, fieldKeys) {
       this.openEditDialog({
         mode: 'update',
@@ -1117,7 +1089,6 @@ export default {
 
     openEditDialog({
       mode,
-      lockedFields,
       parentItem,
       customFields,
       fullscreenMode,
@@ -1126,7 +1097,6 @@ export default {
       this.dialogs.editMode = mode
       this.openDialog({
         dialogName: 'editRecord',
-        lockedFields,
         parentItem,
         customFields,
         fullscreenMode,
@@ -1136,7 +1106,6 @@ export default {
 
     openDialog({
       dialogName,
-      lockedFields,
       parentItem = null,
       customFields,
       fullscreenMode,
@@ -1144,7 +1113,6 @@ export default {
     }) {
       if (dialogName in this.dialogs) {
         this.dialogs[dialogName] = true
-        this.dialogs.lockedFields = lockedFields
         this.dialogs.parentItem = parentItem
         this.dialogs.customFields = customFields
         this.dialogs.fullscreenMode = fullscreenMode
@@ -1163,8 +1131,7 @@ export default {
         this.$router.push(
           generateCrudRecordRoute(this, {
             viewDefinition: this.viewDefinition,
-            pageOptions:
-              this.viewDefinition.paginationOptions.defaultPageOptions?.(this),
+            pageOptions: this.pageOptions,
           })
         )
       } else {
@@ -1471,20 +1438,10 @@ export default {
       if (initFilters) {
         await this.initializeFilters()
 
-        // if pageOptions is undefined, use the defaultPageOptions fn if any
-        if (
-          this.pageOptions === undefined &&
-          this.viewDefinition.paginationOptions.defaultPageOptions
-        ) {
-          this.$emit(
-            'pageOptions-updated',
-            this.viewDefinition.paginationOptions.defaultPageOptions(this)
-          )
-
-          pageOptionsUpdated = true
-        }
-
         this.syncPageOptions()
+
+        // if pageOptions is undefined, do not proceed further (pageOptions must be pre-populated either directly or using defaultPageOptions on the parent component)
+        if (this.pageOptions === undefined) return
       } else {
         this.syncPageOptions()
       }

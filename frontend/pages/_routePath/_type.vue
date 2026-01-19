@@ -1,8 +1,9 @@
 <template>
-  <CrudRecordPage
+  <CrudRecordContainer
     v-if="currentView"
     :view-definition="currentView"
-  ></CrudRecordPage>
+    page-mode
+  ></CrudRecordContainer>
   <v-container v-else fill-height>
     <v-layout align-center justify-center>
       <div>
@@ -15,7 +16,7 @@
 </template>
 
 <script>
-import CrudRecordPage from '~/components/page/crudRecordPage.vue'
+import CrudRecordContainer from '~/components/container/crudRecordContainer.vue'
 import * as views from '~/models/views'
 import { capitalizeString, kebabToCamelCase } from '~/services/base'
 import { routePathMap } from '~/config'
@@ -32,7 +33,7 @@ export default {
   middleware: ['router-auth-redirect'],
 
   components: {
-    CrudRecordPage,
+    CrudRecordContainer,
   },
 
   computed: {

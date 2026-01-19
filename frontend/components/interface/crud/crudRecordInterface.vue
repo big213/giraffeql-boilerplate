@@ -197,7 +197,7 @@
         <v-btn
           v-if="viewDefinition.createOptions && !hideCreateButton"
           color="primary"
-          @click="openCreateRecordDialog()"
+          @click="openEditDialog({ mode: 'create' })"
         >
           <v-icon left>mdi-plus</v-icon>
           New
@@ -315,7 +315,7 @@
           v-if="viewDefinition.paginationOptions.importOptions"
           icon
           title="Import Records"
-          @click="openImportRecordDialog()"
+          @click="openEditDialog({ mode: 'import' })"
         >
           <v-icon>mdi-upload</v-icon>
         </v-btn>
@@ -323,7 +323,7 @@
           v-if="viewDefinition.paginationOptions.batchUpdateOptions"
           icon
           title="Batch Update Records"
-          @click="openBatchUpdateRecordDialog()"
+          @click="openEditDialog({ mode: 'batchUpdate' })"
         >
           <v-icon>mdi-table-arrow-up</v-icon>
         </v-btn>
@@ -826,7 +826,7 @@
       v-model="dialogs.editRecord"
       :view-definition="viewDefinition"
       :parent-item="dialogs.parentItem ?? parentItem"
-      :locked-fields="dialogs.lockedFields"
+      :locked-fields="lockedFields"
       :mode="dialogs.editMode"
       :custom-fields="dialogs.customFields"
       :fullscreen-mode="dialogs.fullscreenMode"

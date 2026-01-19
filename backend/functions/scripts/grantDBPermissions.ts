@@ -1,14 +1,23 @@
 import * as knexBuilder from "knex";
 import { configDotenv } from "dotenv";
 configDotenv();
-import { pgOptions, pgDatabase, pgUser } from "../src/config";
 import yargs from "yargs";
 
 const argv = yargs(process.argv.slice(2))
   .options({
     user: { type: "string", demandOption: true },
+    prod: { type: "boolean", default: false },
   })
   .parseSync();
+
+// set the DEV state based on the args provided
+if (argv.prod) {
+  delete process.env.DEV;
+} else {
+  process.env.DEV = "true";
+}
+
+import { pgOptions, pgDatabase, pgUser } from "../src/config";
 
 export const knex = knexBuilder({
   ...pgOptions,

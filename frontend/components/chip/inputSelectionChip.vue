@@ -1,8 +1,12 @@
 <template>
   <MappedChip
-    v-if="inputObject.inputDefinition.selectionValuesMap"
+    v-if="
+      inputObject.inputDefinition.selectionValuesMap ||
+      inputObject.inputDefinition.titleCase
+    "
     :value="item"
     :values-map="inputObject.inputDefinition.selectionValuesMap"
+    :title-case="inputObject.inputDefinition.titleCase"
   >
   </MappedChip>
 

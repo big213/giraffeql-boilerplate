@@ -56,10 +56,6 @@ export default {
   },
 
   computed: {
-    ...mapGetters({
-      newUnreadNotifications: 'user/newUnreadNotifications',
-    }),
-
     isChildComponent() {
       return this.breadcrumbItems.length > 1
     },

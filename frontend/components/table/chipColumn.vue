@@ -14,6 +14,7 @@
         small
         :value="element"
         :values-map="options?.valuesMap"
+        :title-case="options?.titleCase"
         :empty-text="emptyText"
         @click.stop="$emit('open-edit-dialog')"
       >
@@ -32,6 +33,7 @@
         small
         :value="element"
         :values-map="options?.valuesMap"
+        :title-case="options?.titleCase"
         :empty-text="emptyText"
       >
       </MappedChip>
@@ -50,7 +52,9 @@ export default {
   },
 
   /* expected options:
+
   emptyText?: string;
+
   valuesMap?: {
     [x: string]: {
       text: string
@@ -59,6 +63,9 @@ export default {
     }
   }
 
+  // should the values be converted to title case?
+  titleCase?: boolean;
+  
   // this component implements editOptions?.mode === 'component' properly
   */
 

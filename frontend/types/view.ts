@@ -94,6 +94,9 @@ export type CreateOptions = {
 
   // if a custom icon, what should it be?
   icon?: string
+
+  // should it be possible to copy fields from another record to populate the create interface
+  copyOptions?: {} & CopyOptions
 }
 
 // a way to create stuff using an actionDefinition, instead of using preset fields
@@ -376,7 +379,6 @@ export type ViewDefinition = {
   viewOptions?: {} & ViewOptions
   chipOptions?: {} & ChipOptions
   postOptions?: {} & PostOptions
-  copyOptions?: {} & CopyOptions
   shareOptions?: {} & ShareOptions
   enterOptions?: {} & EnterOptions
   actions?: ({} & ActionObject)[]

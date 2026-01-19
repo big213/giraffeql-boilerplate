@@ -46,11 +46,7 @@
                 indeterminate
                 size="16"
               ></v-progress-circular>
-              <MappedChip
-                small
-                :value="user.role"
-                :values-map="userRoleMap"
-              ></MappedChip>
+              <MappedChip small :value="user.role" title-case></MappedChip>
             </v-list-item-subtitle>
           </v-list-item-content>
         </v-list-item>
@@ -114,7 +110,6 @@ import { mapGetters } from 'vuex'
 import { auth } from '~/services/fireinit'
 import { handleError } from '~/services/base'
 import { generateUserMenuItems } from '~/services/navigation'
-import { userRoleMap } from '~/services/constants'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
 import SelectOptionDialog from '~/components/dialog/selectOptionDialog.vue'
 import MappedChip from '~/components/chip/mappedChip.vue'
@@ -127,7 +122,6 @@ export default {
   },
   data() {
     return {
-      userRoleMap,
       dialogs: {
         selectOption: null,
       },

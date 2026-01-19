@@ -11,7 +11,6 @@ import {
   timeout,
   buildQueryFromFieldPathArray,
   generateInputObject,
-  addNestedInputObject,
   processInputDefinitions,
   processInputObjectArray,
 } from '~/services/base'
@@ -109,7 +108,12 @@ export default {
     },
 
     options() {
-      return this.overrideOptions ?? this.viewDefinition[`${this.mode}Options`]
+      return (
+        this.overrideOptions ??
+        this.viewDefinition[
+          `${this.mode === 'copy' ? 'create' : this.mode}Options`
+        ]
+      )
     },
 
     fields() {
@@ -118,20 +122,24 @@ export default {
       // for edit, fields could be a dynamic function
       if (
         this.mode === 'update' &&
-        typeof this.viewDefinition.updateOptions.fields === 'function'
+        typeof this.viewDefinition.updateOptions?.fields === 'function'
       ) {
         return this.viewDefinition.updateOptions.fields(this, this.parentItem)
       }
 
       // for create, fields could also be a dynamic function
       if (
-        this.mode === 'create' &&
+        (this.mode === 'create' || this.mode === 'copy') &&
         typeof this.viewDefinition.createOptions.fields === 'function'
       ) {
         return this.viewDefinition.createOptions.fields(this, this.parentItem)
       }
 
-      return this.viewDefinition[`${this.mode}Options`].fields
+      return (
+        this.viewDefinition[
+          `${this.mode === 'copy' ? 'create' : this.mode}Options`
+        ]?.fields ?? []
+      )
     },
 
     title() {
@@ -271,17 +279,15 @@ export default {
           )
         } else {
           // run the inputsModifier, if any
-          if (this.viewDefinition.updateOptions.inputsModifier) {
-            this.viewDefinition.updateOptions.inputsModifier(this, inputs)
-          }
+          this.viewDefinition.updateOptions?.inputsModifier?.(this, inputs)
 
           data = await executeApiRequest({
-            [this.viewDefinition.updateOptions.operationName ??
+            [this.viewDefinition.updateOptions?.operationName ??
             `${this.viewDefinition.entity.typename}Update`]: {
               id: true,
               __typename: true,
               ...this.returnFields,
-              ...(this.viewDefinition.updateOptions.returnFields
+              ...(this.viewDefinition.updateOptions?.returnFields
                 ? buildQueryFromFieldPathArray(
                     this.viewDefinition.updateOptions.returnFields
                   )
@@ -325,7 +331,10 @@ export default {
         this.mode === 'update' ||
         this.mode === 'copy'
       ) {
-        const onSuccess = this.viewDefinition[`${this.mode}Options`].onSuccess
+        const onSuccess =
+          this.mode === 'create' || this.mode == 'copy'
+            ? this.viewDefinition.createOptions?.onSuccess
+            : this.viewDefinition[`${this.mode}Options`]?.onSuccess
 
         if (onSuccess) {
           onSuccess(this, this.parentItem, data)
@@ -342,12 +351,12 @@ export default {
     async loadRecord() {
       this.loading.loadRecord = true
       try {
-        const originalInputFieldDefinitions = processInputDefinitions(
+        const inputFieldDefinitions = processInputDefinitions(
           this.viewDefinition,
           this.fields
         )
 
-        const query = await processInputQuery(originalInputFieldDefinitions)
+        const query = await processInputQuery(inputFieldDefinitions)
 
         const data = await executeApiRequest({
           [`${this.viewDefinition.entity.typename}Get`]: {
@@ -364,41 +373,15 @@ export default {
         // keep track of promises relating to dropdowns/options
         const dropdownPromises = []
 
-        // for copy mode, use the createOption fields. else use the original fields
-        const inputFieldDefinitions =
-          this.mode === 'copy'
-            ? processInputDefinitions(
-                this.viewDefinition,
-                this.viewDefinition.createOptions.fields
-              )
-            : originalInputFieldDefinitions
-
         // build inputs Array
         this.inputsArray = await Promise.all(
           inputFieldDefinitions.map(async (inputFieldDefinition) => {
             const inputObject = generateInputObject(this, inputFieldDefinition)
 
-            // if copy mode and fieldKey not in original fields, use default
-            if (
-              this.mode === 'copy' &&
-              !originalInputFieldDefinitions.some(
-                (inputFieldDefinition) =>
-                  inputFieldDefinition.fieldKey === inputObject.fieldKey
-              )
-            ) {
-              inputObject.value =
-                (await inputObject.inputDefinition.getInitialValue?.(
-                  this,
-                  this.parentItem
-                )) ?? null
-            } else {
-              inputObject.value = getNestedProperty(data, inputObject.fieldKey)
-            }
+            inputObject.value = getNestedProperty(data, inputObject.fieldKey)
 
             // if it is an entity, populate the value and options fields
             if (inputObject.inputDefinition.entity) {
-              inputObject.value = getNestedProperty(data, inputObject.fieldKey)
-
               // if the value is defined and there is no getOptions fn, populate it as the only option
               if (
                 inputObject.value &&
@@ -427,12 +410,8 @@ export default {
             this,
             this.inputsArray
           )
-        } else if (this.mode === 'copy') {
-          await this.viewDefinition.createOptions?.afterLoaded?.(
-            this,
-            this.inputsArray
-          )
         }
+
         // wait for all dropdown-related promises to complete
         await Promise.all(dropdownPromises)
 
@@ -472,7 +451,7 @@ export default {
 
         // check lockedFields, and reset the value of such fields
         if (this.lockedFields && inputObject.fieldPath in this.lockedFields) {
-          inputObject.value = this.lockedFields[inputObject.fieldPath]
+          inputObject.value = this.lockedFields[inputObject.fieldKey]
         } else {
           inputObject.value =
             (await inputObject.inputDefinition.getInitialValue?.(
@@ -492,6 +471,26 @@ export default {
       try {
         if (!this.fields) {
           throw new Error('Creation of this record is not configured')
+        }
+
+        // if copy mode, fetch the initial fields
+        let initialFields
+        if (this.mode === 'copy') {
+          const copyInputFieldDefinitions = processInputDefinitions(
+            this.viewDefinition,
+            this.viewDefinition.createOptions.copyOptions.fields
+          )
+
+          const query = await processInputQuery(copyInputFieldDefinitions)
+
+          initialFields = await executeApiRequest({
+            [`${this.viewDefinition.entity.typename}Get`]: {
+              ...query,
+              __args: {
+                id: this.parentItem.id,
+              },
+            },
+          })
         }
 
         const inputFieldDefinitions = processInputDefinitions(
@@ -523,15 +522,36 @@ export default {
               // is the field in lockedFields? if so, use that and set field to readonly
               if (
                 this.lockedFields &&
-                inputObject.fieldPath in this.lockedFields &&
-                this.lockedFields[inputObject.fieldPath] !== undefined
+                inputObject.fieldKey in this.lockedFields &&
+                this.lockedFields[inputObject.fieldKey] !== undefined
               ) {
-                inputObject.value = this.lockedFields[inputObject.fieldPath]
+                inputObject.value = this.lockedFields[inputObject.fieldKey]
                 inputObject.readonly = true
 
                 // if createFieldDefinition.hideIfLocked, also set those fields to hidden
                 if (inputFieldDefinition.hideIfLocked) {
                   inputObject.hidden = true
+                }
+              } else if (
+                initialFields &&
+                inputObject.fieldKey in initialFields &&
+                initialFields[inputObject.fieldKey] !== undefined
+              ) {
+                // populate the value field
+                inputObject.value = getNestedProperty(
+                  initialFields,
+                  inputObject.fieldKey
+                )
+
+                // if it's an entity with a value, and there is no getOptions fn, populate it as the only option
+                if (inputObject.inputDefinition.entity) {
+                  // if the value is defined and there is no getOptions fn, populate it as the only option
+                  if (
+                    inputObject.value &&
+                    !inputObject.inputDefinition.getOptions
+                  ) {
+                    inputObject.options = [inputObject.value]
+                  }
                 }
               } else {
                 inputObject.value =
@@ -605,13 +625,12 @@ export default {
       }
 
       // initialize inputs
-      if (this.mode === 'create') {
-        await this.initializeInputs()(
-          // do post-processing on inputsArray, if function provided
-          await this.viewDefinition.createOptions?.afterLoaded?.(
-            this,
-            this.inputsArray
-          )
+      if (this.mode === 'create' || this.mode === 'copy') {
+        await this.initializeInputs()
+        // do post-processing on inputsArray, if function provided
+        await this.viewDefinition.createOptions?.afterLoaded?.(
+          this,
+          this.inputsArray
         )
         this.afterInitializeInputs && this.afterInitializeInputs()
       } else {

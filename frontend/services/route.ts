@@ -13,14 +13,12 @@ export function generateViewRouteObject(
     title,
     icon,
     exactUrl,
-    populateDefaultPageOptions,
   }: {
     viewDefinition: ViewDefinition
-    pageOptions?: any
+    pageOptions?: any | null
     title?: string
     icon?: string
     exactUrl?: boolean
-    populateDefaultPageOptions?: boolean
   }
 ) {
   return generateRouteObject({
@@ -28,21 +26,7 @@ export function generateViewRouteObject(
     title: title ?? viewDefinition.title ?? viewDefinition.entity.pluralName,
     route: generateCrudRecordRoute(that, {
       viewDefinition,
-      pageOptions:
-        pageOptions === null
-          ? null
-          : {
-              search: '',
-              filters: [],
-              sort: 'updatedAt-desc',
-              ...pageOptions,
-            },
-      ...(!pageOptions &&
-        populateDefaultPageOptions &&
-        viewDefinition.paginationOptions?.defaultPageOptions && {
-          pageOptions:
-            viewDefinition.paginationOptions.defaultPageOptions(that),
-        }),
+      pageOptions,
     }),
     exactUrl,
   })
@@ -97,7 +81,7 @@ export function generateCrudRecordRoute(
     viewDefinition?: ViewDefinition
     routeObject?: RouteObject
     queryParams?: any
-    pageOptions?: any
+    pageOptions?: any | null
   }
 ) {
   // either viewDefinition or routeObject required
@@ -124,14 +108,16 @@ export function generateCrudRecordRoute(
     path: `/${routePath!}/${camelToKebabCase(routeKey!)}`,
     query: {
       ...queryParams,
-      ...(pageOptions && {
-        o: encodeURIComponent(btoa(JSON.stringify(pageOptions))),
+      ...(pageOptions !== undefined && {
+        o: pageOptions
+          ? encodeURIComponent(btoa(JSON.stringify(pageOptions)))
+          : null,
       }),
     },
   }).href
 }
 
-// either path or routeKey/routeType required
+// either viewDefinition or routeKey/routeType required
 export function generateViewRecordRoute(
   that,
   {

@@ -7,7 +7,6 @@ export default {
 
     heroOptions: {
       type: Object,
-      required: true,
     },
 
     entity: {
@@ -17,19 +16,19 @@ export default {
 
   computed: {
     previewImageUrl() {
-      return this.heroOptions.getPreviewImage
+      return this.heroOptions?.getPreviewImage
         ? this.heroOptions.getPreviewImage(this.item)
         : this.item.avatarUrl
     },
 
     previewName() {
-      return this.heroOptions.getPreviewName
+      return this.heroOptions?.getPreviewName
         ? this.heroOptions.getPreviewName(this.item)
         : this.item.name
     },
 
     containMode() {
-      return !!this.heroOptions.containMode
+      return !!this.heroOptions?.containMode
     },
   },
 }

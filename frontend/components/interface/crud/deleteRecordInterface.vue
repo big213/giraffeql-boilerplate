@@ -72,7 +72,7 @@ export default {
         })
 
         this.$root.$emit('showSnackbar', {
-          message: `${this.viewDefinition.entity.name}Deleted`,
+          message: `${this.viewDefinition.entity.name} Deleted`,
           color: 'success',
         })
 

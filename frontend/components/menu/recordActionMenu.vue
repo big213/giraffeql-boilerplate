@@ -73,17 +73,20 @@
         }}</v-list-item-title>
       </v-list-item>
       <v-list-item
-        v-if="viewDefinition.copyOptions && viewDefinition.createOptions"
+        v-if="viewDefinition.createOptions?.copyOptions"
         key="copy"
         @click="openEditDialog('copy')"
       >
         <v-list-item-icon>
           <v-icon>
-            {{ viewDefinition.copyOptions.icon || 'mdi-content-copy' }}</v-icon
+            {{
+              viewDefinition.createOptions.copyOptions.icon ||
+              'mdi-content-copy'
+            }}</v-icon
           >
         </v-list-item-icon>
         <v-list-item-title>{{
-          viewDefinition.copyOptions.text || 'Duplicate'
+          viewDefinition.createOptions.copyOptions.text || 'Duplicate'
         }}</v-list-item-title>
       </v-list-item>
       <v-list-item

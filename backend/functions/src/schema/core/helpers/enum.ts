@@ -84,6 +84,10 @@ export abstract class Kenum {
     return this.index;
   }
 
+  public isEqualParsed(value: any): boolean {
+    return this.index === value;
+  }
+
   public toJSON(): string {
     return this.name;
   }
@@ -153,6 +157,10 @@ export abstract class Enum {
 
   public get parsed(): string {
     return this.name;
+  }
+
+  public isEqualParsed(value: any): boolean {
+    return this.name === value;
   }
 
   public toJSON(): string {

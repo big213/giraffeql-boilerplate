@@ -549,6 +549,17 @@ export function generateMultipleJoinableRenderField({
  * Input Fields
  */
 
+// allows for JSON types to be edited as strings, and then parses back to JSON
+export function generateJSONInputFields(
+  inputDefinition: InputDefinition = {}
+): InputDefinition {
+  return {
+    serialize: (val) => JSON.stringify(val),
+    parseValue: (val) => JSON.parse(val),
+    ...inputDefinition,
+  }
+}
+
 export function generateBaseInputFields(entity: EntityDefinition): {
   [x: string]: InputDefinition
 } {

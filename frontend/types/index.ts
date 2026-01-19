@@ -101,6 +101,9 @@ export type InputDefinition = {} & {
   // for multiple-select and select mainly -- a way to customize the appearance of enum-based chips using a simple valuesMap. will take precedence over selectionComponent
   selectionValuesMap?: any
 
+  // similar to the above, but an easy way to convert from ENUM_CASE to Title Case
+  titleCase?: boolean
+
   // for avatar
   // fallbackIcon?: string
   // the nested type for this input if it is value-array

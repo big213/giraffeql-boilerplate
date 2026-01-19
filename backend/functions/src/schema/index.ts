@@ -1,6 +1,5 @@
 import * as allServices from "./services";
 import "./scalars"; // initialize scalars
-export * as Scalars from "./scalars";
 import { BaseService } from "./core/services";
 
 import user from "./models/user/typeDef";

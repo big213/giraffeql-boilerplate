@@ -10,6 +10,7 @@ import {
   getFirebaseStorageMetadata,
   saveFirebaseFile,
 } from "../../helpers/file";
+import { nanoid } from "nanoid";
 
 export class FileService extends PaginatedService {
   defaultTypename = "file";
@@ -124,7 +125,7 @@ export class FileService extends PaginatedService {
       true
     );
 
-    const location = `${user.firebaseUid}/g/${filename}`;
+    const location = `${user.firebaseUid}/${nanoid()}/${filename}`;
 
     await saveFirebaseFile({
       data,

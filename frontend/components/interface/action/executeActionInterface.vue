@@ -375,6 +375,7 @@ export default {
                 inputObject.fieldKey in initialFields &&
                 initialFields[inputObject.fieldKey] !== undefined
               ) {
+                // assumes the initialFields is a flattened array (i.e. dot notation -- different from editRecordDialog.js)
                 inputObject.value = initialFields[inputObject.fieldKey]
               } else {
                 inputObject.value =

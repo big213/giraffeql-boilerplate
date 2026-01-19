@@ -1720,6 +1720,17 @@ export function generateInputObject(
   return inputObject
 }
 
+// CONSTANT_CASE -> Constant Case
+export function snakeCaseToTitleCase(str: string): string {
+  if (!str) return ''
+
+  return str
+    .toLowerCase()
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ')
+}
+
 export function calculateFinalPrice(priceObject: PriceObject) {
   return (
     priceObject.price - (priceObject.discount ?? 0) + (priceObject.fees ?? 0)

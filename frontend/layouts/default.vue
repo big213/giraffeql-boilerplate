@@ -197,10 +197,15 @@ export default {
       // confirm the viewDefinition exists
       if (model) {
         // set default pageOption and lockedFilters if defined on the model
-        if (model.paginationOptions.defaultPageOptions) {
-          params.pageOptions = await model.paginationOptions.defaultPageOptions(
-            this
-          )
+
+        // only set defaultPageOptions if not already defined
+        if (params.pageOptions === undefined) {
+          if (model.paginationOptions.defaultPageOptions) {
+            params.pageOptions =
+              await model.paginationOptions.defaultPageOptions(this)
+          } else {
+            throw new Error(`View misconfigured -- page options required`)
+          }
         }
 
         if (model.paginationOptions.defaultLockedFilters) {

@@ -46,14 +46,9 @@
       <v-layout column justify-left align-left>
         <v-row>
           <v-col cols="12">
-            <CrudRecordInterface
-              :view-definition="homeViews.user.viewDefinition"
-              :page-options="homeViews.user.pageOptions"
-              hide-presets
-              dense
-              @pageOptions-updated="homeViews.user.pageOptions = $event"
-            >
-            </CrudRecordInterface>
+            <CrudRecordContainer
+              :view-definition="homeViews.user"
+            ></CrudRecordContainer>
           </v-col>
         </v-row>
       </v-layout>
@@ -77,13 +72,6 @@ import {
 import ReleaseHistory from '~/components/common/releaseHistory.vue'
 import * as views from '~/models/views'
 
-function generateHomeModelObject(viewDefinition) {
-  return {
-    viewDefinition,
-    pageOptions: undefined,
-  }
-}
-
 export default {
   components: {
     CircularLoader,
@@ -98,14 +86,12 @@ export default {
       siteDiscordLink,
       redirectPath: null,
       homeViews: {
-        user: generateHomeModelObject(
-          generateHomePageViewDefinition({
-            viewDefinition: views.PublicUserView,
-            title: 'Latest Users',
-            columnMode: true,
-            limit: 2,
-          })
-        ),
+        user: generateHomePageViewDefinition({
+          viewDefinition: views.PublicUserView,
+          title: 'Latest Users',
+          columnMode: true,
+          limit: 2,
+        }),
       },
     }
   },

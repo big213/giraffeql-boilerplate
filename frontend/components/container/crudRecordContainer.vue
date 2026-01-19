@@ -1,10 +1,12 @@
 <template>
   <v-container v-if="loading.initPageOptions" fill-height>
     <v-layout align-center justify-center>
-      <CircularLoader style="min-height: 250px"></CircularLoader>
+      <CircularLoader
+        :style="pageMode ? 'min-height: 250px' : null"
+      ></CircularLoader>
     </v-layout>
   </v-container>
-  <v-container v-else fluid style="max-width: 1920px">
+  <v-container v-else fluid :style="pageMode ? 'max-width: 1920px' : null">
     <v-layout column justify-left align-left>
       <v-row>
         <v-col cols="12">
@@ -13,7 +15,7 @@
             :view-definition="
               expandTypeObject ? expandTypeObject.view : viewDefinition
             "
-            :page-options="isChildComponent ? subPageOptions : pageOptions"
+            :page-options="pageOptions"
             :locked-filters="
               isChildComponent ? lockedSubFilters : lockedFilters
             "
@@ -53,9 +55,8 @@
 <script>
 import CrudRecordInterface from '~/components/interface/crud/crudRecordInterface.vue'
 import PreviewRecordChip from '~/components/chip/previewRecordChip.vue'
-import { capitalizeString } from '~/services/base'
 import { generateCrudRecordRoute } from '~/services/route'
-import { mapGetters } from 'vuex'
+import { handleError } from '~/services/base'
 import CircularLoader from '~/components/common/circularLoader.vue'
 
 export default {
@@ -68,7 +69,7 @@ export default {
     return {
       currentParentItem: null,
       expandTypeObject: null,
-      subPageOptions: null,
+      pageOptions: undefined,
       breadcrumbItems: [],
       loading: {
         initPageOptions: false,
@@ -107,12 +108,11 @@ export default {
       type: Number,
       default: 0,
     },
+    pageMode: {
+      type: Boolean,
+    },
   },
   computed: {
-    ...mapGetters({
-      newUnreadNotifications: 'user/newUnreadNotifications',
-    }),
-
     isChildComponent() {
       return this.breadcrumbItems.length > 0
     },
@@ -129,7 +129,7 @@ export default {
 
       return [
         {
-          field: this.viewDefinition.entity.typename.toLowerCase() + '.id',
+          field: `${this.viewDefinition.entity.typename.toLowerCase()}.id`,
           operator: 'eq',
           value: this.currentParentItem.id,
         },
@@ -142,11 +142,13 @@ export default {
       )
     },
 
-    // type: CrudPageOptions | null
-    pageOptions() {
-      return this.$route.query.o
-        ? JSON.parse(atob(decodeURIComponent(this.$route.query.o)))
-        : null
+    // type: CrudPageOptions | null | undefined
+    queryPageOptions() {
+      return this.$route.query.o === undefined
+        ? undefined
+        : this.$route.query.o === null
+        ? null
+        : JSON.parse(atob(decodeURIComponent(this.$route.query.o)))
     },
 
     hideBreadcrumbs() {
@@ -156,7 +158,7 @@ export default {
 
   created() {
     // if legacy pageOptions param is provided, automatically replace that with o
-    if (this.$route.query.pageOptions) {
+    if (this.$route.query.pageOptions && this.pageMode) {
       this.$router.replace({
         path: this.$route.path,
         query: {
@@ -174,7 +176,9 @@ export default {
 
   watch: {
     '$route.query.o'() {
-      this.reset()
+      if (this.pageMode) {
+        this.reset()
+      }
     },
   },
 
@@ -195,7 +199,7 @@ export default {
         this.breadcrumbItems.length > 1 ? latestItem.expandTypeObject : null
 
       // set the pageOptions override
-      this.subPageOptions =
+      this.pageOptions =
         this.breadcrumbItems.length > 1
           ? {
               search: null,
@@ -220,31 +224,17 @@ export default {
       this.expandTypeObject = expandTypeObject
 
       // set the pageOptions override
-      this.subPageOptions = {
+      this.pageOptions = {
         search: null,
         filters: expandTypeObject.initialFilters ?? [],
         sort: expandTypeObject.initialSortKey ?? null,
       }
     },
 
-    async navigateToDefaultRoute() {
-      if (!this.viewDefinition.paginationOptions.defaultPageOptions) return
-
-      this.$router.replace(
-        generateCrudRecordRoute(this, {
-          viewDefinition: this.viewDefinition,
-          pageOptions:
-            await this.viewDefinition.paginationOptions.defaultPageOptions(
-              this
-            ),
-        })
-      )
-    },
-
     handlePageOptionsUpdated(pageOptions) {
-      // if it's a child component, set the subPageOptions
-      if (this.isChildComponent) {
-        this.subPageOptions = pageOptions
+      // if it's a child component OR !pageMode, set the pageOptions
+      if (this.isChildComponent || !this.pageMode) {
+        this.pageOptions = pageOptions
         return
       }
 
@@ -276,17 +266,47 @@ export default {
     async initializePageOptions() {
       this.loading.initPageOptions = true
       try {
-        // if no pageOptions, automatically redirect to defaultPageOptions, if any
-        if (
-          !this.$route.query.o &&
-          this.viewDefinition.paginationOptions.defaultPageOptions
-        ) {
-          await this.navigateToDefaultRoute()
+        // if pageOptions is not defined in pageMode, get the defaultPageOptions and navigate to that route
+        if (this.pageMode) {
+          if (this.$route.query.o === undefined) {
+            if (!this.viewDefinition.paginationOptions.defaultPageOptions) {
+              throw new Error(
+                `View misconfigured -- default page options required if not inititally defined`
+              )
+            }
+            this.$router.replace(
+              generateCrudRecordRoute(this, {
+                viewDefinition: this.viewDefinition,
+                pageOptions:
+                  await this.viewDefinition.paginationOptions.defaultPageOptions(
+                    this
+                  ),
+              })
+            )
+          } else {
+            this.pageOptions =
+              this.$route.query.o === null
+                ? null
+                : JSON.parse(atob(decodeURIComponent(this.$route.query.o)))
+          }
+        } else if (!this.pageMode && this.pageOptions === undefined) {
+          if (!this.viewDefinition.paginationOptions.defaultPageOptions) {
+            throw new Error(
+              `View misconfiured -- default page options required for non-pageMode`
+            )
+          }
+          // if not in pageMode, need to populate the pageOptions using defaultPageOptions
+          this.pageOptions =
+            await this.viewDefinition.paginationOptions.defaultPageOptions(this)
         }
       } catch (err) {
         handleError(this, err)
       }
-      this.loading.initPageOptions = false
+
+      // in pageMode, only untoggle the loading state once this.$route.query.o is defined
+      if (!this.pageMode || this.$route.query.o !== undefined) {
+        this.loading.initPageOptions = false
+      }
     },
 
     reset() {

@@ -10,7 +10,6 @@ import {
   getUserPermissionEnumValues,
   getUserRoleEnumValues,
 } from '~/services/dropdown'
-import { userRoleMap } from '~/services/constants'
 import { Columns } from '~/services/components'
 import { userSetPassword } from '~/models/actions/userSetPassword'
 
@@ -46,7 +45,7 @@ export const BaseUserView: ViewDefinition = {
     role: {
       component: Columns.ChipColumn,
       renderOptions: {
-        valuesMap: userRoleMap,
+        titleCase: true,
       },
     },
     isPublic: {

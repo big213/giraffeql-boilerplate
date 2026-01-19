@@ -8,10 +8,13 @@
 </template>
 
 <script>
+import { snakeCaseToTitleCase } from '~/services/base'
+
 export default {
   props: {
     value: {}, // can be the index OR name
     valuesMap: {}, // optional -- the map used to generate the text/color, etc.
+    titleCase: { type: Boolean }, // optional -- quick way of converting from snake_case to title case
     emptyText: {}, // optional override emptyText
   },
   data() {
@@ -20,7 +23,9 @@ export default {
 
   computed: {
     title() {
-      return this.valuesMap?.[this.value]?.text ?? this.value
+      return this.titleCase
+        ? snakeCaseToTitleCase(this.value)
+        : this.valuesMap?.[this.value]?.text ?? this.value
     },
     color() {
       return this.valuesMap?.[this.value]?.color ?? null
