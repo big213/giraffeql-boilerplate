@@ -438,8 +438,8 @@ function processJoinFields(
 
     // loop through the fieldsObjectMap.fields
     Object.entries(fieldsObjectMap.fields).forEach(([keyName, nestedValue]) => {
-      // does the field have a "/"? if so, handle differently
       if (nestedValue.field.match(/\//)) {
+        // does the field have a "/"? if so, handle differently
         // ensure it matches the pattern `table/field`
         const fieldParts = nestedValue.field.split(/\//).filter((e) => e);
 
@@ -458,9 +458,12 @@ function processJoinFields(
         if (linkService) {
           // the actual join field is the *other* field
           // currently works properly if there are exactly 2 fields in the link
-          actualJoinField = Object.keys(linkService.servicesObjectMap).filter(
-            (ele) => ele !== linkTableField
-          )[0];
+          actualJoinField =
+            linkTable === "userAccessLink"
+              ? "entityId"
+              : Object.keys(linkService.servicesObjectMap).filter(
+                  (ele) => ele !== linkTableField
+                )[0];
 
           linkJoinTypeDef = linkService.typeDef;
         } else {
@@ -472,6 +475,7 @@ function processJoinFields(
             );
           }
 
+          // special case for userAccess tables
           actualJoinField = typeDef.definition.name;
         }
 
@@ -552,12 +556,43 @@ function processJoinFields(
         }
 
         joinObjectMap[`${linkTable}/*`] = {
-          normalJoin: {
-            table: linkTable,
-            alias: joinTableAlias,
-            parentTableField: "id",
-            field: actualJoinSqlField,
-          },
+          // for userAccess type, need to use a special join
+          ...(linkTable === "userAccessLink"
+            ? {
+                specialJoin: {
+                  table: linkTable,
+                  alias: joinTableAlias,
+                  args: null,
+                  joinFunction: ({
+                    knexObject,
+                    parentTableAlias,
+                    joinTableAlias,
+                    specialJoinDefinition,
+                    specialParams,
+                  }) => {
+                    knexObject.leftJoin(
+                      { [joinTableAlias]: linkTable },
+                      function () {
+                        this.on(
+                          `${parentTableAlias}.id`,
+                          `${joinTableAlias}.${actualJoinSqlField}`
+                        ).andOn(
+                          `${joinTableAlias}.entity_type`,
+                          db.raw(`'${table}'`)
+                        );
+                      }
+                    );
+                  },
+                },
+              }
+            : {
+                normalJoin: {
+                  table: linkTable,
+                  alias: joinTableAlias,
+                  parentTableField: "id",
+                  field: actualJoinSqlField,
+                },
+              }),
           // automatically apply the nested field
           nested: {
             [linkTableField]: {
@@ -770,16 +805,19 @@ function applyKnexWhere(
                 // if every element is null, handle specially
                 whereSubstatement += ` IS ${operatorPrefix}NULL`;
               } else if (whereSubObject.value.some((ele) => ele === null)) {
-                // if trying to do IN (null, otherValue), adjust accordingly
+                // if trying to do IN (null, otherValue), adjust accordingly (SQL IN operator does not work well with nulls)
                 whereSubstatement = `(${whereSubstatement} ${operatorPrefix}IN (${whereSubObject.value
                   .filter((ele) => ele !== null)
                   .map(() => "?")}) ${
                   operator === "nin" ? "AND" : "OR"
                 } ${whereSubstatement} IS ${operatorPrefix}NULL)`;
               } else {
-                whereSubstatement += ` ${operatorPrefix}IN (${whereSubObject.value.map(
+                // if nin, also need to manually check or "OR IS NULL" because NOT IN excludes nulls
+                whereSubstatement = `(${whereSubstatement} ${operatorPrefix}IN (${whereSubObject.value.map(
                   () => "?"
-                )})`;
+                )})${
+                  operator === "nin" ? ` OR ${whereSubstatement} IS NULL` : ""
+                })`;
               }
 
               whereSubObject.value
@@ -872,8 +910,12 @@ function applyJoins(
     if (normalJoin) {
       knexObject.leftJoin(
         { [normalJoin.alias]: normalJoin.table },
-        currentParentTableAlias + "." + normalJoin.parentTableField,
-        normalJoin.alias + "." + normalJoin.field
+        function () {
+          this.on(
+            `${currentParentTableAlias}.${normalJoin.parentTableField}`,
+            `${normalJoin.alias}.${normalJoin.field}`
+          );
+        }
       );
 
       currentParentTableAlias = normalJoin.alias;

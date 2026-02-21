@@ -149,7 +149,6 @@ export default {
   },
 
   created() {
-    console.log(this.lockedFields)
     this.reset()
 
     window.addEventListener('beforeunload', this.onBeforeUnload)

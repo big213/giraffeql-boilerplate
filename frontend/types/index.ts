@@ -187,6 +187,9 @@ export type InputDefinition = {} & {
 
   // applies to textarea only
   rows?: number
+
+  // applies to textarea only
+  autoGrow?: boolean
 }
 
 export type RenderDefinition = {

@@ -31,6 +31,9 @@ export type ActionDefinition = {
   // the query to return with the action, if any
   getReturnQuery?: (that, item) => any
 
+  // function that runs when action is closed
+  onClose?: (that, item) => void
+
   // function that runs when action is successfully completed
   onSuccess?: (that, item, returnData) => void
 
@@ -44,6 +47,10 @@ export type ActionDefinition = {
   // should the form stay open after submitting?
   persistent?: boolean
 
+  dialogOptions?: {
+    // should the dialog hide the close button (if there is custom logic/components for closing)
+    hideClose?: boolean
+  }
   // function that will use the parenItem to modify the args fed into the operation
   argsModifier?: (that, item, args) => void
   // modifier function that will use the original item to assemble the lockedFields (for pre-populating fields in the executeActionInterface)

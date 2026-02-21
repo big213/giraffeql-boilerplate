@@ -89,6 +89,9 @@ export type CreateOptions = {
   // under what conditions will the button be hidden?
   hideIf?: (that) => boolean
 
+  // gets and returns the initial fields for the form. Only if it's not a lockedField. will override getInitialValue if provided
+  getInitialFields?: (that, item) => any | Promise<any>
+
   // if a custom title, what should it be?
   title?: string
 

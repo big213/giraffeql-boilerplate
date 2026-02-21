@@ -554,7 +554,7 @@ export function generateJSONInputFields(
   inputDefinition: InputDefinition = {}
 ): InputDefinition {
   return {
-    serialize: (val) => JSON.stringify(val),
+    serialize: (val) => (val === null ? val : JSON.stringify(val)),
     parseValue: (val) => JSON.parse(val),
     ...inputDefinition,
   }
@@ -690,9 +690,9 @@ export function excelCurrencyParser(val: any) {
     : val
 }
 
-// parses from '12/1/2024' to '2024-12-01'. if null, uses current date
+// parses from '12/1/2024' to '2024-12-01'. null to null
 export function excelDateParser(val: any) {
-  return (val ? new Date(val) : new Date()).toISOString().split('T')[0]
+  return val ? new Date(val).toISOString().split('T')[0] : val
 }
 
 export function booleanParser(val: any) {

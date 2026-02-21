@@ -25,6 +25,8 @@ export default {
   props: {
     lockedFields: {},
 
+    initialFields: {},
+
     parentItem: {},
 
     viewDefinition: {
@@ -473,8 +475,19 @@ export default {
           throw new Error('Creation of this record is not configured')
         }
 
+        // if this.initialFields use that, else use createOptions.getInitialFields, else empty object
+        // in copy mode, do not fetch the initial fields
+        const initialFields =
+          this.initialFields ??
+          (this.mode === 'copy'
+            ? {}
+            : await this.viewDefinition.createOptions.getInitialFields?.(
+                this,
+                this.parentItem
+              )) ??
+          {}
+
         // if copy mode, fetch the initial fields
-        let initialFields
         if (this.mode === 'copy') {
           const copyInputFieldDefinitions = processInputDefinitions(
             this.viewDefinition,
@@ -483,7 +496,7 @@ export default {
 
           const query = await processInputQuery(copyInputFieldDefinitions)
 
-          initialFields = await executeApiRequest({
+          const data = await executeApiRequest({
             [`${this.viewDefinition.entity.typename}Get`]: {
               ...query,
               __args: {
@@ -491,6 +504,9 @@ export default {
               },
             },
           })
+
+          // merge the copy fields into initialFields (overwriting any initialFields)
+          Object.assign(initialFields, data)
         }
 
         const inputFieldDefinitions = processInputDefinitions(

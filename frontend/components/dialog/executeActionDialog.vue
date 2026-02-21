@@ -30,12 +30,19 @@
           >
           </PreviewRecordChip>
           <v-spacer></v-spacer>
-          <v-btn icon @click="close()">
+          <v-btn
+            v-if="!actionDefinition.dialogOptions?.hideClose"
+            icon
+            @click="close()"
+          >
             <v-icon>mdi-close</v-icon>
           </v-btn>
         </v-toolbar>
       </template>
-      <template v-slot:footer-action>
+      <template
+        v-if="!actionDefinition.dialogOptions?.hideClose"
+        v-slot:footer-action
+      >
         <v-btn color="blue darken-1" text @click="close()">Close</v-btn>
       </template>
     </component>
@@ -88,6 +95,8 @@ export default {
   methods: {
     close() {
       this.$emit('close')
+
+      this.actionDefinition.onClose?.(this, this.parentItem)
     },
 
     handleSubmit(data) {

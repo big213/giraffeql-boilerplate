@@ -57,7 +57,7 @@ export default {
         })
 
         this.$root.$emit('showSnackbar', {
-          message: `Password reset email sent`,
+          message: `Password reset email sent. Make sure to check your spam folder, as well`,
           color: 'success',
         })
       } catch (err) {

@@ -338,7 +338,7 @@ export function getCurrentDate(): string {
 export function downloadCSV(
   that,
   dataArray: StringKeyObject[],
-  name = 'file'
+  filename = 'file'
 ): void {
   try {
     that.$root.$emit('showSnackbar', {
@@ -351,7 +351,7 @@ export function downloadCSV(
     const link = document.createElement('a')
     const blob = new Blob(['\uFEFF', csvString])
     link.href = window.URL.createObjectURL(blob)
-    link.download = name + '.csv'
+    link.download = `${filename}.csv`
     link.click()
   } catch (err) {
     handleError(that, err)

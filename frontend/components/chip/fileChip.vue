@@ -3,6 +3,7 @@
     v-bind="$attrs"
     :title="file.name"
     @click:close="$emit('handleCloseClick')"
+    @click.stop="openableOnClick ? openFile() : undefined"
   >
     <v-avatar left
       ><v-icon small>{{ icon }}</v-icon></v-avatar
@@ -49,6 +50,10 @@ export default {
       default: false,
     },
     openable: {
+      type: Boolean,
+      default: false,
+    },
+    openableOnClick: {
       type: Boolean,
       default: false,
     },

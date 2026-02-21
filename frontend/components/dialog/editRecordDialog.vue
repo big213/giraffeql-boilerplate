@@ -11,6 +11,7 @@
       v-if="$attrs.value"
       :is="interfaceComponent"
       :locked-fields="lockedFields"
+      :initial-fields="initialFields"
       :parent-item="parentItem"
       :view-definition="viewDefinition"
       :custom-fields="customFields"
@@ -172,6 +173,8 @@ export default {
 
   props: {
     lockedFields: {},
+
+    initialFields: {},
 
     viewDefinition: {
       type: Object,

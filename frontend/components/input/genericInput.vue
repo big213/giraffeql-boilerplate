@@ -67,6 +67,7 @@
               downloadable
               small
               label
+              openable-on-click
               :close="!inputObject.readonly"
               close-icon="mdi-close-outline"
               class="mr-2"
@@ -240,6 +241,7 @@
       v-model="inputObject.value"
       filled
       :rows="inputObject.inputDefinition.rows ?? 3"
+      :auto-grow="inputObject.inputDefinition.autoGrow"
       dense
       class="py-0"
       :label="`${inputObject.label}${
@@ -311,6 +313,7 @@
           autocomplete="off"
           v-bind="attrs"
           v-on="on"
+          @keyup.enter="triggerSubmit()"
           @input="syncDatePickerInput"
           @click:append="handleClear()"
           @click:append-outer="handleClose()"

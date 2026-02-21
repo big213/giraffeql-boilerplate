@@ -378,8 +378,9 @@
               :input-object="crudFilterObject.inputObject"
               :key="i"
               style="font-weight: initial"
-              @change="updatePageOptions"
+              @change="updatePageOptions()"
               @handle-input="filterChanged = true"
+              @handle-submit="updatePageOptions()"
             ></GenericInput>
           </v-col>
           <v-col

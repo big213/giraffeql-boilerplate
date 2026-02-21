@@ -9,7 +9,7 @@
         :key="index"
         :file="file"
         :downloadable="options?.hideDownload"
-        openable
+        openable-on-click
         small
         label
         :close="false"

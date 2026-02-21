@@ -56,8 +56,14 @@ export default {
 
   computed: {
     tableRowData() {
+      // use a defined pathPrefix, else use the fieldKey, else null
+      const pathPrefix =
+        this.renderObject.renderDefinition.pathPrefix === undefined
+          ? this.renderObject.fieldKey
+          : this.renderObject.renderDefinition.pathPrefix
+
       // need to go deeper if nested
-      return getNestedProperty(this.item, this.renderObject.fieldKey)
+      return pathPrefix ? getNestedProperty(this.item, pathPrefix) : this.item
     },
   },
 

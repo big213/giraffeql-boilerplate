@@ -3,7 +3,7 @@
     <FileChip
       :file="currentValue"
       downloadable
-      openable
+      openable-on-click
       small
       label
       :close="false"

@@ -1,5 +1,6 @@
 import { ViewDefinition } from '~/types/view'
 import { BaseFileView } from '../base'
+import { fileUploadMultiple } from '~/models/actions'
 
 export const MyFileView: ViewDefinition = {
   ...BaseFileView,
@@ -21,8 +22,12 @@ export const MyFileView: ViewDefinition = {
   viewOptions: {
     fields: ['nameWithId', 'size', 'contentType', 'parentKey'],
   },
+  generateOptions: {
+    buttonText: 'Upload',
+    buttonIcon: 'mdi-upload-multiple',
+    action: fileUploadMultiple,
+  },
+  createOptions: undefined,
   shareOptions: undefined,
   enterOptions: undefined,
-  updateOptions: undefined,
-  createOptions: undefined,
 }

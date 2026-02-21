@@ -45,6 +45,7 @@
       :view-definition="editRecordDialogViewDefinition"
       :locked-fields="dialogs.editRecord.lockedFields"
       :parent-item="dialogs.editRecord.parentItem"
+      :initial-fields="dialogs.editRecord.initialFields"
       :custom-fields="dialogs.editRecord.customFields"
       :special-mode-object="dialogs.editRecord.specialModeObject"
       :fullscreen-mode="dialogs.editRecord.fullscreenMode"
@@ -172,7 +173,7 @@ export default {
     this.drawer = this.$vuetify.breakpoint.name !== 'xs'
 
     /*
-     ** Expecting viewDefinition, parentItem, mode?, specialModeObject? (one of mode or specialModeObject required), lockedFields?, customFields?, maxWidth?, fullscreenMode?
+     ** Expecting viewDefinition, parentItem, mode?, specialModeObject? (one of mode or specialModeObject required), lockedFields?, initialFields?, customFields?, maxWidth?, fullscreenMode?
      */
     this.$root.$on('openEditRecordDialog', (params) => {
       // confirm the viewDefinition exists
