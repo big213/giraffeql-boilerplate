@@ -8,7 +8,15 @@ export default {
     },
 
     renderFieldDefinition: {
-      required: true,
+      type: Object,
+    },
+
+    // one of renderFieldDefinition or fieldPath required
+    fieldPath: {
+      type: String,
+    },
+
+    overrideOptions: {
       type: Object,
     },
 
@@ -20,15 +28,19 @@ export default {
 
   computed: {
     options() {
-      return this.renderFieldDefinition.renderDefinition.renderOptions
+      return (
+        this.overrideOptions ??
+        this.renderFieldDefinition?.renderDefinition.renderOptions
+      )
     },
 
     currentValue() {
       // use a defined pathPrefix, else use the fieldKey, else null
       const pathPrefix =
-        this.renderFieldDefinition.renderDefinition.pathPrefix === undefined
+        this.fieldPath ??
+        (this.renderFieldDefinition.renderDefinition.pathPrefix === undefined
           ? this.renderFieldDefinition.fieldKey
-          : this.renderFieldDefinition.renderDefinition.pathPrefix
+          : this.renderFieldDefinition.renderDefinition.pathPrefix)
 
       return pathPrefix ? getNestedProperty(this.item, pathPrefix) : this.item
     },

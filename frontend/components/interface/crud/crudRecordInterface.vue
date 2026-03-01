@@ -92,39 +92,40 @@
           :key="i"
           class="text-center pb-2"
         >
-          <div
-            v-if="crudFilterObject.inputObject.options.length"
-            class="mb-2 title"
-          >
-            {{ crudFilterObject.filterInputFieldDefinition.text }}
-          </div>
-          <div>
-            <v-chip
-              :color="
-                crudFilterObject.inputObject.value === null ? 'green' : null
-              "
-              @click.stop="applyChipFilter(crudFilterObject.inputObject, null)"
-              >Show All</v-chip
-            >
-            |
-            <component
-              :is="
-                crudFilterObject.filterInputFieldDefinition.chipOptions
-                  .component || 'PreviewRecordChip'
-              "
-              v-for="(inputOption, j) in crudFilterObject.inputObject.options"
-              :key="j"
-              :value="inputOption"
-              class="mr-2"
-              :color="
-                crudFilterObject.inputObject.value === inputOption.id
-                  ? 'green'
-                  : null
-              "
-              @click.stop="
-                applyChipFilter(crudFilterObject.inputObject, inputOption)
-              "
-            ></component>
+          <div v-if="crudFilterObject.inputObject.options?.length">
+            <div class="mb-2 title">
+              {{ crudFilterObject.inputObject.label }}
+            </div>
+            <div>
+              <v-chip
+                :color="
+                  crudFilterObject.inputObject.value === null ? 'green' : null
+                "
+                @click.stop="
+                  applyChipFilter(crudFilterObject.inputObject, null)
+                "
+                >Show All</v-chip
+              >
+              |
+              <component
+                :is="
+                  crudFilterObject.filterInputFieldDefinition.chipOptions
+                    .component || 'PreviewRecordChip'
+                "
+                v-for="(inputOption, j) in crudFilterObject.inputObject.options"
+                :key="j"
+                :value="inputOption"
+                class="mr-2"
+                :color="
+                  crudFilterObject.inputObject.value === inputOption.id
+                    ? 'green'
+                    : null
+                "
+                @click.stop="
+                  applyChipFilter(crudFilterObject.inputObject, inputOption)
+                "
+              ></component>
+            </div>
           </div>
         </div>
       </div>

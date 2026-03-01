@@ -1,4 +1,4 @@
-import * as knex from "knex";
+import knex from "knex";
 import * as pg from "pg";
 import { pgOptions, debugMode } from "../config";
 

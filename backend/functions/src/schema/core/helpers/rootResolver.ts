@@ -788,7 +788,13 @@ export function generateGetPaginatorRootResolver(service: PaginatedService) {
             {
               field: orderByObject.field,
               // if last value is null and nulls are first, always use gt NULL
-              operator: lastValue === null && !nullsLast ? "gt" : operator,
+              // if nullsLast and operator is "gt", switch to "gtornull"
+              operator:
+                lastValue === null && !nullsLast
+                  ? "gt"
+                  : operator === "gt" && nullsLast
+                  ? "gtornull"
+                  : operator,
               value:
                 orderByObject.field === "id" ? parsedCursor.lastId : lastValue,
             },

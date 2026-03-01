@@ -8,8 +8,8 @@
     "strict": true,
     "target": "es2022",
     "resolveJsonModule": true,
-    "experimentalDecorators": true,
-    "typeRoots": ["src/types", "./node_modules/@types"]
+    "typeRoots": ["src/types", "./node_modules/@types"],
+    "esModuleInterop": true
   },
   "compileOnSave": true,
   "include": ["src"]

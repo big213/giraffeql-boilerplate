@@ -24,23 +24,24 @@ jobs:
         working-directory: ./frontend
         run: npm run generate
         env:
-          API_URL: https://api.boilerplate.giraffeql.com
-          IMAGE_SERVING_URL: https://cdn.boilerplate.giraffeql.com
+          API_URL: https://api.cubing.gg
+          IMAGE_SERVING_URL: https://cdn.cubing.gg
           VER: ${{ github.ref }}
-          SITE_NAME: "Giraffeql Boilerplate"
-          SITE_DESCRIPTION: "Giraffeql Boilerplate is a basic boilerplate site for showcasing the Giraffeql API querying language in a basic and extendable implementation"
-          SITE_IMAGE_URL: https://cdn.boilerplate.giraffeql.com/permanent/android-chrome-512x512.png
-          SITE_CONTACT_EMAIL: hello@giraffeql.com
-          SITE_DISCORD_LINK: https://discord.gg/CpSWfub9y6
-          SITE_GITHUB_REPOSITORY_URL: https://github.com/big213/giraffeql-boilerplate
+          SITE_NAME: "CubingGG"
+          SITE_DESCRIPTION: "CubingGG is an educational platform that helps you get faster at cubing by learning from world-class speedcubers"
+          SITE_IMAGE_URL: https://cdn.cubing.gg/permanent/android-chrome-512x512.png
+          SITE_CONTACT_EMAIL: support@cubing.gg
+          SITE_DISCORD_LINK:
+          SITE_GITHUB_REPOSITORY_URL:
           LOGO_HAS_LIGHT_VARIANT:
-          DEFAULT_LIGHT_MODE: true
+          DEFAULT_LIGHT_MODE:
           DEFAULT_GRID_VIEW:
           SOCIAL_LOGIN_ENABLED:
           TEMP_STORAGE_PATH: temp
           STORAGE_PATH_PREFIX:
-          STRIPE_PUB_KEY:
-          PAYPAL_CLIENT_ID:
+          HIDE_NULL_INPUT_ICON: true
+          STRIPE_PUB_KEY: pk_live_51NvoqQDPbTsKIyfJOF9h4jA6DNU1PBqQG2OHSTwniprfD0D0BbQQPCQJeQtTD9YoEFF0gGlTzZ4YTdA1Jcz8ALCD009Pf8QPxz
+          PAYPAL_CLIENT_ID: AeJZEAUysSBUU7BbyBjqsXir_phkR7_EI2H7J7NRo93v56ZvErx99ESGTvShPuHDT2KK8ftlqJWgICb6
       - name: Create SA key
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > $HOME/gcloud.json
       - name: Deploy Hosting

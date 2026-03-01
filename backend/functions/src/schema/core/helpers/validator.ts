@@ -83,10 +83,13 @@ export const BaseValidators = {
   allowIfAdmin: () => {
     return async function (inputs) {
       const { req } = inputs;
-      // always allow if user has */* permission
-      if (req.user?.permissions.includes(userPermissionEnum["*/*"])) {
-        return;
+
+      // always allow if user has */* permission. else deny
+      if (!req.user?.permissions.includes(userPermissionEnum["*/*"])) {
+        throw new PermissionsError();
       }
+
+      return;
     };
   },
 

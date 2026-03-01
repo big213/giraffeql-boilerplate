@@ -119,7 +119,8 @@ export default {
 
     lockedFields() {
       return this.lockedFilters.reduce((total, crudFilterObject) => {
-        total[crudFilterObject.field] = crudFilterObject.value
+        total[crudFilterObject.field.replace(/\.id$/, '')] =
+          crudFilterObject.value
         return total
       }, {})
     },
@@ -291,13 +292,6 @@ export default {
       this.loading.loadMore = true
       try {
         const data = await this.fetchMorePosts()
-
-        // parse the JSON in data field, if any
-        data.edges.forEach((ele) => {
-          if (ele.node.data) {
-            ele.node.data = JSON.parse(ele.node.data)
-          }
-        })
 
         // for any known types that exist in data as data[type], fetch them
         const knownTypesArray = Object.keys(this.knownTypesInfo)
