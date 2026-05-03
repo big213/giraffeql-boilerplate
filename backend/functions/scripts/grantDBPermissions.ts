@@ -1,4 +1,4 @@
-import * as knexBuilder from "knex";
+import knexBuilder from "knex";
 import { configDotenv } from "dotenv";
 configDotenv();
 import yargs from "yargs";
