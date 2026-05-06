@@ -8,8 +8,6 @@ typings/
 # Node.js dependency directory
 node_modules/
 
-.env
-.env.local
-.env.production
+.env**
 
 key/
