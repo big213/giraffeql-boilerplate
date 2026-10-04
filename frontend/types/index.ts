@@ -9,7 +9,7 @@ export type InputFieldDefinition = {
   handleFileAdded?: (that, inputsArray, inputObject, fileRecord) => void
   hideIf?: (that, parentItem, inputsArray) => boolean
 
-  watch?: (that, val, prev) => void
+  watch?: (that, val, prev, parentItem) => void
 }
 
 export type NestedInputFieldDefinition = {
@@ -50,6 +50,7 @@ export type InputType =
   | 'single-image-url'
   | 'multiple-image'
   | 'multiple-file'
+  | 'single-file'
   | 'single-file-url'
   | 'value-array'
   | 'datepicker'

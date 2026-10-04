@@ -10,6 +10,7 @@ import {
   processTypeDef
 } from "../../core/helpers/typeDef";
 import { Scalars } from "../../scalars";
+import { File } from "../../services";
 
 export default new GiraffeqlObjectType(processTypeDef({
   name: {{ capitalizedTypename }}.typename,
@@ -18,7 +19,7 @@ export default new GiraffeqlObjectType(processTypeDef({
     ...generateIdField({{ capitalizedTypename }}),
     ...generateTypenameField({{ capitalizedTypename }}),
     name: generateStringField({ allowNull: false }),
-    avatarUrl: generateStringField({ allowNull: true, type: Scalars.imageUrl }),
+    avatar: generateJoinableField({ allowNull: true, service: File }),
     description: generateTextField({
       allowNull: true,
     }),

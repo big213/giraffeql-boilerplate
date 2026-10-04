@@ -15,10 +15,11 @@ import {
   generateBaseTimestampFields,
   generateTypenameField,
   processTypeDef,
+  generateJoinableField,
 } from "../../core/helpers/typeDef";
 import { userPermissionEnum, userRoleKenum } from "../../enums";
 import { Scalars } from "../../scalars";
-import { User, UserRole, UserUserFollowLink } from "../../services";
+import { File, User, UserRole, UserUserFollowLink } from "../../services";
 
 export default new GiraffeqlObjectType(
   processTypeDef({
@@ -44,9 +45,9 @@ export default new GiraffeqlObjectType(
         },
         nestHidden: true,
       }),
-      avatarUrl: generateStringField({
+      avatar: generateJoinableField({
         allowNull: true,
-        type: Scalars.imageUrl,
+        service: File,
       }),
       description: generateTextField({
         allowNull: true,

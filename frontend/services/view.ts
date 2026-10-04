@@ -1,7 +1,8 @@
 import type { InputDefinition, InputType, RenderDefinition } from '~/types'
-import { UserEntity } from '~/models/entities'
+import { FileEntity, UserEntity } from '~/models/entities'
 import {
   camelCaseToCapitalizedString,
+  capitalizeString,
   enterRoute,
   formatAsCurrency,
   generateDateLocaleString,
@@ -12,6 +13,7 @@ import type { EntityDefinition } from '~/types/entity'
 import type { ViewDefinition } from '~/types/view'
 import { generateViewRecordRoute } from './route'
 import { Columns } from './components'
+import * as previews from '~/models/previews'
 
 export function generateSortOptions({
   fieldPath,
@@ -160,6 +162,7 @@ export function generateHomePageViewDefinition({
           },
         },
       }),
+      downloadOptions: undefined,
       ...paginationOptions,
     },
   }
@@ -214,7 +217,7 @@ export function generateBaseRenderFields(entity: EntityDefinition): {
         [entity.nameInputField]: {},
       }),
     ...(entity.avatarField && {
-      [entity.avatarField]: {
+      [`${entity.avatarField}.servingUrl`]: {
         component: Columns.AvatarColumn,
         text: 'Avatar',
       },
@@ -231,7 +234,7 @@ export function generateBaseRenderFields(entity: EntityDefinition): {
           pathPrefix: null,
           renderOptions: {
             nameField: entity.nameField,
-            avatarUrlField: entity.avatarField,
+            avatarField: entity.avatarField,
           },
         },
         record: generateJoinableRenderField({
@@ -295,7 +298,9 @@ function generateRecordRenderFields({
       `${fieldnamePrefix}id`,
       `${fieldnamePrefix}__typename`,
       entity.nameField ? `${fieldnamePrefix}${entity.nameField}` : null,
-      entity.avatarField ? `${fieldnamePrefix}${entity.avatarField}` : null,
+      entity.avatarField
+        ? `${fieldnamePrefix}${entity.avatarField}.servingUrl`
+        : null,
     ]
       .filter((e) => e)
       .concat(
@@ -331,12 +336,14 @@ export function generateJoinableRenderField({
   additionalFields,
   entity,
   renderDefinition,
+  previewable,
 }: {
   fieldname?: string
   text?: string
   additionalFields?: string[]
   entity: EntityDefinition
   renderDefinition?: RenderDefinition
+  previewable?: boolean
 }): RenderDefinition {
   // if no fieldname, assume entity.typename is fieldname
   const validatedFieldname = fieldname ?? entity.typename
@@ -346,7 +353,11 @@ export function generateJoinableRenderField({
       additionalFields ?? []
     ),
     pathPrefix: validatedFieldname,
-    component: Columns.RecordColumn,
+    // show the preview record column if there is a preview entry
+    component:
+      previewable && previews[`${capitalizeString(entity.typename)}Preview`]
+        ? Columns.PreviewableRecordColumn
+        : Columns.RecordColumn,
     ...renderDefinition,
   }
 }
@@ -537,7 +548,7 @@ export function generateMultipleJoinableRenderField({
       `${validatedFieldname}.id`,
       `${validatedFieldname}.name`,
       `${validatedFieldname}.__typename`,
-      `${validatedFieldname}.avatarUrl`,
+      `${validatedFieldname}.avatar.servingUrl`,
     ],
     pathPrefix: validatedFieldname,
     component: Columns.RecordColumn,
@@ -571,7 +582,8 @@ export function generateBaseInputFields(entity: EntityDefinition): {
     ...(entity.avatarField && {
       [entity.avatarField]: {
         text: 'Avatar',
-        inputType: 'single-image-url' as InputType,
+        inputType: 'single-file' as InputType,
+        entity: FileEntity,
         avatarOptions: {
           fallbackIcon: entity.icon,
         },

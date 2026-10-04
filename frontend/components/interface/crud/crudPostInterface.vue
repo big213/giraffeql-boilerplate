@@ -42,7 +42,7 @@
                 mode="create"
                 :locked-fields="lockedFields"
                 :hidden-fields="hiddenFields"
-                @handle-submit="handlePostSubmit()"
+                @handle-submit-success="handlePostSubmit()"
               ></EditRecordInterface>
             </div>
           </v-col>
@@ -63,10 +63,10 @@
                 <v-list-item-avatar>
                   <v-icon v-if="props.item.isSystem"> mdi-information </v-icon>
                   <v-img
-                    v-else-if="props.item.createdBy.avatarUrl"
+                    v-else-if="props.item.createdBy.avatar?.servingUrl"
                     class="elevation-6"
                     :alt="props.item.createdBy.name"
-                    :src="props.item.createdBy.avatarUrl"
+                    :src="props.item.createdBy.avatar?.servingUrl"
                   ></v-img>
                   <v-icon v-else>mdi-account</v-icon>
                 </v-list-item-avatar>
@@ -153,7 +153,7 @@
                   mode="update"
                   :parent-item="props.item"
                   :return-fields="returnFields"
-                  @handle-submit="handlePostUpdate(props, $event)"
+                  @handle-submit-success="handlePostUpdate(props, $event)"
                 >
                   <v-btn
                     text
@@ -221,7 +221,9 @@ export default {
         createdBy: {
           id: true,
           name: true,
-          avatarUrl: true,
+          avatar: {
+            servingUrl: true,
+          },
           __typename: true,
         },
       },

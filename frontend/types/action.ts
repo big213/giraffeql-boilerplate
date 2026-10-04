@@ -1,5 +1,10 @@
 import { InputDefinition, InputFieldDefinition } from '.'
-import { InstructionOptions, ViewDefinition, ViewOptions } from './view'
+import {
+  InstructionOptions,
+  UpdateOptions,
+  ViewDefinition,
+  ViewOptions,
+} from './view'
 
 export type ActionDefinition = {
   title: string
@@ -41,7 +46,8 @@ export type ActionDefinition = {
 
   previewOptions?: {
     viewDefinition: ViewDefinition
-    viewOptions: ViewOptions
+    viewOptions?: ViewOptions
+    updateOptions?: UpdateOptions
   }
 
   // should the form stay open after submitting?
@@ -63,6 +69,8 @@ export type ActionDefinition = {
     title: string
     icon?: string
     showIf?: (that, item) => boolean
+    // if there is an update interface, trigger submit on it (saving changes) before running onSubmit
+    triggerUpdateSubmit?: boolean
     onSubmit: (that, item, args) => Promise<any> | any
   }[]
 }

@@ -43,7 +43,7 @@
       </v-container>
     </v-card-text>
 
-    <v-card-actions v-if="!isLoading">
+    <v-card-actions v-if="!hideSubmit && !isLoading">
       <v-spacer></v-spacer>
       <slot name="footer-action"></slot>
       <v-btn

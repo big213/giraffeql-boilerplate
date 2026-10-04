@@ -2,7 +2,7 @@ import { storage } from "firebase-admin";
 import { serveImageCdnUrl, serveImageSourcePath } from "../../config";
 
 export function generateServingUrl(location: string) {
-  return `${serveImageCdnUrl.value()}/${location}`;
+  return `${serveImageCdnUrl.value()}/${encodeURIComponent(location)}`;
 }
 
 // location is without serveImageSourcePath
@@ -21,6 +21,7 @@ export async function getFirebaseStorageData(location: string) {
     data: Buffer.from(buffer).toString("base64"),
     contentType: fileData.metadata.contentType,
     size: fileData.metadata.size,
+    location,
   };
 }
 
@@ -51,4 +52,15 @@ export function saveFirebaseFile({
   return bucket
     .file(`${serveImageSourcePath.value()}/${location}`)
     .save(Buffer.from(data, "base64"));
+}
+
+export function getFilenameFromUrl(url: string): string {
+  // Provide a dummy base to support relative paths like '/images/photo.png'
+  const parsed = new URL(url, "https://example.com");
+  const segment = parsed.pathname.split("/").filter(Boolean).pop();
+
+  if (!segment) {
+    throw new Error(`Unable to retrieve filename`);
+  }
+  return decodeURIComponent(segment);
 }

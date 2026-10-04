@@ -13,8 +13,8 @@ import {
   getCurrentDate,
   downloadCSV,
   handleError,
-  getPaginatorData,
   collectPaginatorData,
+  getPaginatorData,
   viewportToPixelsMap,
   populateInputObject,
   processRenderQuery,
@@ -979,11 +979,11 @@ export default {
         )
 
         // fetch data
-        const results = await collectPaginatorData(
-          `${this.viewDefinition.entity.typename}GetPaginator`,
+        const results = await collectPaginatorData({
+          operation: `${this.viewDefinition.entity.typename}GetPaginator`,
           query,
-          this.generatePaginatorArgs(false)
-        )
+          args: this.generatePaginatorArgs(false),
+        })
 
         // extract data from results
         const data = results.map((item) => {
@@ -1224,11 +1224,11 @@ export default {
 
         return result
       } else {
-        const results = await getPaginatorData(
-          `${this.viewDefinition.entity.typename}GetPaginator`,
+        const results = await getPaginatorData({
+          operation: `${this.viewDefinition.entity.typename}GetPaginator`,
           query,
-          this.generatePaginatorArgs(true)
-        )
+          args: this.generatePaginatorArgs(true),
+        })
 
         return results
       }

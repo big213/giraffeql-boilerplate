@@ -26,9 +26,8 @@ import { db } from "../../src/utils/knex";
     `UPDATE "sale" set timeout_days = 13 WHERE timeout_days IS NULL`
   ); */
 
-  await db.schema.alterTable("apiKey", function (t) {
-    t.boolean("mask_user_role").notNullable().defaultTo(true);
-    t.boolean("mask_user_role").notNullable().alter();
+  await db.schema.alterTable("file", function (table) {
+    table.bigInteger("size").notNullable().alter();
   });
 
   console.log(`DB Operation completed`);

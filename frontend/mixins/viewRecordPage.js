@@ -244,9 +244,9 @@ export default {
       )
     },
 
-    handleSubmit() {
+    handleSubmitSuccess() {
       this.loadRecord()
-      this.$emit('handle-submit')
+      this.$emit('handle-submit-success')
     },
 
     async handleReloadParentItem() {

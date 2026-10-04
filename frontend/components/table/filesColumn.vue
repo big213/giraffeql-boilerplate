@@ -57,15 +57,15 @@ export default {
         if (Array.isArray(this.currentValue) && this.currentValue.length > 0) {
           // fetch data if the type is a string
           if (typeof this.currentValue[0] === 'string') {
-            const fileData = await collectPaginatorData(
-              'fileGetPaginator',
-              {
+            const fileData = await collectPaginatorData({
+              operation: 'fileGetPaginator',
+              query: {
                 id: true,
                 name: true,
                 size: true,
                 contentType: true,
               },
-              {
+              args: {
                 filterBy: [
                   {
                     parentKey: {
@@ -76,8 +76,8 @@ export default {
                     },
                   },
                 ],
-              }
-            )
+              },
+            })
 
             this.filesData = this.currentValue
               .map((fileId) => fileData.find((val) => val.id === fileId))

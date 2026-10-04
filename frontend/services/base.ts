@@ -420,7 +420,15 @@ export function generateLoginError(setRedirect = true) {
   return new Error('Login required')
 }
 
-export function getPaginatorData(operation, query, args) {
+export function getPaginatorData({
+  operation,
+  query,
+  args,
+}: {
+  operation: string
+  query: StringKeyObject
+  args?: StringKeyObject
+}) {
   return executeApiRequest(<any>{
     [operation]: {
       paginatorInfo: {
@@ -438,30 +446,50 @@ export function getPaginatorData(operation, query, args) {
 }
 
 // executes a giraffeql paginated operation 100 rows at a time until no more results are returned
-export async function collectPaginatorData(
+export async function collectPaginatorData({
   operation,
   query,
   args = {},
-  fetchRows = 100
-) {
+  fetchRows = 100,
+  limit,
+}: {
+  operation: string
+  query: StringKeyObject
+  args?: StringKeyObject
+  fetchRows?: number
+  limit?: number
+}) {
   let afterCursor: string | undefined
 
   const allResults: any[] = []
 
   let hasMore = true
   while (hasMore) {
-    const data = <any>await getPaginatorData(operation, query, {
-      ...args,
-      first: fetchRows,
-      after: afterCursor,
+    const data = <any>await getPaginatorData({
+      operation,
+      query,
+      args: {
+        ...args,
+        first:
+          limit === undefined
+            ? fetchRows
+            : Math.min(fetchRows, limit - allResults.length),
+        after: afterCursor,
+      },
     })
 
     afterCursor = data.paginatorInfo.endCursor
-
-    // if results returned is less than fetchRows, no more results
-    if (data.edges.length < fetchRows) hasMore = false
-
     allResults.push(...data.edges.map((ele) => ele.node))
+
+    // if limit and number of results >= limit, or if no results were returned, can exit loop
+    if (limit !== undefined) {
+      if (allResults.length >= limit || !data.edges.length) {
+        hasMore = false
+      }
+    } else {
+      // otherwise, if no limit, exit when results returned is less than fetchRows (means there should be none left)
+      if (data.edges.length < fetchRows) hasMore = false
+    }
   }
 
   return allResults
@@ -1087,8 +1115,11 @@ export async function processInputQuery(
       })
     }
 
-    // if it's a multiple-file type, add certain fields
-    if (inputDefinition.inputType === 'multiple-file') {
+    // if it's a multiple-file, single-file type, add certain fields
+    if (
+      inputDefinition.inputType === 'multiple-file' ||
+      inputDefinition.inputType === 'single-file'
+    ) {
       ;[
         'id',
         'name',
@@ -1367,7 +1398,8 @@ export async function processInputObject(
     } else if (
       inputObject.inputDefinition.inputType === 'type-autocomplete' ||
       inputObject.inputDefinition.inputType === 'type-autocomplete-multiple' ||
-      inputObject.inputDefinition.inputType === 'select'
+      inputObject.inputDefinition.inputType === 'select' ||
+      inputObject.inputDefinition.inputType === 'single-file'
     ) {
       // as we are using return-object option, the entire object will be returned for autocompletes/selects, unless it is null or a number
       value = isObject(inputObject.value)
@@ -1444,17 +1476,17 @@ export function generateMemoizedEntityGetter(
       ].filter((e) => e)
     )
 
-    return collectPaginatorData(
-      `${entity.typename}GetPaginator`,
-      validatedFields.reduce((total, field) => {
+    return collectPaginatorData({
+      operation: `${entity.typename}GetPaginator`,
+      query: validatedFields.reduce((total, field) => {
         total[field] = true
         return total
       }, {}),
-      {
+      args: {
         filterBy,
         sortBy,
-      }
-    )
+      },
+    })
   })
 }
 

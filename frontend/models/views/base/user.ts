@@ -17,7 +17,7 @@ export const BaseUserView: ViewDefinition = {
   routeType: 'base',
   routeKey: UserEntity.typename,
   entity: UserEntity,
-  requiredFields: ['avatarUrl', 'name'],
+  requiredFields: ['avatar.servingUrl', 'name'],
   inputFields: {
     ...generateBaseInputFields(UserEntity),
     email: {},
@@ -104,7 +104,7 @@ export const BaseUserView: ViewDefinition = {
 
   createOptions: {
     fields: [
-      'avatarUrl',
+      'avatar',
       'name',
       'description',
       'email',
@@ -116,7 +116,7 @@ export const BaseUserView: ViewDefinition = {
   },
   updateOptions: {
     fields: [
-      'avatarUrl',
+      'avatar',
       'name',
       'description',
       'email',
@@ -127,7 +127,7 @@ export const BaseUserView: ViewDefinition = {
   },
   viewOptions: {
     fields: [
-      'avatarUrl',
+      'avatar.servingUrl',
       'name',
       'description',
       'email',

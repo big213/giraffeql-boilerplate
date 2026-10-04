@@ -152,4 +152,41 @@ export class FileService extends PaginatedService {
       url: generateServingUrl(location),
     };
   }
+
+  async getDataByIds({
+    fileIds,
+    transaction,
+  }: {
+    fileIds: string[];
+    transaction?: Knex.Transaction;
+  }) {
+    // process and fetch the files
+    const files = fileIds.length
+      ? await this.getAllSqlRecord({
+          select: ["location"],
+          where: [
+            {
+              field: "id",
+              operator: "in",
+              value: fileIds,
+            },
+          ],
+          transaction,
+        })
+      : [];
+
+    // fetch the base64 data directly from firebase storage
+    const fileObjects = await Promise.all(
+      files.map((file) => getFirebaseStorageData(file.location))
+    );
+
+    // check if all have contentType, otherwise throw err
+    if (fileObjects.some((fileObject) => !fileObject.contentType)) {
+      throw new Error(
+        `At least one file appears to be missing the contentType`
+      );
+    }
+
+    return fileObjects;
+  }
 }

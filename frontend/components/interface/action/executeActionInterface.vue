@@ -12,6 +12,7 @@
           class="selected-element mb-5"
         >
           <ViewRecordInterface
+            v-if="actionDefinition.previewOptions.viewOptions"
             :parent-item="parentItem"
             :view-definition="actionDefinition.previewOptions.viewDefinition"
             :override-options="actionDefinition.previewOptions.viewOptions"
@@ -19,6 +20,18 @@
             :generation="previewGeneration"
           >
           </ViewRecordInterface>
+          <EditRecordInterface
+            v-if="actionDefinition.previewOptions.updateOptions"
+            :parent-item="parentItem"
+            :view-definition="actionDefinition.previewOptions.viewDefinition"
+            :override-options="actionDefinition.previewOptions.updateOptions"
+            mode="update"
+            hide-submit
+            :generation="previewGeneration"
+            :submit-generation="submitGeneration"
+            @handle-submit-success="handleUpdateSubmitSuccess"
+          >
+          </EditRecordInterface>
           <v-divider></v-divider>
         </div>
         <v-container v-show="visibleInputsArray.length" class="px-0">

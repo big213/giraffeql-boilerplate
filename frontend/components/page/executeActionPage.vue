@@ -26,7 +26,7 @@
               :locked-fields="lockedFields"
               dialog-mode
               :generation="generation"
-              @handle-submit="handleSubmit()"
+              @handle-submit-success="handleSubmitSuccess()"
               @handle-parent-item-updated="handleItemUpdate"
             >
               <template v-slot:toolbar>
@@ -88,7 +88,7 @@ export default {
   },
 
   methods: {
-    handleSubmit() {
+    handleSubmitSuccess() {
       // this.generation++
     },
 

@@ -43,7 +43,7 @@ export default {
     },
 
     avatarUrl() {
-      return this.entity ? this.value[this.entity.avatarField] : null
+      return this.entity ? this.value[this.entity.avatar]?.servingUrl : null
     },
 
     fallbackIcon() {

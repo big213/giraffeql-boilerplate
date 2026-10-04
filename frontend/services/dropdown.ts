@@ -14,7 +14,7 @@ export const getCurrentUser = function (that) {
           {
             id: user.id,
             name: user.name,
-            avatarUrl: user.avatarUrl,
+            avatar: user.avatar,
           },
         ]
       : []
@@ -35,5 +35,7 @@ export const getUserRoleEnumValues = generateMemoizedEnumGetter(
 export const getUserPermissionEnumValues = generateMemoizedEnumGetter(
   'getUserPermissionEnumPaginator'
 )
-export const getActionTypeEnumValues = generateMemoizedEnumGetter('getActionTypeEnumPaginator')
+export const getActionTypeEnumValues = generateMemoizedEnumGetter(
+  'getActionTypeEnumPaginator'
+)
 /** END Enum Getters */

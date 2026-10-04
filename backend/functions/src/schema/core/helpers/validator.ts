@@ -141,7 +141,14 @@ export const BaseValidators = {
     };
   },
 
-  allowIfOnlyTheseFieldsInQuery: (fields: string[], isPaginator = false) => {
+  allowIfOnlyTheseFieldsInQuery: (
+    fields: string[],
+    isPaginator = false,
+    includeBaseFields = true
+  ) => {
+    if (includeBaseFields) {
+      fields.push("id", "__typename");
+    }
     return function ({ query, fieldPath }) {
       if (
         validateQueryFields(

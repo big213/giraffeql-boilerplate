@@ -90,7 +90,7 @@ export function isCurrentUser(req: Request, userId: string) {
 
 export type FilterObjectFunction = (
   filterObject,
-  inputs?: ServiceFunctionInputs
+  inputs: ServiceFunctionInputs
 ) => Boolean | Promise<Boolean>;
 
 // does every filterObject in the args array pass the filterFn?

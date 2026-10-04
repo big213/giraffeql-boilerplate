@@ -8,7 +8,7 @@ export const MyProfileView: ViewDefinition = {
   routeKey: 'profile',
   title: `My Profile`,
   updateOptions: {
-    fields: ['avatarUrl', 'name', 'description', 'isPublic'],
+    fields: ['avatar', 'name', 'description', 'isPublic'],
     onSuccess: (that) => {
       // refresh the store entry after editing profile
       handleUserRefreshed(that)

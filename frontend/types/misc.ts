@@ -46,7 +46,7 @@ export type CrudInputObject = {
   nestedInputsArray: (NestedInputObject | NestedInputObject[])[] // any nested input objects
   hideIf?: (that, parentItem, inputsArray) => boolean // hide this input if...
   inputData?: any // additional data that is relevant for the input option (mainly for stripe-pi)
-  watch?: (that, val, prev) => void
+  watch?: (that, val, prev, parentItem) => void
 }
 
 export type CrudHeaderFieldDefinition = {

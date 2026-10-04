@@ -29,9 +29,16 @@
     <div
       v-else-if="inputObject.inputDefinition.inputType === 'html'"
       class="mb-4"
-      style="background-color: white; color: black"
     >
-      <wysiwyg v-model="inputObject.value" />
+      <span class="subtitle-2 text-decoration-underline">{{
+        `${inputObject.label}${
+          inputObject.inputDefinition.optional ? ` (optional)` : ''
+        }`
+      }}</span>
+      <wysiwyg
+        v-model="inputObject.value"
+        style="background-color: white; color: black"
+      />
     </div>
     <div
       v-else-if="inputObject.inputDefinition.inputType === 'multiple-file'"
@@ -121,7 +128,7 @@
       class="mb-4 highlighted-bg"
       :class="isReadonly ? 'text-center' : 'd-flex text-left'"
       v-cloak
-      @drop.prevent="handleDropEvent"
+      @drop.prevent="handleSingleDropFile"
       @dragover.prevent
     >
       <label
@@ -177,7 +184,7 @@
       v-else-if="inputObject.inputDefinition.inputType === 'single-image-url'"
       class="mb-4 highlighted-bg text-center"
       v-cloak
-      @drop.prevent="handleDropEvent"
+      @drop.prevent="handleSingleDropFile"
       @dragover.prevent
     >
       <div
@@ -234,6 +241,108 @@
           @click:append-outer="handleClose()"
           @input="triggerInput()"
         ></v-text-field>
+      </div>
+    </div>
+    <div
+      v-else-if="inputObject.inputDefinition.inputType === 'single-file'"
+      class="mb-4 text-left highlighted-bg"
+      :class="inputObject.inputDefinition?.avatarOptions ? 'd-flex' : null"
+    >
+      <v-container
+        v-if="!inputObject.inputDefinition?.avatarOptions && filesData.length"
+      >
+        <Draggable
+          v-model="filesData"
+          class="row"
+          :disabled="inputObject.readonly"
+          @change="handleFilesDataUpdate()"
+        >
+          <v-col
+            v-for="(file, index) in filesData"
+            :key="file.id"
+            cols="12"
+            class="py-2"
+            :sm="inputObject.inputDefinition.mediaMode ? 3 : 6"
+          >
+            <MediaChip
+              v-if="inputObject.inputDefinition.mediaMode"
+              :file="file"
+              draggable
+              close
+              openable
+              :readonly="inputObject.readonly"
+              :use-firebase-url="inputObject.inputDefinition.useFirebaseUrl"
+              @handleCloseClick="removeFileByIndex(index)"
+            ></MediaChip>
+            <FileChip
+              v-else
+              :file="file"
+              downloadable
+              small
+              label
+              openable-on-click
+              :close="!inputObject.readonly"
+              close-icon="mdi-close-outline"
+              class="mr-2"
+              @handleCloseClick="removeFileByIndex(index)"
+            ></FileChip>
+          </v-col>
+        </Draggable>
+      </v-container>
+      <v-avatar v-if="inputObject.inputDefinition?.avatarOptions" size="64">
+        <v-progress-circular
+          v-if="inputObject.loading"
+          indeterminate
+          size="62"
+        ></v-progress-circular>
+        <v-img
+          v-else-if="filesData[0]"
+          :src="generateFileServingUrl({ bucketPath: filesData[0].location })"
+        ></v-img>
+        <v-icon v-else size="64">{{ fallbackIcon }}</v-icon>
+      </v-avatar>
+      <div
+        v-cloak
+        @drop.prevent="handleSingleDropFile"
+        @dragover.prevent
+        style="flex: 1; min-width: 0"
+      >
+        <v-file-input
+          v-model="tempInput"
+          :label="`${inputObject.label} (Drag and Drop)${
+            inputObject.inputDefinition.optional ? ` (optional)` : ''
+          } (Limit 1)`"
+          :accept="acceptedFiles"
+          :hint="inputObject.inputDefinition.hint"
+          :loading="inputObject.loading"
+          persistent-hint
+          :clearable="false"
+          prepend-inner-icon="mdi-content-paste"
+          append-icon="mdi-file-search"
+          :append-outer-icon="filesData[0] ? 'mdi-close' : null"
+          @click:append="dialogs.fileSelector = true"
+          @click:append-outer="removeFileByIndex(0)"
+          @paste="handlePasteEvent($event, 1)"
+          @change="handleSingleFileInputChange"
+        >
+          <template v-slot:selection="{ text }">
+            <v-chip
+              small
+              label
+              color="primary"
+              close
+              close-icon="mdi-close-outline"
+              @click:close="handleSingleFileInputClear()"
+            >
+              {{ text }}
+              <v-progress-circular
+                indeterminate
+                class="ml-2"
+                size="12"
+              ></v-progress-circular>
+            </v-chip>
+          </template>
+        </v-file-input>
       </div>
     </div>
     <v-textarea
@@ -837,6 +946,18 @@
         </v-row>
       </v-container>
     </div>
+    <SelectFileDialog
+      v-model="dialogs.fileSelector"
+      max-width="800px"
+      :limit="
+        inputObject.inputDefinition.inputType === 'single-file'
+          ? 1
+          : inputObject.inputDefinition.limit
+      "
+      @close="dialogs.fileSelector = false"
+      @handle-submit-success="handleFileSelection"
+    >
+    </SelectFileDialog>
   </div>
 </template>
 
@@ -864,6 +985,7 @@ import MediaChip from '~/components/chip/mediaChip.vue'
 import InputSelectionChip from '~/components/chip/inputSelectionChip.vue'
 import { StripeElements, StripeElement } from 'vue-stripe-elements-plus'
 import { hideNullInputIcon, paypalClientId } from '~/config'
+import SelectFileDialog from '~/components/dialog/selectFileDialog.vue'
 
 export default {
   name: 'GenericInput',
@@ -874,6 +996,7 @@ export default {
     InputSelectionChip,
     StripeElements,
     StripeElement,
+    SelectFileDialog,
   },
   props: {
     // type: CrudInputObject
@@ -903,6 +1026,10 @@ export default {
 
         timeInput: null,
         timeMenu: null,
+      },
+
+      dialogs: {
+        fileSelector: false,
       },
 
       stripePiReady: false,
@@ -967,7 +1094,9 @@ export default {
     },
 
     acceptedFiles() {
-      return this.inputObject.inputDefinition.contentType
+      return this.inputObject.inputDefinition?.avatarOptions
+        ? 'image/*'
+        : this.inputObject.inputDefinition.contentType
     },
 
     appendIcon() {
@@ -1316,7 +1445,11 @@ export default {
     },
 
     handleFilesDataUpdate() {
-      this.inputObject.value = this.filesData.map((ele) => ele.id)
+      if (this.inputObject.inputDefinition.inputType === 'single-file') {
+        this.inputObject.value = this.filesData[0] ?? null
+      } else {
+        this.inputObject.value = this.filesData.map((ele) => ele.id)
+      }
     },
 
     handleMultipleFileInputClear(file) {
@@ -1353,7 +1486,7 @@ export default {
       this.processFilesQueue(newFiles)
     },
 
-    handleDropEvent(e) {
+    handleSingleDropFile(e) {
       try {
         // if still loading, prevent
         if (this.inputObject.loading) {
@@ -1457,22 +1590,29 @@ export default {
       }
     },
 
-    handleSingleFileInputClear(inputObject) {
-      inputObject.value = null
+    handleSingleFileInputClear() {
+      this.inputObject.value = null
 
       this.clearFileUploadQueue()
 
-      inputObject.filesQueue = []
-      inputObject.inputValue = null
-      inputObject.loading = false
+      this.inputObject.filesQueue = []
+      this.inputObject.inputValue = null
+      this.inputObject.loading = false
     },
 
     handleSingleFileInputChange(event = null) {
+      // if it's single-file and event is null, just skip (the file input will trigger twice for some reason, and it might also trigger with an empty array when pasting)
+      if (
+        this.inputObject.inputDefinition.inputType === 'single-file' &&
+        !event
+      )
+        return
+
       const inputObject = this.inputObject
 
       // if event, user clicked the upload button and the file will be extracted from the event object
       if (event) {
-        const firstFile = event.target.files[0]
+        const firstFile = event instanceof File ? event : event.target.files[0]
 
         // if no file, do nothing
         if (!firstFile) return
@@ -1500,7 +1640,11 @@ export default {
         inputObject.inputValue,
         inputObject.inputDefinition.useFirebaseUrl === true,
         (fileUploadObject) => {
-          if (inputObject.inputDefinition.useFirebaseUrl) {
+          // if it's single-file, add the id
+          if (inputObject.inputDefinition.inputType === 'single-file') {
+            inputObject.value = fileUploadObject.fileRecord
+            this.filesData = [fileUploadObject.fileRecord]
+          } else if (inputObject.inputDefinition.useFirebaseUrl) {
             inputObject.value = fileUploadObject.url
           } else {
             inputObject.value = fileUploadObject.servingUrl
@@ -1514,6 +1658,9 @@ export default {
 
           // emit the file to parent (in case it is needed)
           this.$emit('file-added', inputObject, fileUploadObject.fileRecord)
+
+          // reset the tempInput
+          this.tempInput = null
 
           this.$root.$emit('showSnackbar', {
             message: `File Uploaded`,
@@ -1531,16 +1678,16 @@ export default {
           if (typeof inputObject.value[0] === 'string') {
             // only proceed if parent item is defined
             if (this.parentItem) {
-              const fileData = await collectPaginatorData(
-                'fileGetPaginator',
-                {
+              const fileData = await collectPaginatorData({
+                operation: 'fileGetPaginator',
+                query: {
                   id: true,
                   name: true,
                   size: true,
                   location: true,
                   contentType: true,
                 },
-                {
+                args: {
                   filterBy: [
                     {
                       parentKey: {
@@ -1551,8 +1698,8 @@ export default {
                       },
                     },
                   ],
-                }
-              )
+                },
+              })
 
               this.filesData = inputObject.value
                 .map((fileId) => fileData.find((val) => val.id === fileId))
@@ -1562,9 +1709,10 @@ export default {
             // otherwise, it should have been pre-loaded
             this.filesData = inputObject.value
           }
-
-          this.handleFilesDataUpdate()
+        } else if (inputObject.inputDefinition.inputType === 'single-file') {
+          this.filesData = [inputObject.value].filter((e) => e)
         }
+        this.handleFilesDataUpdate()
       } catch (err) {
         handleError(this, err)
       }
@@ -1716,15 +1864,31 @@ export default {
       }
     },
 
-    handlePasteEvent(event) {
-      const items = (event.clipboardData || event.originalEvent.clipboardData)
-        .items
+    handlePasteEvent(event, limit = null) {
+      try {
+        const items = (event.clipboardData || event.originalEvent.clipboardData)
+          .items
 
-      const files = [...items]
-        .filter((item) => item.kind === 'file' && item.type.includes('image/'))
-        .map((item) => item.getAsFile())
+        // only images allowed currently
+        const files = [...items]
+          .filter(
+            (item) => item.kind === 'file' && item.type.includes('image/')
+          )
+          .map((item) => item.getAsFile())
 
-      this.processFilesQueue(files)
+        if (limit && files.length > limit) {
+          throw new Error(`Adding these files would exceed the limit`)
+        }
+
+        // if it's single-file, handle differently (since it's a single file input)
+        if (this.inputObject.inputDefinition.inputType === 'single-file') {
+          this.handleSingleFileInputChange(files[0])
+        } else {
+          this.processFilesQueue(files)
+        }
+      } catch (err) {
+        handleError(this, err)
+      }
     },
 
     renderFileUploadProgress(file) {
@@ -1735,11 +1899,38 @@ export default {
       )
     },
 
+    handleFileSelection(files) {
+      try {
+        if (!files.length) return
+
+        const limit =
+          this.inputObject.inputDefinition.inputType === 'single-file'
+            ? 1
+            : this.inputObject.inputDefinition.limit ?? null
+
+        if (limit && files.length > limit) {
+          throw new Error(`Adding these files would exceed the limit`)
+        }
+
+        if (this.inputObject.inputDefinition.inputType === 'single-file') {
+          this.filesData = files
+        } else {
+          this.filesData.push(...files)
+        }
+
+        this.handleFilesDataUpdate()
+      } catch (err) {
+        handleError(this, err)
+      }
+    },
+
     reset() {
       switch (this.inputObject.inputDefinition.inputType) {
         case 'multiple-file':
-          this.filesData = []
           this.tempInput = []
+        case 'single-file':
+          this.filesData = []
+          this.tempInput = null
           this.filesProcessingQueue = new Map()
           this.loadFiles(this.inputObject)
           break

@@ -6,7 +6,7 @@ export async function up(knex: Knex): Promise<void> {
     table.string("name", 255).notNullable();
     table.string("firebase_uid", 255).notNullable().unique();
     table.string("email", 255).notNullable().unique();
-    table.string("avatar_url", 255).nullable();
+    table.string("avatar").nullable();
     table.text("description").nullable();
     table.integer("role").notNullable().defaultTo(2);
     table.jsonb("permissions").nullable();

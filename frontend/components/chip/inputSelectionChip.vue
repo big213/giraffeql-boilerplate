@@ -55,6 +55,7 @@ export default {
     avatarUrl() {
       return this.inputObject.inputDefinition.entity?.avatarField
         ? this.item[this.inputObject.inputDefinition.entity.avatarField]
+            ?.servingUrl
         : null
     },
     fallbackIcon() {

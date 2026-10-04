@@ -23,7 +23,16 @@
               ></v-file-input>
             </div>
             <div>
-              {{ recordsDone }} / {{ validRecords }} Records Updated ({{
+              <v-textarea
+                filled
+                label="Paste Data (Tab-Delimited)"
+                dense
+                v-model="miscInputs.textData"
+                @input="handleTextDataUpdate()"
+              ></v-textarea>
+            </div>
+            <div>
+              {{ recordsDone }} / {{ validRecords }} Records Added ({{
                 recordsSkipped
               }}
               Skipped)
@@ -96,6 +105,7 @@ export default {
         records: [],
         file: null,
         downloadAfterCompleted: true,
+        textData: null,
       },
 
       loading: {
@@ -128,11 +138,12 @@ export default {
       )
 
       return this.viewDefinition.paginationOptions.batchUpdateOptions.fields.filter(
-        (fieldObject) =>
-          !(
-            excludeFields.includes(fieldObject.fieldPath) ||
-            excludeFields.includes(fieldObject.lockedFieldPath)
+        (importFieldObject) => {
+          return !(
+            excludeFields.includes(importFieldObject.fieldPath) ||
+            excludeFields.includes(importFieldObject.lockedFieldPath)
           )
+        }
       )
     },
 
@@ -202,8 +213,96 @@ export default {
       }
     },
 
+    processRecords(data) {
+      const keyFieldObjects =
+        this.viewDefinition.paginationOptions.batchUpdateOptions.fields.filter(
+          (field) => field.isKeyField
+        )
+
+      if (keyFieldObjects.length < 1) {
+        throw new Error(
+          `Must have at least one key field defined in order to batch update`
+        )
+      }
+
+      this.miscInputs.records = data.map((ele) => {
+        const keyInputObject = keyFieldObjects.reduce((total, fieldObject) => {
+          const fieldPath = fieldObject.lockedFieldPath ?? fieldObject.fieldPath
+
+          if (this.lockedFields[fieldPath] !== undefined) {
+            total[fieldObject.fieldPath] = this.lockedFields[fieldPath]
+          } else {
+            total[fieldObject.fieldPath] = ele[fieldObject.fieldPath]
+            delete ele[fieldObject.fieldPath]
+          }
+
+          return total
+        }, {})
+
+        return {
+          keyInputObject,
+          data: ele,
+          isFinished: false,
+          isSkipped: false,
+          record: null,
+        }
+      })
+
+      // build the path -> parseValue map
+      const parseValueMap = new Map()
+      this.acceptedFieldObjects.forEach((importFieldObject) => {
+        if (importFieldObject.parseValue) {
+          parseValueMap.set(
+            importFieldObject.fieldPath,
+            importFieldObject.parseValue
+          )
+        }
+      })
+
+      // parse the data if there is a parse function for the field
+      this.miscInputs.records.forEach((recordData) => {
+        for (const fieldPath in recordData.data) {
+          // is there a parseValue for this field?
+          const parseFn = parseValueMap.get(fieldPath)
+          if (parseFn) {
+            recordData.data[fieldPath] = parseFn(recordData.data[fieldPath])
+          }
+
+          // if the value is an empty string, parse this to null by default
+          if (recordData.data[fieldPath] === '')
+            recordData.data[fieldPath] = null
+        }
+
+        // run the inputsModifier, if any
+        if (
+          this.viewDefinition.paginationOptions.batchUpdateOptions
+            .inputsModifier
+        ) {
+          this.viewDefinition.paginationOptions.batchUpdateOptions.inputsModifier(
+            this,
+            recordData.data
+          )
+        }
+
+        // if there is a skipIf function, check it to see if this entry should be skippeed
+        if (
+          this.viewDefinition.paginationOptions.batchUpdateOptions.skipIf &&
+          this.viewDefinition.paginationOptions.batchUpdateOptions.skipIf(
+            this,
+            recordData.data
+          )
+        ) {
+          recordData.isSkipped = true
+        }
+      })
+    },
+
     handleFileUpload(file) {
       if (!file) return
+      // unset the textData
+      this.miscInputs.textData = null
+      // reset the records
+      this.miscInputs.records = []
       const reader = new FileReader()
       reader.onload = (event) => {
         try {
@@ -226,85 +325,7 @@ export default {
             }
           }
 
-          const keyFields =
-            this.viewDefinition.paginationOptions.batchUpdateOptions.fields
-              .filter((field) => field.isKeyField)
-              .map((field) => field.fieldPath)
-
-          if (keyFields.length < 1) {
-            throw new Error(
-              `Must have at least one key field defined in order to batch update`
-            )
-          }
-
-          this.miscInputs.records = data.map((ele) => {
-            const keyInputObject = keyFields.reduce((total, fieldKey) => {
-              if (this.lockedFields[fieldKey] !== undefined) {
-                total[fieldKey] = this.lockedFields[fieldKey]
-              } else {
-                total[fieldKey] = ele[fieldKey]
-                delete ele[fieldKey]
-              }
-
-              return total
-            }, {})
-
-            return {
-              keyInputObject,
-              data: ele,
-              isFinished: false,
-              isSkipped: false,
-              record: null,
-            }
-          })
-
-          // build the path -> parseValue map
-          const parseValueMap = new Map()
-          this.acceptedFieldObjects.forEach((importFieldObject) => {
-            if (importFieldObject.parseValue) {
-              parseValueMap.set(
-                importFieldObject.fieldPath,
-                importFieldObject.parseValue
-              )
-            }
-          })
-
-          // parse the data if there is a parse function for the field
-          this.miscInputs.records.forEach((recordData) => {
-            for (const fieldPath in recordData.data) {
-              // is there a parseValue for this field?
-              const parseFn = parseValueMap.get(fieldPath)
-              if (parseFn) {
-                recordData.data[fieldPath] = parseFn(recordData.data[fieldPath])
-              }
-
-              // if the value is an empty string, parse this to null by default
-              if (recordData.data[fieldPath] === '')
-                recordData.data[fieldPath] = null
-            }
-
-            // run the inputsModifier, if any
-            if (
-              this.viewDefinition.paginationOptions.batchUpdateOptions
-                .inputsModifier
-            ) {
-              this.viewDefinition.paginationOptions.batchUpdateOptions.inputsModifier(
-                this,
-                recordData.data
-              )
-            }
-
-            // if there is a skipIf function, check it to see if this entry should be skippeed
-            if (
-              this.viewDefinition.paginationOptions.batchUpdateOptions.skipIf &&
-              this.viewDefinition.paginationOptions.batchUpdateOptions.skipIf(
-                this,
-                recordData.data
-              )
-            ) {
-              recordData.isSkipped = true
-            }
-          })
+          this.processRecords(data)
 
           this.$root.$emit('showSnackbar', {
             message: `File uploaded`,
@@ -317,6 +338,48 @@ export default {
         }
       }
       reader.readAsText(file)
+    },
+
+    handleTextDataUpdate() {
+      if (!this.miscInputs.textData) {
+        return
+      }
+
+      // unset the file
+      this.miscInputs.file = null
+      // reset the records
+      this.miscInputs.records = []
+      try {
+        const rows = this.miscInputs.textData.split(/\n/)
+
+        const data = []
+
+        rows.forEach((row) => {
+          const rowParts = row?.trim() ? row.split(/\t/) : null
+
+          // skip if empty
+          if (!rowParts) return
+
+          data.push(
+            this.acceptedFieldObjects.reduce((total, fieldObject, index) => {
+              total[fieldObject.fieldPath] = rowParts[index]
+
+              return total
+            }, {})
+          )
+        })
+
+        this.processRecords(data)
+
+        this.$root.$emit('showSnackbar', {
+          message: `Text data processed`,
+          color: 'success',
+        })
+      } catch (err) {
+        // reset records if any error with parsing
+        this.reset()
+        handleError(this, err)
+      }
     },
 
     async handleSubmit() {

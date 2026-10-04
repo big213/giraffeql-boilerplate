@@ -21,16 +21,31 @@ import {
 import { objectOnlyHasFields } from "../../core/helpers/shared";
 import { Validators } from "../../helpers/validator";
 import { Scalars } from "../../scalars";
-import { User } from "../../services";
+import { File, User } from "../../services";
+import { generateServingUrl } from "../../helpers/file";
+import { Knex } from "knex";
 
 const allowedQueryFields = [
   "id",
   "__typename",
   "name",
-  "avatarUrl",
+  "avatar",
   "description",
   "currentUserFollowLink",
 ];
+
+function getAvatarUrl(fileId: string, transaction: Knex.Transaction) {
+  // fetch the avatar location
+  return fileId
+    ? File.getFirstSqlRecord({
+        select: ["location"],
+        where: {
+          id: fileId,
+        },
+        transaction,
+      })
+    : null;
+}
 
 export default {
   ...generateBaseRootResolvers({
@@ -61,7 +76,7 @@ export default {
         /*
         Allow if:
         - filtering by isPublic === true
-        - if requested fields are id, name, avatarUrl, currentUserFollowLink ONLY, or NO query
+        - if requested fields are id, name, avatar, currentUserFollowLink ONLY, or NO query
         */
         validator: [
           Validators.allowIfFiltersPassTest(
@@ -81,7 +96,9 @@ export default {
                 id: lookupSymbol,
                 __typename: lookupSymbol,
                 name: lookupSymbol,
-                avatarUrl: lookupSymbol,
+                avatar: {
+                  servingUrl: lookupSymbol,
+                },
               },
             },
           },
@@ -101,6 +118,16 @@ export default {
           service: User,
           options: {
             async getCreateFields({ inputs: { processedArgs }, transaction }) {
+              // fetch the avatar location
+              const avatarFile = processedArgs.avatar
+                ? await File.getFirstSqlRecord({
+                    select: ["location"],
+                    where: {
+                      id: processedArgs.avatar,
+                    },
+                  })
+                : null;
+
               // create firebase user
               const firebaseUser = await auth().createUser({
                 email: processedArgs.email,
@@ -108,7 +135,7 @@ export default {
                 password: processedArgs.password,
                 displayName: processedArgs.name,
                 disabled: false,
-                photoURL: processedArgs.avatarUrl,
+                photoURL: await getAvatarUrl(processedArgs.avatar, transaction),
               });
 
               delete processedArgs.password;
@@ -130,7 +157,7 @@ export default {
           if (
             isCurrentUser(req, processedArgs.item) &&
             objectOnlyHasFields(processedArgs.fields, [
-              "avatarUrl",
+              "avatar",
               "name",
               "description",
               "isPublic",
@@ -146,7 +173,7 @@ export default {
         resolver: generateUpdateRootResolver({
           service: User,
           options: {
-            fields: ["name", "avatarUrl", "email", "role", "firebaseUid"],
+            fields: ["name", "avatar", "email", "role", "firebaseUid"],
 
             async getUpdateFields({
               inputs: { processedArgs },
@@ -161,7 +188,10 @@ export default {
                   displayName: processedArgs.fields.name,
                 }),
                 ...(updatedFieldsObject.avatarUrl !== undefined && {
-                  photoURL: processedArgs.fields.avatarUrl,
+                  photoURL: await getAvatarUrl(
+                    processedArgs.fields.avatar,
+                    transaction
+                  ),
                 }),
                 ...(updatedFieldsObject.email !== undefined && {
                   email: processedArgs.fields.email,

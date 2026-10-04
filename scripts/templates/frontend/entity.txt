@@ -6,6 +6,6 @@ export const {{ capitalizedTypename }}Entity: EntityDefinition = {
   pluralName: '{{ capitalizedTypename }}s',
   icon: 'mdi-folder-information',
   nameField: 'name',
-  avatarField: 'avatarUrl',
+  avatarField: 'avatar',
   descriptionField: 'description',
 }

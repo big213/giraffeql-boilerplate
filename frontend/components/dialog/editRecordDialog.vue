@@ -20,7 +20,7 @@
       dialog-mode
       :generation="generation"
       :override-options="modeObject?.options"
-      @handle-submit="handleSubmit"
+      @handle-submit-success="handleSubmitSuccess"
       @close="close()"
       @item-updated="$emit('item-updated')"
       @reload-parent="$emit('reload-parent')"
@@ -317,8 +317,8 @@ export default {
       // actionObject.handleClick(this, item)
     },
 
-    handleSubmit(data) {
-      this.$emit('handle-submit', data)
+    handleSubmitSuccess(data) {
+      this.$emit('handle-submit-success', data)
     },
 
     reset() {

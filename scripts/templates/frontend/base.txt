@@ -42,7 +42,7 @@ export const Base{{ capitalizedTypename }}View: ViewDefinition = {
   createOptions: {
     fields: [
       {
-        fieldKey: 'avatarUrl',
+        fieldKey: 'avatar',
         cols: 5,
       },
       {
@@ -55,7 +55,7 @@ export const Base{{ capitalizedTypename }}View: ViewDefinition = {
   updateOptions: {
     fields: [
       {
-        fieldKey: 'avatarUrl',
+        fieldKey: 'avatar',
         cols: 5,
       },
       {
@@ -66,7 +66,7 @@ export const Base{{ capitalizedTypename }}View: ViewDefinition = {
     ],
   },
   viewOptions: {
-    fields: ['avatarUrl', 'name', 'description'],
+    fields: ['avatar', 'name', 'description'],
     heroOptions: {},
   },
   enterOptions: {},

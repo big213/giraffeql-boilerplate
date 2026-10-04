@@ -62,7 +62,14 @@ export default {
       default: false,
     },
 
+    // will trigger reset
     generation: {
+      type: Number,
+      default: 0,
+    },
+
+    // will trigger submit
+    submitGeneration: {
       type: Number,
       default: 0,
     },
@@ -76,6 +83,16 @@ export default {
     // the fields to return with handleSubmit, if any
     returnFields: {
       type: Object,
+    },
+
+    // whether or not to hide the submit button
+    hideSubmit: {
+      type: Boolean,
+    },
+
+    // should the inputs be reset after submitting?
+    resetInputs: {
+      type: Boolean,
     },
   },
   data() {
@@ -99,8 +116,6 @@ export default {
       },
 
       resetCalledOnTick: false,
-
-      submitGeneration: 0,
     }
   },
 
@@ -121,27 +136,15 @@ export default {
     fields() {
       if (this.customFields) return this.customFields
 
-      // for edit, fields could be a dynamic function
-      if (
-        this.mode === 'update' &&
-        typeof this.viewDefinition.updateOptions?.fields === 'function'
-      ) {
-        return this.viewDefinition.updateOptions.fields(this, this.parentItem)
+      // for create, update, fields could be a dynamic function
+      if (typeof this.options.fields === 'function') {
+        return this.options.fields(this, this.parentItem)
       }
 
-      // for create, fields could also be a dynamic function
-      if (
-        (this.mode === 'create' || this.mode === 'copy') &&
-        typeof this.viewDefinition.createOptions.fields === 'function'
-      ) {
-        return this.viewDefinition.createOptions.fields(this, this.parentItem)
-      }
+      // if it's copy, use the 'create' fields
+      if (this.mode === 'copy') return this.viewDefinition.createOptions.fields
 
-      return (
-        this.viewDefinition[
-          `${this.mode === 'copy' ? 'create' : this.mode}Options`
-        ]?.fields ?? []
-      )
+      return this.options.fields
     },
 
     title() {
@@ -179,6 +182,9 @@ export default {
     },
     generation() {
       this.reset()
+    },
+    submitGeneration() {
+      this.handleSubmit()
     },
     viewDefinition() {
       this.reset()
@@ -314,9 +320,6 @@ export default {
         })
 
         this.handleSubmitSuccess(data)
-
-        // reset inputs
-        this.resetInputs()
       } catch (err) {
         handleError(this, err)
       }
@@ -325,7 +328,7 @@ export default {
 
     handleSubmitSuccess(data) {
       this.$emit('close')
-      this.$emit('handle-submit', data)
+      this.$emit('handle-submit-success', data)
 
       // run any custom onSuccess functions
       if (
@@ -347,6 +350,11 @@ export default {
             this.viewDefinition.entity.typename
           )
         }
+      }
+
+      // if reset inputs, reset the form
+      if (this.resetInputs) {
+        this.resetFormInputs()
       }
     },
 
@@ -446,7 +454,7 @@ export default {
       this.loading.loadDropdowns = false
     },
 
-    resetInputs(excludeKeys = []) {
+    resetFormInputs(excludeKeys = []) {
       this.inputsArray.forEach(async (inputObject) => {
         // skip any fieldKeys that should be excluded
         if (excludeKeys.includes(inputObject.fieldKey)) return
@@ -599,7 +607,7 @@ export default {
                 return this.getInputValue(inputObject.fieldKey)
               },
               function (val, prev) {
-                return inputObject.watch(this, val, prev)
+                return inputObject.watch(this, val, prev, this.parentItem)
               }
             )
           }

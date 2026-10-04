@@ -219,7 +219,7 @@
       :parent-item="currentItem"
       :mode="dialogs.editMode"
       @close="dialogs.editRecord = false"
-      @handle-submit="handleSubmit"
+      @handle-submit="handleSubmitSuccess"
     ></EditRecordDialog>
   </v-container>
 </template>

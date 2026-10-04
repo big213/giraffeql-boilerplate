@@ -18,7 +18,7 @@ export default {
     previewImageUrl() {
       return this.heroOptions?.getPreviewImage
         ? this.heroOptions.getPreviewImage(this.item)
-        : this.item.avatarUrl
+        : this.item.avatar?.servingUrl
     },
 
     previewName() {

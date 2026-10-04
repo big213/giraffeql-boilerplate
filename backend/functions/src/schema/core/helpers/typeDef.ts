@@ -991,12 +991,14 @@ export function generatePivotResolverObject({
   filterByField,
   additionalFilterFields,
   sqlParams,
+  validator,
 }: {
   pivotService: PaginatedService;
   filterByField: string;
   additionalFilterFields?: StringKeyObject;
   sqlParams?: Omit<SqlSelectQuery, "table" | "select" | "where">;
-}) {
+  validator?: ValidatorFunction | ValidatorFunction[];
+}): ObjectTypeDefinitionField {
   return {
     type: pivotService.typeDefLookup,
     arrayOptions: {
@@ -1004,6 +1006,7 @@ export function generatePivotResolverObject({
     },
     requiredSqlFields: ["id"],
     allowNull: false,
+    validator,
     resolver({ req, rootResolver, parentValue, fieldPath, query }) {
       return getObjectType({
         typename: pivotService.typename,
@@ -1040,7 +1043,7 @@ export function generatePaginatorPivotResolverObject({
       | GiraffeqlInputTypeLookup
       | undefined;
   };
-}) {
+}): ObjectTypeDefinitionField {
   // if filterByField, ensure that filterByField is a valid filterField on pivotService
   if (filterByField && !pivotService.filterFieldsMap[filterByField]) {
     throw new GiraffeqlInitializationError({

@@ -12,7 +12,7 @@ initializeApp({
   storageBucket: serveImageBucket.value(),
 });
 
-// reviews files (type File) and compares this against all references to files (avatarUrl, etc), and determines which ones are unused
+// reviews files (type File) and compares this against all references to files (imageUrl types, etc), and determines which ones are unused
 (async function auditFiles(isLiveRun = false) {
   // build the set of all known files
   const knownFiles = await allModels.File.getAllSqlRecord({

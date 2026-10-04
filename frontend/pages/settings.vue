@@ -18,7 +18,7 @@
             :view-definition="viewDefinition"
             mode="update"
             :generation="generation"
-            @handle-submit="reset()"
+            @handle-submit-success="reset()"
           >
             <template v-slot:toolbar>
               <v-toolbar flat color="accent" dense>

@@ -6,6 +6,7 @@ import {
   collectPaginatorData,
   generateTimeAgoString,
   generateFilterByObjectArray,
+  setNestedProperty,
 } from '~/services/base'
 import EditRecordInterface from '~/components/interface/crud/editRecordInterface.vue'
 import PreviewableFilesColumn from '~/components/table/previewableFilesColumn.vue'
@@ -102,7 +103,9 @@ export default {
         createdBy: {
           id: true,
           name: true,
-          avatarUrl: true,
+          avatar: {
+            servingUrl: true,
+          },
           __typename: true,
         },
       },
@@ -317,17 +320,17 @@ export default {
               'id',
               '__typename',
               'name',
-              'avatarUrl',
+              'avatar.servingUrl',
             ]
 
             if (typesToFetch[type].size) {
-              const results = await collectPaginatorData(
-                `${type}GetPaginator`,
-                fieldsToFetch.reduce((total, val) => {
-                  total[val] = true
+              const results = await collectPaginatorData({
+                operation: `${type}GetPaginator`,
+                query: fieldsToFetch.reduce((total, val) => {
+                  setNestedProperty(total, val, true)
                   return total
                 }, {}),
-                {
+                args: {
                   filterBy: this.knownTypesInfo[type].generateFilterArray
                     ? this.knownTypesInfo[type].generateFilterArray([
                         ...typesToFetch[type],
@@ -339,8 +342,8 @@ export default {
                           },
                         },
                       ],
-                }
-              )
+                },
+              })
 
               results.forEach((ele) => {
                 if (!this.knownTypesInfo[type].values) {

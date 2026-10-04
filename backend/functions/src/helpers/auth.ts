@@ -1,4 +1,4 @@
-import { ApiKey, User } from "../schema/services";
+import { ApiKey, File, User } from "../schema/services";
 import { auth } from "firebase-admin";
 import { userRoleKenum } from "../schema/enums";
 import { userRoleToPermissionsMap } from "../schema/helpers/permissions";
@@ -10,6 +10,7 @@ import {
   parsePermissions,
   getAllowedApiKeyPermissions,
 } from "../schema/core/helpers/permissions";
+import { getFilenameFromUrl } from "../schema/helpers/file";
 
 export async function validateToken(bearerToken: string): Promise<ContextUser> {
   try {
@@ -54,17 +55,35 @@ export async function validateToken(bearerToken: string): Promise<ContextUser> {
         fields: {
           // if after 2 tries it is still null, just fall back to empty str
           name: firebaseUserRecord.displayName ?? "",
-          avatarUrl: firebaseUserRecord.photoURL,
+          avatarUrl: null,
           email: decodedToken.email,
           firebaseUid: decodedToken.uid,
           createdBy: 0,
         },
       });
 
+      let addAvatarResult;
+
+      // photoUrl should typically not be pre-populated right after a user is created, but if it is for some reason, create a file from it and then add it as the avatar
+      if (firebaseUserRecord.photoURL) {
+        const photoData = await fetch(firebaseUserRecord.photoURL)
+          .then((res) => res.arrayBuffer())
+          .then((buffer) => Buffer.from(buffer).toString("base64"));
+
+        addAvatarResult = await File.createFromData({
+          filename: getFilenameFromUrl(firebaseUserRecord.photoURL),
+          data: photoData,
+          userId: addUserResults.id,
+        });
+      }
+
       // set createdBy to id
       await User.updateSqlRecord({
         fields: {
           createdBy: addUserResults.id,
+          ...(addAvatarResult && {
+            avatar: addAvatarResult.id,
+          }),
         },
         where: {
           id: addUserResults.id,

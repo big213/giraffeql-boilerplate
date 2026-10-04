@@ -5,7 +5,7 @@ export const UserEntity: EntityDefinition = {
   name: 'User',
   pluralName: 'Users',
   nameField: 'name',
-  avatarField: 'avatarUrl',
+  avatarField: 'avatar',
   descriptionField: 'description',
   icon: 'mdi-account',
 }

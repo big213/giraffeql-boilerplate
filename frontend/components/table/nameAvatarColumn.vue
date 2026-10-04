@@ -25,7 +25,7 @@ export default {
 
   /* expected options:
   nameField?: string // defaults to name
-  avatarUrlField?: string; // defaults to avatarUrl
+  avatarField?: string; // defaults to avatar
   */
 
   computed: {
@@ -38,7 +38,8 @@ export default {
     },
 
     avatarUrl() {
-      return this.currentValue[this.options?.avatarUrlField ?? 'avatarUrl']
+      return this.currentValue[this.options?.avatarField ?? 'avatar']
+        ?.servingUrl
     },
   },
 

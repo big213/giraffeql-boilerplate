@@ -1,6 +1,7 @@
 import CircularLoader from '~/components/common/circularLoader.vue'
 import GenericInput from '~/components/input/genericInput.vue'
 import ViewRecordInterface from '~/components/interface/crud/viewRecordInterface.vue'
+import EditRecordInterface from '~/components/interface/crud/editRecordInterface.vue'
 import { executeApiRequest } from '~/services/api'
 import {
   collapseObject,
@@ -19,6 +20,7 @@ export default {
     CircularLoader,
     GenericInput,
     ViewRecordInterface,
+    EditRecordInterface,
   },
   props: {
     parentItem: {
@@ -52,10 +54,12 @@ export default {
       inputsArray: [],
 
       previewGeneration: 0,
+      submitGeneration: 0,
 
       loading: {
         executeAction: false,
         initInputs: false,
+        updatingRecord: false,
       },
     }
   },
@@ -194,6 +198,26 @@ export default {
       this.loading.executeAction = false
     },
 
+    handleUpdateSubmitSuccess() {
+      this.loading.updatingRecord = false
+    },
+
+    async waitForUpdateRecordCompletion() {
+      this.loading.updatingRecord = true
+      // trigger submit
+      this.submitGeneration++
+
+      // wait 500ms at a time until it has finished updating (via handleUpdateSubmit). if it hasn't finished within 5000 ms throw err
+      let cycles = 0
+      while (this.loading.updatingRecord) {
+        if (cycles === 10) {
+          throw new Error(`Failed to update record after 5000ms, aborting`)
+        }
+        await timeout(500)
+        cycles++
+      }
+    },
+
     async handleSecondaryActionSubmit(secondaryActionDefinition) {
       this.loading.executeAction = true
       try {
@@ -202,6 +226,11 @@ export default {
           this.parentItem,
           this.inputsArray
         )
+
+        // if triggerUpdateSubmit, trigger the submission of the update form first and wait for it to complete
+        if (secondaryActionDefinition.triggerUpdateSubmit) {
+          await this.waitForUpdateRecordCompletion()
+        }
 
         await secondaryActionDefinition.onSubmit(this, this.parentItem, args)
 
@@ -232,7 +261,7 @@ export default {
         }
       }
 
-      this.$emit('handle-submit', data)
+      this.$emit('handle-submit-success', data)
 
       // run any custom onSuccess functions. if none, simply show a snackbar
       const onSuccess = this.actionDefinition.onSuccess
@@ -318,7 +347,7 @@ export default {
                 return this.getInputValue(inputObject.fieldKey)
               },
               function (val, prev) {
-                return inputObject.watch(this, val, prev)
+                return inputObject.watch(this, val, prev, this.parentItem)
               }
             )
           }

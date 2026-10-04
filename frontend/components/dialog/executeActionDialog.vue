@@ -13,7 +13,7 @@
       :locked-fields="lockedFields"
       dialog-mode
       :generation="generation"
-      @handle-submit="handleSubmit"
+      @handle-submit-success="handleSubmitSuccess"
       @close="close()"
     >
       <template v-slot:toolbar>
@@ -99,8 +99,8 @@ export default {
       this.actionDefinition.onClose?.(this, this.parentItem)
     },
 
-    handleSubmit(data) {
-      this.$emit('handle-submit', data)
+    handleSubmitSuccess(data) {
+      this.$emit('handle-submit-success', data)
     },
 
     reset() {
