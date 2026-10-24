@@ -1,7 +1,6 @@
+import { pgDatabase } from "../../lib/config";
 import { getAdminUserId } from "./helpers";
 
 (async function () {
-  const adminUserId = await getAdminUserId();
-
-  console.log(adminUserId);
+  console.log(pgDatabase.value());
 })();

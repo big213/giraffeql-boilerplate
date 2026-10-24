@@ -18,7 +18,7 @@ import {
   GiraffeqlInputTypeLookup,
   GiraffeqlBaseError,
 } from "giraffeql";
-import { db } from "../../../utils/knex";
+import { knexStatic } from "../../../utils/knex";
 import {
   camelToSnake,
   flattenObject,
@@ -186,7 +186,7 @@ export function generateTimestampField(
       getter: (tableAlias, field) =>
         `date_trunc('milliseconds', "${tableAlias}".${field})`,
       parseValue: nowOnly
-        ? () => db.fn.now()
+        ? () => knexStatic.fn.now()
         : (value: unknown) => {
             // if null, allow null value
             if (value === null || value === undefined) return null;
@@ -824,7 +824,7 @@ export function generateBaseTimestampFields() {
     createdAt: generateTimestampField({
       description: "When the record was created",
       allowNull: false,
-      defaultValue: db.fn.now(),
+      defaultValue: knexStatic.fn.now(),
       sqlOptions: { field: "created_at" },
       addable: false,
       updateable: false, // not addable or updateable
@@ -832,7 +832,7 @@ export function generateBaseTimestampFields() {
     updatedAt: generateTimestampField({
       description: "When the record was last updated",
       allowNull: false,
-      defaultValue: db.fn.now(),
+      defaultValue: knexStatic.fn.now(),
       sqlOptions: { field: "updated_at" },
       addable: false,
       updateable: false, // not addable or updateable
@@ -1978,10 +1978,10 @@ export function generateCurrentUserFollowLinkField(followLink: LinkService) {
                 .on(`${parentTableAlias}.id`, "=", `${joinTableAlias}.target`)
                 .andOn(
                   specialParams.currentUserId
-                    ? db.raw(`"${joinTableAlias}".user = ?`, [
+                    ? knexStatic.raw(`"${joinTableAlias}".user = ?`, [
                         specialParams.currentUserId,
                       ])
-                    : db.raw("false")
+                    : knexStatic.raw("false")
                 );
             }
           );

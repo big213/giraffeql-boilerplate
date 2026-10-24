@@ -16,8 +16,6 @@
           :items-per-page.sync="itemsPerPage"
           :page.sync="page"
           :search="search"
-          :sort-by="sortBy.toLowerCase()"
-          :sort-desc="sortDesc"
           hide-default-footer
           :single-select="limit === 1"
         >
@@ -95,7 +93,6 @@
                       <v-icon size="64" color="grey darken-3">mdi-file</v-icon>
                     </v-row>
                   </v-img>
-
                   <div>
                     <div class="subheading pt-0">
                       {{ item.name }}
@@ -109,12 +106,6 @@
                       {{ formatBytes(item.size) }}
                     </div>
                   </div>
-
-                  <!--
-                  <v-divider></v-divider>
-                  <span>{{ item.size }}</span>
-                  <span v-if="props.isSelected(item)">Selected</span>
-                  -->
                 </v-card>
               </v-col>
             </v-row>
@@ -155,14 +146,14 @@ export default {
       loading: {
         loadFiles: false,
       },
-      search: '',
-      sortDesc: false,
-      page: 1,
-      itemsPerPage: 12,
-      sortBy: 'name',
-      keys: ['Name', 'Calories'],
       items: [],
       selectedItems: [],
+
+      // not implemented
+      search: '',
+      page: 1,
+      itemsPerPage: 12,
+      keys: ['Name', 'Calories'],
     }
   },
 

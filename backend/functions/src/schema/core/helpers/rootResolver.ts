@@ -45,7 +45,7 @@ import {
   SqlWhereObject,
 } from "./sql";
 import { generateSqlSingleFieldObject } from "./sqlHelper";
-import { db } from "../../../utils/knex";
+import { getDb, knexStatic } from "../../../utils/knex";
 import { Knex } from "knex";
 type BaseRootResolverTypes =
   | "get"
@@ -712,7 +712,7 @@ export function generateGetPaginatorRootResolver(service: PaginatedService) {
             }
             return {
               ...sortByObject,
-              field: db.raw(sortByObject.field),
+              field: knexStatic.raw(sortByObject.field),
             };
           } else {
             const sortFieldOptions = service.sortFieldsMap[sortByObject.field];
@@ -1008,10 +1008,10 @@ export function generateGetAggregatorRootResolver(service: PaginatedService) {
       select: selectObjects,
       table: service.typename,
       where: [whereObject],
-      groupBy: [db.raw(`"key"`)],
+      groupBy: [knexStatic.raw(`"key"`)],
       orderBy: [
         {
-          field: db.raw(`"${processedArgs.sortBy?.field ?? "key"}"`),
+          field: knexStatic.raw(`"${processedArgs.sortBy?.field ?? "key"}"`),
           desc: processedArgs.sortBy?.desc === true,
         },
       ],
@@ -1150,7 +1150,7 @@ export function generateCreateRootResolver({
     await options?.beforeTransaction?.({ inputs, data });
 
     let addResults;
-    await db.transaction(async (transaction) => {
+    await getDb().transaction(async (transaction) => {
       const createFields = await options?.getCreateFields?.({
         inputs,
         data,
@@ -1229,7 +1229,7 @@ export function generateUpdateRootResolver({
       updatedFieldsObject,
     });
 
-    await db.transaction(async (transaction) => {
+    await getDb().transaction(async (transaction) => {
       const updateFields = await options?.getUpdateFields?.({
         inputs,
         item,
@@ -1293,7 +1293,7 @@ export function generateDeleteRootResolver({
     let requestedQuery;
 
     // delete the type and also any associated services
-    await db.transaction(async (transaction) => {
+    await getDb().transaction(async (transaction) => {
       await options?.beforeDelete?.({
         inputs,
         item,

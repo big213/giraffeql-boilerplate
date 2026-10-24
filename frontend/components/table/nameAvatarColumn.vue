@@ -26,6 +26,7 @@ export default {
   /* expected options:
   nameField?: string // defaults to name
   avatarField?: string; // defaults to avatar
+  externalImageUrlField?: string // if provided, this should be an external URL, which will override the avatarField
   */
 
   computed: {
@@ -38,8 +39,10 @@ export default {
     },
 
     avatarUrl() {
-      return this.currentValue[this.options?.avatarField ?? 'avatar']
-        ?.servingUrl
+      return (
+        this.currentValue[this.options?.externalImageUrlField] ??
+        this.currentValue[this.options?.avatarField ?? 'avatar']?.servingUrl
+      )
     },
   },
 

@@ -11,5 +11,6 @@ node_modules/
 .env
 .env.local
 .env.production
+.env.deploy
 
 key/

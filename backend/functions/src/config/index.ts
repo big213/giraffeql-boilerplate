@@ -5,30 +5,17 @@ import {
 } from "firebase-functions/params";
 
 // in dev mode, SQL errors are not masked, and SQL queries/errors are logged
-export const isDev = !!(process.env.DEV ?? defineBoolean("DEV").value());
-export const debugMode = !!(
-  process.env.DEBUG_MODE ?? defineBoolean("DEBUG_MODE").value()
-);
+export const debugMode = defineBoolean("DEBUG_MODE");
 export const defaultAdminOnly = defineBoolean("DEFAULT_ADMIN_ONLY");
 export const alwaysAllowIfAdmin = defineBoolean("ALWAYS_ALLOW_IF_ADMIN");
 
 export const projectPath = process.env.PROJECT_PATH;
 
-export const pgHost = isDev
-  ? defineString("DEV_PG_HOST")
-  : defineString("PG_HOST");
-export const pgPort = isDev
-  ? defineString("DEV_PG_PORT")
-  : defineString("PG_PORT");
-export const pgUser = isDev
-  ? defineString("DEV_PG_USER")
-  : defineString("PG_USER");
-export const pgPassword = isDev
-  ? defineString("DEV_PG_PASSWORD")
-  : defineString("PG_PASSWORD");
-export const pgDatabase = isDev
-  ? defineString("DEV_PG_DATABASE")
-  : defineString("PG_DATABASE");
+export const pgHost = defineString("PG_HOST");
+export const pgPort = defineString("PG_PORT");
+export const pgUser = defineString("PG_USER");
+export const pgPassword = defineString("PG_PASSWORD");
+export const pgDatabase = defineString("PG_DATABASE");
 
 export const githubToken = defineString("GITHUB_TOKEN");
 export const githubRepository = defineString("GITHUB_REPOSITORY");
@@ -56,29 +43,8 @@ export const baseVersion = defineString("BASE_VERSION");
 export const baseServiceAccount = defineString("BASE_SERVICE_ACCOUNT");
 export const baseTimezone = defineString("BASE_TIMEZONE");
 
-// add any additional origins
-export const allowedOrigins = baseOrigins.value()
-  ? baseOrigins
-      .value()
-      .split(",")
-      .map((origin) => origin.trim())
-      .filter((origin) => origin)
-  : [];
-
 export const giraffeqlOptions = {
-  debug: !!isDev,
+  debug: true,
   lookupValue: true,
   processEntireTree: false,
-};
-
-export const pgOptions = {
-  client: "pg",
-  connection: {
-    host: pgHost.value(),
-    user: pgUser.value(),
-    password: pgPassword.value(),
-    database: pgDatabase.value(),
-    ...(pgPort.value() && { port: pgPort.value() }),
-  },
-  pool: { min: 0, max: 1 },
 };

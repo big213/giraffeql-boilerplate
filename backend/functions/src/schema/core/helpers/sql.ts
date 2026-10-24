@@ -10,7 +10,7 @@ import {
 } from "giraffeql";
 import { debugMode } from "../../../config";
 import { SpecialJoinFunction } from "../../../types";
-import { db } from "../../../utils/knex";
+import { getDb, knexStatic } from "../../../utils/knex";
 import { linkDefs } from "../../links";
 import { generateSqlSingleFieldObject } from "./sqlHelper";
 import { Knex } from "knex";
@@ -578,7 +578,7 @@ function processJoinFields(
                           `${joinTableAlias}.${actualJoinSqlField}`
                         ).andOn(
                           `${joinTableAlias}.entity_type`,
-                          db.raw(`'${table}'`)
+                          knexStatic.raw(`'${table}'`)
                         );
                       }
                     );
@@ -1047,7 +1047,7 @@ export async function fetchTableRows(sqlQuery: SqlSelectQuery) {
       tableIndexMap
     );
 
-    const knexObject = db.from({ [tableAlias]: sqlQuery.table });
+    const knexObject = getDb().from({ [tableAlias]: sqlQuery.table });
 
     // apply the joins
     applyJoins(knexObject, joinObjectMap, tableAlias, sqlQuery.specialParams);
@@ -1057,7 +1057,7 @@ export async function fetchTableRows(sqlQuery: SqlSelectQuery) {
 
     Object.entries(standardizedSelectObject).forEach(
       ([alias, singleFieldObject]) => {
-        knexSelectObject[alias] = db.raw(
+        knexSelectObject[alias] = knexStatic.raw(
           getSingleFieldAlias(fieldsObjectMap, singleFieldObject)
         );
       }
@@ -1077,7 +1077,7 @@ export async function fetchTableRows(sqlQuery: SqlSelectQuery) {
         knexObject.groupBy(
           isKnexRawStatement(ele)
             ? ele
-            : db.raw(
+            : knexStatic.raw(
                 getSingleFieldAlias(
                   fieldsObjectMap,
                   standardizeSqlSingleSelectField(ele)
@@ -1150,7 +1150,7 @@ export async function fetchTableRows(sqlQuery: SqlSelectQuery) {
     }
 
     const finalQuery = sqlQuery.outerSelect
-      ? db.raw(sqlQuery.outerSelect(knexObject.toQuery()))
+      ? knexStatic.raw(sqlQuery.outerSelect(knexObject.toQuery()))
       : knexObject;
 
     if (sqlQuery.transaction) {
@@ -1183,7 +1183,7 @@ export async function countTableRows(sqlQuery: SqlCountQuery) {
       tableIndexMap
     );
 
-    const knexObject = db.from({ [tableAlias]: sqlQuery.table });
+    const knexObject = getDb().from({ [tableAlias]: sqlQuery.table });
 
     // apply the joins
     applyJoins(knexObject, joinObjectMap, tableAlias, sqlQuery.specialParams);
@@ -1200,7 +1200,7 @@ export async function countTableRows(sqlQuery: SqlCountQuery) {
 
     // apply distinct
     knexObject[sqlQuery.distinct ? "countDistinct" : "count"](
-      db.raw(`"${tableAlias}"."${sqlQuery.field ?? "id"}"`)
+      knexStatic.raw(`"${tableAlias}"."${sqlQuery.field ?? "id"}"`)
     );
 
     if (sqlQuery.transaction) {
@@ -1238,7 +1238,7 @@ export async function aggregateTableRows(sqlQuery: SqlAggregateQuery) {
       tableIndexMap
     );
 
-    const knexObject = db.from({ [tableAlias]: sqlQuery.table });
+    const knexObject = getDb().from({ [tableAlias]: sqlQuery.table });
 
     // apply the joins
     applyJoins(knexObject, joinObjectMap, tableAlias, sqlQuery.specialParams);
@@ -1257,7 +1257,7 @@ export async function aggregateTableRows(sqlQuery: SqlAggregateQuery) {
     knexObject[
       <any>`${sqlQuery.operation}${sqlQuery.distinct ? "Distinct" : ""}`
     ](
-      db.raw(
+      knexStatic.raw(
         getSingleFieldAlias(
           fieldsObjectMap,
           standardizeSqlSingleSelectField(sqlQuery.field)
@@ -1300,7 +1300,7 @@ export async function sumTableRows(sqlQuery: SqlSumQuery) {
       tableIndexMap
     );
 
-    const knexObject = db.from({ [tableAlias]: sqlQuery.table });
+    const knexObject = getDb().from({ [tableAlias]: sqlQuery.table });
 
     // apply the joins
     applyJoins(knexObject, joinObjectMap, tableAlias, sqlQuery.specialParams);
@@ -1317,7 +1317,7 @@ export async function sumTableRows(sqlQuery: SqlSumQuery) {
 
     // apply distinct
     knexObject[sqlQuery.distinct ? "sumDistinct" : "sum"](
-      db.raw(
+      knexStatic.raw(
         getSingleFieldAlias(
           fieldsObjectMap,
           standardizeSqlSingleSelectField(sqlQuery.field)
@@ -1354,7 +1354,7 @@ export function getRawKnexObject(sqlQuery: SqlRawQuery) {
       tableIndexMap
     );
 
-    const knexObject = db.from({ [tableAlias]: sqlQuery.table });
+    const knexObject = getDb().from({ [tableAlias]: sqlQuery.table });
 
     // apply the joins
     applyJoins(knexObject, joinObjectMap, tableAlias, sqlQuery.specialParams);
@@ -1397,7 +1397,9 @@ export async function insertTableRow(sqlQuery: SqlInsertQuery) {
         : sqlQuery.fields[fieldname];
     }
 
-    const knexObject = db(sqlQuery.table).insert(sqlFields).returning(["id"]);
+    const knexObject = getDb()(sqlQuery.table)
+      .insert(sqlFields)
+      .returning(["id"]);
 
     if (sqlQuery.transaction) {
       knexObject.transacting(sqlQuery.transaction);
@@ -1456,7 +1458,7 @@ export async function updateTableRow(sqlQuery: SqlUpdateQuery) {
       throw new Error("No fields to update");
     }
 
-    const knexObject = db.from({ [tableAlias]: sqlQuery.table });
+    const knexObject = getDb().from({ [tableAlias]: sqlQuery.table });
 
     // apply the joins
     applyJoins(knexObject, joinObjectMap, tableAlias);
@@ -1516,7 +1518,7 @@ export async function incrementTableRow(sqlQuery: SqlIncrementQuery) {
       throw new Error("No fields to increment");
     }
 
-    const knexObject = db.from({ [tableAlias]: sqlQuery.table });
+    const knexObject = getDb().from({ [tableAlias]: sqlQuery.table });
 
     // apply the joins
     applyJoins(knexObject, joinObjectMap, tableAlias);
@@ -1561,7 +1563,7 @@ export async function deleteTableRow(sqlQuery: SqlDeleteQuery) {
       tableIndexMap
     );
 
-    const knexObject = db.from({ [tableAlias]: sqlQuery.table });
+    const knexObject = getDb().from({ [tableAlias]: sqlQuery.table });
 
     // apply the joins
     applyJoins(knexObject, joinObjectMap, tableAlias);

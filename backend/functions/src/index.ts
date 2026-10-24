@@ -4,7 +4,6 @@ import { initializeApp } from "firebase-admin/app";
 import { initializeGiraffeql, sendErrorResponse } from "giraffeql";
 import "./schema";
 import {
-  allowedOrigins,
   baseServiceAccount,
   baseTimeoutSeconds,
   baseVersion,
@@ -18,6 +17,7 @@ import {
   generateQueryPage,
   generateSchema,
 } from "./helpers/schema";
+import { getRequestOrigin } from "./helpers/common";
 
 initializeApp();
 
@@ -32,14 +32,7 @@ app.use(async function (req, res, next) {
     // set the start time
     req.startTime = Date.now();
 
-    // handle origins -- only accepting string type origins.
-    // if allowedOrigins is empty, allow all origins "*"
-    const origin = allowedOrigins.length
-      ? typeof req.headers.origin === "string" &&
-        allowedOrigins.includes(req.headers.origin)
-        ? req.headers.origin
-        : allowedOrigins[0]
-      : "*";
+    const origin = getRequestOrigin(req);
 
     res.header("Access-Control-Allow-Origin", origin);
     if (origin !== "*") {

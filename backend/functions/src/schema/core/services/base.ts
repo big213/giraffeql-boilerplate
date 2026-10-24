@@ -17,12 +17,9 @@ export abstract class BaseService {
 
     // loops through all the root resolvers and sets any without an explicit validator to require admin user
     Object.values(this.rootResolvers).forEach((rootResolver) => {
-      if (!rootResolver.definition.validator && defaultAdminOnly.value()) {
+      if (!rootResolver.definition.validator && defaultAdminOnly) {
         rootResolver.definition.validator = Validators.allowIfAdmin();
-      } else if (
-        rootResolver.definition.validator &&
-        alwaysAllowIfAdmin.value()
-      ) {
+      } else if (rootResolver.definition.validator && alwaysAllowIfAdmin) {
         // if there is a validator, always allow if admin (if alwaysAllowIfAdmin is true)
         rootResolver.definition.validator = generateAllowIfAdminValidator(
           rootResolver.definition.validator

@@ -100,6 +100,8 @@
           persistent-hint
           :clearable="false"
           prepend-inner-icon="mdi-content-paste"
+          append-icon="mdi-file-search"
+          @click:append="dialogs.fileSelector = true"
           @paste="handlePasteEvent"
           @change="handleMultipleFileInputChange"
         >
@@ -947,6 +949,10 @@
       </v-container>
     </div>
     <SelectFileDialog
+      v-if="
+        inputObject.inputDefinition.inputType === 'single-file' ||
+        inputObject.inputDefinition.inputType === 'multiple-file'
+      "
       v-model="dialogs.fileSelector"
       max-width="800px"
       :limit="
@@ -1504,7 +1510,7 @@ export default {
 
         this.inputObject.inputValue = initializeFileUploadObject(firstFile)
 
-        this.handleSingleFileInputChange()
+        this.handleSingleFileInputChange(firstFile)
       } catch (err) {
         handleError(this, err)
       }

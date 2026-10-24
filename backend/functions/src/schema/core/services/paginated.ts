@@ -36,16 +36,11 @@ import {
   GiraffeqlBaseError,
 } from "giraffeql";
 
-import { ServiceFunctionInputs, StringKeyObject } from "../../../types";
+import { ServiceFunctionInputs } from "../../../types";
 
-import {
-  escapeRegExp,
-  generateId,
-  isObject,
-  capitalizeString,
-} from "../helpers/shared";
+import { escapeRegExp, generateId, isObject } from "../helpers/shared";
 import { getObjectType } from "../helpers/resolver";
-import { db } from "../../../utils/knex";
+import { knexStatic } from "../../../utils/knex";
 import { generateSqlSingleFieldObject } from "../helpers/sqlHelper";
 import { Knex } from "knex";
 import {
@@ -412,7 +407,7 @@ export class PaginatedService extends BaseService {
       select: [sqlQuery.field],
       rawSelect: [
         {
-          statement: db.raw(`count(*)`),
+          statement: knexStatic.raw(`count(*)`),
           as: "count",
         },
       ],
@@ -477,7 +472,7 @@ export class PaginatedService extends BaseService {
   ) {
     const fieldsToUpdate = {
       ...sqlQuery.fields,
-      updatedAt: updateUpdatedAt ? db.fn.now() : undefined,
+      updatedAt: updateUpdatedAt ? knexStatic.fn.now() : undefined,
     };
 
     // remove any undefined values
@@ -521,7 +516,7 @@ export class PaginatedService extends BaseService {
           await updateTableRow({
             ...sqlQuery,
             fields: {
-              updatedAt: db.fn.now(),
+              updatedAt: knexStatic.fn.now(),
             },
             table: this.typename,
           });
@@ -694,7 +689,7 @@ export class PaginatedService extends BaseService {
             args.sortBy.some((sortByObject) => sortByObject.field === key)
           ) {
             rawSelect.push({
-              statement: db.raw(
+              statement: knexStatic.raw(
                 `earth_distance(ll_to_earth(${latitude}, ${longitude}), ll_to_earth(${latitudeField}, ${longitudeField}))`
               ),
               as: key,

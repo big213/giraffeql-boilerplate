@@ -7,6 +7,7 @@
     "generate:migration": "ts-node scripts/generateMigration.ts",
     "grantDBPermissions": "ts-node scripts/grantDBPermissions.ts",
     "eas": "ts-node scripts/executeAdminScript.ts",
+    "eas:prod": "ts-node -r dotenv/config scripts/executeAdminScript.ts dotenv_config_path=.env.production",
     "grantAdmin": "ts-node scripts/grantAdmin.ts",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",

@@ -229,7 +229,7 @@ export function generateBaseRenderFields(entity: EntityDefinition): {
       entity.avatarField && {
         nameWithAvatar: {
           text: 'Name',
-          fields: [entity.nameField, entity.avatarField],
+          fields: [entity.nameField, `${entity.avatarField}.servingUrl`],
           component: Columns.NameAvatarColumn,
           pathPrefix: null,
           renderOptions: {

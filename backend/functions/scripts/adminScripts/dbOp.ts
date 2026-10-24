@@ -1,4 +1,4 @@
-import { db } from "../../src/utils/knex";
+import { getDb } from "../../src/utils/knex";
 (async function () {
   // await knex.raw(`ALTER TABLE "salesChannel" ALTER COLUMN type DROP NOT NULL;`);
   // await knex.raw(`ALTER TABLE "salesChannel" ALTER COLUMN type DROP DEFAULT;`);
@@ -26,7 +26,7 @@ import { db } from "../../src/utils/knex";
     `UPDATE "sale" set timeout_days = 13 WHERE timeout_days IS NULL`
   ); */
 
-  await db.schema.alterTable("file", function (table) {
+  await getDb().schema.alterTable("file", function (table) {
     table.bigInteger("size").notNullable().alter();
   });
 

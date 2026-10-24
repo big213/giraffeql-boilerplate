@@ -801,7 +801,9 @@ export function populateInputObject(
                       [entity.nameField]: true,
                     }),
                     ...(entity.avatarField && {
-                      [entity.avatarField]: true,
+                      [entity.avatarField]: {
+                        servingUrl: true,
+                      },
                     }),
                     __args: {
                       id: value,
@@ -826,7 +828,9 @@ export function populateInputObject(
                   [entity.nameField]: true,
                 }),
                 ...(entity.avatarField && {
-                  [entity.avatarField]: true,
+                  [entity.avatarField]: {
+                    servingUrl: true,
+                  },
                 }),
                 __args: {
                   id: originalFieldValue,
@@ -1006,7 +1010,9 @@ function getAllNestedFields(
               'id',
               '__typename',
               nestedFieldDefinition!.inputDefinition.entity.nameField,
-              nestedFieldDefinition.inputDefinition.entity.avatarField,
+              nestedFieldDefinition.inputDefinition.entity.avatarField
+                ? `${nestedFieldDefinition.inputDefinition.entity.avatarField}.servingUrl`
+                : null,
             ]
               .filter((e) => e)
               .map((nestedField) => `${currentPath}.${nestedField}`)
@@ -1025,7 +1031,9 @@ function getAllNestedFields(
             'id',
             '__typename',
             arrayOptions.type.inputDefinition.entity.nameField,
-            arrayOptions.type.inputDefinition.entity.avatarField,
+            arrayOptions.type.inputDefinition.entity.avatarField
+              ? `${arrayOptions.type.inputDefinition.entity.avatarField}.servingUrl`
+              : null,
           ]
             .filter((e) => e)
             .map((nestedField) => `${parentPath.join('.')}.${nestedField}`)
@@ -1141,7 +1149,9 @@ export async function processInputQuery(
         'id',
         '__typename',
         inputDefinition.entity.nameField,
-        inputDefinition.entity.avatarField,
+        inputDefinition.entity.avatarField
+          ? `${inputDefinition.entity.avatarField}.servingUrl`
+          : null,
       ]
         .filter((e) => e)
         .forEach((nestedField) => {
@@ -1472,16 +1482,18 @@ export function generateMemoizedEntityGetter(
         '__typename',
         ...(additionalFields ?? []),
         entity.nameField,
-        entity.avatarField,
+        `${entity.avatarField}.servingUrl`,
       ].filter((e) => e)
     )
 
     return collectPaginatorData({
       operation: `${entity.typename}GetPaginator`,
-      query: validatedFields.reduce((total, field) => {
-        total[field] = true
-        return total
-      }, {}),
+      query: collapseObject(
+        validatedFields.reduce((total, field) => {
+          total[field] = true
+          return total
+        }, {})
+      )!,
       args: {
         filterBy,
         sortBy,
@@ -1549,7 +1561,9 @@ export function loadTypeSearchResults(that, inputObject: CrudInputObject) {
           id: true,
           [entity.nameField]: true,
           ...(entity.avatarField && {
-            [entity.avatarField]: true,
+            [entity.avatarField]: {
+              servingUrl: true,
+            },
           }),
           ...(entity.additionalFields &&
             collapseObject(
