@@ -28,14 +28,16 @@ import Admin from "./models/admin/rootResolver";
 import UserUserFollowLink from "./links/userUserFollowLink/rootResolver";
 /** END LINK RootResolver Import */
 
-allServices.User.setRootResolvers(User);
-allServices.ApiKey.setRootResolvers(ApiKey);
-allServices.File.setRootResolvers(File);
-allServices.Admin.setRootResolvers(Admin);
-/** END RootResolver Set */
+export function initializeRootResolvers() {
+  allServices.User.setRootResolvers(User);
+  allServices.ApiKey.setRootResolvers(ApiKey);
+  allServices.File.setRootResolvers(File);
+  allServices.Admin.setRootResolvers(Admin);
+  /** END RootResolver Set */
 
-allServices.UserUserFollowLink.setRootResolvers(UserUserFollowLink);
-/** END LINK RootResolver Set */
+  allServices.UserUserFollowLink.setRootResolvers(UserUserFollowLink);
+  /** END LINK RootResolver Set */
+}
 
 // build and export services map
 export const servicesMap: Map<string, BaseService> = new Map();

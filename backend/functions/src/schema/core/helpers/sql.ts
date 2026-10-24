@@ -252,9 +252,9 @@ function handleSqlError(err: unknown) {
   // double check if err is type Error
   let errMessage: string;
   if (err instanceof Error) {
-    errMessage = debugMode ? err.message : "A SQL error has occurred";
+    errMessage = debugMode.value() ? err.message : "A SQL error has occurred";
     // if in dev mode, also log the SQL error
-    if (debugMode) {
+    if (debugMode.value()) {
       console.log(err);
     }
   } else {

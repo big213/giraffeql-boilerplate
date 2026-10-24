@@ -7,7 +7,7 @@ import {
   baseServiceAccount,
   baseTimeoutSeconds,
   baseVersion,
-  giraffeqlOptions,
+  getGiraffeqlOptions,
 } from "./config";
 
 import { validateToken, validateApiKey } from "./helpers/auth";
@@ -18,8 +18,15 @@ import {
   generateSchema,
 } from "./helpers/schema";
 import { getRequestOrigin } from "./helpers/common";
+import { onInit } from "firebase-functions/core";
+import { initializeRootResolvers } from "./schema";
 
 initializeApp();
+
+onInit(() => {
+  initializeRootResolvers();
+  initializeGiraffeql(app, getGiraffeqlOptions());
+});
 
 const app = express();
 
@@ -52,7 +59,7 @@ app.use(async function (req, res, next) {
     );
 
     // if env.base.version is set, send that as a header
-    if (baseVersion) {
+    if (baseVersion.value()) {
       res.header("x-api-version", baseVersion.value());
     }
 
@@ -76,23 +83,21 @@ app.options("*", function (req, res, next) {
   res.sendStatus(200);
 });
 
-initializeGiraffeql(app, giraffeqlOptions);
-
 app.get("/schema.ts", function (req, res, next) {
   res.header("Content-Type", "text/plain");
-  res.send(generateSchema(giraffeqlOptions));
+  res.send(generateSchema(getGiraffeqlOptions()));
 });
 
 app.get("/query", function (req, res, next) {
   res.header("Content-Type", "text/html");
 
-  res.send(generateQueryPage(giraffeqlOptions.lookupValue));
+  res.send(generateQueryPage(getGiraffeqlOptions().lookupValue));
 });
 
 app.get("/prompt", function (req, res, next) {
   res.header("Content-Type", "text/html");
 
-  res.send(generatePromptPage(giraffeqlOptions.lookupValue));
+  res.send(generatePromptPage(getGiraffeqlOptions().lookupValue));
 });
 
 app.get("/prompt-empty", function (req, res, next) {

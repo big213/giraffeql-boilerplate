@@ -43,8 +43,10 @@ export const baseVersion = defineString("BASE_VERSION");
 export const baseServiceAccount = defineString("BASE_SERVICE_ACCOUNT");
 export const baseTimezone = defineString("BASE_TIMEZONE");
 
-export const giraffeqlOptions = {
-  debug: true,
-  lookupValue: true,
-  processEntireTree: false,
-};
+export function getGiraffeqlOptions() {
+  return {
+    debug: debugMode.value(),
+    lookupValue: true,
+    processEntireTree: false,
+  };
+}
