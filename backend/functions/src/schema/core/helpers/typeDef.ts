@@ -1093,10 +1093,51 @@ export function generatePaginatorPivotResolverObject({
     },
   };
 
-  const filterByTypeDefinition: InputTypeDefinition = {
+  const filterObjectDefinition: InputTypeDefinition = {
     name: `${pivotService.typename}FilterByObject`,
     fields: {},
   };
+
+  const filterByInputType = new GiraffeqlInputType(filterObjectDefinition);
+
+  const filterConnectorInputType = new GiraffeqlInputType(
+    {
+      name: `${pivotService.typename}FilterByConnectorObject`,
+      fields: {
+        and: new GiraffeqlInputFieldType({
+          type: filterByInputType,
+          arrayOptions: {
+            allowNullElement: false,
+          },
+        }),
+        or: new GiraffeqlInputFieldType({
+          type: filterByInputType,
+          arrayOptions: {
+            allowNullElement: false,
+          },
+        }),
+      },
+    },
+    true
+  );
+
+  // always add the and/or object
+  filterObjectDefinition.fields["and"] = new GiraffeqlInputFieldType({
+    type: new GiraffeqlInputTypeLookup(
+      `${pivotService.typename}FilterByObject`
+    ),
+    arrayOptions: {
+      allowNullElement: false,
+    },
+  });
+  filterObjectDefinition.fields["or"] = new GiraffeqlInputFieldType({
+    type: new GiraffeqlInputTypeLookup(
+      `${pivotService.typename}FilterByObject`
+    ),
+    arrayOptions: {
+      allowNullElement: false,
+    },
+  });
 
   // populate the fields nextTick, to allow objectTypeDefs to load
   process.nextTick(() => {
@@ -1189,7 +1230,7 @@ export function generatePaginatorPivotResolverObject({
         });
         return total;
       },
-      filterByTypeDefinition.fields
+      filterObjectDefinition.fields
     );
   });
 
@@ -1402,10 +1443,7 @@ export function generatePaginatorPivotResolverObject({
               ),
             }),
             filterBy: new GiraffeqlInputFieldType({
-              arrayOptions: {
-                allowNullElement: false,
-              },
-              type: new GiraffeqlInputType(filterByTypeDefinition, true),
+              type: filterConnectorInputType,
             }),
             groupBy: new GiraffeqlInputFieldType({
               type: new GiraffeqlScalarType(groupByScalarDefinition, true),
@@ -1544,19 +1582,6 @@ export function generatePaginatorPivotResolverObject({
                   fieldPath,
                 });
               }
-            }
-
-            // if args.filterBy is provided, all of its objects must be non-empty
-            if (
-              validatedArgs.filterBy &&
-              validatedArgs.filterBy.some(
-                (filterObject) => Object.keys(filterObject).length < 1
-              )
-            ) {
-              throw new GiraffeqlArgsError({
-                message: `All filterBy objects must have at least one filter parameter specified`,
-                fieldPath,
-              });
             }
           },
         },

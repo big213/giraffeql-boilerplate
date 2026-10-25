@@ -932,10 +932,12 @@ export default {
           after: this.endCursor ?? undefined,
         }),
         sortBy,
-        filterBy: generateFilterByObjectArray(
-          this.lockedFiltersComputed,
-          this.filterInputsArray
-        ),
+        filterBy: {
+          and: generateFilterByObjectArray(
+            this.lockedFiltersComputed,
+            this.filterInputsArray
+          ),
+        },
         ...(distanceParams && {
           distance: distanceParams,
         }),

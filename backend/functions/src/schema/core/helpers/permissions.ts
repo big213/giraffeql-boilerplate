@@ -93,16 +93,24 @@ export type FilterObjectFunction = (
   inputs: ServiceFunctionInputs
 ) => Boolean | Promise<Boolean>;
 
-// does every filterObject in the args array pass the filterFn?
+// does every filterObject in the args array pass the filterFn? Also, strictly allowing only "and" and one level, to avoid circumvention
 export async function filterPassesTest(
   inputs: ServiceFunctionInputs,
   filterFn: FilterObjectFunction
 ) {
-  const filterByArray = inputs.args.filterBy;
-  // if empty array, return false
-  if (!Array.isArray(filterByArray) || !filterByArray.length) return false;
+  const filterByRootObject = inputs.args.filterBy;
 
-  for (const filterObject of filterByArray) {
+  const andFilterArray = filterByRootObject?.and;
+
+  // if it's not an object with "and" only, throw err
+  if (!andFilterArray || Object.keys(filterByRootObject).length !== 1) {
+    return false;
+  }
+
+  // if empty array, return false
+  if (!Array.isArray(andFilterArray) || !andFilterArray.length) return false;
+
+  for (const filterObject of andFilterArray) {
     if (!(await filterFn(filterObject, inputs))) return false;
   }
 

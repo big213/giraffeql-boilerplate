@@ -274,10 +274,12 @@ export default {
             ...(this.endCursor && {
               after: this.endCursor,
             }),
-            filterBy: generateFilterByObjectArray(
-              this.lockedFilters.concat(this.additionalFilters),
-              []
-            ),
+            filterBy: {
+              and: generateFilterByObjectArray(
+                this.lockedFilters.concat(this.additionalFilters),
+                []
+              ),
+            },
             sortBy: this.currentSortObject
               ? [
                   {

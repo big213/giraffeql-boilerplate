@@ -563,40 +563,67 @@ export class PaginatedService extends BaseService {
     return this.generateRecordId(transaction, ++attempt);
   }
 
+  processFilterObject(whereObject: SqlWhereObject, filterByObject: any) {
+    Object.entries(filterByObject).forEach(([filterKey, filterKeyObject]) => {
+      // if it's an array, it's a nested and/or object
+      if (Array.isArray(filterKeyObject)) {
+        // if no elements, can skip
+        if (!filterKeyObject.length) {
+          return;
+        }
+
+        const whereSubObject: SqlWhereObject = {
+          connective: filterKey === "and" ? "AND" : "OR",
+          fields: [],
+        };
+
+        whereObject.fields.push(whereSubObject);
+
+        filterKeyObject.forEach((ele) => {
+          this.processFilterObject(whereSubObject, ele);
+        });
+      } else {
+        // if no elements, can skip (expected to be object at this point)
+        if (!Object.keys(filterKeyObject!).length) {
+          return;
+        }
+
+        const whereSubObject: SqlWhereObject = {
+          connective: "AND",
+          fields: [],
+        };
+        whereObject.fields.push(whereSubObject);
+
+        Object.entries(<any>filterKeyObject).forEach(
+          ([operationKey, operationValue]: [string, any]) => {
+            whereSubObject.fields.push({
+              field: generateSqlSingleFieldObject(
+                this.filterFieldsMap[filterKey].field ?? filterKey
+              ),
+              operator: <SqlWhereFieldOperator>operationKey,
+              value: operationValue,
+            });
+          }
+        );
+      }
+    });
+  }
+
   processFilterArgs(
     args: any,
     whereObject: SqlWhereObject,
     rawSelect?: SqlSimpleRawSelectObject[]
   ) {
-    if (Array.isArray(args.filterBy)) {
-      const filterByOrObject: SqlWhereObject = {
-        connective: "OR",
+    // args.filterBy is expected to be an object
+    if (args.filterBy && Object.values(args.filterBy).length) {
+      const whereSubObject: SqlWhereObject = {
+        connective: "AND",
         fields: [],
       };
-      whereObject.fields.push(filterByOrObject);
 
-      args.filterBy.forEach((filterByObject) => {
-        const filterByAndObject: SqlWhereObject = {
-          connective: "AND",
-          fields: [],
-        };
-        filterByOrObject.fields.push(filterByAndObject);
-        Object.entries(filterByObject).forEach(
-          ([filterKey, filterKeyObject]) => {
-            Object.entries(<any>filterKeyObject).forEach(
-              ([operationKey, operationValue]: [string, any]) => {
-                filterByAndObject.fields.push({
-                  field: generateSqlSingleFieldObject(
-                    this.filterFieldsMap[filterKey].field ?? filterKey
-                  ),
-                  operator: <SqlWhereFieldOperator>operationKey,
-                  value: operationValue,
-                });
-              }
-            );
-          }
-        );
-      });
+      whereObject.fields.push(whereSubObject);
+
+      this.processFilterObject(whereSubObject, args.filterBy);
     }
 
     // handle search fields
