@@ -57,10 +57,10 @@ export function generateDateLocaleString(
   return `${dateObject.getFullYear()}-${String(
     dateObject.getMonth() + 1
   ).padStart(2, '0')}-${String(dateObject.getDate()).padStart(2, '0')} ${truncateSeconds
-      ? `${String(hours > 12 ? hours - 12 : hours === 0 ? 12 : hours)}:${String(
-        dateObject.getMinutes()
-      ).padStart(2, '0')} ${hours > 11 ? 'PM' : 'AM'}`
-      : dateObject.toLocaleTimeString()
+    ? `${String(hours > 12 ? hours - 12 : hours === 0 ? 12 : hours)}:${String(
+      dateObject.getMinutes()
+    ).padStart(2, '0')} ${hours > 11 ? 'PM' : 'AM'}`
+    : dateObject.toLocaleTimeString()
     }`
 }
 
@@ -367,10 +367,10 @@ export function handleError(that, err) {
     if (err instanceof GiraffeqlError) {
       that.$root.$emit('showSnackbar', {
         message: `${err.message}${err.data.fieldPath
-            ? ` at [${err.data.fieldPath
-              .filter((ele) => ele !== '__args')
-              .join('-')}]`
-            : ''
+          ? ` at [${err.data.fieldPath
+            .filter((ele) => ele !== '__args')
+            .join('-')}]`
+          : ''
           }`,
         color: 'error',
         copyableText: JSON.stringify(
@@ -1466,10 +1466,10 @@ export function generateMemoizedEntityGetter(
   entity: EntityDefinition,
   additionalFields?: string[],
   {
-    filterBy = [],
+    filterBy,
     sortBy = [],
   }: {
-    filterBy?: any[]
+    filterBy?: any
     sortBy?: any[]
   } = {}
 ) {

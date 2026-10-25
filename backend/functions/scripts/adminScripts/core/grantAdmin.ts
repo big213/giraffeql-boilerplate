@@ -1,5 +1,5 @@
-import { userRoleKenum } from "../../lib/schema/enums";
-import { User } from "../../src/schema/services";
+import { userRoleKenum } from "../../../src/schema/enums";
+import { User } from "../../../src/schema/services";
 
 (async function () {
   const email = "";

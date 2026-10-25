@@ -1,5 +1,5 @@
-import { pgDatabase, pgUser } from "../../lib/config";
-import { getDb } from "../../src/utils/knex";
+import { pgDatabase, pgUser } from "../../../src/config";
+import { getDb } from "../../../src/utils/knex";
 
 (async function () {
   const targetUser = "postgres";
