@@ -1694,16 +1694,18 @@ export default {
                   contentType: true,
                 },
                 args: {
-                  filterBy: [
-                    {
-                      parentKey: {
-                        eq: `${this.parentItem.__typename}_${this.parentItem.id}`,
+                  filterBy: {
+                    and: [
+                      {
+                        parentKey: {
+                          eq: `${this.parentItem.__typename}_${this.parentItem.id}`,
+                        },
+                        id: {
+                          in: inputObject.value,
+                        },
                       },
-                      id: {
-                        in: inputObject.value,
-                      },
-                    },
-                  ],
+                    ],
+                  },
                 },
               })
 

@@ -56,13 +56,12 @@ export function generateDateLocaleString(
 
   return `${dateObject.getFullYear()}-${String(
     dateObject.getMonth() + 1
-  ).padStart(2, '0')}-${String(dateObject.getDate()).padStart(2, '0')} ${
-    truncateSeconds
+  ).padStart(2, '0')}-${String(dateObject.getDate()).padStart(2, '0')} ${truncateSeconds
       ? `${String(hours > 12 ? hours - 12 : hours === 0 ? 12 : hours)}:${String(
-          dateObject.getMinutes()
-        ).padStart(2, '0')} ${hours > 11 ? 'PM' : 'AM'}`
+        dateObject.getMinutes()
+      ).padStart(2, '0')} ${hours > 11 ? 'PM' : 'AM'}`
       : dateObject.toLocaleTimeString()
-  }`
+    }`
 }
 
 // YYYY-MM-DD HH:MM(:SS). If only YYYY-MM-DD is provided, will automatically append the current HH:MM:SS.
@@ -367,13 +366,12 @@ export function handleError(that, err) {
     // error thrown by server
     if (err instanceof GiraffeqlError) {
       that.$root.$emit('showSnackbar', {
-        message: `${err.message}${
-          err.data.fieldPath
+        message: `${err.message}${err.data.fieldPath
             ? ` at [${err.data.fieldPath
-                .filter((ele) => ele !== '__args')
-                .join('-')}]`
+              .filter((ele) => ele !== '__args')
+              .join('-')}]`
             : ''
-        }`,
+          }`,
         color: 'error',
         copyableText: JSON.stringify(
           {
@@ -884,9 +882,9 @@ export function addNestedInputObject(
       Array.isArray(parentInputObject.inputDefinition.arrayOptions!.type)
         ? undefined
         : {
-            label:
-              parentInputObject.inputDefinition.arrayOptions?.entryName ?? '',
-          }
+          label:
+            parentInputObject.inputDefinition.arrayOptions?.entryName ?? '',
+        }
     )
 
     // if it is an entity, populate the value and options fields
@@ -1054,8 +1052,8 @@ export function processInputDefinitions(
     const inputFieldDefinition =
       typeof fieldElement === 'string'
         ? {
-            fieldKey: fieldElement,
-          }
+          fieldKey: fieldElement,
+        }
         : fieldElement
 
     // set the inputDefinition in the object if it is not defined
@@ -1079,8 +1077,8 @@ export function processRenderDefinitions(
     const renderFieldDefinition =
       typeof fieldElement === 'string'
         ? {
-            fieldKey: fieldElement,
-          }
+          fieldKey: fieldElement,
+        }
         : fieldElement
 
     // set the renderDefinition in the object if it is not defined
@@ -1228,9 +1226,9 @@ export function generateFilterByObjectArray(
     total[fieldPath][crudFilterObject.filterInputFieldDefinition.operator] =
       crudFilterObject.inputObject.inputDefinition.parseValue
         ? crudFilterObject.inputObject.inputDefinition.parseValue(
-            value,
-            crudFilterObjects.map((ele) => ele.inputObject)
-          )
+          value,
+          crudFilterObjects.map((ele) => ele.inputObject)
+        )
         : value
 
     // always delete if n(in) an empty array, which would throw an API error
@@ -1415,8 +1413,8 @@ export async function processInputObject(
       value = isObject(inputObject.value)
         ? { id: inputObject.value.id }
         : Number.isNaN(inputObject.value)
-        ? null
-        : inputObject.value
+          ? null
+          : inputObject.value
     } else {
       // trim input strings by default
       value =
@@ -1583,8 +1581,6 @@ export function loadTypeSearchResults(that, inputObject: CrudInputObject) {
             that.allItems
           ),
         },
-        filterBy: [],
-        sortBy: [],
         ...inputObject.inputDefinition.lookupParams?.(that, that.allItems),
       },
     },

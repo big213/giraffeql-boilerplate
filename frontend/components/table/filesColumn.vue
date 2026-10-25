@@ -66,16 +66,18 @@ export default {
                 contentType: true,
               },
               args: {
-                filterBy: [
-                  {
-                    parentKey: {
-                      eq: `${this.item.__typename}_${this.item.id}`,
+                filterBy: {
+                  and: [
+                    {
+                      parentKey: {
+                        eq: `${this.item.__typename}_${this.item.id}`,
+                      },
+                      id: {
+                        in: this.currentValue,
+                      },
                     },
-                    id: {
-                      in: this.currentValue,
-                    },
-                  },
-                ],
+                  ],
+                },
               },
             })
 

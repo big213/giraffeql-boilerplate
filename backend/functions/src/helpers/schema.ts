@@ -20,13 +20,15 @@ const query: GetQuery<keyof Root> = {
     },
     __args: {
       first: 10,
-      filterBy: [
-        {
-          isPublic: {
-            eq: true
+      filterBy: {
+        and: [
+          {
+            isPublic: {
+              eq: true
+            }
           }
-        }
-      ]
+        ]
+      }
     }
   }
 }

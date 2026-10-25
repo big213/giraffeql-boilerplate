@@ -205,13 +205,15 @@ export default {
             createdAt: true,
           },
           args: {
-            filterBy: [
-              {
-                'createdBy.id': {
-                  eq: this.$store.getters['auth/user'].id,
+            filterBy: {
+              and: [
+                {
+                  'createdBy.id': {
+                    eq: this.$store.getters['auth/user'].id,
+                  },
                 },
-              },
-            ],
+              ],
+            },
             sortBy: [
               {
                 field: 'createdAt',
